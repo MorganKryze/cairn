@@ -116,7 +116,8 @@ With it, they get translated names and an explicit order:
 | `theme.accent` | `#247b7b`   | any hex color                            |
 | `footer`       | `[]`        | `- label: { fr: Statut, en: Status }`<br>&nbsp;&nbsp;`url: https://status.example.org` |
 | `strings`      | built-ins   | see below                                |
-| `status.gatus` | none        | Gatus URL feeding live status dots on the cards, polled server-side |
+| `status.gatus` | none        | Gatus URL feeding live status pills on the cards, polled server-side |
+| `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 
 ### UI strings
 

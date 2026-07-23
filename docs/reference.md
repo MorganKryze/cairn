@@ -39,7 +39,8 @@ file at reload keeps the previous config serving and logs the same error.
 | `theme.accent` | `#247b7b` | hex color                  |
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |
-| `status.gatus` | none      | Gatus base URL feeding the [status dots](recipes/gatus.md) |
+| `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |
+| `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 | `status.interval` | `60s`  | poll cadence, duration ≥ `5s`         |
 
 Unknown keys in `site.yaml` are errors.

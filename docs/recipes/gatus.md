@@ -37,6 +37,19 @@ status:
   interval: 60s                       # optional; default 60s, minimum 5s
 ```
 
+If cairn reaches Gatus over an internal network — for example
+`http://gatus:8080` between containers — that address will not resolve in your
+visitors' browsers. Set `status.page` to the public Gatus URL the pill should
+link to:
+
+```yaml
+status:
+  gatus: http://gatus:8080           # internal — cairn polls this, server-side
+  page: https://status.example.org   # public — the pill links visitors here
+```
+
+When `status.page` is omitted, the pill links to `status.gatus`.
+
 Each card (and its detail page) gets a small status pill in its top-right
 corner — a dot plus a localized label ("Online" / "Offline") — and the pill
 links to your Gatus page. The matching rule is the endpoint **name == service
