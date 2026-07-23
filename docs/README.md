@@ -16,6 +16,7 @@ Start here, every page is one click away.
 **Deployment**
 
 - [Docker Compose](deployment/docker-compose.md): the hardened reference setup.
+- [Podman](deployment/podman.md): the same container as a systemd quadlet.
 - [Reverse proxies](deployment/reverse-proxies.md): Caddy, Traefik, Nginx, Pangolin.
 
 **Recipes**

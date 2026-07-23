@@ -112,7 +112,7 @@ Everything lives in [docs/](docs/README.md):
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Start**     | [Getting started](docs/getting-started.md), the five-minute path                                                                                                     |
 | **Configure** | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md) |
-| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Reverse proxies](docs/deployment/reverse-proxies.md)                                                          |
+| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Podman](docs/deployment/podman.md) · [Reverse proxies](docs/deployment/reverse-proxies.md)                                                          |
 | **Recipes**   | [Status page with Gatus](docs/recipes/gatus.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md)                                  |
 | **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                               |
 
