@@ -5,12 +5,22 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    ports: ["127.0.0.1:8080:8080"]
-    volumes: ["./config:/config:ro"]
+    ports:
+      - 127.0.0.1:8080:8080
+    volumes:
+      - ./config:/config:ro
     read_only: true
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
-    depends_on: [gatus]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - gatus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
     healthcheck:
       test: ["CMD", "/cairn", "-healthcheck"]
       interval: 30s
@@ -18,28 +28,38 @@ services:
 
   gatus:
     image: twinproduction/gatus:latest
-    ports: ["127.0.0.1:8081:8080"]
-    volumes: ["./gatus:/config:ro"]
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
+    ports:
+      - 127.0.0.1:8081:8080
+    volumes:
+      - ./gatus:/config:ro
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
   whoami:
     image: traefik/whoami
-    ports: ["127.0.0.1:8082:80"]
-    cap_drop: [ALL]
+    ports:
+      - 127.0.0.1:8082:80
+    cap_drop:
+      - ALL
 
   welcome:
     image: nginx:alpine
-    ports: ["127.0.0.1:8083:80"]
+    ports:
+      - 127.0.0.1:8083:80
 
   httpd:
     image: httpd:alpine
-    ports: ["127.0.0.1:8084:80"]
+    ports:
+      - 127.0.0.1:8084:80
 
   podinfo:
     image: stefanprodan/podinfo
-    ports: ["127.0.0.1:8085:9898"]
-    cap_drop: [ALL]
+    ports:
+      - 127.0.0.1:8085:9898
+    cap_drop:
+      - ALL
 
   # "ghost" has no container on purpose: cairn lists it on localhost:8086,
   # gatus finds it down, the card shows the red dot.

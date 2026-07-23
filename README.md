@@ -81,8 +81,10 @@ every text key works both ways. See [Languages](docs/configuration/i18n.md).)
 services:
   cairn:
     image: ghcr.io/morgankryze/cairn:latest
-    ports: ['8080:8080']
-    volumes: ['./config:/config:ro']
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/config:ro
 ```
 
 ```sh

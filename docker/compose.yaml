@@ -3,12 +3,22 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    ports: ["8080:8080"]
-    volumes: ["../example:/config:ro"]
+    # user: "1000:1000"    # any UID:GID works; the image defaults to 65534 (nobody)
+    ports:
+      - 8080:8080
+    volumes:
+      - ../example:/config:ro
     read_only: true
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
     healthcheck:
       test: ["CMD", "/cairn", "-healthcheck"]
       interval: 30s

@@ -7,14 +7,23 @@ use them, they cost nothing here.
 services:
   cairn:
     image: ghcr.io/morgankryze/cairn:latest
-    ports: ["8080:8080"]
+    # user: "1000:1000"    # optional; the image defaults to 65534 (nobody)
+    ports:
+      - 8080:8080
     volumes:
       - ./config:/config:ro
       # - ./assets:/assets:ro   # only if you serve your own images
     read_only: true
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
     healthcheck:
       test: ["CMD", "/cairn", "-healthcheck"]
       interval: 30s
@@ -31,6 +40,12 @@ Why each line holds:
 - **`healthcheck`**: the image is `FROM scratch` (no shell, no curl), so the
   binary probes itself: `/cairn -healthcheck` hits `/healthz` and exits 0
   or 1.
+- **`deploy.resources.limits`**: cairn idles at a few MB of RAM and near-zero
+  CPU, so these ceilings are generous protection, not a requirement; raise or
+  drop them freely.
+- **`user`**: the binary needs no particular identity; uncomment to run it as
+  any UID:GID (it defaults to `nobody`, 65534). Just make sure that user can
+  read your mounted `/config`.
 - **no network egress needed**: cairn makes zero outbound requests, except
   to a [`status.gatus` URL](../recipes/gatus.md) if you configure one. An
   internal-only egress policy is fine; note that icon *slugs* load in the

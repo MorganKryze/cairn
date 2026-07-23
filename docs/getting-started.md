@@ -34,11 +34,15 @@ Save this as `compose.yaml`, next to the `config` folder:
 services:
   cairn:
     image: ghcr.io/morgankryze/cairn:latest
-    ports: ["8080:8080"]
-    volumes: ["./config:/config:ro"]
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/config:ro
     read_only: true
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "/cairn", "-healthcheck"]
       interval: 30s
