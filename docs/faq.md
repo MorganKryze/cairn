@@ -34,8 +34,9 @@ One ~12 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
 shell inside.
 
 **Can visitors switch language permanently?**
-Yes: the header switcher (or visiting any locale URL) sets a one-year
-cookie; `/` honors it from then on.
+Yes: the header switcher sets a one-year cookie and `/` honors it from
+then on. Only the switcher sets it, so visitors who never touch it simply
+follow their browser language.
 
 **Where are the widgets / weather / graphs?**
 Not here, on purpose; see the [comparison](comparison.md). The one

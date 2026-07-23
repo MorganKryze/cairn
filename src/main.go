@@ -218,8 +218,14 @@ func home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	locale, _, _ := strings.Cut(loc, "/")
-	if c, err := r.Cookie("locale"); err != nil || c.Value != locale {
+	// The cookie is an explicit choice only: the switcher links carry
+	// ?choose. A negotiated visit leaves no trace, so a visitor whose
+	// browser language changes is followed until they pick one themselves.
+	if r.URL.Query().Has("choose") {
 		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
+		w.Header().Set("Cache-Control", "no-store")
+		http.Redirect(w, r, "/"+loc+"/", http.StatusFound)
+		return
 	}
 	h := w.Header()
 	h.Set("Content-Type", "text/html; charset=utf-8")

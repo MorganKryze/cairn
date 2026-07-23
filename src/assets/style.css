@@ -171,23 +171,28 @@ header .wrap {
 .about-x:hover svg, .about-x:focus-visible svg { display: none; }
 .about-x:hover span, .about-x:focus-visible span { display: inline; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.search { margin-left: auto; }
+/* width lives on the wrapper: as a flex item it would otherwise size to the
+   box's max-content and leave the box shy of the right edge */
+.search {
+  margin-left: auto;
+  width: min(14.5rem, 100%);
+  transition: width .2s ease;
+}
+.search:focus-within { width: min(19rem, 100%); }
 .search-box {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: .5rem;
-  width: min(14.5rem, 100%);
+  width: 100%;
   padding: .05rem .3rem .05rem .85rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: var(--shadow);
-  transition: border-color .15s, box-shadow .15s, width .2s ease;
+  transition: border-color .15s, box-shadow .15s;
 }
-.search-box:focus-within { width: min(19rem, 100%); }
 @media (max-width: 44rem) {
-  .search { flex: 1 1 100%; margin-left: 0; }
-  .search-box, .search-box:focus-within { width: 100%; }
+  .search, .search:focus-within { flex: 1 1 100%; margin-left: 0; width: 100%; }
 }
 .search-box:focus-within {
   border-color: var(--accent);
