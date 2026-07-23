@@ -168,6 +168,19 @@ header .wrap {
   color: inherit;
 }
 #q:focus { outline: none; }
+.search-kbd {
+  flex: none;
+  margin-right: .5rem;
+  padding: .1rem .45rem;
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: .45rem;
+}
+@media (hover: none) { .search-kbd { display: none; } }
 
 /* ---- category waypoints ---- */
 
