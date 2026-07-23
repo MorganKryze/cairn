@@ -14,6 +14,11 @@ build:
 test:
     go vet ./... && go test ./...
 
+# install the git pre-commit hook
+hooks:
+    git config core.hooksPath githooks
+    echo "pre-commit hook active (bypass: git commit --no-verify)"
+
 # start the demo stack (cairn + gatus + sample services)
 demo:
     docker compose -f demo/compose.yaml up -d

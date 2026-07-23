@@ -12,7 +12,11 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `build`, `demo`, `demo-rebuild`, `down`, `logs`.
+`test`, `build`, `demo`, `demo-rebuild`, `down`, `logs`, `hooks`.
+
+Run `just hooks` once: it points git at `githooks/`, whose pre-commit runs
+gofmt, vet and the tests when Go files are staged, lints staged workflows,
+and enforces a couple of house style rules on the way.
 
 ## Layout
 
