@@ -58,9 +58,16 @@ type FooterLink struct {
 }
 
 // SitePage is a page cairn serves itself (legal notice, privacy…), linked
-// automatically in the footer after the manual entries.
+// automatically in the footer after the manual entries. body is an optional
+// intro; sections add titled blocks below it.
 type SitePage struct {
-	ID    string  `yaml:"id"`
+	ID       string        `yaml:"id"`
+	Title    LString       `yaml:"title"`
+	Body     LString       `yaml:"body"`
+	Sections []PageSection `yaml:"sections"`
+}
+
+type PageSection struct {
 	Title LString `yaml:"title"`
 	Body  LString `yaml:"body"`
 }
@@ -285,14 +292,19 @@ func loadConfig(dir string) (*Config, error) {
 		switch {
 		case !idRe.MatchString(p.ID):
 			return nil, fmt.Errorf("config: site.yaml: invalid page id %q, ids become URLs (expected lowercase letters, digits and dashes, e.g. legal)", p.ID)
-		case len(p.Title) == 0 || len(p.Body) == 0:
-			return nil, fmt.Errorf("config: site.yaml: page %q needs title and body", p.ID)
+		case len(p.Title) == 0 || (len(p.Body) == 0 && len(p.Sections) == 0):
+			return nil, fmt.Errorf("config: site.yaml: page %q needs a title and a body or sections", p.ID)
 		case pageIDs[p.ID]:
 			return nil, fmt.Errorf("config: site.yaml: duplicate page id %q", p.ID)
 		case definedIn[p.ID] != "":
 			return nil, fmt.Errorf("config: site.yaml: page id %q collides with the service id defined in %s", p.ID, definedIn[p.ID])
 		}
 		pageIDs[p.ID] = true
+		for _, s := range p.Sections {
+			if len(s.Title) == 0 || len(s.Body) == 0 {
+				return nil, fmt.Errorf("config: site.yaml: page %q: every section needs title and body", p.ID)
+			}
+		}
 	}
 
 	cfg := &Config{Site: site, Categories: groupCategories(services, metas)}

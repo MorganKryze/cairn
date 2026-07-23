@@ -64,6 +64,22 @@ the heading, the translatable `body` as plain-text paragraphs (blank line =
 new paragraph, no markup). Every page is linked automatically at the end of
 the footer, after your `footer` entries, in declaration order.
 
+For structured pages, add `sections`: titled blocks rendered after the body
+(which becomes an optional intro). A page needs a body or at least one
+section. The demo ships a filled-in legal notice and privacy policy built
+this way; copy them and replace the placeholders.
+
+```yaml
+pages:
+  - id: legal
+    title: { fr: Mentions légales, en: Legal notice }
+    sections:
+      - title: { fr: Éditeur, en: Publisher }
+        body: { fr: "Prénom Nom, contact@exemple.org.", en: "…" }
+      - title: { fr: Hébergement, en: Hosting }
+        body: { fr: "Ce site est auto-hébergé par son éditeur.", en: "…" }
+```
+
 Page ids share the URL namespace with service ids; a collision is a config
 error that names both sides.
 

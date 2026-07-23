@@ -6,6 +6,10 @@
     <h1>{{.Title}}</h1>
     <span class="way-rule" aria-hidden="true"></span>
   </header>
-  {{range .Paragraphs}}<p>{{.}}</p>
+  {{range .Paragraphs}}<p class="page-intro">{{.}}</p>
+  {{end}}{{range .Sections}}<section class="page-sec">
+    <h2>{{.Title}}</h2>
+    {{range .Paragraphs}}<p>{{.}}</p>
+    {{end}}</section>
   {{end}}</article>
 {{template "bottom" .}}

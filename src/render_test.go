@@ -62,7 +62,7 @@ func TestSitePagesAndQuickLinks(t *testing.T) {
 	if !ok {
 		t.Fatal("page fr/legal not rendered")
 	}
-	if h := string(legal.HTML); !strings.Contains(h, "<h1>Mentions légales</h1>") || strings.Count(h, "<p>Éditeur : Morgan.</p>") != 1 || !strings.Contains(h, "<p>Hébergeur : lui-même.</p>") {
+	if h := string(legal.HTML); !strings.Contains(h, "<h1>Mentions légales</h1>") || strings.Count(h, `<p class="page-intro">Éditeur : Morgan.</p>`) != 1 || !strings.Contains(h, `<p class="page-intro">Hébergeur : lui-même.</p>`) {
 		t.Error("page body should render title and blank-line paragraphs")
 	}
 
@@ -72,5 +72,37 @@ func TestSitePagesAndQuickLinks(t *testing.T) {
 	})
 	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "collides") {
 		t.Errorf("error = %v, want page/service id collision complaint", err)
+	}
+}
+
+func TestPageSections(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"site.yaml": "pages:\n  - id: legal\n    title: Legal\n    sections:\n" +
+			"      - { title: Publisher, body: \"First Last.\" }\n" +
+			"      - { title: Hosting, body: \"Self-hosted.\" }\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := string(m.Pages["en/legal"].HTML)
+	if !strings.Contains(h, "<h2>Publisher</h2>") || !strings.Contains(h, "<h2>Hosting</h2>") || !strings.Contains(h, "<p>Self-hosted.</p>") {
+		t.Error("sections should render as titled blocks")
+	}
+	if !strings.Contains(h, `content="First Last."`) {
+		t.Error("first section paragraph should feed the meta description")
+	}
+
+	dir = writeFiles(t, map[string]string{
+		"site.yaml":     "pages: [{id: legal, title: T}]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "body or sections") {
+		t.Errorf("error = %v, want body-or-sections complaint", err)
 	}
 }

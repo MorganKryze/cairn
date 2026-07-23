@@ -20,37 +20,87 @@ pages:
   - id: mentions-legales
     title: { fr: Mentions légales, en: Legal notice }
     body:
-      fr: |
-        Éditeur : la démo cairn, exécutée sur votre propre machine.
-        Contact : vous-même.
-
-        Directeur de la publication : vous, également.
-
-        Hébergement : ce site est auto-hébergé. Il tourne dans un
-        conteneur Docker sur la machine qui affiche cette page.
-      en: |
-        Publisher: the cairn demo, running on your own machine.
-        Contact: yourself.
-
-        Hosting: this site is self-hosted. It runs in a Docker
-        container on the machine displaying this page.
+      fr: >
+        Cette page est un modèle : sur votre déploiement, remplacez chaque
+        rubrique par vos informations réelles.
+      en: >
+        This page is a template: on your own deployment, replace each
+        section with your real information.
+    sections:
+      - title: { fr: Éditeur, en: Publisher }
+        body:
+          fr: >
+            Ce site est édité par Prénom Nom, à titre personnel et non
+            commercial. Contact : contact@exemple.org.
+          en: >
+            This site is published by First Last, in a personal,
+            non-commercial capacity. Contact: contact@example.org.
+      - title: { fr: Directeur de la publication, en: Publishing director }
+        body:
+          fr: "Prénom Nom, en qualité d'éditeur du site."
+          en: "First Last, as publisher of the site."
+      - title: { fr: Hébergement, en: Hosting }
+        body:
+          fr: >
+            Ce site est auto-hébergé par son éditeur, sur une machine qu'il
+            administre lui-même. Dans le cas de cette démo, il tourne dans
+            un conteneur Docker sur la machine qui affiche cette page.
+          en: >
+            This site is self-hosted by its publisher, on a machine they
+            administer themselves. In the case of this demo, it runs in a
+            Docker container on the machine displaying this page.
+      - title: { fr: Propriété intellectuelle, en: Intellectual property }
+        body:
+          fr: >
+            Les noms et logos des services listés appartiennent à leurs
+            projets respectifs. Le reste du contenu de ce site est publié
+            sous la responsabilité de l'éditeur.
+          en: >
+            The names and logos of the listed services belong to their
+            respective projects. The rest of this site's content is
+            published under the publisher's responsibility.
   - id: confidentialite
     title: { fr: Confidentialité, en: Privacy }
-    body:
-      fr: |
-        Ce site ne collecte aucune donnée personnelle et n'utilise aucun
-        traceur. Un unique cookie (langue) mémorise votre préférence ;
-        strictement fonctionnel, il est exempté de consentement.
-
-        Les icônes des services sont chargées depuis jsdelivr.net (CDN),
-        qui voit donc votre adresse IP lors du chargement de la page. La
-        documentation explique comment servir vos propres icônes pour un
-        site entièrement sans tiers.
-      en: |
-        This site collects no personal data and uses no trackers. A
-        single cookie (language) remembers your preference; strictly
-        functional, it requires no consent.
-
-        Service icons load from jsdelivr.net (CDN), which therefore sees
-        your IP address when the page loads. The documentation explains
-        how to serve your own icons for a fully third-party-free site.
+    sections:
+      - title: { fr: Données collectées, en: Data we collect }
+        body:
+          fr: >
+            Aucune. Ce site ne collecte, ne stocke ni ne transmet aucune
+            donnée personnelle. Il n'utilise ni mesure d'audience, ni
+            traceur, et ne tient aucun journal de visite.
+          en: >
+            None. This site collects, stores and transmits no personal
+            data. It uses no analytics, no trackers, and keeps no visit
+            logs.
+      - title: { fr: Cookies, en: Cookies }
+        body:
+          fr: >
+            Un unique cookie, nommé locale, mémorise la langue choisie
+            pendant un an. Strictement fonctionnel, il est exempté de
+            consentement et n'est lu par personne d'autre que ce site.
+          en: >
+            A single cookie, named locale, remembers your chosen language
+            for one year. Strictly functional, it is exempt from consent
+            and is read by no one but this site.
+      - title: { fr: Services tiers, en: Third parties }
+        body:
+          fr: >
+            Les icônes des services proviennent du CDN jsdelivr.net :
+            votre navigateur lui adresse une requête au chargement de la
+            page, ce qui lui révèle votre adresse IP. Pour un site sans
+            aucun tiers, l'éditeur peut héberger ses propres icônes (voir
+            la documentation de cairn).
+          en: >
+            Service icons come from the jsdelivr.net CDN: your browser
+            sends it a request when the page loads, which reveals your IP
+            address to it. For a site with no third parties at all, the
+            publisher can host their own icons (see the cairn
+            documentation).
+      - title: { fr: Vos droits, en: Your rights }
+        body:
+          fr: >
+            Pour toute question relative à vos données, écrivez à
+            l'éditeur à l'adresse indiquée dans les mentions légales.
+          en: >
+            For any question about your data, write to the publisher at
+            the address given in the legal notice.
