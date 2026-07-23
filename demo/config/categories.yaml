@@ -5,3 +5,7 @@
 - id: tools
   name: { fr: Outils, en: Tools }
   order: 2
+
+- id: links
+  name: { fr: Liens, en: Links }
+  order: 3

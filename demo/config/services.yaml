@@ -56,3 +56,22 @@
       notices and cairn shows the red dot — exactly what your visitors would
       see if a real service went down.
   tags: [status, down, panne]
+
+# The two below are plain links: no container, no Gatus endpoint — note
+# how cards without monitoring simply show no status pill.
+
+- id: cairn-source
+  url: https://github.com/MorganKryze/cairn
+  category: links
+  icon: github
+  name: { fr: Code source de cairn, en: cairn source code }
+  desc: { fr: Le dépôt de la page que vous regardez., en: The repository of the page you are looking at. }
+  tags: [github, source]
+
+- id: gatus-dashboard
+  url: http://localhost:8081
+  category: links
+  icon: gatus
+  name: { fr: Tableau de bord Gatus, en: Gatus dashboard }
+  desc: { fr: La source des pastilles de statut de cette page., en: Where the status pills on this page come from. }
+  tags: [gatus, status, monitoring]
