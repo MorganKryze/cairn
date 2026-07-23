@@ -10,8 +10,12 @@
 [![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20~14%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-yes-ff69b4)](docs/deployment/docker-compose.md)
 
+</div>
+
 > A cairn is a small stack of stones left by hikers who walked the trail
 > before you, so you find your way without digging.
+
+<div align="center">
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-dark.png">
