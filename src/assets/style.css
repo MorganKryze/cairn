@@ -7,20 +7,23 @@
 }
 
 :root {
-  /* Mineral palette: cool weathered stone, not warm cream. */
-  --bg: #eef0ea;
-  --card: #fbfbf9;
-  --fg: #1b2220;
-  --muted: #5c6461;
-  --faint: #e8e7df;
-  --border: #dcdbd2;
+  /* Mineral palette: cool weathered stone, not warm cream. Every variable
+     carries its light and dark value; the browser preference picks one, and
+     forcing a theme (the header toggle) is just color-scheme below. */
+  color-scheme: light dark;
+  --bg: light-dark(#eef0ea, #14181a);
+  --card: light-dark(#fbfbf9, #1b2123);
+  --fg: light-dark(#1b2220, #e6e9e5);
+  --muted: light-dark(#5c6461, #98a19d);
+  --faint: light-dark(#e8e7df, #212829);
+  --border: light-dark(#dcdbd2, #2a3130);
   --accent: #247b7b;                                       /* set inline from theme.accent */
-  --accent-ink: color-mix(in oklab, var(--accent) 85%, #000);
-  --up: #2e8b57;
-  --down: #c0392b;
+  --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
+  --up: light-dark(#2e8b57, #4cb47c);
+  --down: light-dark(#c0392b, #e0685b);
 
-  --shadow: 0 1px 2px rgba(20, 30, 28, .04), 0 10px 26px -14px rgba(20, 30, 28, .14);
-  --shadow-lift: 0 2px 4px rgba(20, 30, 28, .05), 0 18px 42px -16px rgba(20, 30, 28, .24);
+  --shadow: 0 1px 2px light-dark(rgba(20, 30, 28, .04), rgba(0, 0, 0, .2)), 0 10px 26px -14px light-dark(rgba(20, 30, 28, .14), rgba(0, 0, 0, .5));
+  --shadow-lift: 0 2px 4px light-dark(rgba(20, 30, 28, .05), rgba(0, 0, 0, .25)), 0 18px 42px -16px light-dark(rgba(20, 30, 28, .24), rgba(0, 0, 0, .62));
 
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
@@ -29,21 +32,8 @@
   --maxw: 66rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14181a;
-    --card: #1b2123;
-    --fg: #e6e9e5;
-    --muted: #98a19d;
-    --faint: #212829;
-    --border: #2a3130;
-    --accent-ink: color-mix(in oklab, var(--accent) 72%, #fff);
-    --up: #4cb47c;
-    --down: #e0685b;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 10px 26px -14px rgba(0, 0, 0, .5);
-    --shadow-lift: 0 2px 4px rgba(0, 0, 0, .25), 0 20px 46px -16px rgba(0, 0, 0, .62);
-  }
-}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -117,6 +107,32 @@ header { padding-block: 1.4rem; }
 .menu-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .menu-link svg { width: .95rem; height: .95rem; opacity: .85; flex: none; }
 .menu-link img { width: 1rem; height: 1rem; flex: none; }
+
+.topbar-tools { display: flex; align-items: center; gap: .5rem; }
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .16s;
+}
+.theme-toggle:hover { color: var(--fg); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle svg { width: 1.05rem; height: 1.05rem; display: none; }
+/* offer the other theme: moon while light, sun while dark */
+.theme-toggle .moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .moon { display: none; }
+  :root:not([data-theme="light"]) .theme-toggle .sun { display: block; }
+}
+:root[data-theme="dark"] .theme-toggle .moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .sun { display: block; }
 
 .langs { display: flex; gap: .2rem; }
 .langs a {

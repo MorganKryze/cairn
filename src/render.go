@@ -33,7 +33,7 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme string
 }
 
 type pageView struct {
@@ -183,6 +183,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				Toc:               cfg.Str(loc, "nav.toc"),
 				LinksLabel:        cfg.Str(loc, "nav.links"),
 				Dismiss:           cfg.Str(loc, "about.dismiss"),
+				Theme:             cfg.Str(loc, "nav.theme"),
 			},
 		}
 		for _, l := range cfg.Site.Links {

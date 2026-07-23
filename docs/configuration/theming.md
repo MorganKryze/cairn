@@ -1,8 +1,11 @@
 # Theming
 
-cairn ships one calm theme with automatic light and dark (it follows the
-visitor's system preference). You adjust it in three steps of increasing
-depth; stop at the first one that does the job.
+cairn ships one calm theme with automatic light and dark: it follows the
+visitor's system preference, and a header toggle lets them force either.
+The forced choice is remembered in their browser (localStorage, not a
+cookie) and applies before first paint, so nothing flashes. You adjust the
+theme itself in three steps of increasing depth; stop at the first one that
+does the job.
 
 ## 1. Accent color
 

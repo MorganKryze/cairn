@@ -12,6 +12,8 @@
 - A category trail in the right margin follows your scroll and jumps on
   click; entries mirror the search filter.
 - Search reachable from anywhere: type-to-search and ⌘K / Ctrl-K.
+- A header toggle forces light or dark; the system preference still rules
+  until the visitor picks, and the choice stays in their browser.
 - Cards: equal heights within a row, "Learn more" flows after the
   description, the status pill moves to the bottom-right corner and links to
   its own Gatus endpoint page.

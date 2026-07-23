@@ -11,8 +11,9 @@ which load from jsdelivr in the visitor's browser; use
 
 **Does it need JavaScript?**
 No. Pages are fully server-rendered; small scripts progressively add the
-search box, the category trail and the welcome note's dismiss button.
-Without them, visitors simply see the whole directory.
+search box, the category trail, the theme toggle and the welcome note's
+dismiss button. Without them, visitors simply see the whole directory in
+their system's theme.
 
 **Can I put it behind authentication?**
 You can (any proxy auth works: Authelia, Tinyauth, basic auth), but cairn is

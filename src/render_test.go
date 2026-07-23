@@ -103,6 +103,9 @@ func TestAboutAndLinkIcons(t *testing.T) {
 	if !strings.Contains(home, `id="search"`) {
 		t.Error("search should render in the header menu row")
 	}
+	if !strings.Contains(home, `id="theme-toggle"`) || !strings.Contains(home, `aria-label="Thème"`) {
+		t.Error("header should carry the localized theme toggle")
+	}
 
 	dir = writeFiles(t, map[string]string{
 		"site.yaml":     "links: [{label: X, url: https://x.example.org, icon: sparkles}]\n",

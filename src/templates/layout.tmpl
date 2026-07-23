@@ -13,16 +13,22 @@
 <link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
 <style>:root{--accent:{{.Accent}}}</style>
-<script>if(document.cookie.split('; ').includes('about=off'))document.documentElement.setAttribute('data-noabout','')</script>
+<script>if(document.cookie.split('; ').includes('about=off'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 {{if .CustomCSS}}<link rel="stylesheet" href="/custom.css">
 {{end}}</head>
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
 <header><div class="wrap topbar">
   <a class="brand" href="/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
-  <nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
-    <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
-  </nav>
+  <div class="topbar-tools">
+    <button class="theme-toggle" id="theme-toggle" hidden aria-label="{{.S.Theme}}">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m7.07-17.07-1.41 1.41M6.34 17.66l-1.41 1.41M22 12h-2M4 12H2m17.07 7.07-1.41-1.41M6.34 6.34 4.93 4.93"/></svg>
+    </button>
+    <nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
+      <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
+    </nav>
+  </div>
 </div>
 <div class="wrap menu"{{if .Links}} role="navigation" aria-label="{{.S.LinksLabel}}"{{end}}>
   {{range .Links}}<a class="menu-link" href="{{.URL}}">{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
@@ -53,6 +59,7 @@
 {{end}}<script src="/static/search.js" defer></script>
 <script src="/static/toc.js" defer></script>
 <script src="/static/about.js" defer></script>
+<script src="/static/theme.js" defer></script>
 </body>
 </html>
 {{end}}
