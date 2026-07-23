@@ -20,8 +20,9 @@
 - Language: only the switcher pins the choice; until then the browser
   language is followed on every visit.
 - Footer pinned to the viewport floor on short pages.
-- CI publishes ghcr.io/morgankryze/cairn (latest + commit hash) on code
-  changes; a justfile wraps the everyday commands.
+- CI publishes ghcr.io/morgankryze/cairn: `unstable` + commit hash on every
+  code change to main, semver + `stable` + `latest` on releases; a justfile
+  wraps the everyday commands.
 
 ## 0.5.1 - 2026-07-23
 

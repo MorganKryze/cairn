@@ -43,9 +43,17 @@ Why each line holds:
 docker compose pull && docker compose up -d
 ```
 
-Images are published to `ghcr.io/morgankryze/cairn` (`latest` plus one tag
-per commit hash) only after the test suite passes inside the build. To build
-from source instead, replace `image:` with:
+Images are published to `ghcr.io/morgankryze/cairn`, always gated by the
+test suite inside the build:
+
+| Tag                   | Follows                                        |
+| --------------------- | ---------------------------------------------- |
+| `latest`, `stable`    | the newest release; what you want in production |
+| `1`, `1.0`, `1.0.0`   | semver, from the release tags; pin as tight as you like |
+| `unstable`            | every commit on `main`                         |
+| a commit hash         | that exact build                               |
+
+To build from source instead, replace `image:` with:
 
 ```yaml
     build:
