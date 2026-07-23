@@ -211,6 +211,7 @@ header .wrap {
   align-items: start;
 }
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -251,12 +252,10 @@ header .wrap {
 
 .card-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
 .card-name {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
   font-weight: 600;
   letter-spacing: -.005em;
 }
+.card.has-status .card-name { padding-right: 5rem; }
 .card-desc { color: var(--muted); font-size: .95rem; }
 
 .card-more {
@@ -276,22 +275,38 @@ header .wrap {
 
 /* ---- status dots ---- */
 
-/* Three distinct silhouettes, not hue alone (WCAG 1.4.1): solid disc = up,
-   ringed "target" = down, hollow = unknown. */
-.status {
-  width: .62rem;
-  height: .62rem;
-  flex: none;
-  border-radius: 50%;
+/* Status pill: dot + label, links to Gatus. The dot breathes like a beacon
+   when online; offline is static and marked; unknown is a neutral hollow. */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .18rem .6rem .18rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: .76rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
 }
-.status-up { background: var(--up); }
-.status-down {
-  background: var(--down);
-  box-shadow: 0 0 0 1.5px var(--card), 0 0 0 3px var(--down);
+.status-pill:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card .status-pill { position: absolute; top: .7rem; right: .7rem; z-index: 1; }
+
+.status-pill .dot { width: .55rem; height: .55rem; flex: none; border-radius: 50%; }
+.status-up .dot { background: var(--up); }
+.status-down .dot { background: var(--down); }
+.status-down { border-color: color-mix(in oklab, var(--down) 35%, var(--border)); }
+.status-unknown .dot { background: transparent; box-shadow: inset 0 0 0 1.6px var(--muted); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-up .dot { animation: beacon 2.8s cubic-bezier(.15, .6, .3, 1) infinite; }
 }
-.status-unknown {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.6px var(--muted);
+@keyframes beacon {
+  from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--up) 55%, transparent); }
+  to { box-shadow: 0 0 0 5px color-mix(in oklab, var(--up) 0%, transparent); }
 }
 
 /* ---- detail page ---- */
@@ -312,11 +327,9 @@ header .wrap {
 .detail-head .tile { width: 3.6rem; height: 3.6rem; }
 .detail-head .tile img { width: 2.3rem; height: 2.3rem; }
 .detail-head .tile svg { width: 2rem; height: 2rem; }
+.detail-title { display: flex; flex-direction: column; gap: .6rem; align-items: flex-start; }
 .detail-head h1 {
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: .55rem;
   font-family: var(--font-display);
   font-variation-settings: "opsz" 96, "SOFT" 55, "WONK" 0;
   font-weight: 470;

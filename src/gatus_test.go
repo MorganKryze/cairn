@@ -74,10 +74,13 @@ func TestStatusDots(t *testing.T) {
 	}
 	html := string(m.Pages["fr"].HTML)
 	if !strings.Contains(html, "status-up") || !strings.Contains(html, "status-down") {
-		t.Error("home missing status dots")
+		t.Error("home missing status pills")
 	}
 	if !strings.Contains(html, "En ligne") || !strings.Contains(html, "Hors ligne") {
-		t.Error("dots missing localized hidden labels")
+		t.Error("pills missing localized labels")
+	}
+	if !strings.Contains(html, `href="https://status.example.org"`) {
+		t.Error("status pill should link to gatus")
 	}
 
 	pending, err := buildModel(cfg, nil)
@@ -86,15 +89,15 @@ func TestStatusDots(t *testing.T) {
 	}
 	ph := string(pending.Pages["fr"].HTML)
 	if strings.Count(ph, "status-unknown") != 2 || !strings.Contains(ph, "Statut inconnu") {
-		t.Error("gatus configured but silent: every dot should be gray")
+		t.Error("gatus configured but silent: every pill should be unknown")
 	}
 
 	partial, err := buildModel(cfg, map[string]bool{"pdf": true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(string(partial.Pages["fr"].HTML), `class="status `) != 1 {
-		t.Error("service unknown to gatus should show no dot once gatus answered")
+	if strings.Count(string(partial.Pages["fr"].HTML), "status-pill") != 1 {
+		t.Error("service unknown to gatus should show no pill once gatus answered")
 	}
 
 	dir := writeFiles(t, map[string]string{
@@ -108,8 +111,8 @@ func TestStatusDots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(off.Pages["en"].HTML), `class="status `) {
-		t.Error("dots rendered although status.gatus is not configured")
+	if strings.Contains(string(off.Pages["en"].HTML), "status-pill") {
+		t.Error("pills rendered although status.gatus is not configured")
 	}
 }
 

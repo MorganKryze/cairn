@@ -32,7 +32,7 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Up, Down, Unknown string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link string
 }
 
 type pageView struct {
@@ -44,7 +44,7 @@ type pageView struct {
 }
 
 type cardView struct {
-	URL, Icon, Name, Desc, Tags, MoreHref, Status string
+	URL, Icon, Name, Desc, Tags, MoreHref, Status, StatusLabel, StatusHref string
 }
 
 type catView struct {
@@ -62,13 +62,22 @@ type homeView struct {
 
 type detailView struct {
 	pageView
-	Name, Desc, Icon, URL, Status string
-	Paragraphs                    []string
+	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
+	Paragraphs                                             []string
+}
+
+// statusMeta returns the localized label and the Gatus link for a status, so
+// the pill can name itself and send the visitor to the status page.
+func statusMeta(cfg *Config, loc, status string) (label, href string) {
+	if status == "" {
+		return "", ""
+	}
+	return cfg.Str(loc, "status."+status), cfg.Site.Status.Gatus
 }
 
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not
-// answered yet (boot, outage) every dot is gray; once it has, services it
-// does not monitor show no dot at all.
+// answered yet (boot, outage) every pill is unknown; once it has, services it
+// does not monitor show no pill at all.
 func statusOf(cfg *Config, statuses map[string]bool, id string) string {
 	if cfg.Site.Status.Gatus == "" {
 		return ""
@@ -107,9 +116,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				Open:              cfg.Str(loc, "detail.open"),
 				Back:              cfg.Str(loc, "detail.back"),
 				More:              cfg.Str(loc, "card.more"),
-				Up:                cfg.Str(loc, "status.up"),
-				Down:              cfg.Str(loc, "status.down"),
-				Unknown:           cfg.Str(loc, "status.unknown"),
+				Link:              cfg.Str(loc, "status.link"),
 			},
 		}
 		for _, f := range cfg.Site.Footer {
@@ -130,6 +137,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Tags:   strings.Join(s.Tags, " "),
 					Status: statusOf(cfg, statuses, s.ID),
 				}
+				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status)
 				if len(s.Details) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
 				}
@@ -154,6 +162,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Status:     statusOf(cfg, statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
 				}
+				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status)
 				dv.PageTitle = dv.Name + " — " + cfg.Site.Title
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"

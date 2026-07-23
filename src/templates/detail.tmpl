@@ -3,7 +3,10 @@
   <p><a class="back" href="/{{.Locale}}/">← {{.S.Back}}</a></p>
   <div class="detail-head">
     <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
-    <h1>{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{.S.Up}}{{else if eq .Status "down"}}{{.S.Down}}{{else}}{{.S.Unknown}}{{end}}</span></span>{{end}}</h1>
+    <div class="detail-title">
+      <h1>{{.Name}}</h1>
+      {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}} — {{.StatusLabel}} — {{.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
+    </div>
   </div>
   {{if .Desc}}<p class="lead">{{.Desc}}</p>
   {{end}}{{range .Paragraphs}}<p>{{.}}</p>
