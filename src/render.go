@@ -22,15 +22,17 @@ type Page struct {
 	ETag string
 }
 
-// Model is the immutable unit swapped atomically on config reload. Pages is
-// keyed by URL path without slashes: "fr" for a home, "fr/pdf" for a detail.
+// Model is the immutable unit swapped atomically on config reload or status
+// change. Pages is keyed by URL path without slashes: "fr" for a home,
+// "fr/pdf" for a detail. Statuses is service-id -> up, from Gatus.
 type Model struct {
-	Cfg   *Config
-	Pages map[string]Page
+	Cfg      *Config
+	Pages    map[string]Page
+	Statuses map[string]bool
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Up, Down string
 }
 
 type pageView struct {
@@ -42,7 +44,7 @@ type pageView struct {
 }
 
 type cardView struct {
-	URL, Icon, Name, Desc, Tags, MoreHref string
+	URL, Icon, Name, Desc, Tags, MoreHref, Status string
 }
 
 type catView struct {
@@ -60,12 +62,24 @@ type homeView struct {
 
 type detailView struct {
 	pageView
-	Name, Desc, Icon, URL string
-	Paragraphs            []string
-	Tags                  []string
+	Name, Desc, Icon, URL, Status string
+	Paragraphs                    []string
+	Tags                          []string
 }
 
-func buildModel(cfg *Config) (*Model, error) {
+func statusOf(statuses map[string]bool, id string) string {
+	up, ok := statuses[id]
+	switch {
+	case !ok:
+		return ""
+	case up:
+		return "up"
+	default:
+		return "down"
+	}
+}
+
+func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 	def := cfg.DefaultLocale()
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
@@ -85,6 +99,8 @@ func buildModel(cfg *Config) (*Model, error) {
 				Open:              cfg.Str(loc, "detail.open"),
 				Back:              cfg.Str(loc, "detail.back"),
 				More:              cfg.Str(loc, "card.more"),
+				Up:                cfg.Str(loc, "status.up"),
+				Down:              cfg.Str(loc, "status.down"),
 			},
 		}
 		for _, f := range cfg.Site.Footer {
@@ -98,11 +114,12 @@ func buildModel(cfg *Config) (*Model, error) {
 			cv := catView{ID: c.ID, Name: cfg.categoryName(c, loc)}
 			for _, s := range c.Services {
 				card := cardView{
-					URL:  s.URL,
-					Icon: iconURL(s.Icon),
-					Name: s.Name.Get(loc, def),
-					Desc: s.Desc.Get(loc, def),
-					Tags: strings.Join(s.Tags, " "),
+					URL:    s.URL,
+					Icon:   iconURL(s.Icon),
+					Name:   s.Name.Get(loc, def),
+					Desc:   s.Desc.Get(loc, def),
+					Tags:   strings.Join(s.Tags, " "),
+					Status: statusOf(statuses, s.ID),
 				}
 				if len(s.Details) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
@@ -125,6 +142,7 @@ func buildModel(cfg *Config) (*Model, error) {
 					Desc:       s.Desc.Get(loc, def),
 					Icon:       iconURL(s.Icon),
 					URL:        s.URL,
+					Status:     statusOf(statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
 					Tags:       s.Tags,
 				}
@@ -139,7 +157,7 @@ func buildModel(cfg *Config) (*Model, error) {
 			}
 		}
 	}
-	return &Model{Cfg: cfg, Pages: pages}, nil
+	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses}, nil
 }
 
 func render(name string, v any) (Page, error) {

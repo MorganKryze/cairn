@@ -110,7 +110,7 @@ func TestDetailPages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := buildModel(cfg)
+	m, err := buildModel(cfg, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

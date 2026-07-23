@@ -140,6 +140,16 @@ img.icon { object-fit: contain; }
   min-width: 0;
 }
 .card-name { font-weight: 600; }
+.status {
+  display: inline-block;
+  width: .55rem;
+  height: .55rem;
+  margin-left: .3rem;
+  border-radius: 50%;
+  vertical-align: baseline;
+}
+.status-up { background: #2da44e; }
+.status-down { background: #d1242f; }
 .card-desc { color: var(--muted); font-size: .92rem; }
 .empty { margin-top: 3rem; text-align: center; color: var(--muted); }
 

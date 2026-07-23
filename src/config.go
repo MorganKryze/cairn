@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"gopkg.in/yaml.v3"
@@ -66,6 +67,10 @@ type Site struct {
 	} `yaml:"theme"`
 	Footer  []FooterLink       `yaml:"footer"`
 	Strings map[string]LString `yaml:"strings"`
+	Status  struct {
+		Gatus    string `yaml:"gatus"`
+		Interval string `yaml:"interval"`
+	} `yaml:"status"`
 }
 
 type Service struct {
@@ -100,6 +105,13 @@ type Config struct {
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
 
+func (c *Config) StatusInterval() time.Duration {
+	if d, err := time.ParseDuration(c.Site.Status.Interval); err == nil && d >= 5*time.Second {
+		return d
+	}
+	return 60 * time.Second
+}
+
 var builtinStrings = map[string]map[string]string{
 	"en": {
 		"nav.skip":           "Skip to content",
@@ -111,6 +123,8 @@ var builtinStrings = map[string]map[string]string{
 		"card.more":          "Learn more",
 		"detail.open":        "Open the tool",
 		"detail.back":        "Back",
+		"status.up":          "Online",
+		"status.down":        "Offline",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -122,6 +136,8 @@ var builtinStrings = map[string]map[string]string{
 		"card.more":          "En savoir plus",
 		"detail.open":        "Ouvrir l’outil",
 		"detail.back":        "Retour",
+		"status.up":          "En ligne",
+		"status.down":        "Hors ligne",
 	},
 }
 
@@ -228,6 +244,14 @@ func loadConfig(dir string) (*Config, error) {
 	}
 	if !accentRe.MatchString(site.Theme.Accent) {
 		return nil, fmt.Errorf("config: site.yaml: theme.accent %q is not a hex color (expected e.g. \"#247b7b\")", site.Theme.Accent)
+	}
+	if g := site.Status.Gatus; g != "" && !strings.HasPrefix(g, "http://") && !strings.HasPrefix(g, "https://") {
+		return nil, fmt.Errorf("config: site.yaml: status.gatus %q is not a URL (expected e.g. https://status.example.org)", g)
+	}
+	if iv := site.Status.Interval; iv != "" {
+		if d, err := time.ParseDuration(iv); err != nil || d < 5*time.Second {
+			return nil, fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
+		}
 	}
 
 	cfg := &Config{Site: site, Categories: groupCategories(services, metas)}

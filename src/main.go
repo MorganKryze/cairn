@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"maps"
 	"net"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ func main() {
 	cfgDir := flag.String("config", "/config", "config directory")
 	assetsDir := flag.String("assets", "/assets", "optional directory served at /assets/")
 	check := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
+	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
 	flag.Parse()
 
 	if *check {
@@ -35,12 +37,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m, err := buildModel(cfg)
+	if *emit {
+		out, err := emitGatus(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(out)
+		return
+	}
+	m, err := buildModel(cfg, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	current.Store(m)
 	go watch(*cfgDir)
+	go pollStatus()
 
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(embedded, "assets")
@@ -100,13 +111,42 @@ func watch(dir string) {
 			log.Printf("reload failed, keeping previous config: %v", err)
 			continue
 		}
-		m, err := buildModel(cfg)
+		m, err := buildModel(cfg, current.Load().Statuses)
 		if err != nil {
 			log.Printf("reload failed, keeping previous config: %v", err)
 			continue
 		}
 		current.Store(m)
 		log.Printf("config reloaded: %d services, locales %v", countServices(cfg), cfg.Site.Locales)
+	}
+}
+
+// pollStatus feeds the status dots from the Gatus API, server-side only. On
+// any fetch problem the dots disappear rather than go stale.
+func pollStatus() {
+	var lastErr string
+	for {
+		m := current.Load()
+		if url := m.Cfg.Site.Status.Gatus; url != "" {
+			st, err := fetchStatuses(url)
+			if err != nil {
+				st = nil
+				if err.Error() != lastErr {
+					log.Printf("status: %v (dots hidden until gatus answers)", err)
+					lastErr = err.Error()
+				}
+			} else {
+				lastErr = ""
+			}
+			if !maps.Equal(st, m.Statuses) {
+				if next, err := buildModel(m.Cfg, st); err == nil {
+					current.Store(next)
+				} else {
+					log.Printf("status: render failed, keeping previous pages: %v", err)
+				}
+			}
+		}
+		time.Sleep(m.Cfg.StatusInterval())
 	}
 }
 
