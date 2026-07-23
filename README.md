@@ -86,13 +86,21 @@ name: { fr: Boîte à outils PDF, en: PDF toolbox }
 | `url`      | yes      | —              | `https://pdf.example.org`        |
 | `name`     | yes      | —              | `{ fr: Boîte à outils PDF, en: PDF toolbox }` |
 | `desc`     | no       | empty          | `Merge, split, compress your PDFs.` |
+| `details`  | no       | empty          | longer text; gives the card a “Learn more” detail page |
 | `category` | no       | `other`        | `documents`                      |
 | `icon`     | no       | neutral glyph  | `stirling-pdf`                   |
 | `tags`     | no       | `[]`           | `[pdf, convert]` (searchable, invisible) |
 
-Category headings derive from the id (`documents` → “Documents”), so pick ids
-that read well in your locales; per-locale category names arrive with
-`categories.yaml` in v0.2. Categories are sorted alphabetically, `other` last.
+### Categories (`categories.yaml`, optional)
+
+Without it, groups derive from the `category` ids, sorted alphabetically.
+With it, they get translated names and an explicit order:
+
+```yaml
+- id: documents
+  name: { fr: Documents, en: Documents }
+  order: 1
+```
 
 ### Site (`site.yaml`, optional)
 
@@ -132,12 +140,19 @@ Keys: `nav.skip`, `nav.languages`, `search.label`, `search.placeholder`,
 
 Services without an icon get a neutral glyph.
 
+### Theming
+
+`theme.accent` recolors the page; a `custom.css` dropped next to your YAML
+files is served last and wins — see
+[docs/configuration/theming.md](docs/configuration/theming.md).
+
 ## Pages and endpoints
 
 | Path           | What                                                        |
 | -------------- | ----------------------------------------------------------- |
 | `/`            | redirects to the visitor's language (cookie, then `Accept-Language`, then default) |
 | `/{locale}/`   | the directory, server-rendered, cached with an ETag         |
+| `/{locale}/{id}/` | per-service detail page — “when would I use this?”       |
 | `/healthz`     | returns `ok` — pair with `/cairn -healthcheck` in scratch containers |
 | `/sitemap.xml`, `/robots.txt` | for crawlers                                 |
 
@@ -146,12 +161,20 @@ small embedded script adds accent-insensitive filtering over names,
 descriptions and tags. No JavaScript, no problem — the page just shows
 everything.
 
+## Documentation
+
+The full tree lives in [docs/](docs/README.md): getting started,
+configuration ([services](docs/configuration/services.md),
+[site](docs/configuration/site.md), [theming](docs/configuration/theming.md),
+[languages](docs/configuration/i18n.md)), hardened
+[deployment](docs/deployment/docker-compose.md), recipes, an exhaustive
+[reference](docs/reference.md), an honest [comparison](docs/comparison.md)
+and a [FAQ](docs/faq.md).
+
 ## Roadmap
 
-- **v0.2** — `categories.yaml` (localized category names and order),
-  `custom.css`, per-service detail pages, full docs tree.
-- **v0.3** — optional status dots fed by a Gatus API URL, never by probing
-  from the visitor's browser.
+- **v0.3** — Gatus config emitter and optional status dots fed by a Gatus
+  API URL, never by probing from the visitor's browser.
 
 cairn is a directory, not a control panel: no auth, no widgets, no Docker
 socket, no database. If you want admin widgets and integrations,

@@ -1,0 +1,31 @@
+# cairn documentation
+
+Start here, every page is one click away.
+
+**First steps**
+
+- [Getting started](getting-started.md) — zero to a served page in five minutes.
+
+**Configuration**
+
+- [Services](configuration/services.md) — the cards: every key, defaults, examples.
+- [Site](configuration/site.md) — title, tagline, languages, footer.
+- [Theming](configuration/theming.md) — accent color, dark mode, `custom.css`.
+- [Languages](configuration/i18n.md) — locales, fallbacks, UI string overrides.
+
+**Deployment**
+
+- [Docker Compose](deployment/docker-compose.md) — the hardened reference setup.
+- [Reverse proxies](deployment/reverse-proxies.md) — Caddy, Traefik, Nginx, Pangolin.
+
+**Recipes**
+
+- [Icons](recipes/icons.md) — dashboard-icons slugs, selfh.st, your own files.
+- [Multiple files](recipes/multiple-files.md) — one YAML per category.
+- [Status page](recipes/gatus.md) — pairing cairn with Gatus.
+
+**Reference**
+
+- [Configuration reference](reference.md) — every key, flag and endpoint on one page.
+- [FAQ](faq.md)
+- [Comparison](comparison.md) — when Homer or Homepage fit better.
