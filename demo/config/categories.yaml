@@ -1,0 +1,7 @@
+- id: pages
+  name: { fr: Pages web, en: Web pages }
+  order: 1
+
+- id: tools
+  name: { fr: Outils, en: Tools }
+  order: 2

@@ -1,0 +1,11 @@
+title: cairn demo
+tagline:
+  fr: Un annuaire d'exemple, adossé à de vrais services et un vrai Gatus.
+  en: A sample directory backed by real services and a real Gatus.
+locales: [fr, en]
+status:
+  gatus: http://gatus:8080
+  interval: 10s
+footer:
+  - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
+    url: http://localhost:8081

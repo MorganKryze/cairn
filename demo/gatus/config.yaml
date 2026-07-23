@@ -1,0 +1,40 @@
+# Endpoint names match the cairn service ids — that is how the dots find
+# their service. In a real deployment, `cairn -emit-gatus` writes this file
+# for you; here the probe URLs differ (internal DNS vs published ports).
+
+storage:
+  type: memory
+
+ui:
+  title: cairn demo — status
+
+endpoints:
+  - name: welcome
+    group: pages
+    url: http://welcome:80
+    interval: 10s
+    conditions: ["[STATUS] == 200"]
+
+  - name: httpd
+    group: pages
+    url: http://httpd:80
+    interval: 10s
+    conditions: ["[STATUS] == 200"]
+
+  - name: whoami
+    group: tools
+    url: http://whoami:80
+    interval: 10s
+    conditions: ["[STATUS] == 200"]
+
+  - name: podinfo
+    group: tools
+    url: http://podinfo:9898
+    interval: 10s
+    conditions: ["[STATUS] == 200"]
+
+  - name: ghost
+    group: tools
+    url: http://ghost:80
+    interval: 10s
+    conditions: ["[STATUS] == 200"]

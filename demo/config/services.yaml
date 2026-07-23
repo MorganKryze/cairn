@@ -1,0 +1,58 @@
+# The URLs are what the *visitor's browser* opens (published on 127.0.0.1);
+# gatus/config.yaml probes the same services through the compose network.
+
+- id: welcome
+  url: http://localhost:8083
+  category: pages
+  icon: nginx
+  name: { fr: Page nginx, en: nginx page }
+  desc: { fr: La page de bienvenue du serveur web nginx., en: The nginx web server welcome page. }
+  tags: [nginx, web]
+
+- id: httpd
+  url: http://localhost:8084
+  category: pages
+  icon: apache
+  name: { fr: Page Apache, en: Apache page }
+  desc: { fr: La page de bienvenue du serveur web Apache., en: The Apache web server welcome page. }
+  tags: [apache, web]
+
+- id: whoami
+  url: http://localhost:8082
+  category: tools
+  icon: traefik
+  name: { fr: "Qui suis-je ?", en: "Who am I?" }
+  desc: { fr: Affiche ce que le serveur voit de votre requête., en: Shows what the server sees in your request. }
+  details:
+    fr: |
+      Ouvrez la page et vous verrez votre requête telle que le serveur la
+      reçoit : adresse, en-têtes, protocole. Pratique pour comprendre ce
+      qu'un site sait de vous, ou pour vérifier qu'un proxy fait son travail.
+    en: |
+      Open the page and you see your request as the server receives it:
+      address, headers, protocol. Handy to understand what a site knows
+      about you, or to check that a proxy does its job.
+  tags: [echo, debug, requête, request]
+
+- id: podinfo
+  url: http://localhost:8085
+  category: tools
+  name: { fr: Podinfo, en: Podinfo }
+  desc: { fr: Une petite application de démonstration qui dit bonjour., en: A tiny demo application that says hello. }
+  tags: [demo, go]
+
+- id: ghost
+  url: http://localhost:8086
+  category: tools
+  name: { fr: Service fantôme, en: Ghost service }
+  desc: { fr: "Volontairement éteint, pour montrer la pastille rouge.", en: "Intentionally down, to show the red dot." }
+  details:
+    fr: |
+      Ce service n'existe pas : aucun conteneur n'écoute derrière. Gatus le
+      constate et cairn affiche la pastille rouge — c'est exactement ce que
+      verraient vos visiteurs si un vrai service tombait.
+    en: |
+      This service does not exist: no container listens behind it. Gatus
+      notices and cairn shows the red dot — exactly what your visitors would
+      see if a real service went down.
+  tags: [status, down, panne]
