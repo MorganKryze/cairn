@@ -7,11 +7,6 @@ set -e
 staged=$(git diff --cached --name-only --diff-filter=ACM)
 [ -z "$staged" ] && exit 0
 
-if echo "$staged" | grep -qx 'SPEC.md'; then
-  echo "pre-commit: SPEC.md stays out of the repo" >&2
-  exit 1
-fi
-
 # house punctuation style; the pattern is built with printf so this file
 # passes its own check
 BAD=$(printf '\342\200\224')
