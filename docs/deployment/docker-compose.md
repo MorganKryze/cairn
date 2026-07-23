@@ -6,9 +6,7 @@ use them, they cost nothing here.
 ```yaml
 services:
   cairn:
-    build:
-      context: https://github.com/MorganKryze/cairn.git
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/morgankryze/cairn:latest
     ports: ["8080:8080"]
     volumes:
       - ./config:/config:ro
@@ -42,10 +40,17 @@ Why each line holds:
 ## Updating
 
 ```sh
-docker compose build --pull && docker compose up -d
+docker compose pull && docker compose up -d
 ```
 
-The image build runs cairn's test suite; a broken build never replaces a
-running container.
+Images are published to `ghcr.io/morgankryze/cairn` (`latest` plus one tag
+per commit hash) only after the test suite passes inside the build. To build
+from source instead, replace `image:` with:
+
+```yaml
+    build:
+      context: https://github.com/MorganKryze/cairn.git
+      dockerfile: docker/Dockerfile
+```
 
 Next: [Reverse proxies](reverse-proxies.md)

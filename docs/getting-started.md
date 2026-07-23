@@ -26,9 +26,7 @@ Replace the URL with one of your services. This one file is enough.
 # compose.yaml
 services:
   cairn:
-    build:
-      context: https://github.com/MorganKryze/cairn.git
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/morgankryze/cairn:latest
     ports: ["8080:8080"]
     volumes: ["./config:/config:ro"]
     read_only: true
