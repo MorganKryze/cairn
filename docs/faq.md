@@ -3,8 +3,10 @@
 **Does cairn phone home, track visitors, or call any API?**
 No. The container makes zero outbound requests, unless you explicitly
 configure `status.gatus`, in which case it polls that one URL of yours. It
-sets one cookie (the language choice). The only third-party requests are icon
-slugs, which load from jsdelivr in the visitor's browser; use
+sets at most two first-party cookies, both functional: the language choice
+(only when a visitor uses the switcher) and the dismissed welcome note (only
+if you configure `about`). The only third-party requests are icon slugs,
+which load from jsdelivr in the visitor's browser; use
 [your own files](recipes/icons.md#your-own-files) if you want none.
 
 **Does it need JavaScript?**

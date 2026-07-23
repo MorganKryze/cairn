@@ -27,5 +27,5 @@ Start here, every page is one click away.
 **Reference**
 
 - [Configuration reference](reference.md): every key, flag and endpoint on one page.
-- [FAQ](faq.md)
+- [FAQ](faq.md): tracking, JavaScript, auth, cookies, breakage.
 - [Comparison](comparison.md): when Homer or Homepage fit better.

@@ -113,6 +113,22 @@ func TestAboutAndLinkIcons(t *testing.T) {
 	}
 }
 
+func TestUnknownServiceKeyIsAnError(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A, descr: typo}\n",
+	})
+	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "descr") {
+		t.Errorf("error = %v, want a complaint naming the unknown key descr", err)
+	}
+	dir = writeFiles(t, map[string]string{
+		"categories.yaml": "- {id: docs, nam: Documents}\n",
+		"services.yaml":   "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "nam") {
+		t.Errorf("error = %v, want a complaint naming the unknown key nam", err)
+	}
+}
+
 func TestPageSections(t *testing.T) {
 	dir := writeFiles(t, map[string]string{
 		"site.yaml": "pages:\n  - id: legal\n    title: Legal\n    sections:\n" +

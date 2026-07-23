@@ -18,7 +18,7 @@ endpoints:
   - name: pdf
     group: documents
     url: https://pdf.example.org
-    interval: 5m
+    interval: 5m          # how often Gatus probes the service
     conditions:
       - '[STATUS] == 200'
 ```
@@ -65,8 +65,8 @@ How it behaves, by design:
 - The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
   talk only to cairn (and to your Gatus, if they click the pill).
 - Until Gatus has answered once (at boot, or while it is unreachable) every
-  pill reads "status unknown" (neutral) rather than stale or absent, and the
-  log says why.
+  pill reads "Unknown" (neutral) rather than stale or absent, and the log
+  says why.
 - Once Gatus answers, a service it does not monitor simply shows no pill.
 
 ## 3. Link the status page

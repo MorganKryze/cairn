@@ -8,22 +8,28 @@ Five minutes, copy-paste, no prior knowledge of cairn.
 mkdir -p cairn/config && cd cairn
 ```
 
+Save this as `config/services.yaml`:
+
 ```yaml
-# config/services.yaml
 - id: pdf
   url: https://pdf.example.org
   category: documents
   icon: stirling-pdf
-  name: { fr: Boîte à outils PDF, en: PDF toolbox }
-  desc: { fr: "Fusionner, découper, compresser vos PDF.", en: "Merge, split, compress your PDFs." }
+  name: PDF toolbox
+  desc: Merge, split, compress your PDFs.
 ```
 
-Replace the URL with one of your services. This one file is enough.
+Replace the URL with one of your services. This one file is enough. The
+`category` id becomes a group heading on the page (capitalized as-is); you
+can name and order groups later with `categories.yaml`. And every text key
+also accepts a per-locale map (`name: { fr: …, en: … }`); see
+[Languages](configuration/i18n.md).
 
 ## 2. Run it
 
+Save this as `compose.yaml`, next to the `config` folder:
+
 ```yaml
-# compose.yaml
 services:
   cairn:
     image: ghcr.io/morgankryze/cairn:latest
@@ -58,7 +64,8 @@ locales: [fr, en]
 
 Save the file: the page updates within a couple of seconds, no restart.
 Config mistakes never take the site down: the previous config keeps serving
-and the log tells you the file, the line and what was expected.
+and the log (`docker compose logs -f cairn`) tells you the file, the line
+and what was expected.
 
 ## Next
 

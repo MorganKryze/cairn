@@ -17,6 +17,7 @@ so is every key in it.
 | `footer`       | `[]`      | Links at the bottom of every page.                |
 | `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
 
 ## Full example
 
@@ -67,11 +68,15 @@ and the unknown key in the log.
 
 The header has two rows: your identity (logo, title, languages), then a
 navigation row holding the `links` on the left and the search on the right.
-Each link takes an optional `icon`: one of the built-in glyphs, drawn inline
-so they cost no external request (`book`, `chat`, `github`, `globe`,
-`heart`, `home`, `key`, `mail`, `portfolio`, `rss`, `status`, `user`), or a
-URL or `/assets` path for your own image. An unknown glyph name is a config
-error that lists the valid ones.
+
+Each link takes an optional `icon`. Name one of the built-in glyphs, drawn
+inline so they cost no external request:
+
+`book` · `chat` · `github` · `globe` · `heart` · `home` · `key` · `mail` ·
+`portfolio` · `rss` · `status` · `user`
+
+Or pass a URL or an `/assets` path for your own image. An unknown glyph name
+is a config error that lists the valid ones.
 
 ## The welcome note
 
@@ -90,9 +95,10 @@ the heading, the translatable `body` as plain-text paragraphs (blank line =
 new paragraph, no markup). Every page is linked automatically at the end of
 the footer, after your `footer` entries, in declaration order.
 
-For structured pages, add `sections`: titled blocks rendered after the body
-(which becomes an optional intro). A page needs a body or at least one
-section. The demo ships a filled-in legal notice and privacy policy built
+For structured pages, add `sections`: titled blocks rendered after the
+body. With sections present, the body becomes an optional intro; without
+them, it carries the whole page. Either way a page needs at least one of
+the two. The demo ships a filled-in legal notice and privacy policy built
 this way; copy them and replace the placeholders.
 
 ```yaml

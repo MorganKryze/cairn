@@ -38,15 +38,16 @@ file at reload keeps the previous config serving and logs the same error.
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |
 | `about`        | empty     | dismissable welcome note under the hero, text |
-| `links`        | `[]`      | header nav links, list of `{label: text, url: string, icon: glyph/URL/path}` |
+| `links`        | `[]`      | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}` |
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
-| `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: text, sections: [{title, body}]}` |
+| `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: text, sections: [{title, body}]}`; body and/or sections required |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |
 | `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 | `status.interval` | `60s`  | poll cadence, duration ≥ `5s`         |
 
-Unknown keys in `site.yaml` are errors.
+Unknown keys are errors, in `site.yaml` and in every service and category
+entry alike.
 
 ## `categories.yaml`
 

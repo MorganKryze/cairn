@@ -323,6 +323,21 @@ func loadConfig(dir string) (*Config, error) {
 	return cfg, nil
 }
 
+// strictDecode decodes a yaml node rejecting unknown fields, which
+// node.Decode cannot do on its own; a typo must be an error, not a no-op.
+func strictDecode(n *yaml.Node, out any) error {
+	b, err := yaml.Marshal(n)
+	if err != nil {
+		return err
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(b))
+	dec.KnownFields(true)
+	if err := dec.Decode(out); err != nil {
+		return fmt.Errorf("%s", strings.TrimPrefix(strings.ReplaceAll(err.Error(), "\n", " "), "yaml: unmarshal errors:  "))
+	}
+	return nil
+}
+
 func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -339,7 +354,7 @@ func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
 	seen := map[string]bool{}
 	for _, item := range root.Content {
 		var m CategoryMeta
-		if err := item.Decode(&m); err != nil {
+		if err := strictDecode(item, &m); err != nil {
 			return nil, fmt.Errorf("config: %s line %d: %v", file, item.Line, err)
 		}
 		if m.ID == "" {
@@ -369,7 +384,7 @@ func parseServices(file string, data []byte) ([]Service, error) {
 	var out []Service
 	for _, item := range root.Content {
 		var s Service
-		if err := item.Decode(&s); err != nil {
+		if err := strictDecode(item, &s); err != nil {
 			return nil, fmt.Errorf("config: %s line %d: %v", file, item.Line, err)
 		}
 		switch {

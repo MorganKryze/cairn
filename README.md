@@ -28,12 +28,12 @@ account or a manual, and boring for you to operate.
 ## What your visitors get
 
 - **A welcome note in your words**: who hosts this, for whom, how to reach
-  you. Dismissable, remembered for a year.
+  you. Dismissable, remembered for a year (a plain cookie, no tracking).
 - **Tools grouped by need**, one plain sentence each, with optional "Learn
   more" pages for the curious.
 - **Live status pills** fed by your [Gatus](https://github.com/TwiN/gatus),
-  each linking to its own endpoint page. Never polled from the visitor's
-  browser.
+  each linking to its own endpoint page. Your server polls Gatus; visitors'
+  browsers only ever talk to cairn.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
 - **Search from anywhere**: just start typing, or ⌘K. Works accent-insensitive
@@ -62,9 +62,12 @@ Two files, one command:
 - id: pdf
   url: https://pdf.example.org
   icon: stirling-pdf
-  name: { fr: Boîte à outils PDF, en: PDF toolbox }
-  desc: { fr: "Fusionner, découper, compresser vos PDF.", en: "Merge, split, compress your PDFs." }
+  name: PDF toolbox
+  desc: Merge, split, compress your PDFs.
 ```
+
+(Want two languages? `name: { fr: Boîte à outils PDF, en: PDF toolbox }`;
+every text key works both ways. See [Languages](docs/configuration/i18n.md).)
 
 ```yaml
 # compose.yaml
