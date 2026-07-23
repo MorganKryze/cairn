@@ -2,7 +2,8 @@
 
 A complete, safe, throwaway playground: cairn, a real
 [Gatus](https://github.com/TwiN/gatus), four real HTTP services and one
-intentionally dead one.
+intentionally dead one. Prefer not to run anything? cairn lives publicly at
+<https://cairn.libresoftware.cloud>.
 
 ```sh
 docker compose up -d --build    # from this folder, or `just demo` from the repo root

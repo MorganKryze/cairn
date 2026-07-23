@@ -9,7 +9,8 @@ Key facts: config lives in `/config/*.yaml` (site.yaml for the site, any
 other yaml lists services), reloads live within ~2 s, config errors name the
 file and line, unknown keys are errors. Everything user-visible is
 translatable per-locale inline. Image: ghcr.io/morgankryze/cairn
-(latest/stable = releases, unstable = main).
+(latest/stable = releases, unstable = main). Live instance:
+https://cairn.libresoftware.cloud
 
 ## Docs
 

@@ -1,6 +1,7 @@
 # cairn documentation
 
-Start here, every page is one click away.
+Start here, every page is one click away. To see cairn running before
+reading anything: <https://cairn.libresoftware.cloud>.
 
 **First steps**
 

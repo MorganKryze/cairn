@@ -95,9 +95,10 @@ Open <http://localhost:8080>: that is a finished page. Everything else
 (title, languages, categories, status, theming) is one optional key at a
 time, at your pace: follow [Getting started](docs/getting-started.md).
 
-Prefer to see it live first? The [demo stack](demo/README.md) spins up
-cairn, a real Gatus and a handful of sample services, one intentionally
-dead, in one command:
+Prefer to see it live first? A public instance runs at
+**<https://cairn.libresoftware.cloud>**, and the [demo stack](demo/README.md)
+spins up your own copy, with a real Gatus and a handful of sample services,
+one intentionally dead, in one command:
 
 ```sh
 git clone https://github.com/MorganKryze/cairn.git && cd cairn/demo
