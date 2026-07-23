@@ -113,6 +113,7 @@ With it, they get translated names and an explicit order:
 | `theme.accent` | `#247b7b`   | any hex color                            |
 | `footer`       | `[]`        | `- label: { fr: Statut, en: Status }`<br>&nbsp;&nbsp;`url: https://status.example.org` |
 | `strings`      | built-ins   | see below                                |
+| `status.gatus` | none        | Gatus URL feeding live status dots on the cards, polled server-side |
 
 ### UI strings
 
@@ -171,10 +172,16 @@ configuration ([services](docs/configuration/services.md),
 [reference](docs/reference.md), an honest [comparison](docs/comparison.md)
 and a [FAQ](docs/faq.md).
 
+## Status dots
+
+Pair cairn with [Gatus](https://github.com/TwiN/gatus): `cairn -emit-gatus`
+generates the endpoints config from your services, and `status.gatus` in
+`site.yaml` feeds green/red dots on the cards — polled by the server, never
+from the visitor's browser. See [docs/recipes/gatus.md](docs/recipes/gatus.md).
+
 ## Roadmap
 
-- **v0.3** — Gatus config emitter and optional status dots fed by a Gatus
-  API URL, never by probing from the visitor's browser.
+- A ready-to-run demo stack (cairn + Gatus + sample services).
 
 cairn is a directory, not a control panel: no auth, no widgets, no Docker
 socket, no database. If you want admin widgets and integrations,

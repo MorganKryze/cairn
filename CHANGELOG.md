@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-07-23
+
+- `cairn -emit-gatus` prints a Gatus endpoints config derived from the
+  services (endpoint name = service id, group = category).
+- Optional status dots on cards and detail pages, fed server-side from a
+  Gatus API (`status.gatus` and `status.interval` in `site.yaml`), with
+  localized accessible labels. Dots disappear instead of going stale when
+  Gatus stops answering.
+
 ## 0.2.0 — 2026-07-23
 
 - `categories.yaml`: localized category names and explicit ordering.

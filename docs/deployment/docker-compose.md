@@ -33,10 +33,11 @@ Why each line holds:
 - **`healthcheck`** — the image is `FROM scratch` (no shell, no curl), so the
   binary probes itself: `/cairn -healthcheck` hits `/healthz` and exits 0
   or 1.
-- **no network egress needed** — cairn makes zero outbound requests. If your
-  runtime supports it, an internal-only egress policy is fine; note that
-  icon *slugs* load in the visitor's browser from jsdelivr, not from the
-  container ([avoid that if you want](../recipes/icons.md#your-own-files)).
+- **no network egress needed** — cairn makes zero outbound requests, except
+  to a [`status.gatus` URL](../recipes/gatus.md) if you configure one. An
+  internal-only egress policy is fine; note that icon *slugs* load in the
+  visitor's browser from jsdelivr, not from the container
+  ([avoid that if you want](../recipes/icons.md#your-own-files)).
 
 ## Updating
 

@@ -1,10 +1,11 @@
 # FAQ
 
 **Does cairn phone home, track visitors, or call any API?**
-No. The container makes zero outbound requests and sets one cookie (the
-language choice). The only third-party requests are icon slugs, which load
-from jsdelivr in the visitor's browser — use [your own files](recipes/icons.md#your-own-files)
-if you want none.
+No. The container makes zero outbound requests — unless you explicitly
+configure `status.gatus`, in which case it polls that one URL of yours. It
+sets one cookie (the language choice). The only third-party requests are icon
+slugs, which load from jsdelivr in the visitor's browser — use
+[your own files](recipes/icons.md#your-own-files) if you want none.
 
 **Does it need JavaScript?**
 No. Pages are fully server-rendered; the only script progressively adds the
@@ -36,6 +37,7 @@ shell inside.
 Yes — the header switcher (or visiting any locale URL) sets a one-year
 cookie; `/` honors it from then on.
 
-**Where are the widgets / status dots / weather?**
-Not here, mostly on purpose — see the [comparison](comparison.md). Status
-dots fed by Gatus are on the roadmap (v0.3), server-side only.
+**Where are the widgets / weather / graphs?**
+Not here, on purpose — see the [comparison](comparison.md). The one
+exception is [status dots fed by your Gatus](recipes/gatus.md), polled
+server-side, because "is it up?" is a guest question too.
