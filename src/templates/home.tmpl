@@ -12,7 +12,13 @@
     </div>
   </div>
 </section>
-{{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
+{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
+  <ul>
+    {{range .Cats}}<li><a href="#cat-{{.ID}}"><span class="toc-mark" aria-hidden="true"></span><span class="toc-name">{{.Name}}</span></a></li>
+    {{end}}
+  </ul>
+</nav>
+{{end}}{{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
   <div class="way">
     <span class="way-mark" aria-hidden="true"></span>
     <h2 id="cat-{{.ID}}" class="way-name">{{.Name}}</h2>

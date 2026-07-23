@@ -117,6 +117,7 @@ var builtinStrings = map[string]map[string]string{
 	"en": {
 		"nav.skip":           "Skip to content",
 		"nav.languages":      "Language",
+		"nav.toc":            "Categories",
 		"search.label":       "Search",
 		"search.placeholder": "Search for a tool…",
 		"search.empty":       "No results. Try another word.",
@@ -132,6 +133,7 @@ var builtinStrings = map[string]map[string]string{
 	"fr": {
 		"nav.skip":           "Aller au contenu",
 		"nav.languages":      "Langue",
+		"nav.toc":            "Catégories",
 		"search.label":       "Rechercher",
 		"search.placeholder": "Chercher un outil…",
 		"search.empty":       "Aucun résultat. Essayez un autre mot.",

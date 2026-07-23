@@ -32,7 +32,7 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc string
 }
 
 type pageView struct {
@@ -123,6 +123,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				Back:              cfg.Str(loc, "detail.back"),
 				More:              cfg.Str(loc, "card.more"),
 				Link:              cfg.Str(loc, "status.link"),
+				Toc:               cfg.Str(loc, "nav.toc"),
 			},
 		}
 		for _, f := range cfg.Site.Footer {
