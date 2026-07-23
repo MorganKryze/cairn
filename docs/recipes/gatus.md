@@ -37,18 +37,22 @@ status:
   interval: 60s                       # optional; default 60s, minimum 5s
 ```
 
-Cards (and detail pages) get a small green or red dot with an accessible
-localized label. The matching rule is the endpoint **name == service id** —
-exactly what `-emit-gatus` produces.
+Each card (and its detail page) gets a small status pill in its top-right
+corner — a dot plus a localized label ("Online" / "Offline") — and the pill
+links to your Gatus page. The matching rule is the endpoint **name == service
+id**, exactly what `-emit-gatus` produces.
 
 How it behaves, by design:
 
+- **Online** breathes: the dot pulses slowly like a beacon. **Offline** is
+  static and outlined so it stands out. Both cues work without relying on
+  color alone, and the pulse stops under `prefers-reduced-motion`.
 - The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
-  talk only to cairn.
+  talk only to cairn (and to your Gatus, if they click the pill).
 - Until Gatus has answered once — at boot, or while it is unreachable — every
-  dot is gray ("status unknown") rather than stale or absent, and the log
-  says why.
-- Once Gatus answers, a service it does not monitor simply shows no dot.
+  pill reads "status unknown" (neutral) rather than stale or absent, and the
+  log says why.
+- Once Gatus answers, a service it does not monitor simply shows no pill.
 
 ## 3. Link the status page
 

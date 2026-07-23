@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — 2026-07-23
+
+- Per-card status moved to a labelled pill in the card's top-right corner
+  ("Online" / "Offline"), and the pill links to the Gatus status page.
+- Online pills breathe like a beacon (a slow, subtle pulse), disabled under
+  `prefers-reduced-motion`; offline is static and outlined.
+
 ## 0.5.0 — 2026-07-23
 
 - Visual identity pass: the cairn (a stack of hand-placed stones) is now the
