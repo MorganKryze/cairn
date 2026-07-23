@@ -1,0 +1,36 @@
+# cairn
+
+> Guest-first, multilingual directory page for self-hosted services. One Go
+> binary (FROM scratch, ~14 MB) renders YAML config into a server-side page
+> with live Gatus status pills, search, light/dark, and hosted legal pages.
+> No database, no tracking, no runtime dependencies.
+
+Key facts: config lives in `/config/*.yaml` (site.yaml for the site, any
+other yaml lists services), reloads live within ~2 s, config errors name the
+file and line, unknown keys are errors. Everything user-visible is
+translatable per-locale inline. Image: ghcr.io/morgankryze/cairn
+(latest/stable = releases, unstable = main).
+
+## Docs
+
+- [Getting started](docs/getting-started.md): zero to a served page in five minutes
+- [Services](docs/configuration/services.md): the cards; every key with defaults
+- [Site](docs/configuration/site.md): title, welcome note, header links, hosted legal pages, footer, credit
+- [Theming](docs/configuration/theming.md): accent, light/dark toggle, custom.css variables
+- [Languages](docs/configuration/i18n.md): locale negotiation, translatable fields, UI strings
+- [Docker Compose](docs/deployment/docker-compose.md): hardened reference setup and image tags
+- [Reverse proxies](docs/deployment/reverse-proxies.md): Caddy, Traefik, Nginx examples
+- [Status with Gatus](docs/recipes/gatus.md): -emit-gatus, polling, pill behavior
+- [Icons](docs/recipes/icons.md): slugs, URLs, self-hosted files
+- [Multiple files](docs/recipes/multiple-files.md): one YAML per category
+- [Reference](docs/reference.md): every key, flag and endpoint on one page
+- [FAQ](docs/faq.md): tracking, cookies, JavaScript, auth
+- [Comparison](docs/comparison.md): when Homer or Homepage fit better
+
+## Source
+
+- [src/](src/): one Go package; config.go (parsing, validation), render.go
+  (views, templates), main.go (HTTP, negotiation), gatus.go (status);
+  templates/ and assets/ are embedded into the binary
+- [demo/](demo/README.md): compose stack with cairn, Gatus and sample services
+- [CONTRIBUTING.md](CONTRIBUTING.md): dev loop, scope rules, commit style
