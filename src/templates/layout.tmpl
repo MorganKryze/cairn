@@ -19,7 +19,10 @@
 <a class="skip" href="#main">{{.S.Skip}}</a>
 <header><div class="wrap">
   <a class="brand" href="/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
-  <nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
+  {{if .Links}}<nav class="quick" aria-label="{{.S.LinksLabel}}">{{range .Links}}
+    <a href="{{.URL}}">{{.Label}}</a>{{end}}
+  </nav>
+  {{end}}<nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
     <a href="/{{.}}/{{$v.SwitchPath}}"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
   </nav>
 </div></header>

@@ -2,11 +2,55 @@ title: cairn demo
 tagline:
   fr: Un annuaire d'exemple, adossé à de vrais services et un vrai Gatus.
   en: A sample directory backed by real services and a real Gatus.
+logo: /static/favicon.svg           # your own image goes in /assets (see docs)
 locales: [fr, en]
 status:
   gatus: http://gatus:8080        # cairn polls this over the compose network
   page: http://localhost:8081     # the pill links visitors to the published port
   interval: 10s
+links:
+  - label: { fr: Documentation, en: Documentation }
+    url: https://github.com/MorganKryze/cairn/tree/main/docs
+  - label: Gatus
+    url: http://localhost:8081
 footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
     url: http://localhost:8081
+pages:
+  - id: mentions-legales
+    title: { fr: Mentions légales, en: Legal notice }
+    body:
+      fr: |
+        Éditeur : la démo cairn, exécutée sur votre propre machine.
+        Contact : vous-même.
+
+        Directeur de la publication : vous, également.
+
+        Hébergement : ce site est auto-hébergé — il tourne dans un
+        conteneur Docker sur la machine qui affiche cette page.
+      en: |
+        Publisher: the cairn demo, running on your own machine.
+        Contact: yourself.
+
+        Hosting: this site is self-hosted — it runs in a Docker
+        container on the machine displaying this page.
+  - id: confidentialite
+    title: { fr: Confidentialité, en: Privacy }
+    body:
+      fr: |
+        Ce site ne collecte aucune donnée personnelle et n'utilise aucun
+        traceur. Un unique cookie (langue) mémorise votre préférence ;
+        strictement fonctionnel, il est exempté de consentement.
+
+        Les icônes des services sont chargées depuis jsdelivr.net (CDN),
+        qui voit donc votre adresse IP lors du chargement de la page. La
+        documentation explique comment servir vos propres icônes pour un
+        site entièrement sans tiers.
+      en: |
+        This site collects no personal data and uses no trackers. A
+        single cookie (language) remembers your preference; strictly
+        functional, it requires no consent.
+
+        Service icons load from jsdelivr.net (CDN), which therefore sees
+        your IP address when the page loads. The documentation explains
+        how to serve your own icons for a fully third-party-free site.

@@ -57,6 +57,14 @@ type FooterLink struct {
 	URL   string  `yaml:"url"`
 }
 
+// SitePage is a page cairn serves itself (legal notice, privacy…), linked
+// automatically in the footer after the manual entries.
+type SitePage struct {
+	ID    string  `yaml:"id"`
+	Title LString `yaml:"title"`
+	Body  LString `yaml:"body"`
+}
+
 type Site struct {
 	Title   string   `yaml:"title"`
 	Tagline LString  `yaml:"tagline"`
@@ -65,7 +73,9 @@ type Site struct {
 	Theme   struct {
 		Accent string `yaml:"accent"`
 	} `yaml:"theme"`
+	Links   []FooterLink       `yaml:"links"`
 	Footer  []FooterLink       `yaml:"footer"`
+	Pages   []SitePage         `yaml:"pages"`
 	Strings map[string]LString `yaml:"strings"`
 	Status  struct {
 		Gatus    string `yaml:"gatus"`
@@ -118,6 +128,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.skip":           "Skip to content",
 		"nav.languages":      "Language",
 		"nav.toc":            "Categories",
+		"nav.links":          "Links",
 		"search.label":       "Search",
 		"search.placeholder": "Search for a tool…",
 		"search.empty":       "No results. Try another word.",
@@ -134,6 +145,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.skip":           "Aller au contenu",
 		"nav.languages":      "Langue",
 		"nav.toc":            "Catégories",
+		"nav.links":          "Liens",
 		"search.label":       "Rechercher",
 		"search.placeholder": "Chercher un outil…",
 		"search.empty":       "Aucun résultat. Essayez un autre mot.",
@@ -215,7 +227,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, footer, strings)", name, err)
+				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, links, footer, pages, strings, status)", name, err)
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -262,6 +274,25 @@ func loadConfig(dir string) (*Config, error) {
 		if d, err := time.ParseDuration(iv); err != nil || d < 5*time.Second {
 			return nil, fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
 		}
+	}
+	for _, l := range site.Links {
+		if len(l.Label) == 0 || l.URL == "" {
+			return nil, fmt.Errorf("config: site.yaml: every links entry needs label and url (expected: - {label: Wiki, url: https://…})")
+		}
+	}
+	pageIDs := map[string]bool{}
+	for _, p := range site.Pages {
+		switch {
+		case !idRe.MatchString(p.ID):
+			return nil, fmt.Errorf("config: site.yaml: invalid page id %q — ids become URLs (expected lowercase letters, digits and dashes, e.g. legal)", p.ID)
+		case len(p.Title) == 0 || len(p.Body) == 0:
+			return nil, fmt.Errorf("config: site.yaml: page %q needs title and body", p.ID)
+		case pageIDs[p.ID]:
+			return nil, fmt.Errorf("config: site.yaml: duplicate page id %q", p.ID)
+		case definedIn[p.ID] != "":
+			return nil, fmt.Errorf("config: site.yaml: page id %q collides with the service id defined in %s", p.ID, definedIn[p.ID])
+		}
+		pageIDs[p.ID] = true
 	}
 
 	cfg := &Config{Site: site, Categories: groupCategories(services, metas)}

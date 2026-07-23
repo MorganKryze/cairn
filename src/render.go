@@ -32,13 +32,14 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel string
 }
 
 type pageView struct {
 	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath string
 	CustomCSS                                                        bool
 	Locales                                                          []string
+	Links                                                            []linkView
 	Footer                                                           []linkView
 	S                                                                uiStrings
 }
@@ -64,6 +65,12 @@ type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
 	Paragraphs                                             []string
+}
+
+type staticView struct {
+	pageView
+	Title      string
+	Paragraphs []string
 }
 
 // statusMeta returns the localized label and the Gatus link for a status, so
@@ -124,10 +131,17 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				More:              cfg.Str(loc, "card.more"),
 				Link:              cfg.Str(loc, "status.link"),
 				Toc:               cfg.Str(loc, "nav.toc"),
+				LinksLabel:        cfg.Str(loc, "nav.links"),
 			},
+		}
+		for _, l := range cfg.Site.Links {
+			base.Links = append(base.Links, linkView{Label: l.Label.Get(loc, def), URL: l.URL})
 		}
 		for _, f := range cfg.Site.Footer {
 			base.Footer = append(base.Footer, linkView{Label: f.Label.Get(loc, def), URL: f.URL})
+		}
+		for _, p := range cfg.Site.Pages {
+			base.Footer = append(base.Footer, linkView{Label: p.Title.Get(loc, def), URL: "/" + loc + "/" + p.ID + "/"})
 		}
 
 		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def)}
@@ -179,6 +193,17 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				}
 				pages[loc+"/"+s.ID] = page
 			}
+		}
+
+		for _, p := range cfg.Site.Pages {
+			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Paragraphs: paragraphs(p.Body.Get(loc, def))}
+			sv.PageTitle = sv.Title + " — " + cfg.Site.Title
+			sv.SwitchPath = p.ID + "/"
+			page, err := render("page.tmpl", sv)
+			if err != nil {
+				return nil, fmt.Errorf("render /%s/%s/: %w", loc, p.ID, err)
+			}
+			pages[loc+"/"+p.ID] = page
 		}
 	}
 	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses}, nil

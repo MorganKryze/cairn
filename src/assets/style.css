@@ -74,6 +74,7 @@ header .wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 .brand {
@@ -89,6 +90,17 @@ header .wrap {
 }
 .brand img { height: 1.7rem; width: auto; }
 .hero-mark svg, .foot-mark svg { display: block; width: 100%; height: 100%; }
+
+.quick { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-left: auto; }
+.quick a {
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .16s;
+}
+.quick a:hover { color: var(--fg); }
+.quick a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 .langs { display: flex; gap: .2rem; }
 .langs a {

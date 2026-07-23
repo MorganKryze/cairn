@@ -1,0 +1,7 @@
+{{template "top" .}}
+<article class="detail">
+  <p><a class="back" href="/{{.Locale}}/">← {{.S.Back}}</a></p>
+  <h1>{{.Title}}</h1>
+  {{range .Paragraphs}}<p>{{.}}</p>
+  {{end}}</article>
+{{template "bottom" .}}
