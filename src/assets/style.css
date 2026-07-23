@@ -89,7 +89,7 @@ header .wrap {
   text-decoration: none;
 }
 .brand img { height: 1.7rem; width: auto; }
-.hero-mark svg, .foot-mark svg { display: block; width: 100%; height: 100%; }
+.foot-mark svg { display: block; width: 100%; height: 100%; }
 
 .menu {
   display: flex;
@@ -134,18 +134,11 @@ header .wrap {
 .langs a:hover { color: var(--fg); }
 .langs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ---- hero ---- */
-
-.hero {
-  text-align: center;
-  padding-block: 2.8rem 2rem;
-}
-
 /* ---- welcome note ---- */
 
 .about {
   position: relative;
-  margin: 0 0 2.4rem;
+  margin: 2.2rem 0 2.4rem;
   padding: 1.3rem 3.4rem 1.3rem 1.5rem;
   background: var(--card);
   border: 1px solid var(--border);
@@ -178,31 +171,6 @@ header .wrap {
 .about-x:hover svg, .about-x:focus-visible svg { display: none; }
 .about-x:hover span, .about-x:focus-visible span { display: inline; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.hero-mark {
-  display: block;
-  width: 3.9rem;
-  height: 3.9rem;
-  margin: 0 auto 1.3rem;
-  color: var(--accent);
-}
-.hero h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
-  font-weight: 480;
-  font-size: clamp(2.6rem, 7vw, 4.2rem);
-  line-height: 1.03;
-  letter-spacing: -.018em;
-}
-.tagline {
-  margin: 1.2rem auto 0;
-  max-width: 36rem;
-  font-size: 1.35rem;
-  line-height: 1.5;
-  color: color-mix(in oklab, var(--fg) 74%, var(--muted));
-  text-wrap: balance;
-}
-
 .search { margin-left: auto; }
 .search-box {
   display: inline-flex;
