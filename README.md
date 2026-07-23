@@ -124,6 +124,15 @@ socket, no admin UI. If the audience is _you_, the admin,
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
 
+## Colophon
+
+I'm [Morgan](https://github.com/MorganKryze): I design and maintain cairn,
+and I write it with [Claude Code](https://claude.com/claude-code), never on
+autopilot. Most of the code and documentation began as its drafts; the
+direction, the taste, the reviews and the final word stay mine, and every
+release ships tested. The work is entirely public: the tests, the CI, the
+history. Judge it on what it does.
+
 ## License
 
 Free software under [GPL-3.0](LICENSE): use it, modify it, share it. What
