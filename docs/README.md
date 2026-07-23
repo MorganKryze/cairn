@@ -9,7 +9,7 @@ Start here, every page is one click away.
 **Configuration**
 
 - [Services](configuration/services.md): the cards: every key, defaults, examples.
-- [Site](configuration/site.md): title, tagline, languages, footer.
+- [Site](configuration/site.md): title, welcome note, header links, footer, hosted legal pages.
 - [Theming](configuration/theming.md): accent color, dark mode, `custom.css`.
 - [Languages](configuration/i18n.md): locales, fallbacks, UI string overrides.
 

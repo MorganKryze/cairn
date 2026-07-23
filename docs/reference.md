@@ -75,7 +75,8 @@ ids, alphabetically.
 | --------------- | --------------------------------------------------------- |
 | `/`             | 302 to the negotiated locale (cookie → `Accept-Language` → default) |
 | `/{locale}/`    | home; server-rendered, `ETag`, `Cache-Control: no-cache`  |
-| `/{locale}/{id}/` | service detail page; same caching                       |
+| `/{locale}/{id}/` | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching |
+| `/{locale}/…?choose` | sets the one-year locale cookie, then redirects clean |
 | `/static/…`     | embedded assets, cached one day                           |
 | `/assets/…`     | your mounted files, if the mount exists                   |
 | `/custom.css`   | your stylesheet, if present                               |

@@ -50,8 +50,9 @@ The stylesheet is built on custom properties; override those first:
 | `--accent-ink` | accent tuned for text contrast (derived)   |
 | `--up`, `--down` | status dot colors                        |
 
-Anything beyond variables is regular CSS on stable class names (`.hero`,
-`.card`, `.cat`, `.way`, `.tile`, `.detail`, `.btn`, …). Keep [WCAG AA
+Anything beyond variables is regular CSS on stable class names (`.card`,
+`.cat`, `.way`, `.tile`, `.about`, `.menu`, `.toc`, `.detail`, `.btn`, …).
+Keep [WCAG AA
 contrast](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
 in mind; the defaults pass it.
 

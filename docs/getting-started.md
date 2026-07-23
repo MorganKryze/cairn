@@ -41,8 +41,8 @@ services:
 docker compose up -d
 ```
 
-Open <http://localhost:8080>. You get a finished page: hero, one category,
-one card, working search, light and dark.
+Open <http://localhost:8080>. You get a finished page: one category, one
+card, working search, light and dark.
 
 ## 3. Make it yours
 
@@ -63,5 +63,8 @@ and the log tells you the file, the line and what was expected.
 ## Next
 
 - Add more cards: [Services](configuration/services.md)
-- Name and order your groups: [Site](configuration/site.md) and the `categories.yaml` section of the [reference](reference.md#categoriesyaml)
+- Welcome your visitors and link your world: `about`, `links` and hosted
+  legal pages in [Site](configuration/site.md)
+- Name and order your groups: the `categories.yaml` section of the [reference](reference.md#categoriesyaml)
+- Show live status on the cards: [Status page with Gatus](recipes/gatus.md)
 - Put it behind your domain: [Reverse proxies](deployment/reverse-proxies.md)

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0 - 2026-07-23
+
+- Header: a second row with your navigation links (built-in inline glyph
+  icons, or your own images) and a compact search that grows on focus and
+  sleeps, grayed, on pages it cannot filter.
+- `about`: a dismissable welcome note under the header; one-year cookie,
+  hidden before first paint so it never flashes.
+- `pages`: cairn serves legal notice / privacy pages itself, with titled
+  `sections`, auto-linked at the end of the footer.
+- A category trail in the right margin follows your scroll and jumps on
+  click; entries mirror the search filter.
+- Search reachable from anywhere: type-to-search and ⌘K / Ctrl-K.
+- Cards: equal heights within a row, "Learn more" flows after the
+  description, the status pill moves to the bottom-right corner and links to
+  its own Gatus endpoint page.
+- Language: only the switcher pins the choice; until then the browser
+  language is followed on every visit.
+- Footer pinned to the viewport floor on short pages.
+- CI publishes ghcr.io/morgankryze/cairn (latest + commit hash) on code
+  changes; a justfile wraps the everyday commands.
+
 ## 0.5.1 - 2026-07-23
 
 - Per-card status moved to a labelled pill in the card's top-right corner

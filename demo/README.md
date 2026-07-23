@@ -13,10 +13,13 @@ green or red within ~20 seconds, as the bundled Gatus reports in.
 
 ## What to try
 
+- **The welcome note**: dismiss it with its corner button; a cookie keeps it
+  closed for a year (delete the `about` cookie to bring it back).
+- **Search from the keyboard**: start typing anywhere, or press ⌘K / Ctrl-K.
 - **Languages**: `/` picks your browser's language; the header switcher
   remembers your choice.
-- **Status dots**: green on the four live services, red on "Ghost service".
-  They are fed by the bundled Gatus (dashboard at
+- **Status pills**: green on the four live services, red on "Ghost service",
+  each linking to its own endpoint page on the bundled Gatus (dashboard at
   <http://localhost:8081>), polled server-side every 10 s.
 - **Detail pages**: "Who am I?" and "Ghost service" have a "Learn more"
   link.
