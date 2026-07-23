@@ -10,8 +10,9 @@ which load from jsdelivr in the visitor's browser; use
 [your own files](recipes/icons.md#your-own-files) if you want none.
 
 **Does it need JavaScript?**
-No. Pages are fully server-rendered; the only script progressively adds the
-search box. Without it, visitors simply see the whole directory.
+No. Pages are fully server-rendered; small scripts progressively add the
+search box, the category trail and the welcome note's dismiss button.
+Without them, visitors simply see the whole directory.
 
 **Can I put it behind authentication?**
 You can (any proxy auth works: Authelia, Tinyauth, basic auth), but cairn is
@@ -32,7 +33,7 @@ Headings derive from the `category` id unless you name them in
 `categories.yaml`; see the [reference](reference.md#categoriesyaml).
 
 **How big is this?**
-One ~12 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
+One ~14 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
 shell inside.
 
 **Can visitors switch language permanently?**

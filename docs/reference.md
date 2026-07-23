@@ -56,7 +56,7 @@ A list; each entry:
 | Key     | Required | Default            | Type |
 | ------- | -------- | ------------------ | ---- |
 | `id`    | yes      | n/a                | slug matching services' `category` |
-| `name`  | no       | id, capitalized    | text |
+| `name`  | no       | id, capitalized, dashes become spaces | text |
 | `order` | no       | none               | integer |
 
 ```yaml

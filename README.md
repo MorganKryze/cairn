@@ -38,8 +38,8 @@ account or a manual, and boring for you to operate.
 - **Tools grouped by need**, one plain sentence each, with optional "Learn
   more" pages for the curious.
 - **Live status pills** fed by your [Gatus](https://github.com/TwiN/gatus),
-  each linking to its own endpoint page. Your server polls Gatus; visitors'
-  browsers only ever talk to cairn.
+  each linking to its own endpoint page. Your server does the polling,
+  never the visitor's browser.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
 - **Search from anywhere**: just start typing, or ⌘K. Works accent-insensitive
@@ -92,8 +92,9 @@ Open <http://localhost:8080>: that is a finished page. Everything else
 (title, languages, categories, status, theming) is one optional key at a
 time, at your pace: follow [Getting started](docs/getting-started.md).
 
-Prefer to see it live first? The [demo stack](demo/README.md) spins up cairn,
-a real Gatus and five sample services in one command:
+Prefer to see it live first? The [demo stack](demo/README.md) spins up
+cairn, a real Gatus and a handful of sample services, one intentionally
+dead, in one command:
 
 ```sh
 git clone https://github.com/MorganKryze/cairn.git && cd cairn/demo

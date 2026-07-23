@@ -20,7 +20,8 @@ Save this as `config/services.yaml`:
 ```
 
 Replace the URL with one of your services. This one file is enough. The
-`category` id becomes a group heading on the page (capitalized as-is); you
+`category` id becomes a group heading on the page (capitalized, dashes
+turned into spaces); you
 can name and order groups later with `categories.yaml`. And every text key
 also accepts a per-locale map (`name: { fr: …, en: … }`); see
 [Languages](configuration/i18n.md).

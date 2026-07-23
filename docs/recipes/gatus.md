@@ -7,7 +7,8 @@ services itself, nor asks the visitor's browser to.
 ## 1. Generate the Gatus config
 
 The binary emits Gatus endpoints from your services: one endpoint per
-service, named after its id, grouped by category:
+service with an `http(s)` url (path-only urls are skipped), named after its
+id, grouped by category:
 
 ```sh
 docker run --rm -v ./config:/config:ro <your-cairn-image> -emit-gatus > gatus/endpoints.yaml
@@ -50,12 +51,12 @@ status:
 
 When `status.page` is omitted, the pill links to `status.gatus`.
 
-Each card (and its detail page) gets a small status pill in its top-right
-corner, a dot plus a localized label ("Online" / "Offline"), and the pill
-links straight to that endpoint's page on your Gatus
-(`…/endpoints/{group}_{name}`). The matching rule is the endpoint
-**name == service id** and **group == category**, exactly what
-`-emit-gatus` produces.
+Each card gets a small status pill in its bottom-right corner (top of the
+page on detail pages), a dot plus a localized label ("Online" /
+"Offline"), and the pill links straight to that endpoint's page on your
+Gatus (`…/endpoints/{group}_{name}`). The dot matches on endpoint
+**name == service id**; the pill's link also needs **group == category**.
+`-emit-gatus` produces both.
 
 How it behaves, by design:
 

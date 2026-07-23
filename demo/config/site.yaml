@@ -98,13 +98,15 @@ pages:
       - title: { fr: Cookies, en: Cookies }
         body:
           fr: >
-            Un unique cookie, nommé locale, mémorise la langue choisie
-            pendant un an. Strictement fonctionnel, il est exempté de
-            consentement et n'est lu par personne d'autre que ce site.
+            Deux cookies au plus, strictement fonctionnels : locale
+            mémorise la langue choisie via le sélecteur, about retient la
+            fermeture du message d'accueil. Chacun dure un an, est exempté
+            de consentement et n'est lu par personne d'autre que ce site.
           en: >
-            A single cookie, named locale, remembers your chosen language
-            for one year. Strictly functional, it is exempt from consent
-            and is read by no one but this site.
+            At most two cookies, strictly functional: locale remembers the
+            language picked with the switcher, about remembers that you
+            closed the welcome note. Each lasts one year, is exempt from
+            consent and is read by no one but this site.
       - title: { fr: Services tiers, en: Third parties }
         body:
           fr: >
