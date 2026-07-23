@@ -105,7 +105,7 @@ func TestStatusDots(t *testing.T) {
 		t.Fatal(err)
 	}
 	ph := string(pending.Pages["fr"].HTML)
-	if strings.Count(ph, "status-unknown") != 2 || !strings.Contains(ph, "Statut inconnu") {
+	if strings.Count(ph, "status-unknown") != 2 || !strings.Contains(ph, "Inconnu") {
 		t.Error("gatus configured but silent: every pill should be unknown")
 	}
 

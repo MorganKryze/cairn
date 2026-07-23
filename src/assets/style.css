@@ -231,11 +231,7 @@ header .wrap {
   align-items: flex-start;
   flex: 1;
   padding: 1.1rem;
-  text-decoration: none;
-  color: inherit;
-  border-radius: var(--radius);
 }
-.card-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .tile {
   display: grid;
@@ -250,12 +246,24 @@ header .wrap {
 .tile img { width: 1.9rem; height: 1.9rem; object-fit: contain; }
 .tile svg { width: 1.7rem; height: 1.7rem; }
 
-.card-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+.card-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; flex: 1; }
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .5rem;
+}
 .card-name {
+  min-width: 0;
   font-weight: 600;
   letter-spacing: -.005em;
+  color: inherit;
+  text-decoration: none;
 }
-.card.has-status .card-name { padding-right: 5rem; }
+/* stretched link: the whole card follows the service link, so the pill and
+   "learn more" (raised above it) stay independently clickable. */
+.card-name::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+.card:has(.card-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card-desc { color: var(--muted); font-size: .95rem; }
 
 .card-more {
@@ -263,6 +271,8 @@ header .wrap {
   align-items: center;
   gap: .3rem;
   align-self: flex-start;
+  position: relative;
+  z-index: 1;
   margin: 0 1.1rem 1rem;
   font-size: .85rem;
   font-weight: 500;
@@ -293,7 +303,7 @@ header .wrap {
 }
 .status-pill:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
 .status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.card .status-pill { position: absolute; top: .7rem; right: .7rem; z-index: 1; }
+.card .status-pill { position: relative; z-index: 1; flex: none; }
 
 .status-pill .dot { width: .55rem; height: .55rem; flex: none; border-radius: 50%; }
 .status-up .dot { background: var(--up); }

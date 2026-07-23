@@ -19,14 +19,16 @@
   </div>
   <ul class="cards">
     {{range .Cards}}<li class="card{{if .Status}} has-status{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
-      {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}} — {{.StatusLabel}} — {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>
-      {{end}}<a class="card-main" href="{{.URL}}">
+      <div class="card-main">
         <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
-        <span class="card-text">
-          <span class="card-name">{{.Name}}</span>
+        <div class="card-text">
+          <div class="card-head">
+            <a class="card-name" href="{{.URL}}">{{.Name}}</a>
+            {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}} — {{.StatusLabel}} — {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
+          </div>
           {{if .Desc}}<span class="card-desc">{{.Desc}}</span>{{end}}
-        </span>
-      </a>
+        </div>
+      </div>
       {{if .MoreHref}}<a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>
       {{end}}</li>
     {{end}}

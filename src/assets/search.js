@@ -7,7 +7,7 @@
   const norm = s => s.normalize('NFD').replace(COMBINING, '').toLowerCase();
   const cards = Array.from(document.querySelectorAll('.card'), el => {
     const main = el.querySelector('.card-main').cloneNode(true);
-    main.querySelectorAll('.visually-hidden').forEach(n => n.remove());
+    main.querySelectorAll('.visually-hidden, .status-pill').forEach(n => n.remove());
     return { el, text: norm(main.textContent + ' ' + (el.dataset.tags || '')) };
   });
   const cats = Array.from(document.querySelectorAll('.cat'));
