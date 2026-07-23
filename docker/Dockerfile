@@ -1,9 +1,10 @@
 FROM golang:1.26-alpine AS build
-WORKDIR /src
+WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /cairn .
+COPY src ./src
+RUN go vet ./... && go test ./...
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /cairn ./src
 
 FROM scratch
 COPY --from=build /cairn /cairn

@@ -1,0 +1,15 @@
+services:
+  cairn:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports: ["8080:8080"]
+    volumes: ["../example:/config:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/cairn", "-healthcheck"]
+      interval: 30s
+      start_period: 5s

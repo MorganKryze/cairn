@@ -39,7 +39,9 @@ Then run it:
 # compose.yaml
 services:
   cairn:
-    build: https://github.com/MorganKryze/cairn.git
+    build:
+      context: https://github.com/MorganKryze/cairn.git
+      dockerfile: docker/Dockerfile
     ports: ["8080:8080"]
     volumes: ["./config:/config:ro"]
     read_only: true
@@ -57,8 +59,9 @@ docker compose up -d
 Open <http://localhost:8080>. That is a finished page; everything below is
 optional.
 
-Without Docker: `go run . -config example` serves the example config from this
-repository.
+From a clone, `docker compose -f docker/compose.yaml up --build` builds the
+image (running the tests on the way) and serves the example config; without
+Docker, `go run ./src -config example` does the same.
 
 ## Configuration
 
