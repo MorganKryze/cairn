@@ -34,6 +34,7 @@ file at reload keeps the previous config serving and logs the same error.
 | -------------- | --------- | -------------------------- |
 | `title`        | `cairn`   | plain string               |
 | `tagline`      | empty     | text                       |
+| `url`          | none      | public base URL; adds canonical + hreflang, absolute sitemap |
 | `logo`         | none      | URL or `/assets/…` path    |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |

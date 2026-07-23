@@ -76,6 +76,7 @@ type PageSection struct {
 type Site struct {
 	Title   string   `yaml:"title"`
 	Tagline LString  `yaml:"tagline"`
+	URL     string   `yaml:"url"` // public base URL; enables canonical/hreflang
 	Logo    string   `yaml:"logo"`
 	Locales []string `yaml:"locales"`
 	Theme   struct {
@@ -243,7 +244,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, err)
+				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, url, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, err)
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -290,6 +291,10 @@ func loadConfig(dir string) (*Config, error) {
 		if d, err := time.ParseDuration(iv); err != nil || d < 5*time.Second {
 			return nil, fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
 		}
+	}
+	site.URL = strings.TrimSuffix(site.URL, "/")
+	if u := site.URL; u != "" && !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+		return nil, fmt.Errorf("config: site.yaml: url %q is not a URL (expected e.g. https://tools.example.org)", u)
 	}
 	for _, l := range site.Links {
 		if len(l.Label) == 0 || l.URL == "" {

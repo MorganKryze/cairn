@@ -9,6 +9,7 @@ so is every key in it.
 | -------------- | --------- | ------------------------------------------------- |
 | `title`        | `cairn`   | Site name: hero heading, header, `<title>`.       |
 | `tagline`      | empty     | One sentence under the title, translatable.       |
+| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page and absolute sitemap URLs; recommended for search engines. |
 | `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |

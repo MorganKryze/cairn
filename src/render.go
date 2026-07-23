@@ -37,7 +37,7 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath string
+	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath, Base string
 	CustomCSS, Search, Credit                                        bool
 	Locales                                                          []string
 	Links                                                            []linkView
@@ -165,6 +165,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
 			Locale:    loc,
+			Base:      cfg.Site.URL,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			SiteTitle: cfg.Site.Title,
 			Logo:      cfg.Site.Logo,

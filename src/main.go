@@ -239,6 +239,15 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write(page.HTML)
 }
 
+// siteBase prefers the configured public URL; without one it falls back to
+// what the request headers suggest.
+func siteBase(r *http.Request) string {
+	if u := current.Load().Cfg.Site.URL; u != "" {
+		return u
+	}
+	return baseURL(r)
+}
+
 func baseURL(r *http.Request) string {
 	scheme := r.Header.Get("X-Forwarded-Proto")
 	if scheme == "" {
@@ -252,7 +261,7 @@ func baseURL(r *http.Request) string {
 }
 
 func robots(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n", baseURL(r))
+	fmt.Fprintf(w, "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n", siteBase(r))
 }
 
 func sitemap(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +274,7 @@ func sitemap(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	io.WriteString(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
 	for _, k := range keys {
-		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", baseURL(r), k)
+		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", siteBase(r), k)
 	}
 	io.WriteString(w, "</urlset>\n")
 }

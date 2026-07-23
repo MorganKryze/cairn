@@ -135,6 +135,49 @@ func TestAboutAndLinkIcons(t *testing.T) {
 	}
 }
 
+func TestCanonicalAndHreflang(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"site.yaml":     "url: https://tools.example.org/\nlocales: [fr, en]\n",
+		"services.yaml": "- {id: pdf, url: https://a.example.org, name: A, details: D}\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := string(m.Pages["fr"].HTML)
+	for _, want := range []string{
+		`<link rel="canonical" href="https://tools.example.org/fr/">`,
+		`<link rel="alternate" hreflang="en" href="https://tools.example.org/en/">`,
+		`<link rel="alternate" hreflang="x-default" href="https://tools.example.org/">`,
+		`<meta property="og:url" content="https://tools.example.org/fr/">`,
+	} {
+		if !strings.Contains(home, want) {
+			t.Errorf("home missing %s", want)
+		}
+	}
+	if d := string(m.Pages["en/pdf"].HTML); !strings.Contains(d, `<link rel="canonical" href="https://tools.example.org/en/pdf/">`) {
+		t.Error("detail page canonical should carry the page path")
+	}
+
+	plain, err := loadConfig(writeFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pm, err := buildModel(plain, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(pm.Pages["en"].HTML), "canonical") {
+		t.Error("no url configured: no canonical")
+	}
+}
+
 func TestUnknownServiceKeyIsAnError(t *testing.T) {
 	dir := writeFiles(t, map[string]string{
 		"services.yaml": "- {id: a, url: https://a.example.org, name: A, descr: typo}\n",
