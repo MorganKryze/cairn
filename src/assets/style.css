@@ -275,8 +275,7 @@ header { padding-block: 1.4rem; }
   .toc {
     display: block;
     position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 8.6rem;
     left: calc(50% + var(--maxw) / 2 + 1.6rem);
     max-width: 10rem;
   }
