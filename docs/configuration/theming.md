@@ -13,8 +13,10 @@ theme:
 ```
 
 The accent colors links, focus rings, card hovers and the "Open the tool"
-button. Text stays neutral for contrast — pick any accent without breaking
-readability.
+button. Body text stays neutral, so most accents are safe — but the button
+sets white text on the accent, so pick a mid-to-dark accent (the default
+`#247b7b` gives 5:1). A very light accent would weaken that button's
+contrast.
 
 ## 2. custom.css
 
@@ -36,19 +38,29 @@ The stylesheet is built on custom properties — override those first:
 }
 ```
 
-| Variable   | Role                        |
-| ---------- | --------------------------- |
-| `--bg`     | page background             |
-| `--fg`     | text                        |
-| `--muted`  | secondary text              |
-| `--card`   | card and input background   |
-| `--border` | card and input borders      |
-| `--accent` | links, focus, buttons       |
+| Variable       | Role                                       |
+| -------------- | ------------------------------------------ |
+| `--bg`         | page background                            |
+| `--fg`         | text                                       |
+| `--muted`      | secondary text                             |
+| `--card`       | card, tile and search backgrounds          |
+| `--faint`      | icon tiles, subtle fills                   |
+| `--border`     | card, chip and input borders               |
+| `--accent`     | fills, focus rings, buttons (set by `theme.accent`) |
+| `--accent-ink` | accent tuned for text contrast (derived)   |
+| `--up`, `--down` | status dot colors                        |
 
 Anything beyond variables is regular CSS on stable class names (`.hero`,
-`.card`, `.cat`, `.detail`, `.btn`, …). Keep [WCAG AA
+`.card`, `.cat`, `.way`, `.tile`, `.detail`, `.btn`, …). Keep [WCAG AA
 contrast](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
 in mind — the defaults pass it.
+
+### Typography
+
+Headings are set in [Fraunces](https://fonts.google.com/specimen/Fraunces), a
+variable serif embedded in the binary and served locally — no external font
+request. Body text uses the system UI font. Override `--font-display` or
+`--font-body` in `custom.css` to change either.
 
 ## 3. Logo and favicon
 

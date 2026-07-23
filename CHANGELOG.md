@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — 2026-07-23
+
+- Visual identity pass: the cairn (a stack of hand-placed stones) is now the
+  brand mark, echoed in the hero and as the neutral icon fallback.
+- Headings set in Fraunces, a variable serif embedded in the binary and
+  served locally — no external font request. Body stays on the system font.
+- Category headers reworked as trail "waypoints" (marker, name, hairline,
+  count); cards get consistent icon tiles, softer depth and a clearer hover.
+- Cooler mineral palette, refined light/dark tokens, `--accent-ink` derived
+  for AA-contrast accent text; status dots redrawn (gray/green/red, each
+  distinct beyond color).
+- Subtle hero reveal on load, disabled under `prefers-reduced-motion`.
+
 ## 0.4.0 — 2026-07-23
 
 - `demo/`: a one-command playground — cairn, a real Gatus and five sample
