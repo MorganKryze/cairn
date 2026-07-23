@@ -38,6 +38,16 @@ func emitGatus(cfg *Config) ([]byte, error) {
 	return yaml.Marshal(map[string]any{"endpoints": eps})
 }
 
+// gatusKey builds the key Gatus uses in its endpoint page URLs
+// (/endpoints/{group}_{name}), mirroring its own sanitization.
+func gatusKey(group, name string) string {
+	sanitize := func(s string) string {
+		s = strings.ToLower(s)
+		return strings.NewReplacer("/", "-", "_", "-", ",", "-", ".", "-", "#", "-").Replace(s)
+	}
+	return sanitize(group) + "_" + sanitize(name)
+}
+
 // fetchStatuses asks a Gatus instance for its endpoint statuses and returns
 // service-id -> up, keyed by endpoint name.
 func fetchStatuses(base string) (map[string]bool, error) {

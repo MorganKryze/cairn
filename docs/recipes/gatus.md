@@ -52,8 +52,10 @@ When `status.page` is omitted, the pill links to `status.gatus`.
 
 Each card (and its detail page) gets a small status pill in its top-right
 corner, a dot plus a localized label ("Online" / "Offline"), and the pill
-links to your Gatus page. The matching rule is the endpoint **name == service
-id**, exactly what `-emit-gatus` produces.
+links straight to that endpoint's page on your Gatus
+(`…/endpoints/{group}_{name}`). The matching rule is the endpoint
+**name == service id** and **group == category**, exactly what
+`-emit-gatus` produces.
 
 How it behaves, by design:
 

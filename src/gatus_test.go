@@ -79,8 +79,11 @@ func TestStatusDots(t *testing.T) {
 	if !strings.Contains(html, "En ligne") || !strings.Contains(html, "Hors ligne") {
 		t.Error("pills missing localized labels")
 	}
-	if !strings.Contains(html, `href="https://status.example.org"`) {
-		t.Error("status pill should link to gatus")
+	if !strings.Contains(html, `href="https://status.example.org/endpoints/documents_pdf"`) {
+		t.Error("pdf pill should link to its own endpoint page")
+	}
+	if !strings.Contains(html, `href="https://status.example.org/endpoints/_pad"`) {
+		t.Error("uncategorized service should link to the ungrouped endpoint key")
 	}
 
 	pubDir := writeFiles(t, map[string]string{
@@ -96,7 +99,7 @@ func TestStatusDots(t *testing.T) {
 		t.Fatal(err)
 	}
 	ph2 := string(pm.Pages["en"].HTML)
-	if !strings.Contains(ph2, `href="https://status.example.org"`) || strings.Contains(ph2, "gatus:8080") {
+	if !strings.Contains(ph2, `href="https://status.example.org/endpoints/_a"`) || strings.Contains(ph2, "gatus:8080") {
 		t.Error("pill should link to status.page, not the internal poll URL")
 	}
 

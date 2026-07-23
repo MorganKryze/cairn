@@ -123,17 +123,18 @@ type sectionView struct {
 }
 
 // statusMeta returns the localized label and the Gatus link for a status, so
-// the pill can name itself and send the visitor to the status page.
-func statusMeta(cfg *Config, loc, status string) (label, href string) {
+// the pill can name itself and send the visitor to its own endpoint page.
+func statusMeta(cfg *Config, loc, status string, s Service) (label, href string) {
 	if status == "" {
 		return "", ""
 	}
 	// The pill link is for the visitor's browser, so it uses the public
 	// status.page URL; status.gatus may be an internal poll-only address.
-	href = cfg.Site.Status.Page
-	if href == "" {
-		href = cfg.Site.Status.Gatus
+	base := cfg.Site.Status.Page
+	if base == "" {
+		base = cfg.Site.Status.Gatus
 	}
+	href = strings.TrimSuffix(base, "/") + "/endpoints/" + gatusKey(s.Category, s.ID)
 	return cfg.Str(loc, "status."+status), href
 }
 
@@ -211,7 +212,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Tags:   strings.Join(s.Tags, " "),
 					Status: statusOf(cfg, statuses, s.ID),
 				}
-				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status)
+				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
 				if len(s.Details) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
 				}
@@ -236,7 +237,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Status:     statusOf(cfg, statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
 				}
-				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status)
+				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
 				dv.PageTitle = dv.Name + " · " + cfg.Site.Title
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"
