@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 — 2026-07-23
+
+- `demo/`: a one-command playground — cairn, a real Gatus and five sample
+  services (one intentionally down), everything bound to 127.0.0.1.
+
 ## 0.3.0 — 2026-07-23
 
 - `cairn -emit-gatus` prints a Gatus endpoints config derived from the

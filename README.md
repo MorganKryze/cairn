@@ -59,6 +59,9 @@ docker compose up -d
 Open <http://localhost:8080>. That is a finished page; everything below is
 optional.
 
+Prefer to see it live before writing anything? The [demo stack](demo/README.md)
+spins up cairn, a Gatus and five sample services in one command.
+
 From a clone, `docker compose -f docker/compose.yaml up --build` builds the
 image (running the tests on the way) and serves the example config; without
 Docker, `go run ./src -config example` does the same.
@@ -181,7 +184,8 @@ from the visitor's browser. See [docs/recipes/gatus.md](docs/recipes/gatus.md).
 
 ## Roadmap
 
-- A ready-to-run demo stack (cairn + Gatus + sample services).
+- Published multi-arch images on GHCR.
+- Design polish pass before the 1.0 announcement.
 
 cairn is a directory, not a control panel: no auth, no widgets, no Docker
 socket, no database. If you want admin widgets and integrations,
