@@ -17,19 +17,17 @@
     <span class="way-rule" aria-hidden="true"></span>
   </div>
   <ul class="cards">
-    {{range .Cards}}<li class="card{{if .Status}} has-status{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
+    {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
       <div class="card-main">
         <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
-          <div class="card-head">
-            <a class="card-name" href="{{.URL}}">{{.Name}}</a>
-            {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}}, {{.StatusLabel}}, {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
-          </div>
+          <a class="card-name" href="{{.URL}}">{{.Name}}</a>
           {{if .Desc}}<span class="card-desc">{{.Desc}}{{if .MoreHref}} <a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>{{end}}</span>
           {{else if .MoreHref}}<span class="card-desc"><a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a></span>{{end}}
         </div>
       </div>
-    </li>
+      {{if .Status}}<div class="card-status"><a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}}, {{.StatusLabel}}, {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a></div>
+      {{end}}</li>
     {{end}}
   </ul>
 </section>

@@ -378,11 +378,10 @@ html { scrollbar-gutter: stable; }
 .tile svg { width: 1.7rem; height: 1.7rem; }
 
 .card-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; flex: 1; }
-.card-head {
+.card-status {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: .5rem;
+  justify-content: flex-end;
+  padding: 0 .85rem .8rem;
 }
 .card-name {
   min-width: 0;
