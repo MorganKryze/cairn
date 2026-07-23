@@ -1,6 +1,6 @@
 # Docker Compose
 
-The reference setup. cairn is built for the strictest container settings —
+The reference setup. cairn is built for the strictest container settings;
 use them, they cost nothing here.
 
 ```yaml
@@ -23,15 +23,15 @@ services:
 
 Why each line holds:
 
-- **`:ro` mounts** — cairn only ever reads your files; edits still apply live
+- **`:ro` mounts**: cairn only ever reads your files; edits still apply live
   because it polls the directory every two seconds.
-- **`read_only: true`** — the container writes nothing, not even temp files.
-- **`cap_drop: ALL`** — no capabilities needed: the image runs as `nobody`
+- **`read_only: true`**: the container writes nothing, not even temp files.
+- **`cap_drop: ALL`**: no capabilities needed: the image runs as `nobody`
   (65534) on port 8080.
-- **`healthcheck`** — the image is `FROM scratch` (no shell, no curl), so the
+- **`healthcheck`**: the image is `FROM scratch` (no shell, no curl), so the
   binary probes itself: `/cairn -healthcheck` hits `/healthz` and exits 0
   or 1.
-- **no network egress needed** — cairn makes zero outbound requests, except
+- **no network egress needed**: cairn makes zero outbound requests, except
   to a [`status.gatus` URL](../recipes/gatus.md) if you configure one. An
   internal-only egress policy is fine; note that icon *slugs* load in the
   visitor's browser from jsdelivr, not from the container

@@ -31,7 +31,7 @@
         <div class="card-text">
           <div class="card-head">
             <a class="card-name" href="{{.URL}}">{{.Name}}</a>
-            {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}} — {{.StatusLabel}} — {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
+            {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}}, {{.StatusLabel}}, {{$.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
           </div>
           {{if .Desc}}<span class="card-desc">{{.Desc}}{{if .MoreHref}} <a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>{{end}}</span>
           {{else if .MoreHref}}<span class="card-desc"><a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a></span>{{end}}

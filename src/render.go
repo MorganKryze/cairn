@@ -80,7 +80,7 @@ func statusMeta(cfg *Config, loc, status string) (label, href string) {
 		return "", ""
 	}
 	// The pill link is for the visitor's browser, so it uses the public
-	// status.page URL — status.gatus may be an internal poll-only address.
+	// status.page URL; status.gatus may be an internal poll-only address.
 	href = cfg.Site.Status.Page
 	if href == "" {
 		href = cfg.Site.Status.Gatus
@@ -184,7 +184,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
 				}
 				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status)
-				dv.PageTitle = dv.Name + " — " + cfg.Site.Title
+				dv.PageTitle = dv.Name + " · " + cfg.Site.Title
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"
 				page, err := render("detail.tmpl", dv)
@@ -197,7 +197,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 
 		for _, p := range cfg.Site.Pages {
 			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Paragraphs: paragraphs(p.Body.Get(loc, def))}
-			sv.PageTitle = sv.Title + " — " + cfg.Site.Title
+			sv.PageTitle = sv.Title + " · " + cfg.Site.Title
 			sv.SwitchPath = p.ID + "/"
 			page, err := render("page.tmpl", sv)
 			if err != nil {

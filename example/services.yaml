@@ -36,11 +36,11 @@
   details:
     fr: |
       Vos photos de téléphone, sauvegardées automatiquement et retrouvables
-      par date, par lieu ou par visage — comme sur les grands services, mais
+      par date, par lieu ou par visage, comme sur les grands services, mais
       chez nous.
     en: |
       Your phone photos, backed up automatically and searchable by date,
-      place or face — like the big services, but hosted here.
+      place or face, like the big services, but hosted here.
   tags: [images, backup]
 
 - id: music

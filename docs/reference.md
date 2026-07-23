@@ -19,9 +19,9 @@ file at reload keeps the previous config serving and logs the same error.
 
 | Key        | Required | Default       | Type                    |
 | ---------- | -------- | ------------- | ----------------------- |
-| `id`       | yes      | —             | slug `[a-z0-9-]`, unique across files |
-| `url`      | yes      | —             | `http(s)://…` or absolute path |
-| `name`     | yes      | —             | text (plain or per-locale map) |
+| `id`       | yes      | n/a           | slug `[a-z0-9-]`, unique across files |
+| `url`      | yes      | n/a           | `http(s)://…` or absolute path |
+| `name`     | yes      | n/a           | text (plain or per-locale map) |
 | `desc`     | no       | empty         | text                    |
 | `details`  | no       | empty         | text; blank lines split paragraphs; enables the card's "Learn more" link |
 | `category` | no       | `other`       | slug                    |
@@ -51,7 +51,7 @@ A list; each entry:
 
 | Key     | Required | Default            | Type |
 | ------- | -------- | ------------------ | ---- |
-| `id`    | yes      | —                  | slug matching services' `category` |
+| `id`    | yes      | n/a                | slug matching services' `category` |
 | `name`  | no       | id, capitalized    | text |
 | `order` | no       | none               | integer |
 
@@ -87,7 +87,7 @@ ids, alphabetically.
 | `-addr`        | `:8080`   | listen address                             |
 | `-config`      | `/config` | config directory                           |
 | `-assets`      | `/assets` | directory served at `/assets/`, if it exists |
-| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1 — for `FROM scratch` healthchecks |
+| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks |
 | `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit |
 
 No environment variables, no other state. The binary serves HTTP on one port,

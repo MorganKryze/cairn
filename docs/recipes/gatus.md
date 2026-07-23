@@ -1,12 +1,12 @@
 # Status page (Gatus)
 
 cairn tells visitors what exists; [Gatus](https://github.com/TwiN/gatus)
-tells them what's up. cairn integrates both ways — and never probes your
+tells them what's up. cairn integrates both ways, and never probes your
 services itself, nor asks the visitor's browser to.
 
 ## 1. Generate the Gatus config
 
-The binary emits Gatus endpoints from your services — one endpoint per
+The binary emits Gatus endpoints from your services: one endpoint per
 service, named after its id, grouped by category:
 
 ```sh
@@ -37,21 +37,21 @@ status:
   interval: 60s                       # optional; default 60s, minimum 5s
 ```
 
-If cairn reaches Gatus over an internal network — for example
-`http://gatus:8080` between containers — that address will not resolve in your
+If cairn reaches Gatus over an internal network, for example
+`http://gatus:8080` between containers, that address will not resolve in your
 visitors' browsers. Set `status.page` to the public Gatus URL the pill should
 link to:
 
 ```yaml
 status:
-  gatus: http://gatus:8080           # internal — cairn polls this, server-side
-  page: https://status.example.org   # public — the pill links visitors here
+  gatus: http://gatus:8080           # internal: cairn polls this, server-side
+  page: https://status.example.org   # public: the pill links visitors here
 ```
 
 When `status.page` is omitted, the pill links to `status.gatus`.
 
 Each card (and its detail page) gets a small status pill in its top-right
-corner — a dot plus a localized label ("Online" / "Offline") — and the pill
+corner, a dot plus a localized label ("Online" / "Offline"), and the pill
 links to your Gatus page. The matching rule is the endpoint **name == service
 id**, exactly what `-emit-gatus` produces.
 
@@ -62,7 +62,7 @@ How it behaves, by design:
   color alone, and the pulse stops under `prefers-reduced-motion`.
 - The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
   talk only to cairn (and to your Gatus, if they click the pill).
-- Until Gatus has answered once — at boot, or while it is unreachable — every
+- Until Gatus has answered once (at boot, or while it is unreachable) every
   pill reads "status unknown" (neutral) rather than stale or absent, and the
   log says why.
 - Once Gatus answers, a service it does not monitor simply shows no pill.

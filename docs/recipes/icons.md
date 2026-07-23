@@ -10,8 +10,8 @@ icon: stirling-pdf
 ```
 
 A bare slug resolves against
-[homarr-labs/dashboard-icons](https://github.com/homarr-labs/dashboard-icons)
-— the convention Homepage and Homarr already use, so configs migrate as-is.
+[homarr-labs/dashboard-icons](https://github.com/homarr-labs/dashboard-icons),
+the convention Homepage and Homarr already use, so configs migrate as-is.
 Browse the catalog at <https://dashboardicons.com> to find slugs.
 
 These icons load in the *visitor's* browser from jsdelivr's CDN. The cairn
@@ -24,7 +24,7 @@ requests for your visitors too, use the `/assets` form below.
 icon: https://cdn.jsdelivr.net/gh/selfhst/icons/svg/vaultwarden.svg
 ```
 
-Any image URL works — the [selfh.st icon collection](https://selfh.st/icons/)
+Any image URL works: the [selfh.st icon collection](https://selfh.st/icons/)
 is a good second catalog.
 
 ## Your own files

@@ -284,7 +284,7 @@ func loadConfig(dir string) (*Config, error) {
 	for _, p := range site.Pages {
 		switch {
 		case !idRe.MatchString(p.ID):
-			return nil, fmt.Errorf("config: site.yaml: invalid page id %q — ids become URLs (expected lowercase letters, digits and dashes, e.g. legal)", p.ID)
+			return nil, fmt.Errorf("config: site.yaml: invalid page id %q, ids become URLs (expected lowercase letters, digits and dashes, e.g. legal)", p.ID)
 		case len(p.Title) == 0 || len(p.Body) == 0:
 			return nil, fmt.Errorf("config: site.yaml: page %q needs title and body", p.ID)
 		case pageIDs[p.ID]:
@@ -355,7 +355,7 @@ func parseServices(file string, data []byte) ([]Service, error) {
 		case s.ID == "":
 			return nil, fmt.Errorf("config: %s line %d: service missing id (expected: id: my-tool)", file, item.Line)
 		case !idRe.MatchString(s.ID):
-			return nil, fmt.Errorf("config: %s line %d: invalid id %q — ids become URLs (expected lowercase letters, digits and dashes, e.g. my-tool)", file, item.Line, s.ID)
+			return nil, fmt.Errorf("config: %s line %d: invalid id %q, ids become URLs (expected lowercase letters, digits and dashes, e.g. my-tool)", file, item.Line, s.ID)
 		case !strings.HasPrefix(s.URL, "http://") && !strings.HasPrefix(s.URL, "https://") && !strings.HasPrefix(s.URL, "/"):
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
 		case len(s.Name) == 0:

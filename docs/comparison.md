@@ -16,20 +16,20 @@ Where cairn stands apart:
 
 - **Guest-first content.** Descriptions answer "what does this do for me",
   detail pages answer "when would I use it". No uptime numbers, no CPU
-  graphs — your visitors don't run the servers.
+  graphs: your visitors don't run the servers.
 - **Structural i18n.** One config with translations inline; language
   detection, switcher, per-locale SEO. The others need one config per
   language, if that.
 - **Editorial layout.** A hero that says what the place is, typography meant
-  for reading — not a wall of tiles.
+  for reading, not a wall of tiles.
 
 Where the others win, so you don't discover it late:
 
-- cairn has **no widgets and no integrations** — it will not show download
+- cairn has **no widgets and no integrations**: it will not show download
   speeds, container states or calendar events, and that's permanent.
-- **No auth, no users, no admin UI** — config is a mounted file, the page is
+- **No auth, no users, no admin UI**: config is a mounted file, the page is
   public by design.
-- If the audience is *you*, Homer or Homepage will make you happier — admin
+- If the audience is *you*, Homer or Homepage will make you happier; admin
   dashboards are their home turf, and cairn's guest features would just be in
   your way.
 

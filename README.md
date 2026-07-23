@@ -4,7 +4,7 @@
 > before you, so you find your way without digging.
 
 cairn is a directory page for self-hosted services, written for the people you
-host them for — family, clients, friends — not for the admin who installed
+host them for (family, clients, friends), not for the admin who installed
 them. It says what this place is and what each tool does, in plain words, in
 the visitor's language.
 
@@ -69,7 +69,7 @@ Docker, `go run ./src -config example` does the same.
 cairn reads every `*.yaml` file in `/config`. `site.yaml` describes the site;
 every other file is a list of services, so one file per category works out of
 the box (files merge in name order). A config error names the file, the line,
-the problem and the expected shape — at boot it stops the server, at reload
+the problem and the expected shape: at boot it stops the server, at reload
 the previous config keeps serving.
 
 Any translatable value accepts either a plain string or a per-locale map:
@@ -83,9 +83,9 @@ name: { fr: Boîte à outils PDF, en: PDF toolbox }
 
 | Key        | Required | Default        | Example                          |
 | ---------- | -------- | -------------- | -------------------------------- |
-| `id`       | yes      | —              | `pdf` (must be unique)           |
-| `url`      | yes      | —              | `https://pdf.example.org`        |
-| `name`     | yes      | —              | `{ fr: Boîte à outils PDF, en: PDF toolbox }` |
+| `id`       | yes      | n/a            | `pdf` (must be unique)           |
+| `url`      | yes      | n/a            | `https://pdf.example.org`        |
+| `name`     | yes      | n/a            | `{ fr: Boîte à outils PDF, en: PDF toolbox }` |
 | `desc`     | no       | empty          | `Merge, split, compress your PDFs.` |
 | `details`  | no       | empty          | longer text; gives the card a “Learn more” detail page |
 | `category` | no       | `other`        | `documents`                      |
@@ -110,7 +110,7 @@ With it, they get translated names and an explicit order:
 | `title`        | `cairn`     | `Libre Internet`                         |
 | `tagline`      | empty       | `{ fr: "Des outils libres…", en: "Free tools…" }` |
 | `logo`         | none        | `/assets/logo.png` or a URL              |
-| `locales`      | `[en]`      | `[fr, en]` — first entry is the default and fallback |
+| `locales`      | `[en]`      | `[fr, en]`, first entry is the default and fallback |
 | `theme.accent` | `#247b7b`   | any hex color                            |
 | `footer`       | `[]`        | `- label: { fr: Statut, en: Status }`<br>&nbsp;&nbsp;`url: https://status.example.org` |
 | `strings`      | built-ins   | see below                                |
@@ -135,7 +135,7 @@ Keys: `nav.skip`, `nav.languages`, `search.label`, `search.placeholder`,
 `icon:` accepts three forms:
 
 - a bare slug, resolved against
-  [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) — the same
+  [dashboard-icons](https://github.com/homarr-labs/dashboard-icons); the same
   convention Homepage and Homarr use: `icon: stirling-pdf`;
 - a full URL: `icon: https://example.org/icon.svg`;
 - a path under `/assets`, an optional read-only mount of your own files:
@@ -146,7 +146,7 @@ Services without an icon get a neutral glyph.
 ### Theming
 
 `theme.accent` recolors the page; a `custom.css` dropped next to your YAML
-files is served last and wins — see
+files is served last and wins; see
 [docs/configuration/theming.md](docs/configuration/theming.md).
 
 ## Pages and endpoints
@@ -155,13 +155,13 @@ files is served last and wins — see
 | -------------- | ----------------------------------------------------------- |
 | `/`            | redirects to the visitor's language (cookie, then `Accept-Language`, then default) |
 | `/{locale}/`   | the directory, server-rendered, cached with an ETag         |
-| `/{locale}/{id}/` | per-service detail page — “when would I use this?”       |
-| `/healthz`     | returns `ok` — pair with `/cairn -healthcheck` in scratch containers |
+| `/{locale}/{id}/` | per-service detail page: “when would I use this?”       |
+| `/healthz`     | returns `ok`; pair with `/cairn -healthcheck` in scratch containers |
 | `/sitemap.xml`, `/robots.txt` | for crawlers                                 |
 
 Search is progressive enhancement: the full directory is server-rendered, a
 small embedded script adds accent-insensitive filtering over names,
-descriptions and tags. No JavaScript, no problem — the page just shows
+descriptions and tags. No JavaScript, no problem: the page just shows
 everything.
 
 ## Documentation
@@ -178,7 +178,7 @@ and a [FAQ](docs/faq.md).
 
 Pair cairn with [Gatus](https://github.com/TwiN/gatus): `cairn -emit-gatus`
 generates the endpoints config from your services, and `status.gatus` in
-`site.yaml` feeds green/red dots on the cards — polled by the server, never
+`site.yaml` feeds green/red dots on the cards, polled by the server, never
 from the visitor's browser. See [docs/recipes/gatus.md](docs/recipes/gatus.md).
 
 ## Roadmap

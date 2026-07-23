@@ -49,15 +49,15 @@
   details:
     fr: |
       Ce service n'existe pas : aucun conteneur n'écoute derrière. Gatus le
-      constate et cairn affiche la pastille rouge — c'est exactement ce que
+      constate et cairn affiche la pastille rouge : c'est exactement ce que
       verraient vos visiteurs si un vrai service tombait.
     en: |
       This service does not exist: no container listens behind it. Gatus
-      notices and cairn shows the red dot — exactly what your visitors would
+      notices and cairn shows the red dot: exactly what your visitors would
       see if a real service went down.
   tags: [status, down, panne]
 
-# The two below are plain links: no container, no Gatus endpoint — note
+# The two below are plain links: no container, no Gatus endpoint. Note
 # how cards without monitoring simply show no status pill.
 
 - id: cairn-source

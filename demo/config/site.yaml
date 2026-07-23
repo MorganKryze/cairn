@@ -26,13 +26,13 @@ pages:
 
         Directeur de la publication : vous, également.
 
-        Hébergement : ce site est auto-hébergé — il tourne dans un
+        Hébergement : ce site est auto-hébergé. Il tourne dans un
         conteneur Docker sur la machine qui affiche cette page.
       en: |
         Publisher: the cairn demo, running on your own machine.
         Contact: yourself.
 
-        Hosting: this site is self-hosted — it runs in a Docker
+        Hosting: this site is self-hosted. It runs in a Docker
         container on the machine displaying this page.
   - id: confidentialite
     title: { fr: Confidentialité, en: Privacy }

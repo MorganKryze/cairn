@@ -227,7 +227,7 @@ header .wrap {
 /* ---- category trail ---- */
 
 /* A fixed rail beside the content: one diamond per category on a vertical
-   line — waypoints on the trail. Shown only where the margin can hold it. */
+   line, waypoints on the trail. Shown only where the margin can hold it. */
 .toc { display: none; }
 @media (min-width: 88rem) {
   .toc {

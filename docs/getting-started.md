@@ -46,7 +46,7 @@ one card, working search, light and dark.
 
 ## 3. Make it yours
 
-Add `config/site.yaml` — every key optional:
+Add `config/site.yaml`, every key optional:
 
 ```yaml
 title: Libre Internet
@@ -57,7 +57,7 @@ locales: [fr, en]
 ```
 
 Save the file: the page updates within a couple of seconds, no restart.
-Config mistakes never take the site down — the previous config keeps serving
+Config mistakes never take the site down: the previous config keeps serving
 and the log tells you the file, the line and what was expected.
 
 ## Next

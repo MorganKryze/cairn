@@ -1,4 +1,4 @@
-# Endpoint names match the cairn service ids — that is how the dots find
+# Endpoint names match the cairn service ids: that is how the dots find
 # their service. In a real deployment, `cairn -emit-gatus` writes this file
 # for you; here the probe URLs differ (internal DNS vs published ports).
 
@@ -6,7 +6,7 @@ storage:
   type: memory
 
 ui:
-  title: cairn demo — status
+  title: cairn demo · status
 
 endpoints:
   - name: welcome

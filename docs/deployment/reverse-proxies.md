@@ -1,6 +1,6 @@
 # Reverse proxies
 
-cairn is a plain HTTP service on port 8080 — any proxy works with its
+cairn is a plain HTTP service on port 8080; any proxy works with its
 defaults. One detail matters: forward `X-Forwarded-Proto`, so `sitemap.xml`
 and `robots.txt` emit `https://` URLs. All the proxies below do it out of the
 box.
@@ -43,7 +43,7 @@ server {
 ## Pangolin
 
 Add a resource pointing at `http://cairn:8080` (or the host port you
-published). No special headers or path rules needed; leave authentication off
-— cairn is meant to be the public front door.
+published). No special headers or path rules needed; leave authentication off:
+cairn is meant to be the public front door.
 
 Next: [Icons](../recipes/icons.md)
