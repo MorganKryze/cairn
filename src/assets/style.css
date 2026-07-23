@@ -139,6 +139,7 @@ header { padding-block: 1.4rem; }
 
 /* ---- welcome note ---- */
 
+[data-noabout] .about { display: none; }
 .about {
   position: relative;
   margin: 2.2rem 0 2.4rem;
