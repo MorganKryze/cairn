@@ -62,6 +62,44 @@ func TestLoadConfigRejectsDuplicateIDs(t *testing.T) {
 	}
 }
 
+func TestCategoriesMetaOrderAndNames(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A, category: alpha}\n" +
+			"- {id: b, url: https://b.example.org, name: B, category: beta}\n" +
+			"- {id: c, url: https://c.example.org, name: C, category: gamma}\n" +
+			"- {id: d, url: https://d.example.org, name: D}\n",
+		"categories.yaml": "- id: gamma\n  name: {fr: Trucs, en: Stuff}\n  order: 1\n- id: beta\n  order: 2\n- id: unused\n  order: 3\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, c := range cfg.Categories {
+		ids = append(ids, c.ID)
+	}
+	if got, want := strings.Join(ids, " "), "gamma beta alpha other"; got != want {
+		t.Errorf("order = %q, want %q", got, want)
+	}
+	if got := cfg.categoryName(cfg.Categories[0], "fr"); got != "Trucs" {
+		t.Errorf("localized name = %q, want Trucs", got)
+	}
+	if got := cfg.categoryName(cfg.Categories[2], "fr"); got != "Alpha" {
+		t.Errorf("derived name = %q, want Alpha", got)
+	}
+}
+
+func TestCategoriesErrorsNameFileAndLine(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml":   "- {id: a, url: https://a.example.org, name: A}\n",
+		"categories.yaml": "- id: ok\n- name: {fr: Sans id}\n",
+	})
+	_, err := loadConfig(dir)
+	if err == nil || !strings.Contains(err.Error(), "categories.yaml line 2") || !strings.Contains(err.Error(), "missing id") {
+		t.Errorf("error = %v, want categories.yaml line 2 missing id", err)
+	}
+}
+
 func TestStrOverrideAndFallback(t *testing.T) {
 	cfg := &Config{Site: Site{
 		Locales: []string{"fr", "en"},

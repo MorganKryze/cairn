@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -79,8 +78,16 @@ type Service struct {
 	Tags     []string `yaml:"tags"`
 }
 
+type CategoryMeta struct {
+	ID    string  `yaml:"id"`
+	Name  LString `yaml:"name"`
+	Order *int    `yaml:"order"`
+}
+
 type Category struct {
 	ID       string
+	Name     LString
+	Order    *int
 	Services []Service
 }
 
@@ -129,11 +136,16 @@ func (c *Config) Str(locale, key string) string {
 	return key
 }
 
-func (c *Config) categoryName(id, locale string) string {
-	if id == "other" {
+func (c *Config) categoryName(cat Category, locale string) string {
+	if len(cat.Name) > 0 {
+		if s := cat.Name.Get(locale, c.DefaultLocale()); s != "" {
+			return s
+		}
+	}
+	if cat.ID == "other" {
 		return c.Str(locale, "cat.other")
 	}
-	name := strings.ReplaceAll(id, "-", " ")
+	name := strings.ReplaceAll(cat.ID, "-", " ")
 	r := []rune(name)
 	return string(unicode.ToUpper(r[0])) + string(r[1:])
 }
@@ -153,6 +165,7 @@ func loadConfig(dir string) (*Config, error) {
 	site.Theme.Accent = "#247b7b"
 
 	var services []Service
+	var metas []CategoryMeta
 	definedIn := map[string]string{}
 	foundServices := false
 
@@ -173,7 +186,10 @@ func loadConfig(dir string) (*Config, error) {
 				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, footer, strings)", name, err)
 			}
 		case "categories":
-			log.Printf("config: ignoring %s (categories.yaml arrives in v0.2)", name)
+			metas, err = parseCategories(name, data)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			svcs, err := parseServices(name, data)
 			if err != nil {
@@ -205,7 +221,38 @@ func loadConfig(dir string) (*Config, error) {
 		return nil, fmt.Errorf("config: site.yaml: theme.accent %q is not a hex color (expected e.g. \"#247b7b\")", site.Theme.Accent)
 	}
 
-	return &Config{Site: site, Categories: groupCategories(services)}, nil
+	return &Config{Site: site, Categories: groupCategories(services, metas)}, nil
+}
+
+func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("config: %s: %v", file, err)
+	}
+	if len(doc.Content) == 0 {
+		return nil, nil
+	}
+	root := doc.Content[0]
+	if root.Kind != yaml.SequenceNode {
+		return nil, fmt.Errorf("config: %s line %d: expected a list of categories (- id: …)", file, root.Line)
+	}
+	var out []CategoryMeta
+	seen := map[string]bool{}
+	for _, item := range root.Content {
+		var m CategoryMeta
+		if err := item.Decode(&m); err != nil {
+			return nil, fmt.Errorf("config: %s line %d: %v", file, item.Line, err)
+		}
+		if m.ID == "" {
+			return nil, fmt.Errorf("config: %s line %d: category missing id (expected: id: documents)", file, item.Line)
+		}
+		if seen[m.ID] {
+			return nil, fmt.Errorf("config: %s line %d: duplicate category id %q", file, item.Line, m.ID)
+		}
+		seen[m.ID] = true
+		out = append(out, m)
+	}
+	return out, nil
 }
 
 func parseServices(file string, data []byte) ([]Service, error) {
@@ -239,10 +286,12 @@ func parseServices(file string, data []byte) ([]Service, error) {
 	return out, nil
 }
 
-// groupCategories derives categories from the services: alphabetical, with
-// the implicit "other" bucket last. Services keep the order of their file;
-// files merge in name order.
-func groupCategories(services []Service) []Category {
+// groupCategories derives categories from the services and decorates them
+// with categories.yaml metadata. Explicitly ordered categories come first,
+// the rest are alphabetical with the implicit "other" bucket last. Services
+// keep the order of their file; files merge in name order. Categories
+// declared without services are not rendered.
+func groupCategories(services []Service, metas []CategoryMeta) []Category {
 	grouped := map[string][]Service{}
 	for _, s := range services {
 		id := s.Category
@@ -251,19 +300,33 @@ func groupCategories(services []Service) []Category {
 		}
 		grouped[id] = append(grouped[id], s)
 	}
-	ids := make([]string, 0, len(grouped))
-	for id := range grouped {
-		if id != "other" {
-			ids = append(ids, id)
+	meta := map[string]CategoryMeta{}
+	for _, m := range metas {
+		meta[m.ID] = m
+	}
+	cats := make([]Category, 0, len(grouped))
+	for id, svcs := range grouped {
+		cats = append(cats, Category{ID: id, Name: meta[id].Name, Order: meta[id].Order, Services: svcs})
+	}
+	rank := func(c Category) int {
+		switch {
+		case c.Order != nil:
+			return 0
+		case c.ID == "other":
+			return 2
+		default:
+			return 1
 		}
 	}
-	sort.Strings(ids)
-	if _, ok := grouped["other"]; ok {
-		ids = append(ids, "other")
-	}
-	cats := make([]Category, len(ids))
-	for i, id := range ids {
-		cats[i] = Category{ID: id, Services: grouped[id]}
-	}
+	sort.Slice(cats, func(i, j int) bool {
+		a, b := cats[i], cats[j]
+		if ra, rb := rank(a), rank(b); ra != rb {
+			return ra < rb
+		}
+		if a.Order != nil && b.Order != nil && *a.Order != *b.Order {
+			return *a.Order < *b.Order
+		}
+		return a.ID < b.ID
+	})
 	return cats
 }

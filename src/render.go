@@ -71,7 +71,7 @@ func buildModel(cfg *Config) (*Model, error) {
 			},
 		}
 		for _, c := range cfg.Categories {
-			cv := catView{ID: c.ID, Name: cfg.categoryName(c.ID, loc)}
+			cv := catView{ID: c.ID, Name: cfg.categoryName(c, loc)}
 			for _, s := range c.Services {
 				cv.Cards = append(cv.Cards, cardView{
 					URL:  s.URL,
