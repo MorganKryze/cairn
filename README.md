@@ -2,13 +2,16 @@
 
 # cairn
 
-**The directory page for the people you host services *for*.**
+**The directory page for the people you host services _for_.**
 
 [![Build](https://github.com/MorganKryze/cairn/actions/workflows/build.yml/badge.svg)](https://github.com/MorganKryze/cairn/actions/workflows/build.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20~14%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-yes-ff69b4)](docs/deployment/docker-compose.md)
+
+> A cairn is a small stack of stones left by hikers who walked the trail
+> before you, so you find your way without digging.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-dark.png">
@@ -17,8 +20,7 @@
 
 </div>
 
-> A cairn is a small stack of stones left by hikers who walked the trail
-> before you, so you find your way without digging.
+---
 
 Your family, your clients, your friends: they don't want a dashboard, they
 want to know what this place is, what each tool does, and whether it works
@@ -74,8 +76,8 @@ every text key works both ways. See [Languages](docs/configuration/i18n.md).)
 services:
   cairn:
     image: ghcr.io/morgankryze/cairn:latest
-    ports: ["8080:8080"]
-    volumes: ["./config:/config:ro"]
+    ports: ['8080:8080']
+    volumes: ['./config:/config:ro']
 ```
 
 ```sh
@@ -98,18 +100,18 @@ docker compose up -d --build
 
 Everything lives in [docs/](docs/README.md):
 
-|                    |                                                                    |
-| ------------------ | ------------------------------------------------------------------ |
-| **Start**          | [Getting started](docs/getting-started.md), the five-minute path   |
-| **Configure**      | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md) |
-| **Deploy**         | [Docker Compose](docs/deployment/docker-compose.md) · [Reverse proxies](docs/deployment/reverse-proxies.md) |
-| **Recipes**        | [Status page with Gatus](docs/recipes/gatus.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) |
-| **Look up**        | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md) |
+|               |                                                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Start**     | [Getting started](docs/getting-started.md), the five-minute path                                                                                                     |
+| **Configure** | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md) |
+| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Reverse proxies](docs/deployment/reverse-proxies.md)                                                          |
+| **Recipes**   | [Status page with Gatus](docs/recipes/gatus.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md)                                  |
+| **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                               |
 
 ## Not a dashboard, on purpose
 
 cairn is a directory, not a control panel: no auth, no widgets, no Docker
-socket, no admin UI. If the audience is *you*, the admin,
+socket, no admin UI. If the audience is _you_, the admin,
 [Homepage](https://github.com/gethomepage/homepage) or
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
