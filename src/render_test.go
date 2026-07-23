@@ -33,8 +33,8 @@ func TestCategoryTrail(t *testing.T) {
 	if strings.Contains(string(sm.Pages["en"].HTML), `class="toc"`) {
 		t.Error("a single category needs no trail")
 	}
-	if h := string(sm.Pages["en"].HTML); !strings.Contains(h, ">powered by cairn</a>") {
-		t.Error("footer should credit cairn even with no footer links configured")
+	if h := string(sm.Pages["en"].HTML); !strings.Contains(h, "powered by <a") || !strings.Contains(h, `>cairn</a>`) {
+		t.Error("footer should credit cairn, only the name being the link")
 	}
 
 	off := writeFiles(t, map[string]string{

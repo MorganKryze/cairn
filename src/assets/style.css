@@ -562,7 +562,9 @@ footer {
 .foot-links { display: flex; flex-wrap: wrap; gap: 1.3rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
-.powered { margin-left: auto; font-size: .82rem; opacity: .8; }
+.powered { margin-left: auto; font-size: .82rem; color: var(--muted); }
+.powered a { color: var(--accent-ink); font-weight: 500; }
+.powered a:hover, .powered a:focus-visible { color: var(--accent-ink); text-decoration: underline; }
 
 /* ---- utilities ---- */
 
