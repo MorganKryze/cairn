@@ -3,7 +3,7 @@
   <p class="back"><a href="/{{.Locale}}/">← {{.S.Back}}</a></p>
   <div class="detail-head">
     {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}
-    <h1>{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{.S.Up}}{{else}}{{.S.Down}}{{end}}</span></span>{{end}}</h1>
+    <h1>{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{.S.Up}}{{else if eq .Status "down"}}{{.S.Down}}{{else}}{{.S.Unknown}}{{end}}</span></span>{{end}}</h1>
   </div>
   {{if .Desc}}<p class="lead">{{.Desc}}</p>
   {{end}}{{range .Paragraphs}}<p>{{.}}</p>

@@ -32,7 +32,7 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Up, Down string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Up, Down, Unknown string
 }
 
 type pageView struct {
@@ -67,7 +67,16 @@ type detailView struct {
 	Tags                          []string
 }
 
-func statusOf(statuses map[string]bool, id string) string {
+// statusOf returns "", "unknown", "up" or "down". While Gatus has not
+// answered yet (boot, outage) every dot is gray; once it has, services it
+// does not monitor show no dot at all.
+func statusOf(cfg *Config, statuses map[string]bool, id string) string {
+	if cfg.Site.Status.Gatus == "" {
+		return ""
+	}
+	if len(statuses) == 0 {
+		return "unknown"
+	}
 	up, ok := statuses[id]
 	switch {
 	case !ok:
@@ -101,6 +110,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				More:              cfg.Str(loc, "card.more"),
 				Up:                cfg.Str(loc, "status.up"),
 				Down:              cfg.Str(loc, "status.down"),
+				Unknown:           cfg.Str(loc, "status.unknown"),
 			},
 		}
 		for _, f := range cfg.Site.Footer {
@@ -119,7 +129,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Name:   s.Name.Get(loc, def),
 					Desc:   s.Desc.Get(loc, def),
 					Tags:   strings.Join(s.Tags, " "),
-					Status: statusOf(statuses, s.ID),
+					Status: statusOf(cfg, statuses, s.ID),
 				}
 				if len(s.Details) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
@@ -142,7 +152,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Desc:       s.Desc.Get(loc, def),
 					Icon:       iconURL(s.Icon),
 					URL:        s.URL,
-					Status:     statusOf(statuses, s.ID),
+					Status:     statusOf(cfg, statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
 					Tags:       s.Tags,
 				}

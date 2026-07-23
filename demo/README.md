@@ -8,7 +8,8 @@ intentionally dead one.
 docker compose up -d --build
 ```
 
-Then open **<http://localhost:8080>** and give the dots ~20 seconds to turn.
+Then open **<http://localhost:8080>**. The status dots start gray and turn
+green or red within ~20 seconds, as the bundled Gatus reports in.
 
 ## What to try
 

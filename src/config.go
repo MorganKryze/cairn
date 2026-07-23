@@ -125,6 +125,7 @@ var builtinStrings = map[string]map[string]string{
 		"detail.back":        "Back",
 		"status.up":          "Online",
 		"status.down":        "Offline",
+		"status.unknown":     "Status unknown",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -138,6 +139,7 @@ var builtinStrings = map[string]map[string]string{
 		"detail.back":        "Retour",
 		"status.up":          "En ligne",
 		"status.down":        "Hors ligne",
+		"status.unknown":     "Statut inconnu",
 	},
 }
 

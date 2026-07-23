@@ -4,6 +4,8 @@
 
 - `demo/`: a one-command playground — cairn, a real Gatus and five sample
   services (one intentionally down), everything bound to 127.0.0.1.
+- Status dots start gray ("status unknown") until Gatus answers, then turn
+  green or red; they also fall back to gray during a Gatus outage.
 
 ## 0.3.0 — 2026-07-23
 

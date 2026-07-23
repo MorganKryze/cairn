@@ -14,7 +14,7 @@
       <a class="card-main" href="{{.URL}}">
         {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}
         <span class="card-text">
-          <span class="card-name">{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{$.S.Up}}{{else}}{{$.S.Down}}{{end}}</span></span>{{end}}</span>
+          <span class="card-name">{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{$.S.Up}}{{else if eq .Status "down"}}{{$.S.Down}}{{else}}{{$.S.Unknown}}{{end}}</span></span>{{end}}</span>
           {{if .Desc}}<span class="card-desc">{{.Desc}}</span>{{end}}
         </span>
       </a>

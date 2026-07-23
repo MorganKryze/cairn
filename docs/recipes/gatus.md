@@ -45,9 +45,10 @@ How it behaves, by design:
 
 - The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
   talk only to cairn.
-- A service with no matching endpoint simply shows no dot.
-- If Gatus stops answering, the dots disappear rather than go stale, and the
-  log says why.
+- Until Gatus has answered once — at boot, or while it is unreachable — every
+  dot is gray ("status unknown") rather than stale or absent, and the log
+  says why.
+- Once Gatus answers, a service it does not monitor simply shows no dot.
 
 ## 3. Link the status page
 

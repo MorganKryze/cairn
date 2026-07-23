@@ -150,6 +150,7 @@ img.icon { object-fit: contain; }
 }
 .status-up { background: #2da44e; }
 .status-down { background: #d1242f; }
+.status-unknown { background: var(--muted); opacity: .45; }
 .card-desc { color: var(--muted); font-size: .92rem; }
 .empty { margin-top: 3rem; text-align: center; color: var(--muted); }
 

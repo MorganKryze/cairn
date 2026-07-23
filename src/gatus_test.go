@@ -11,7 +11,7 @@ import (
 func testConfig(t *testing.T) *Config {
 	t.Helper()
 	dir := writeFiles(t, map[string]string{
-		"site.yaml": "locales: [fr, en]\n",
+		"site.yaml": "locales: [fr, en]\nstatus: {gatus: https://status.example.org}\n",
 		"services.yaml": "- {id: pdf, url: https://pdf.example.org, category: documents, name: PDF}\n" +
 			"- {id: pad, url: https://pad.example.org, name: Pad}\n",
 	})
@@ -79,12 +79,37 @@ func TestStatusDots(t *testing.T) {
 	if !strings.Contains(html, "En ligne") || !strings.Contains(html, "Hors ligne") {
 		t.Error("dots missing localized hidden labels")
 	}
-	bare, err := buildModel(cfg, nil)
+
+	pending, err := buildModel(cfg, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(bare.Pages["fr"].HTML), "class=\"status") {
-		t.Error("dots rendered without statuses")
+	ph := string(pending.Pages["fr"].HTML)
+	if strings.Count(ph, "status-unknown") != 2 || !strings.Contains(ph, "Statut inconnu") {
+		t.Error("gatus configured but silent: every dot should be gray")
+	}
+
+	partial, err := buildModel(cfg, map[string]bool{"pdf": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(partial.Pages["fr"].HTML), `class="status `) != 1 {
+		t.Error("service unknown to gatus should show no dot once gatus answered")
+	}
+
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: solo, url: https://solo.example.org, name: Solo}\n",
+	})
+	noGatus, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	off, err := buildModel(noGatus, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(off.Pages["en"].HTML), `class="status `) {
+		t.Error("dots rendered although status.gatus is not configured")
 	}
 }
 
