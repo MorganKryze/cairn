@@ -11,6 +11,9 @@ docker compose -f docker/compose.yaml up --build   # what CI and users get
 The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
+With [just](https://just.systems) installed, `just` lists the shortcuts:
+`test`, `build`, `demo`, `demo-rebuild`, `down`, `logs`.
+
 ## Layout
 
 ```text

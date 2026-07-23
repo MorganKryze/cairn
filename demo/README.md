@@ -5,7 +5,7 @@ A complete, safe, throwaway playground: cairn, a real
 intentionally dead one.
 
 ```sh
-docker compose up -d --build
+docker compose up -d --build    # from this folder — or `just demo` from the repo root
 ```
 
 Then open **<http://localhost:8080>**. The status dots start gray and turn
