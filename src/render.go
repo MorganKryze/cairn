@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -30,6 +31,27 @@ type Model struct {
 	Cfg      *Config
 	Pages    map[string]Page
 	Statuses map[string]bool
+	CSP      string
+}
+
+// prePaintScript must stay byte-identical to the inline script in
+// layout.tmpl: its hash is what the CSP allows. A test guards the match.
+const prePaintScript = `if(document.cookie.split('; ').includes('about=off'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
+
+func accentStyle(accent string) string { return ":root{--accent:" + accent + "}" }
+
+func cspHash(s string) string {
+	sum := sha256.Sum256([]byte(s))
+	return "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
+}
+
+// buildCSP allows exactly what the pages use: self assets, the two known
+// inline fragments by hash, and images from anywhere https (icon slugs).
+func buildCSP(cfg *Config) string {
+	return "default-src 'none'; img-src 'self' https: data:; " +
+		"style-src 'self' " + cspHash(accentStyle(cfg.Site.Theme.Accent)) + "; " +
+		"script-src 'self' " + cspHash(prePaintScript) + "; " +
+		"font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 }
 
 type uiStrings struct {
@@ -272,7 +294,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			pages[loc+"/"+p.ID] = page
 		}
 	}
-	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses}, nil
+	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses, CSP: buildCSP(cfg)}, nil
 }
 
 func render(name string, v any) (Page, error) {

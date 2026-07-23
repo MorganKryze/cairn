@@ -3,8 +3,49 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
+	"strings"
 	"testing"
 )
+
+func TestSecurityHeadersAndCSPHashes(t *testing.T) {
+	m, err := buildModel(testConfig(t), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current.Store(m)
+	rec := httptest.NewRecorder()
+	secureHeaders(http.HandlerFunc(home)).ServeHTTP(rec, httptest.NewRequest("GET", "/fr/", nil))
+	h := rec.Result().Header
+	for k, want := range map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options":        "DENY",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+	} {
+		if got := h.Get(k); got != want {
+			t.Errorf("%s = %q, want %q", k, got, want)
+		}
+	}
+	csp := h.Get("Content-Security-Policy")
+	if !strings.Contains(csp, "default-src 'none'") || !strings.Contains(csp, "frame-ancestors 'none'") {
+		t.Errorf("csp = %q, missing base directives", csp)
+	}
+
+	// the CSP only works if its hashes match the inline fragments the
+	// template actually renders; extract them and check
+	html := string(m.Pages["fr"].HTML)
+	script := regexp.MustCompile(`(?s)<script>(.*?)</script>`).FindStringSubmatch(html)
+	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(html)
+	if script == nil || style == nil {
+		t.Fatal("inline script or style not found in the rendered page")
+	}
+	if got := cspHash(script[1]); !strings.Contains(csp, got) {
+		t.Errorf("rendered inline script hashes to %s, absent from the CSP: layout.tmpl and prePaintScript diverged", got)
+	}
+	if got := cspHash(style[1]); !strings.Contains(csp, got) {
+		t.Errorf("rendered accent style hashes to %s, absent from the CSP", got)
+	}
+}
 
 func TestLocaleChoiceAndNegotiation(t *testing.T) {
 	m, err := buildModel(testConfig(t), nil) // locales: fr, en

@@ -19,6 +19,9 @@ release is out.
 
 cairn's attack surface is deliberately small: no auth, no database, no
 outbound requests except the one Gatus URL you configure, config mounted
-read-only, `FROM scratch` with no shell. Reports about the visitor-facing
+read-only, `FROM scratch` with no shell. Every response carries a strict
+`Content-Security-Policy` (inline fragments allowed by hash only) plus the
+standard hardening headers, and CI runs `govulncheck` and a Trivy image
+scan weekly. Reports about the visitor-facing
 page (XSS through config values, header handling, cache poisoning) are the
 interesting ones.

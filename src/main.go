@@ -72,7 +72,21 @@ func main() {
 	mux.HandleFunc("GET /", home)
 
 	log.Printf("cairn: %d services, locales %v, listening on %s", countServices(cfg), cfg.Site.Locales, *addr)
-	log.Fatal(http.ListenAndServe(*addr, mux))
+	log.Fatal(http.ListenAndServe(*addr, secureHeaders(mux)))
+}
+
+// secureHeaders sets the response headers a security scan would ask for.
+// The CSP whitelists exactly what the pages use; see buildCSP.
+func secureHeaders(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hd := w.Header()
+		hd.Set("X-Content-Type-Options", "nosniff")
+		hd.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		hd.Set("X-Frame-Options", "DENY")
+		hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		hd.Set("Content-Security-Policy", current.Load().CSP)
+		h.ServeHTTP(w, r)
+	})
 }
 
 func countServices(cfg *Config) int {
