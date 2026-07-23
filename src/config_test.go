@@ -100,6 +100,47 @@ func TestCategoriesErrorsNameFileAndLine(t *testing.T) {
 	}
 }
 
+func TestDetailPages(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"site.yaml": "locales: [fr, en]\n",
+		"services.yaml": "- id: pdf\n  url: https://pdf.example.org\n  name: PDF\n" +
+			"  details: {fr: \"Un.\\n\\nDeux.\", en: One.}\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"fr", "en", "fr/pdf", "en/pdf"} {
+		if _, ok := m.Pages[key]; !ok {
+			t.Errorf("missing page %q", key)
+		}
+	}
+	html := string(m.Pages["fr/pdf"].HTML)
+	if !strings.Contains(html, "<p>Un.</p>") || !strings.Contains(html, "<p>Deux.</p>") {
+		t.Errorf("details not split into paragraphs:\n%s", html)
+	}
+	if !strings.Contains(html, "Ouvrir l’outil") {
+		t.Error("detail page missing localized open button")
+	}
+	if !strings.Contains(string(m.Pages["fr"].HTML), `href="/fr/pdf/"`) {
+		t.Error("home card missing more-link to detail page")
+	}
+}
+
+func TestServiceIDValidation(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: Bad ID, url: https://a.example.org, name: A}\n",
+	})
+	_, err := loadConfig(dir)
+	if err == nil || !strings.Contains(err.Error(), "invalid id") {
+		t.Errorf("error = %v, want invalid id", err)
+	}
+}
+
 func TestCustomCSSDetection(t *testing.T) {
 	dir := writeFiles(t, map[string]string{
 		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",

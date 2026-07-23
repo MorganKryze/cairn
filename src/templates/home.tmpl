@@ -1,54 +1,27 @@
-<!doctype html>
-<html lang="{{.Locale}}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}}</title>
-{{if .Tagline}}<meta name="description" content="{{.Tagline}}">
-{{end}}<meta property="og:type" content="website">
-<meta property="og:title" content="{{.Title}}">
-{{if .Tagline}}<meta property="og:description" content="{{.Tagline}}">
-{{end}}<meta property="og:locale" content="{{.Locale}}">
-<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/style.css">
-<style>:root{--accent:{{.Accent}}}</style>
-{{if .CustomCSS}}<link rel="stylesheet" href="/custom.css">
-{{end}}</head>
-<body>
-<a class="skip" href="#main">{{.S.Skip}}</a>
-<header>
-  <div class="brand">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.Title}}</div>
-  <nav aria-label="{{.S.Languages}}">{{$cur := .Locale}}{{range .Locales}}
-    <a href="/{{.}}/"{{if eq . $cur}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
-  </nav>
-</header>
-<main id="main">
-  <section class="hero">
-    <h1>{{.Title}}</h1>
-    {{if .Tagline}}<p class="tagline">{{.Tagline}}</p>
-    {{end}}<div class="search" id="search" hidden>
-      <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
-      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
-    </div>
-  </section>
-  {{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
-    <h2 id="cat-{{.ID}}">{{.Name}}</h2>
-    <ul class="cards">
-      {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
-        <a href="{{.URL}}">
-          {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><g fill="currentColor"><rect x="11" y="4" width="10" height="6" rx="3"/><rect x="8" y="12" width="16" height="7" rx="3.5"/><rect x="5" y="21" width="22" height="8" rx="4"/></g></svg>{{end}}
-          <span class="card-text">
-            <span class="card-name">{{.Name}}</span>
-            {{if .Desc}}<span class="card-desc">{{.Desc}}</span>{{end}}
-          </span>
-        </a>
-      </li>
-      {{end}}
-    </ul>
-  </section>
-  {{end}}<p id="empty" class="empty" hidden>{{.S.SearchEmpty}}</p>
-</main>
-{{if .Footer}}<footer><nav>{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</nav></footer>
-{{end}}<script src="/static/search.js" defer></script>
-</body>
-</html>
+{{template "top" .}}
+<section class="hero">
+  <h1>{{.SiteTitle}}</h1>
+  {{if .Tagline}}<p class="tagline">{{.Tagline}}</p>
+  {{end}}<div class="search" id="search" hidden>
+    <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
+    <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
+  </div>
+</section>
+{{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
+  <h2 id="cat-{{.ID}}">{{.Name}}</h2>
+  <ul class="cards">
+    {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
+      <a class="card-main" href="{{.URL}}">
+        {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}
+        <span class="card-text">
+          <span class="card-name">{{.Name}}</span>
+          {{if .Desc}}<span class="card-desc">{{.Desc}}</span>{{end}}
+        </span>
+      </a>
+      {{if .MoreHref}}<a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>
+      {{end}}</li>
+    {{end}}
+  </ul>
+</section>
+{{end}}<p id="empty" class="empty" hidden>{{.S.SearchEmpty}}</p>
+{{template "bottom" .}}

@@ -75,6 +75,7 @@ type Service struct {
 	Icon     string   `yaml:"icon"`
 	Name     LString  `yaml:"name"`
 	Desc     LString  `yaml:"desc"`
+	Details  LString  `yaml:"details"`
 	Tags     []string `yaml:"tags"`
 }
 
@@ -107,6 +108,9 @@ var builtinStrings = map[string]map[string]string{
 		"search.placeholder": "Search for a tool…",
 		"search.empty":       "No results. Try another word.",
 		"cat.other":          "Other",
+		"card.more":          "Learn more",
+		"detail.open":        "Open the tool",
+		"detail.back":        "Back",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -115,6 +119,9 @@ var builtinStrings = map[string]map[string]string{
 		"search.placeholder": "Chercher un outil…",
 		"search.empty":       "Aucun résultat. Essayez un autre mot.",
 		"cat.other":          "Autres",
+		"card.more":          "En savoir plus",
+		"detail.open":        "Ouvrir l’outil",
+		"detail.back":        "Retour",
 	},
 }
 
@@ -154,6 +161,7 @@ func (c *Config) categoryName(cat Category, locale string) string {
 var (
 	accentRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 	localeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
+	idRe     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 )
 
 func loadConfig(dir string) (*Config, error) {
@@ -281,6 +289,8 @@ func parseServices(file string, data []byte) ([]Service, error) {
 		switch {
 		case s.ID == "":
 			return nil, fmt.Errorf("config: %s line %d: service missing id (expected: id: my-tool)", file, item.Line)
+		case !idRe.MatchString(s.ID):
+			return nil, fmt.Errorf("config: %s line %d: invalid id %q — ids become URLs (expected lowercase letters, digits and dashes, e.g. my-tool)", file, item.Line, s.ID)
 		case !strings.HasPrefix(s.URL, "http://") && !strings.HasPrefix(s.URL, "https://") && !strings.HasPrefix(s.URL, "/"):
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
 		case len(s.Name) == 0:

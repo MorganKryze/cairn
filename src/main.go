@@ -177,12 +177,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/"+loc+"/", http.StatusMovedPermanently)
 		return
 	}
-	if c, err := r.Cookie("locale"); err != nil || c.Value != loc {
-		http.SetCookie(w, &http.Cookie{Name: "locale", Value: loc, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
+	locale, _, _ := strings.Cut(loc, "/")
+	if c, err := r.Cookie("locale"); err != nil || c.Value != locale {
+		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
 	}
 	h := w.Header()
 	h.Set("Content-Type", "text/html; charset=utf-8")
-	h.Set("Content-Language", loc)
+	h.Set("Content-Language", locale)
 	h.Set("Cache-Control", "no-cache")
 	h.Set("ETag", page.ETag)
 	if r.Header.Get("If-None-Match") == page.ETag {
@@ -210,10 +211,15 @@ func robots(w http.ResponseWriter, r *http.Request) {
 
 func sitemap(w http.ResponseWriter, r *http.Request) {
 	m := current.Load()
+	keys := make([]string, 0, len(m.Pages))
+	for k := range m.Pages {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	io.WriteString(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
-	for _, l := range m.Cfg.Site.Locales {
-		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", baseURL(r), l)
+	for _, k := range keys {
+		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", baseURL(r), k)
 	}
 	io.WriteString(w, "</urlset>\n")
 }

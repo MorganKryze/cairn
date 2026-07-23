@@ -1,0 +1,13 @@
+{{template "top" .}}
+<article class="detail">
+  <p class="back"><a href="/{{.Locale}}/">← {{.S.Back}}</a></p>
+  <div class="detail-head">
+    {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}
+    <h1>{{.Name}}</h1>
+  </div>
+  {{if .Desc}}<p class="lead">{{.Desc}}</p>
+  {{end}}{{range .Paragraphs}}<p>{{.}}</p>
+  {{end}}<p><a class="btn" href="{{.URL}}">{{.S.Open}}</a></p>
+  {{if .Tags}}<ul class="chips">{{range .Tags}}<li>{{.}}</li>{{end}}</ul>
+  {{end}}</article>
+{{template "bottom" .}}

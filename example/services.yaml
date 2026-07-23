@@ -4,6 +4,19 @@
   icon: stirling-pdf
   name: { fr: Boîte à outils PDF, en: PDF toolbox }
   desc: { fr: "Fusionner, découper et compresser vos PDF.", en: "Merge, split and compress your PDFs." }
+  details:
+    fr: |
+      Vous avez reçu trois PDF à signer, un scan trop lourd pour un mail, ou
+      vingt pages à réunir en un seul fichier ? C'est l'outil qu'il vous faut.
+
+      Tout se passe dans votre navigateur : déposez vos fichiers, choisissez
+      une action, récupérez le résultat. Rien n'est conservé après coup.
+    en: |
+      Got three PDFs to sign, a scan too heavy for an email, or twenty pages
+      to merge into one file? This is the tool for that.
+
+      Drop your files, pick an action, download the result. Nothing is kept
+      afterwards.
   tags: [pdf, convertir, convert]
 
 - id: pad
@@ -20,6 +33,14 @@
   icon: immich
   name: { fr: Photothèque, en: Photo library }
   desc: { fr: Sauvegarder et retrouver vos photos., en: Back up and browse your photos. }
+  details:
+    fr: |
+      Vos photos de téléphone, sauvegardées automatiquement et retrouvables
+      par date, par lieu ou par visage — comme sur les grands services, mais
+      chez nous.
+    en: |
+      Your phone photos, backed up automatically and searchable by date,
+      place or face — like the big services, but hosted here.
   tags: [images, backup]
 
 - id: music
