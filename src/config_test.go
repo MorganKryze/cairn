@@ -100,6 +100,20 @@ func TestCategoriesErrorsNameFileAndLine(t *testing.T) {
 	}
 }
 
+func TestCustomCSSDetection(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+		"custom.css":    "body { background: pink }\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.CustomCSS {
+		t.Error("CustomCSS = false, want true")
+	}
+}
+
 func TestStrOverrideAndFallback(t *testing.T) {
 	cfg := &Config{Site: Site{
 		Locales: []string{"fr", "en"},

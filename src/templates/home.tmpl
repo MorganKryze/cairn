@@ -12,7 +12,8 @@
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css">
 <style>:root{--accent:{{.Accent}}}</style>
-</head>
+{{if .CustomCSS}}<link rel="stylesheet" href="/custom.css">
+{{end}}</head>
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
 <header>

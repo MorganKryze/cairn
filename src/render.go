@@ -45,6 +45,7 @@ type linkView struct{ Label, URL string }
 
 type homeView struct {
 	Locale, Title, Tagline, Logo, Accent string
+	CustomCSS                            bool
 	Locales                              []string
 	Cats                                 []catView
 	Footer                               []linkView
@@ -56,12 +57,13 @@ func buildModel(cfg *Config) (*Model, error) {
 	pages := make(map[string]Page, len(cfg.Site.Locales))
 	for _, loc := range cfg.Site.Locales {
 		v := homeView{
-			Locale:  loc,
-			Title:   cfg.Site.Title,
-			Tagline: cfg.Site.Tagline.Get(loc, def),
-			Logo:    cfg.Site.Logo,
-			Accent:  cfg.Site.Theme.Accent,
-			Locales: cfg.Site.Locales,
+			Locale:    loc,
+			Title:     cfg.Site.Title,
+			Tagline:   cfg.Site.Tagline.Get(loc, def),
+			Logo:      cfg.Site.Logo,
+			Accent:    cfg.Site.Theme.Accent,
+			CustomCSS: cfg.CustomCSS,
+			Locales:   cfg.Site.Locales,
 			S: uiStrings{
 				Skip:              cfg.Str(loc, "nav.skip"),
 				Languages:         cfg.Str(loc, "nav.languages"),

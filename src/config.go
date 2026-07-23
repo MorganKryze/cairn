@@ -94,6 +94,7 @@ type Category struct {
 type Config struct {
 	Site       Site
 	Categories []Category
+	CustomCSS  bool
 }
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
@@ -221,7 +222,11 @@ func loadConfig(dir string) (*Config, error) {
 		return nil, fmt.Errorf("config: site.yaml: theme.accent %q is not a hex color (expected e.g. \"#247b7b\")", site.Theme.Accent)
 	}
 
-	return &Config{Site: site, Categories: groupCategories(services, metas)}, nil
+	cfg := &Config{Site: site, Categories: groupCategories(services, metas)}
+	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
+		cfg.CustomCSS = true
+	}
+	return cfg, nil
 }
 
 func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
