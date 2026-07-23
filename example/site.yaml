@@ -1,0 +1,10 @@
+title: Libre Internet
+tagline:
+  fr: Des outils libres, simples, pour tout le monde.
+  en: Free, simple tools for everyone.
+locales: [fr, en]
+theme:
+  accent: "#247b7b"
+footer:
+  - label: { fr: Statut des services, en: Service status }
+    url: https://status.example.org

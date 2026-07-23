@@ -1,0 +1,31 @@
+- id: pdf
+  url: https://pdf.example.org
+  category: documents
+  icon: stirling-pdf
+  name: { fr: Boîte à outils PDF, en: PDF toolbox }
+  desc: { fr: "Fusionner, découper et compresser vos PDF.", en: "Merge, split and compress your PDFs." }
+  tags: [pdf, convertir, convert]
+
+- id: pad
+  url: https://pad.example.org
+  category: documents
+  icon: hedgedoc
+  name: { fr: Bloc-notes partagé, en: Shared notepad }
+  desc: { fr: "Écrire à plusieurs, en même temps.", en: "Write together, at the same time." }
+  tags: [notes, markdown]
+
+- id: photos
+  url: https://photos.example.org
+  category: photos
+  icon: immich
+  name: { fr: Photothèque, en: Photo library }
+  desc: { fr: Sauvegarder et retrouver vos photos., en: Back up and browse your photos. }
+  tags: [images, backup]
+
+- id: music
+  url: https://music.example.org
+  category: audio
+  icon: navidrome
+  name: { fr: Musique, en: Music }
+  desc: { fr: Écouter votre bibliothèque musicale partout., en: Stream your music library anywhere. }
+  tags: [audio, streaming]
