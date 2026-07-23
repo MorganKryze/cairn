@@ -179,6 +179,15 @@ header { padding-block: 1.4rem; }
   transition: width .2s ease;
 }
 .search:focus-within { width: min(19rem, 100%); }
+/* the bar renders on every page for layout parity; asleep it turns gray.
+   On the home page the script wakes it, elsewhere it stays decorative. */
+.search-box:has(input:disabled) {
+  background: var(--faint);
+  box-shadow: none;
+  opacity: .55;
+  cursor: not-allowed;
+}
+.search-box input:disabled { cursor: not-allowed; }
 .search-box {
   display: flex;
   align-items: center;
@@ -199,7 +208,7 @@ header { padding-block: 1.4rem; }
   box-shadow: var(--shadow-lift);
 }
 .search-box svg { width: 1rem; height: 1rem; color: var(--muted); flex: none; }
-#q {
+.search-box input {
   flex: 1;
   min-width: 0;
   padding: .45rem .2rem;
@@ -209,7 +218,7 @@ header { padding-block: 1.4rem; }
   font-size: .88rem;
   color: inherit;
 }
-#q:focus { outline: none; }
+.search-box input:focus { outline: none; }
 .search-kbd {
   flex: none;
   margin-right: .5rem;
@@ -319,6 +328,7 @@ header { padding-block: 1.4rem; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+html { scrollbar-gutter: stable; }
 
 /* ---- cards ---- */
 

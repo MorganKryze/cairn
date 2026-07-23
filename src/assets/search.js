@@ -1,7 +1,7 @@
 (() => {
   const input = document.getElementById('q');
   if (!input) return;
-  document.getElementById('search').hidden = false;
+  input.disabled = false;
 
   const kbd = document.querySelector('.search-kbd');
   kbd.textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';

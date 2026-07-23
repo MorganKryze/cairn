@@ -23,18 +23,24 @@
     <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
   </nav>
 </div>
-{{if or .Links .Search}}<div class="wrap menu"{{if .Links}} role="navigation" aria-label="{{.S.LinksLabel}}"{{end}}>
+<div class="wrap menu"{{if .Links}} role="navigation" aria-label="{{.S.LinksLabel}}"{{end}}>
   {{range .Links}}<a class="menu-link" href="{{.URL}}">{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
-  {{end}}{{if .Search}}<div class="search" id="search" hidden>
+  {{end}}{{if .Search}}<div class="search" id="search">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
       <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
-      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
+      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off" disabled>
       <kbd class="search-kbd" hidden>⌘K</kbd>
     </div>
   </div>
+  {{else}}<div class="search" aria-hidden="true">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      <input type="search" placeholder="{{.S.SearchPlaceholder}}" disabled tabindex="-1">
+    </div>
+  </div>
   {{end}}</div>
-{{end}}</header>
+</header>
 <main id="main"><div class="wrap">
 {{end}}
 
