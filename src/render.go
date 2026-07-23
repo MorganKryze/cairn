@@ -198,6 +198,9 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 		for _, p := range cfg.Site.Pages {
 			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Paragraphs: paragraphs(p.Body.Get(loc, def))}
 			sv.PageTitle = sv.Title + " · " + cfg.Site.Title
+			if len(sv.Paragraphs) > 0 {
+				sv.MetaDesc = sv.Paragraphs[0]
+			}
 			sv.SwitchPath = p.ID + "/"
 			page, err := render("page.tmpl", sv)
 			if err != nil {

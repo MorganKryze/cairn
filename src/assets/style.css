@@ -449,6 +449,28 @@ header .wrap {
 .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
 .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
+/* ---- hosted pages ---- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin: 1.9rem 0 1.4rem;
+}
+.page-head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 96, "SOFT" 55, "WONK" 0;
+  font-weight: 470;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -.015em;
+}
+.page p {
+  line-height: 1.75;
+  margin-block: 0 1.05rem;
+}
+.page { padding-bottom: 2.5rem; }
+
 /* ---- empty state ---- */
 
 .empty { margin: 3rem 0; text-align: center; color: var(--muted); }

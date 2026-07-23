@@ -1,7 +1,11 @@
 {{template "top" .}}
-<article class="detail">
+<article class="detail page">
   <p><a class="back" href="/{{.Locale}}/">← {{.S.Back}}</a></p>
-  <h1>{{.Title}}</h1>
+  <header class="page-head">
+    <span class="way-mark" aria-hidden="true"></span>
+    <h1>{{.Title}}</h1>
+    <span class="way-rule" aria-hidden="true"></span>
+  </header>
   {{range .Paragraphs}}<p>{{.}}</p>
   {{end}}</article>
 {{template "bottom" .}}
