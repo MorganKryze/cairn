@@ -4,7 +4,8 @@ tagline:
   en: A sample directory backed by real services and a real Gatus.
 locales: [fr, en]
 status:
-  gatus: http://gatus:8080
+  gatus: http://gatus:8080        # cairn polls this over the compose network
+  page: http://localhost:8081     # the pill links visitors to the published port
   interval: 10s
 footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }

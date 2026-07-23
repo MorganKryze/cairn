@@ -69,6 +69,7 @@ type Site struct {
 	Strings map[string]LString `yaml:"strings"`
 	Status  struct {
 		Gatus    string `yaml:"gatus"`
+		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
 	} `yaml:"status"`
 }
@@ -251,6 +252,9 @@ func loadConfig(dir string) (*Config, error) {
 	}
 	if g := site.Status.Gatus; g != "" && !strings.HasPrefix(g, "http://") && !strings.HasPrefix(g, "https://") {
 		return nil, fmt.Errorf("config: site.yaml: status.gatus %q is not a URL (expected e.g. https://status.example.org)", g)
+	}
+	if p := site.Status.Page; p != "" && !strings.HasPrefix(p, "http://") && !strings.HasPrefix(p, "https://") {
+		return nil, fmt.Errorf("config: site.yaml: status.page %q is not a URL (expected e.g. https://status.example.org)", p)
 	}
 	if iv := site.Status.Interval; iv != "" {
 		if d, err := time.ParseDuration(iv); err != nil || d < 5*time.Second {

@@ -72,7 +72,13 @@ func statusMeta(cfg *Config, loc, status string) (label, href string) {
 	if status == "" {
 		return "", ""
 	}
-	return cfg.Str(loc, "status."+status), cfg.Site.Status.Gatus
+	// The pill link is for the visitor's browser, so it uses the public
+	// status.page URL — status.gatus may be an internal poll-only address.
+	href = cfg.Site.Status.Page
+	if href == "" {
+		href = cfg.Site.Status.Gatus
+	}
+	return cfg.Str(loc, "status."+status), href
 }
 
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not

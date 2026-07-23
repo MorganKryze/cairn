@@ -83,6 +83,23 @@ func TestStatusDots(t *testing.T) {
 		t.Error("status pill should link to gatus")
 	}
 
+	pubDir := writeFiles(t, map[string]string{
+		"site.yaml":     "status: {gatus: http://gatus:8080, page: https://status.example.org}\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	pub, err := loadConfig(pubDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pm, err := buildModel(pub, map[string]bool{"a": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ph2 := string(pm.Pages["en"].HTML)
+	if !strings.Contains(ph2, `href="https://status.example.org"`) || strings.Contains(ph2, "gatus:8080") {
+		t.Error("pill should link to status.page, not the internal poll URL")
+	}
+
 	pending, err := buildModel(cfg, nil)
 	if err != nil {
 		t.Fatal(err)
