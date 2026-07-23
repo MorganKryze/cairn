@@ -1,18 +1,26 @@
 {{template "top" .}}
 <section class="hero">
+  <span class="hero-mark">{{template "glyph"}}</span>
   <h1>{{.SiteTitle}}</h1>
   {{if .Tagline}}<p class="tagline">{{.Tagline}}</p>
   {{end}}<div class="search" id="search" hidden>
-    <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
-    <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
+      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
+    </div>
   </div>
 </section>
 {{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
-  <h2 id="cat-{{.ID}}">{{.Name}}</h2>
+  <div class="way">
+    <span class="way-mark" aria-hidden="true"></span>
+    <h2 id="cat-{{.ID}}" class="way-name">{{.Name}}</h2>
+    <span class="way-rule" aria-hidden="true"></span>
+  </div>
   <ul class="cards">
     {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
       <a class="card-main" href="{{.URL}}">
-        {{if .Icon}}<img class="icon" src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}
+        <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <span class="card-text">
           <span class="card-name">{{.Name}}{{if .Status}} <span class="status status-{{.Status}}"><span class="visually-hidden">{{if eq .Status "up"}}{{$.S.Up}}{{else if eq .Status "down"}}{{$.S.Down}}{{else}}{{$.S.Unknown}}{{end}}</span></span>{{end}}</span>
           {{if .Desc}}<span class="card-desc">{{.Desc}}</span>{{end}}
@@ -23,5 +31,5 @@
     {{end}}
   </ul>
 </section>
-{{end}}<p id="empty" class="empty" hidden>{{.S.SearchEmpty}}</p>
+{{end}}<p id="empty" class="empty" role="status" hidden>{{.S.SearchEmpty}}</p>
 {{template "bottom" .}}

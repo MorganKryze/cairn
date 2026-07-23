@@ -64,7 +64,6 @@ type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status string
 	Paragraphs                    []string
-	Tags                          []string
 }
 
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not
@@ -154,7 +153,6 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					URL:        s.URL,
 					Status:     statusOf(cfg, statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
-					Tags:       s.Tags,
 				}
 				dv.PageTitle = dv.Name + " — " + cfg.Site.Title
 				dv.MetaDesc = dv.Desc

@@ -5,10 +5,11 @@
 
   const COMBINING = /[̀-ͯ]/g;
   const norm = s => s.normalize('NFD').replace(COMBINING, '').toLowerCase();
-  const cards = Array.from(document.querySelectorAll('.card'), el => ({
-    el,
-    text: norm(el.querySelector('.card-main').textContent + ' ' + (el.dataset.tags || '')),
-  }));
+  const cards = Array.from(document.querySelectorAll('.card'), el => {
+    const main = el.querySelector('.card-main').cloneNode(true);
+    main.querySelectorAll('.visually-hidden').forEach(n => n.remove());
+    return { el, text: norm(main.textContent + ' ' + (el.dataset.tags || '')) };
+  });
   const cats = Array.from(document.querySelectorAll('.cat'));
   const empty = document.getElementById('empty');
 

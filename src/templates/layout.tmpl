@@ -10,26 +10,30 @@
 {{if .MetaDesc}}<meta property="og:description" content="{{.MetaDesc}}">
 {{end}}<meta property="og:locale" content="{{.Locale}}">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
 <style>:root{--accent:{{.Accent}}}</style>
 {{if .CustomCSS}}<link rel="stylesheet" href="/custom.css">
 {{end}}</head>
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
-<header>
-  <div class="brand">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</div>
-  <nav aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
+<header><div class="wrap">
+  <a class="brand" href="/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
+  <nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
     <a href="/{{.}}/{{$v.SwitchPath}}"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
   </nav>
-</header>
-<main id="main">
+</div></header>
+<main id="main"><div class="wrap">
 {{end}}
 
-{{define "bottom"}}</main>
-{{if .Footer}}<footer><nav>{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</nav></footer>
+{{define "bottom"}}</div></main>
+{{if .Footer}}<footer><div class="wrap foot">
+  <span class="foot-mark">{{template "glyph"}}</span>
+  <div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
+</div></footer>
 {{end}}<script src="/static/search.js" defer></script>
 </body>
 </html>
 {{end}}
 
-{{define "glyph"}}<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><g fill="currentColor"><rect x="11" y="4" width="10" height="6" rx="3"/><rect x="8" y="12" width="16" height="7" rx="3.5"/><rect x="5" y="21" width="22" height="8" rx="4"/></g></svg>{{end}}
+{{define "glyph"}}<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="5" y="24" width="22" height="4.6" rx="2.3"/><rect x="8.5" y="18.2" width="16.6" height="4.4" rx="2.2"/><rect x="8.8" y="12.6" width="14.4" height="4.2" rx="2.1"/><rect x="9.4" y="7.4" width="11" height="3.9" rx="1.95"/><rect x="12" y="2.6" width="8" height="3.6" rx="1.8"/></svg>{{end}}
