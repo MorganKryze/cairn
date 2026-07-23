@@ -52,8 +52,8 @@ func TestSitePagesAndQuickLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	home := string(m.Pages["fr"].HTML)
-	if !strings.Contains(home, `href="https://wiki.example.org"`) || !strings.Contains(home, `class="quick"`) {
-		t.Error("home header missing the quick links")
+	if !strings.Contains(home, `href="https://wiki.example.org"`) || !strings.Contains(home, `class="menu-link"`) {
+		t.Error("home header missing the nav links")
 	}
 	if !strings.Contains(home, `href="/fr/legal/"`) || !strings.Contains(home, "Mentions légales") {
 		t.Error("footer missing the auto page link")
@@ -72,6 +72,44 @@ func TestSitePagesAndQuickLinks(t *testing.T) {
 	})
 	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "collides") {
 		t.Errorf("error = %v, want page/service id collision complaint", err)
+	}
+}
+
+func TestAboutAndLinkIcons(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"site.yaml": "about: { fr: \"Bienvenue chez moi.\\n\\nBonne visite.\", en: Welcome }\n" +
+			"links:\n  - { label: Contact, url: mailto:a@b.c, icon: mail }\n" +
+			"locales: [fr, en]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := string(m.Pages["fr"].HTML)
+	if !strings.Contains(home, `class="about"`) || !strings.Contains(home, "<p>Bienvenue chez moi.</p>") || !strings.Contains(home, "<p>Bonne visite.</p>") {
+		t.Error("home missing the about block or its paragraphs")
+	}
+	if !strings.Contains(home, ">Masquer</span>") {
+		t.Error("dismiss button should carry the localized label")
+	}
+	if !strings.Contains(home, `class="menu-link"`) || !strings.Contains(home, "<svg") {
+		t.Error("menu link should render its built-in glyph")
+	}
+	if !strings.Contains(home, `id="search"`) {
+		t.Error("search should render in the header menu row")
+	}
+
+	dir = writeFiles(t, map[string]string{
+		"site.yaml":     "links: [{label: X, url: https://x.example.org, icon: sparkles}]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	if _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "built-in glyph") {
+		t.Errorf("error = %v, want unknown glyph complaint", err)
 	}
 }
 

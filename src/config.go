@@ -55,6 +55,7 @@ func (l LString) Get(locale, fallback string) string {
 type FooterLink struct {
 	Label LString `yaml:"label"`
 	URL   string  `yaml:"url"`
+	Icon  string  `yaml:"icon"` // header links only: a built-in glyph name, URL or /assets path
 }
 
 // SitePage is a page cairn serves itself (legal notice, privacy…), linked
@@ -80,6 +81,7 @@ type Site struct {
 	Theme   struct {
 		Accent string `yaml:"accent"`
 	} `yaml:"theme"`
+	About   LString            `yaml:"about"`
 	Links   []FooterLink       `yaml:"links"`
 	Footer  []FooterLink       `yaml:"footer"`
 	Pages   []SitePage         `yaml:"pages"`
@@ -136,6 +138,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.languages":      "Language",
 		"nav.toc":            "Categories",
 		"nav.links":          "Links",
+		"about.dismiss":      "Dismiss",
 		"search.label":       "Search",
 		"search.placeholder": "Search for a tool…",
 		"search.empty":       "No results. Try another word.",
@@ -153,6 +156,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.languages":      "Langue",
 		"nav.toc":            "Catégories",
 		"nav.links":          "Liens",
+		"about.dismiss":      "Masquer",
 		"search.label":       "Rechercher",
 		"search.placeholder": "Chercher un outil…",
 		"search.empty":       "Aucun résultat. Essayez un autre mot.",
@@ -234,7 +238,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, links, footer, pages, strings, status)", name, err)
+				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, about, links, footer, pages, strings, status)", name, err)
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -285,6 +289,11 @@ func loadConfig(dir string) (*Config, error) {
 	for _, l := range site.Links {
 		if len(l.Label) == 0 || l.URL == "" {
 			return nil, fmt.Errorf("config: site.yaml: every links entry needs label and url (expected: - {label: Wiki, url: https://…})")
+		}
+		if ic := l.Icon; ic != "" && !strings.HasPrefix(ic, "http://") && !strings.HasPrefix(ic, "https://") && !strings.HasPrefix(ic, "/") {
+			if _, ok := linkGlyphs[ic]; !ok {
+				return nil, fmt.Errorf("config: site.yaml: links icon %q is not a built-in glyph (%s), a URL or an /assets path", ic, strings.Join(linkGlyphNames(), ", "))
+			}
 		}
 	}
 	pageIDs := map[string]bool{}

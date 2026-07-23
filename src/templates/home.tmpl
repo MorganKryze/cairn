@@ -3,16 +3,12 @@
   <span class="hero-mark">{{template "glyph"}}</span>
   <h1>{{.SiteTitle}}</h1>
   {{if .Tagline}}<p class="tagline">{{.Tagline}}</p>
-  {{end}}<div class="search" id="search" hidden>
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
-      <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
-      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off">
-      <kbd class="search-kbd" hidden>⌘K</kbd>
-    </div>
-  </div>
-</section>
-{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
+  {{end}}</section>
+{{if .About}}<section class="about">
+  <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>{{.S.Dismiss}}</span></button>
+  {{range .About}}<p>{{.}}</p>
+  {{end}}</section>
+{{end}}{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
   <ul>
     {{range .Cats}}<li><a href="#cat-{{.ID}}"><span class="toc-mark" aria-hidden="true"></span><span class="toc-name">{{.Name}}</span></a></li>
     {{end}}

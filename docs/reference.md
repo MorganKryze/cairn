@@ -37,7 +37,8 @@ file at reload keeps the previous config serving and logs the same error.
 | `logo`         | none      | URL or `/assets/…` path    |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |
-| `links`        | `[]`      | header quick links, list of `{label: text, url: string}` |
+| `about`        | empty     | dismissable welcome note under the hero, text |
+| `links`        | `[]`      | header nav links, list of `{label: text, url: string, icon: glyph/URL/path}` |
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
 | `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: text, sections: [{title, body}]}` |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |

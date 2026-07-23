@@ -12,7 +12,8 @@ so is every key in it.
 | `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |
-| `links`        | `[]`      | Quick links in the header, next to the language switcher. |
+| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Blank line = new paragraph. |
+| `links`        | `[]`      | Header navigation links, with optional icons; see below. |
 | `footer`       | `[]`      | Links at the bottom of every page.                |
 | `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
@@ -28,11 +29,18 @@ logo: /assets/logo.png
 locales: [fr, en]
 theme:
   accent: "#247b7b"
+about:
+  fr: |
+    Bienvenue ! Voici les services que j'héberge pour vous.
+  en: |
+    Welcome! These are the services I host for you.
 links:
   - label: Wiki
     url: https://wiki.example.org
+    icon: book
   - label: GitHub
     url: https://github.com/you
+    icon: github
 footer:
   - label: { fr: Statut des services, en: Service status }
     url: https://status.example.org
@@ -54,6 +62,24 @@ pages:
 
 A typo in a key name is an error, not a silent no-op: cairn names the file
 and the unknown key in the log.
+
+## Header links
+
+The header has two rows: your identity (logo, title, languages), then a
+navigation row holding the `links` on the left and the search on the right.
+Each link takes an optional `icon`: one of the built-in glyphs, drawn inline
+so they cost no external request (`book`, `chat`, `github`, `globe`,
+`heart`, `home`, `key`, `mail`, `portfolio`, `rss`, `status`, `user`), or a
+URL or `/assets` path for your own image. An unknown glyph name is a config
+error that lists the valid ones.
+
+## The welcome note
+
+`about` renders as a framed note between the hero and the categories: your
+place to tell visitors where they landed, in your words and languages.
+Visitors can dismiss it with the button in its corner; a cookie remembers
+the choice for a year, and without JavaScript the note simply stays. The
+button label lives in the `strings` table as `about.dismiss`.
 
 ## Hosted pages
 

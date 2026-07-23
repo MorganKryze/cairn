@@ -8,11 +8,34 @@ status:
   gatus: http://gatus:8080        # cairn polls this over the compose network
   page: http://localhost:8081     # the pill links visitors to the published port
   interval: 10s
+about:
+  fr: |
+    Bienvenue ! Vous êtes sur l'annuaire d'exemple de cairn : de vrais
+    conteneurs, un vrai Gatus, et cette page pour les présenter. Sur votre
+    déploiement, ce bloc raconte votre histoire : qui vous êtes, ce que vous
+    hébergez, comment vous joindre.
+
+    Il se referme avec le bouton en haut à droite ; le choix est retenu un an.
+  en: |
+    Welcome! You are on cairn's sample directory: real containers, a real
+    Gatus, and this page to present them. On your deployment, this block
+    tells your story: who you are, what you host, how to reach you.
+
+    It closes with the button in the top-right corner; the choice is
+    remembered for a year.
 links:
   - label: { fr: Documentation, en: Documentation }
     url: https://github.com/MorganKryze/cairn/tree/main/docs
-  - label: Gatus
+    icon: book
+  - label: { fr: Code source, en: Source code }
+    url: https://github.com/MorganKryze/cairn
+    icon: github
+  - label: { fr: Statut, en: Status }
     url: http://localhost:8081
+    icon: status
+  - label: { fr: Me contacter, en: Get in touch }
+    url: mailto:contact@exemple.org
+    icon: mail
 footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
     url: http://localhost:8081
