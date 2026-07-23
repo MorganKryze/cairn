@@ -122,4 +122,6 @@ socket, no admin UI. If the audience is _you_, the admin,
 
 ## License
 
-[GPL-3.0](LICENSE)
+Free software under [GPL-3.0](LICENSE): use it, modify it, share it. What
+you redistribute stays under the same license, source included. Hosting your
+own instance is not distribution and asks nothing of you.
