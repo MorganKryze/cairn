@@ -17,7 +17,7 @@
 {{end}}</head>
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
-<header><div class="wrap">
+<header><div class="wrap topbar">
   <a class="brand" href="/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
   <nav class="langs" aria-label="{{.S.Languages}}">{{$v := .}}{{range .Locales}}
     <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
