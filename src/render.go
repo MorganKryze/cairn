@@ -33,12 +33,12 @@ type Model struct {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered string
 }
 
 type pageView struct {
 	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath string
-	CustomCSS, Search                                                bool
+	CustomCSS, Search, Credit                                        bool
 	Locales                                                          []string
 	Links                                                            []linkView
 	Footer                                                           []linkView
@@ -165,6 +165,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
 			Locale:    loc,
+			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			SiteTitle: cfg.Site.Title,
 			Logo:      cfg.Site.Logo,
 			Accent:    cfg.Site.Theme.Accent,
@@ -184,6 +185,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				LinksLabel:        cfg.Str(loc, "nav.links"),
 				Dismiss:           cfg.Str(loc, "about.dismiss"),
 				Theme:             cfg.Str(loc, "nav.theme"),
+				Powered:           cfg.Str(loc, "foot.powered"),
 			},
 		}
 		for _, l := range cfg.Site.Links {

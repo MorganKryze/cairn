@@ -33,6 +33,25 @@ func TestCategoryTrail(t *testing.T) {
 	if strings.Contains(string(sm.Pages["en"].HTML), `class="toc"`) {
 		t.Error("a single category needs no trail")
 	}
+	if h := string(sm.Pages["en"].HTML); !strings.Contains(h, ">powered by cairn</a>") {
+		t.Error("footer should credit cairn even with no footer links configured")
+	}
+
+	off := writeFiles(t, map[string]string{
+		"site.yaml":     "credit: false\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	nc, err := loadConfig(off)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ncm, err := buildModel(nc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(ncm.Pages["en"].HTML), "powered by") {
+		t.Error("credit: false should remove the footer credit")
+	}
 }
 
 func TestSitePagesAndQuickLinks(t *testing.T) {

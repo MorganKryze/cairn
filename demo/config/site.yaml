@@ -36,6 +36,9 @@ links:
   - label: { fr: Me contacter, en: Get in touch }
     url: mailto:contact@exemple.org
     icon: mail
+  - label: { fr: Faire un don, en: Donate }
+    url: https://ko-fi.com/morgankryze
+    icon: heart
 footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
     url: http://localhost:8081

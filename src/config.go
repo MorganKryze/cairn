@@ -85,6 +85,7 @@ type Site struct {
 	Links   []FooterLink       `yaml:"links"`
 	Footer  []FooterLink       `yaml:"footer"`
 	Pages   []SitePage         `yaml:"pages"`
+	Credit  *bool              `yaml:"credit"` // the footer "powered by cairn"; nil means true
 	Strings map[string]LString `yaml:"strings"`
 	Status  struct {
 		Gatus    string `yaml:"gatus"`
@@ -140,6 +141,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.links":          "Links",
 		"nav.theme":          "Theme",
 		"about.dismiss":      "Dismiss",
+		"foot.powered":       "powered by",
 		"search.label":       "Search",
 		"search.placeholder": "Search for a tool…",
 		"search.empty":       "No results. Try another word.",
@@ -159,6 +161,7 @@ var builtinStrings = map[string]map[string]string{
 		"nav.links":          "Liens",
 		"nav.theme":          "Thème",
 		"about.dismiss":      "Masquer",
+		"foot.powered":       "propulsé par",
 		"search.label":       "Rechercher",
 		"search.placeholder": "Chercher un outil…",
 		"search.empty":       "Aucun résultat. Essayez un autre mot.",
@@ -240,7 +243,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, about, links, footer, pages, strings, status)", name, err)
+				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, err)
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)

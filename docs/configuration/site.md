@@ -16,6 +16,7 @@ so is every key in it.
 | `links`        | `[]`      | Header navigation links, with optional icons; see below. |
 | `footer`       | `[]`      | Links at the bottom of every page.                |
 | `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. |
+| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
 | `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
 

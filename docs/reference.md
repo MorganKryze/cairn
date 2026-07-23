@@ -41,6 +41,7 @@ file at reload keeps the previous config serving and logs the same error.
 | `links`        | `[]`      | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}` |
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
 | `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: text, sections: [{title, body}]}`; body and/or sections required |
+| `credit`       | `true`    | bool; `false` removes the footer "powered by cairn" |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |
 | `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |

@@ -52,11 +52,12 @@
 {{end}}
 
 {{define "bottom"}}</div></main>
-{{if .Footer}}<footer><div class="wrap foot">
+<footer><div class="wrap foot">
   <span class="foot-mark">{{template "glyph"}}</span>
-  <div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
-</div></footer>
-{{end}}<script src="/static/search.js" defer></script>
+  {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
+  {{end}}{{if .Credit}}<a class="powered" href="https://github.com/MorganKryze/cairn">{{.S.Powered}} cairn</a>
+  {{end}}</div></footer>
+<script src="/static/search.js" defer></script>
 <script src="/static/toc.js" defer></script>
 <script src="/static/about.js" defer></script>
 <script src="/static/theme.js" defer></script>
