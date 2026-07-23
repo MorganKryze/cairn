@@ -55,3 +55,21 @@ jobs:
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose -f demo/compose.yaml up -d --build --wait
+      - name: the pills settle green and red
+        run: |
+          for _ in $(seq 1 12); do
+            page=$(curl -fsS http://localhost:8080/fr/)
+            if echo "$page" | grep -q status-up && echo "$page" | grep -q status-down; then
+              echo "pills settled"; exit 0
+            fi
+            sleep 5
+          done
+          echo "pills never settled"; docker compose -f demo/compose.yaml logs cairn; exit 1
+      - if: always()
+        run: docker compose -f demo/compose.yaml down
