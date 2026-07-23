@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "docker/**"
+      - "demo/**"
       - "go.mod"
       - "go.sum"
       - ".github/workflows/build.yml"
@@ -45,6 +46,8 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ steps.meta.outputs.version }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

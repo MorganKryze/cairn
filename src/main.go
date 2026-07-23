@@ -21,14 +21,22 @@ import (
 
 var current atomic.Pointer[Model]
 
+// version is stamped by the build: -ldflags "-X main.version=…"
+var version = "dev"
+
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	cfgDir := flag.String("config", "/config", "config directory")
 	assetsDir := flag.String("assets", "/assets", "optional directory served at /assets/")
 	check := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
 	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
+	ver := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 
+	if *ver {
+		fmt.Println("cairn", version)
+		return
+	}
 	if *check {
 		os.Exit(probe(*addr))
 	}
@@ -71,7 +79,7 @@ func main() {
 	// with the /static/ and /assets/ subtrees in the 1.22 mux.
 	mux.HandleFunc("GET /", home)
 
-	log.Printf("cairn: %d services, locales %v, listening on %s", countServices(cfg), cfg.Site.Locales, *addr)
+	log.Printf("cairn %s: %d services, locales %v, listening on %s", version, countServices(cfg), cfg.Site.Locales, *addr)
 	log.Fatal(http.ListenAndServe(*addr, secureHeaders(mux)))
 }
 

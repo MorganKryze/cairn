@@ -96,6 +96,7 @@ ids, alphabetically.
 | `-assets`      | `/assets` | directory served at `/assets/`, if it exists |
 | `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks |
 | `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit |
+| `-version`     | off       | print the version, then exit |
 
 No environment variables, no other state. The binary serves HTTP on one port,
 reads one directory, and optionally polls the one Gatus URL you configured.

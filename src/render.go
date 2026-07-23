@@ -59,12 +59,12 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath, Base string
-	CustomCSS, Search, Credit                                        bool
-	Locales                                                          []string
-	Links                                                            []linkView
-	Footer                                                           []linkView
-	S                                                                uiStrings
+	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath, Base, Version string
+	CustomCSS, Search, Credit                                                       bool
+	Locales                                                                         []string
+	Links                                                                           []linkView
+	Footer                                                                          []linkView
+	S                                                                               uiStrings
 }
 
 type cardView struct {
@@ -188,6 +188,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 		base := pageView{
 			Locale:    loc,
 			Base:      cfg.Site.URL,
+			Version:   version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			SiteTitle: cfg.Site.Title,
 			Logo:      cfg.Site.Logo,
