@@ -5,10 +5,31 @@ on:
     tags: ["v*.*.*"]
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
+  binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+      - name: Build and attach the release binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for target in linux/amd64 linux/arm64 darwin/arm64; do
+            os="${target%/*}"; arch="${target#*/}"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -trimpath -ldflags="-s -w -X main.version=$version" -o cairn ./src
+            tar -czf "cairn_${version}_${os}_${arch}.tar.gz" cairn
+          done
+          gh release upload "$GITHUB_REF_NAME" cairn_*.tar.gz --clobber
+
+
   image:
     runs-on: ubuntu-latest
     steps:

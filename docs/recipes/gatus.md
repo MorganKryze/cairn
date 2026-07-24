@@ -79,4 +79,4 @@ footer:
     url: https://status.example.org
 ```
 
-Next: [Reference](../reference.md)
+Next: [Coming from Homer or Homepage](migration.md)

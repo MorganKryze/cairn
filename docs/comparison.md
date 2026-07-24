@@ -11,6 +11,8 @@ count.
 | A feeds-and-widgets start page (RSS, weather, markets) | [Glance](https://github.com/glanceapp/glance) |
 | A dashboard with a built-in config UI and auth    | [Dashy](https://github.com/Lissy93/dashy) |
 | The most minimal start page with pinned apps      | [Flame](https://github.com/pawelmalak/flame) |
+| A portal with per-user tabs wrapped around Plex and the \*arrs | [Organizr](https://github.com/causefx/Organizr) |
+| Shared boards for a household or team, edited in a GUI, with accounts | [Homarr](https://github.com/homarr-labs/homarr) |
 
 Where cairn stands apart:
 
@@ -29,6 +31,10 @@ Where the others win, so you don't discover it late:
   speeds, container states or calendar events, and that's permanent.
 - **No auth, no users, no admin UI**: config is a mounted file, the page is
   public by design.
+- **No per-guest views** (that is accounts wearing a costume) and **no
+  analytics** (your reverse proxy log already counts visits). Organizr and
+  Homarr do these well precisely because they embraced users and state;
+  cairn stays the page before the login.
 - If the audience is *you*, Homer or Homepage will make you happier; admin
   dashboards are their home turf, and cairn's guest features would just be in
   your way.

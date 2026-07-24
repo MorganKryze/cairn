@@ -69,4 +69,4 @@ With the `stable` tag above, that means every cairn release, automatically,
 tests already passed. Pin a [semver tag](docker-compose.md#updating) instead
 if you prefer to move deliberately.
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Bare binary](binary.md)

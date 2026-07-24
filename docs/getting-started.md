@@ -86,15 +86,32 @@ key, documents it on hover, and underlines mistakes as you type:
 ```
 
 Use `schema/site.json` for `site.yaml` and `schema/categories.json` for
-`categories.yaml`.
+`categories.yaml`. If you pin your image to a version tag, pin the schema
+the same way (`…/cairn/v1.6.0/schema/services.json`), so the editor never
+suggests a key your binary does not know yet.
 
 And `cairn -check` validates a config directory without serving anything,
 then warns about the likely oversights (a translation missing in one
-locale, a `media/` file nothing references, an image heavy enough to hurt).
-It exits 0 or 1, so it slots into CI if you version your config:
+locale, a `media/` file nothing references, an image heavy enough to hurt,
+icons that load from a CDN). It exits 0 or 1, so it slots into CI if you
+version your config:
 
 ```sh
 docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+```
+
+The whole GitHub Actions job, for a config repo:
+
+```yaml
+# .github/workflows/check.yml
+name: check
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
 ```
 
 ## Next
