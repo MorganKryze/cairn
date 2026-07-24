@@ -133,12 +133,11 @@ socket, no admin UI. If the audience is _you_, the admin,
 
 ## Colophon
 
-I'm [Morgan](https://github.com/MorganKryze): I design and maintain cairn,
-and I write it with [Claude Code](https://claude.com/claude-code), never on
-autopilot. Most of the code and documentation began as its drafts; the
-direction, the taste, the reviews and the final word stay mine, and every
-release ships tested. The work is entirely public: the tests, the CI, the
-history. Judge it on what it does.
+A colophon tells how the book was made, so here is mine: Go, plain YAML,
+[Fraunces](https://github.com/undercasetype/Fraunces) for the headings, and
+[Claude Code](https://claude.com/claude-code) drafting at my side, never on
+autopilot. The taste, the reviews and the final word stay mine; the tests,
+the CI and the public history keep me honest.
 
 ## License
 
