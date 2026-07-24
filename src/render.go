@@ -59,12 +59,12 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Accent, SwitchPath, Base, Version string
-	CustomCSS, Search, Credit                                                       bool
-	Locales                                                                         []string
-	Links                                                                           []linkView
-	Footer                                                                          []linkView
-	S                                                                               uiStrings
+	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, OGImage, Accent, SwitchPath, Base, Version string
+	CustomCSS, Search, Credit, Noindex                                                                bool
+	Locales                                                                                           []string
+	Links                                                                                             []linkView
+	Footer                                                                                            []linkView
+	S                                                                                                 uiStrings
 }
 
 type cardView struct {
@@ -202,6 +202,9 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			SiteTitle: cfg.Site.Title,
 			Logo:      cfg.Site.Logo,
+			Favicon:   cfg.Site.Favicon,
+			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
+			Noindex:   cfg.Site.Index != nil && !*cfg.Site.Index,
 			Accent:    cfg.Site.Theme.Accent,
 			CustomCSS: cfg.CustomCSS,
 			Locales:   cfg.Site.Locales,
@@ -335,6 +338,23 @@ func paragraphs(s string) []string {
 		}
 	}
 	return out
+}
+
+// ogImage derives a social preview image from the logo: only when the site
+// has a public URL to make it absolute, and only raster formats, which is
+// what the preview crawlers accept.
+func ogImage(base, logo string) string {
+	if base == "" || logo == "" {
+		return ""
+	}
+	l := strings.ToLower(logo)
+	if !strings.HasSuffix(l, ".png") && !strings.HasSuffix(l, ".jpg") && !strings.HasSuffix(l, ".jpeg") && !strings.HasSuffix(l, ".webp") && !strings.HasSuffix(l, ".gif") {
+		return ""
+	}
+	if strings.HasPrefix(logo, "/") {
+		return base + logo
+	}
+	return logo
 }
 
 // mediaURL resolves a bare image name against the /media/ route, which

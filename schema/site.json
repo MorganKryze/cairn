@@ -20,7 +20,15 @@
     },
     "logo": {
       "type": "string",
-      "description": "Image shown before the title: URL or /assets path."
+      "description": "Image shown before the title: URL or /assets path. A raster logo also becomes the social preview image when url is set."
+    },
+    "favicon": {
+      "type": "string",
+      "description": "Tab icon: URL or /assets path. Defaults to cairn's own."
+    },
+    "index": {
+      "type": "boolean",
+      "description": "false asks search engines to stay away: robots.txt disallows, pages carry noindex, the sitemap turns off."
     },
     "locales": {
       "type": "array",

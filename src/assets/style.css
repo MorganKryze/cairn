@@ -553,6 +553,16 @@ html { scrollbar-gutter: stable; }
 }
 .detail > h2, .about h2 { margin-top: 1.8rem; }
 
+.tagline {
+  margin: 2.1rem 0 0;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 40, "SOFT" 55, "WONK" 0;
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--muted);
+}
+.tagline + .about { margin-top: 1.1rem; }
+
 /* ---- rich text (the markdown subset) ---- */
 
 :is(.about, .detail) :is(p, li, figcaption) a:not(.btn) {

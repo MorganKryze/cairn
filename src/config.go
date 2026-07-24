@@ -90,6 +90,8 @@ type Site struct {
 	Tagline LString  `yaml:"tagline"`
 	URL     string   `yaml:"url"` // public base URL; enables canonical/hreflang
 	Logo    string   `yaml:"logo"`
+	Favicon string   `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
+	Index   *bool    `yaml:"index"`   // nil means true; false asks search engines to stay away
 	Locales []string `yaml:"locales"`
 	Theme   struct {
 		Accent string `yaml:"accent"`
@@ -280,7 +282,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
+				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, favicon, index, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)

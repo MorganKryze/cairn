@@ -35,9 +35,11 @@ file at reload keeps the previous config serving and logs the same error.
 | Key            | Default   | Type                       |
 | -------------- | --------- | -------------------------- |
 | `title`        | `cairn`   | plain string               |
-| `tagline`      | empty     | text                       |
+| `tagline`      | empty     | text; opens the home page, feeds the meta description |
 | `url`          | none      | public base URL; adds canonical + hreflang, absolute sitemap |
-| `logo`         | none      | URL or `/assets/…` path    |
+| `logo`         | none      | URL or `/assets/…` path; raster logos double as the og:image when `url` is set |
+| `favicon`      | cairn's   | tab icon; URL or `/assets/…` path |
+| `index`        | `true`    | `false` = robots.txt disallow, noindex meta, no sitemap |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |
 | `about`        | empty     | dismissable welcome note under the hero, long text ([markdown subset](configuration/text.md)) |

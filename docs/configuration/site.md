@@ -8,9 +8,11 @@ so is every key in it.
 | Key            | Default   | What it is                                        |
 | -------------- | --------- | ------------------------------------------------- |
 | `title`        | `cairn`   | Site name: hero heading, header, `<title>`.       |
-| `tagline`      | empty     | One sentence under the title, translatable.       |
-| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page and absolute sitemap URLs; recommended for search engines. |
-| `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). |
+| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show. |
+| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines. |
+| `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set. |
+| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path.         |
+| `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web. |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |
 | `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md). |

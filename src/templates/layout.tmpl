@@ -9,12 +9,16 @@
 <meta property="og:title" content="{{.PageTitle}}">
 {{if .MetaDesc}}<meta property="og:description" content="{{.MetaDesc}}">
 {{end}}<meta property="og:locale" content="{{.Locale}}">
-{{if .Base}}<link rel="canonical" href="{{.Base}}/{{.Locale}}/{{.SwitchPath}}">
+{{if .OGImage}}<meta property="og:image" content="{{.OGImage}}">
+{{end}}{{if .Noindex}}<meta name="robots" content="noindex">
+{{end}}{{if .Base}}<link rel="canonical" href="{{.Base}}/{{.Locale}}/{{.SwitchPath}}">
 <meta property="og:url" content="{{.Base}}/{{.Locale}}/{{.SwitchPath}}">
 {{range .Locales}}<link rel="alternate" hreflang="{{.}}" href="{{$.Base}}/{{.}}/{{$.SwitchPath}}">
 {{end}}<link rel="alternate" hreflang="x-default" href="{{.Base}}/">
 {{end}}
-<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{{if .Favicon}}<link rel="icon" href="{{.Favicon}}">
+{{else}}<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{{end}}
 <link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
 <style>:root{--accent:{{.Accent}}}</style>

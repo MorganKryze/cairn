@@ -291,11 +291,24 @@ func baseURL(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
+func noindex() bool {
+	idx := current.Load().Cfg.Site.Index
+	return idx != nil && !*idx
+}
+
 func robots(w http.ResponseWriter, r *http.Request) {
+	if noindex() {
+		io.WriteString(w, "User-agent: *\nDisallow: /\n")
+		return
+	}
 	fmt.Fprintf(w, "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n", siteBase(r))
 }
 
 func sitemap(w http.ResponseWriter, r *http.Request) {
+	if noindex() {
+		http.NotFound(w, r)
+		return
+	}
 	m := current.Load()
 	keys := make([]string, 0, len(m.Pages))
 	for k := range m.Pages {
