@@ -131,6 +131,15 @@ socket, no admin UI. If the audience is _you_, the admin,
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
 
+## Ideas, contributions, support
+
+cairn is young and opinionated, and other people's eyes make it better.
+Ideas and bug reports are welcome in the
+[issues](https://github.com/MorganKryze/cairn/issues), code and docs through
+[contributing](CONTRIBUTING.md), always within the scope above. And if cairn
+serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps its
+maintainer walking the trail.
+
 ## Colophon
 
 A colophon tells how the book was made, so here is mine: Go, plain YAML,
