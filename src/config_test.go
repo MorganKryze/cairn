@@ -182,6 +182,31 @@ func TestServiceImageErrors(t *testing.T) {
 	}
 }
 
+func TestFriendlyYAMLErrors(t *testing.T) {
+	for _, tc := range []struct{ name, services, want string }{
+		{"scalar for list", "- id: a\n  url: https://a.example.org\n  name: A\n  tags: solo\n",
+			"found a text `solo` where a list of texts was expected"},
+		{"list for text", "- id: a\n  url: https://a.example.org\n  name: [Un, Deux]\n",
+			"one plain text or a per-locale mapping"},
+		{"comma in flow map", "- id: a\n  url: https://a.example.org\n  name: A\n  desc: { fr: Une phrase, avec virgule., en: Fine. }\n",
+			"is not a locale code"},
+	} {
+		_, err := loadConfig(writeFiles(t, map[string]string{"services.yaml": tc.services}))
+		if err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: error = %v, want it to contain %q", tc.name, err, tc.want)
+		}
+	}
+	svc := "- {id: a, url: https://a.example.org, name: A}\n"
+	_, err := loadConfig(writeFiles(t, map[string]string{"site.yaml": "locales: fr\n", "services.yaml": svc}))
+	if err == nil || !strings.Contains(err.Error(), "where a list of texts was expected") {
+		t.Errorf("site error = %v, want the humanized list message", err)
+	}
+	_, err = loadConfig(writeFiles(t, map[string]string{"site.yaml": "titel: Oops\n", "services.yaml": svc}))
+	if err == nil || !strings.Contains(err.Error(), `unknown key "titel"`) || strings.Contains(err.Error(), "main.") {
+		t.Errorf("site error = %v, want unknown key without Go type names", err)
+	}
+}
+
 func TestServiceIDValidation(t *testing.T) {
 	dir := writeFiles(t, map[string]string{
 		"services.yaml": "- {id: Bad ID, url: https://a.example.org, name: A}\n",

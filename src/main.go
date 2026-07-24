@@ -148,6 +148,9 @@ func watch(dir string) {
 // pollStatus feeds the status dots from the Gatus API, server-side only. On
 // any fetch problem the dots disappear rather than go stale.
 func pollStatus() {
+	if cfg := current.Load().Cfg; cfg.Site.Status.Gatus != "" {
+		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
+	}
 	var lastErr string
 	for {
 		m := current.Load()

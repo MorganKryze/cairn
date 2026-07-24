@@ -27,7 +27,14 @@ func (l *LString) UnmarshalYAML(n *yaml.Node) error {
 	}
 	var m map[string]string
 	if err := n.Decode(&m); err != nil {
-		return err
+		return fmt.Errorf("line %d: expected one plain text or a per-locale mapping like {fr: …, en: …}", n.Line)
+	}
+	// A key that is not a locale code is nearly always the flow-mapping
+	// comma trap: {fr: Une phrase, avec virgule.} parses as two keys.
+	for k := range m {
+		if !localeRe.MatchString(k) {
+			return fmt.Errorf("line %d: %q is not a locale code; an unquoted comma splits a {…} entry in two, so quote the text or write one locale per line", n.Line, k)
+		}
 	}
 	*l = m
 	return nil
@@ -120,8 +127,8 @@ func (i *ServiceImage) UnmarshalYAML(n *yaml.Node) error {
 		*i = ServiceImage{Src: n.Value}
 		return nil
 	}
-	type plain ServiceImage
-	var v plain
+	type imageEntry ServiceImage
+	var v imageEntry
 	if err := strictDecode(n, &v); err != nil {
 		return err
 	}
@@ -267,7 +274,7 @@ func loadConfig(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %v (expected keys: title, tagline, url, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, err)
+				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -377,9 +384,52 @@ func strictDecode(n *yaml.Node, out any) error {
 	dec := yaml.NewDecoder(bytes.NewReader(b))
 	dec.KnownFields(true)
 	if err := dec.Decode(out); err != nil {
-		return fmt.Errorf("%s", strings.TrimPrefix(strings.ReplaceAll(err.Error(), "\n", " "), "yaml: unmarshal errors:  "))
+		return fmt.Errorf("%s", yamlErr(err))
 	}
 	return nil
+}
+
+// yaml.v3 phrases its errors for Go programmers ("cannot unmarshal !!str
+// into []string", "not found in type main.Site"). The person reading them
+// edits a yaml file; yamlErr rewrites the vocabulary into their terms.
+var (
+	yamlFieldRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
+	yamlTypeRe  = regexp.MustCompile("cannot unmarshal (\\S+)( `[^`]*`)? into (\\S+)")
+)
+
+func yamlWord(t string) string {
+	words := map[string]string{
+		"!!str": "a text", "!!seq": "a list", "!!map": "a mapping",
+		"!!int": "a number", "!!float": "a number", "!!bool": "a boolean",
+		"!!null": "an empty value", "!!timestamp": "a date",
+		"string": "one plain text", "[]string": "a list of texts",
+		"int": "a number", "bool": "true or false", "*bool": "true or false",
+		"map[string]string":   "a per-locale mapping",
+		"main.Site":           "the site settings",
+		"main.Service":        "a service entry",
+		"main.CategoryMeta":   "a category entry",
+		"main.imageEntry":     "an image entry",
+		"main.SitePage":       "a page entry",
+		"main.PageSection":    "a section entry",
+		"main.FooterLink":     "a link entry",
+		"[]main.FooterLink":   "a list of links",
+		"[]main.SitePage":     "a list of pages",
+		"[]main.PageSection":  "a list of sections",
+		"[]main.ServiceImage": "a list of images",
+	}
+	if w, ok := words[t]; ok {
+		return w
+	}
+	return strings.TrimPrefix(t, "main.")
+}
+
+func yamlErr(err error) string {
+	msg := strings.TrimSpace(strings.TrimPrefix(strings.ReplaceAll(err.Error(), "\n", " "), "yaml: unmarshal errors:"))
+	msg = yamlFieldRe.ReplaceAllString(msg, `unknown key "$1"`)
+	return yamlTypeRe.ReplaceAllStringFunc(msg, func(m string) string {
+		p := yamlTypeRe.FindStringSubmatch(m)
+		return "found " + yamlWord(p[1]) + p[2] + " where " + yamlWord(p[3]) + " was expected"
+	})
 }
 
 func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
