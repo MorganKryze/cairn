@@ -32,6 +32,11 @@
       Open the page and you see your request as the server receives it:
       address, headers, protocol. Handy to understand what a site knows
       about you, or to check that a proxy does its job.
+  images:
+    - src: whoami.png
+      caption:
+        fr: La réponse de whoami au navigateur sans tête qui a pris cette capture.
+        en: whoami answering the headless browser that took this screenshot.
   tags: [echo, debug, requête, request]
 
 - id: podinfo
