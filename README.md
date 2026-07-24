@@ -59,6 +59,12 @@ account or a manual, and boring for you to operate.
   self-hosters never have anywhere to put.
 - The strictest container settings just work: `read_only`, `cap_drop: ALL`,
   self-probing healthcheck. See the [hardened compose](docs/deployment/docker-compose.md).
+- **Air-gap friendly**: cairn makes zero outbound requests of its own. Its
+  only companions are optional and yours: a self-hosted
+  [Gatus](docs/recipes/gatus.md) for status, and icons you can
+  [serve yourself](docs/recipes/icons.md#your-own-files). The
+  [demo](demo/README.md) runs on an internal network with no route out, to
+  prove it.
 
 ## Quickstart
 

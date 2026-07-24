@@ -33,6 +33,16 @@ green or red within ~20 seconds, as the bundled Gatus reports in.
 - **Kill a service**: `docker compose stop welcome`, wait ~20 s, its dot
   turns red; `docker compose start welcome` brings it back.
 
+## Network (isolated by design)
+
+The whole stack lives on an `internal` Docker network with no route to the
+outside: the application containers cannot reach the internet at all. The
+only dual-homed piece is a dumb TCP gateway (`gateway/nginx.conf`) that
+forwards the published ports; it holds no logic and no state. That is the
+air-gap story cairn is built for, demonstrated: try
+`docker exec cairn-demo-cairn-1 wget example.org` from any service, it has
+nowhere to go.
+
 ## Ports (all bound to 127.0.0.1; nothing is exposed to your network)
 
 | Port | What                    |
