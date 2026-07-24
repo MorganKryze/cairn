@@ -686,3 +686,25 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---- print: the version that ends up on the fridge ---- */
+
+@media print {
+  .skip, .topbar-tools, .menu, .toc, .about-x, .card-status, .btn, .back, .powered { display: none !important; }
+  body { background: #fff; }
+  .about, .card { border: 1px solid #999; box-shadow: none; background: #fff; }
+  .cards { grid-template-columns: 1fr; }
+  .card { break-inside: avoid; }
+  .card-name { text-decoration: none; }
+  /* on screen this ::after is the card's invisible click overlay */
+  .card-name::after {
+    content: " (" attr(href) ")";
+    position: static;
+    inset: auto;
+    font-size: .85em;
+    font-weight: 400;
+    color: #444;
+    word-break: break-all;
+  }
+  .shot { break-inside: avoid; }
+}

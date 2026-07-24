@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -97,6 +98,7 @@ func main() {
 		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFile(w, r, filepath.Join(*cfgDir, "custom.css"))
 	})
+	mux.HandleFunc("GET /manifest.webmanifest", manifest)
 	mux.HandleFunc("GET /robots.txt", robots)
 	mux.HandleFunc("GET /sitemap.xml", sitemap)
 	mux.HandleFunc("GET /{$}", root)
@@ -296,6 +298,27 @@ func home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(page.HTML)
+}
+
+// manifest makes "add to home screen" give the site its own name and icon;
+// deliberately no service worker and no offline mode.
+func manifest(w http.ResponseWriter, r *http.Request) {
+	cfg := current.Load().Cfg
+	name := cfg.Site.Title.Get(negotiate(r, cfg.Site.Locales), cfg.DefaultLocale())
+	icon := touchIcon(cfg.Site.Favicon)
+	w.Header().Set("Content-Type", "application/manifest+json")
+	w.Header().Set("Cache-Control", "no-cache")
+	if err := json.NewEncoder(w).Encode(map[string]any{
+		"name":             name,
+		"short_name":       name,
+		"start_url":        "/",
+		"display":          "minimal-ui",
+		"background_color": "#eef0ea",
+		"theme_color":      cfg.Site.Theme.Accent,
+		"icons":            []map[string]string{{"src": icon, "sizes": "180x180", "type": "image/png"}},
+	}); err != nil {
+		log.Printf("manifest: %v", err)
+	}
 }
 
 // siteBase prefers the configured public URL; without one it falls back to

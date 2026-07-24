@@ -73,7 +73,7 @@ func buildCSP(cfg *Config) string {
 	return "default-src 'none'; img-src 'self' https: data:; " +
 		"style-src 'self' " + cspHash(accentStyle(cfg.Site.Theme.Accent)) + "; " +
 		"script-src 'self' " + cspHash(prePaintScript) + "; " +
-		"font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		"font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 }
 
 type uiStrings struct {
@@ -81,12 +81,12 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
-	CustomCSS, Search, Credit, Noindex                                                                           bool
-	Locales                                                                                                      []string
-	Links                                                                                                        []linkView
-	Footer                                                                                                       []linkView
-	S                                                                                                            uiStrings
+	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
+	CustomCSS, Search, Credit, Noindex                                                                                      bool
+	Locales                                                                                                                 []string
+	Links                                                                                                                   []linkView
+	Footer                                                                                                                  []linkView
+	S                                                                                                                       uiStrings
 }
 
 type cardView struct {
@@ -225,6 +225,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			SiteTitle: cfg.Site.Title.Get(loc, def),
 			Logo:      cfg.Site.Logo,
 			Favicon:   cfg.Site.Favicon,
+			TouchIcon: touchIcon(cfg.Site.Favicon),
 			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
 			Noindex:   cfg.Site.Index != nil && !*cfg.Site.Index,
 			AboutHash: aboutHash(cfg.Site.About),
@@ -361,6 +362,15 @@ func paragraphs(s string) []string {
 		}
 	}
 	return out
+}
+
+// touchIcon picks the add-to-home-screen icon: the operator's favicon when
+// it is a png (the format phones accept), cairn's own otherwise.
+func touchIcon(favicon string) string {
+	if strings.HasSuffix(strings.ToLower(favicon), ".png") {
+		return favicon
+	}
+	return "/static/touch-icon.png"
 }
 
 // ogImage derives a social preview image from the logo: only when the site
