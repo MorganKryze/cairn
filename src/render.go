@@ -122,31 +122,32 @@ func linkIcon(v *linkView, icon string) {
 type homeView struct {
 	pageView
 	Tagline string
-	About   []string
+	About   []template.HTML
 	Cats    []catView
 }
 
 type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
-	Paragraphs                                             []string
+	Body                                                   []template.HTML
 	Images                                                 []imageView
 }
 
 type imageView struct {
 	Src, Caption string
+	W, H         int
 }
 
 type staticView struct {
 	pageView
-	Title      string
-	Paragraphs []string
-	Sections   []sectionView
+	Title    string
+	Intro    []template.HTML
+	Sections []sectionView
 }
 
 type sectionView struct {
-	Title      string
-	Paragraphs []string
+	Title string
+	Body  []template.HTML
 }
 
 // statusMeta returns the localized label and the Gatus link for a status, so
@@ -188,6 +189,10 @@ func statusOf(cfg *Config, statuses map[string]bool, id string) string {
 
 func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 	def := cfg.DefaultLocale()
+	media := func(src string) (string, int, int) {
+		d := cfg.MediaDims[src]
+		return mediaURL(src), d[0], d[1]
+	}
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
@@ -229,7 +234,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			base.Footer = append(base.Footer, linkView{Label: p.Title.Get(loc, def), URL: "/" + loc + "/" + p.ID + "/"})
 		}
 
-		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def), About: paragraphs(cfg.Site.About.Get(loc, def))}
+		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def), About: mdBlocks(cfg.Site.About.Get(loc, def), mdCtx{media: media})}
 		hv.Search = true
 		hv.PageTitle = cfg.Site.Title
 		hv.MetaDesc = hv.Tagline
@@ -261,16 +266,17 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 		for _, c := range cfg.Categories {
 			for _, s := range c.Services {
 				dv := detailView{
-					pageView:   base,
-					Name:       s.Name.Get(loc, def),
-					Desc:       s.Desc.Get(loc, def),
-					Icon:       iconURL(s.Icon),
-					URL:        s.URL,
-					Status:     statusOf(cfg, statuses, s.ID),
-					Paragraphs: paragraphs(s.Details.Get(loc, def)),
+					pageView: base,
+					Name:     s.Name.Get(loc, def),
+					Desc:     s.Desc.Get(loc, def),
+					Icon:     iconURL(s.Icon),
+					URL:      s.URL,
+					Status:   statusOf(cfg, statuses, s.ID),
+					Body:     mdBlocks(s.Details.Get(loc, def), mdCtx{media: media}),
 				}
 				for _, img := range s.Images {
-					dv.Images = append(dv.Images, imageView{Src: mediaURL(img.Src), Caption: img.Caption.Get(loc, def)})
+					url, w, h := media(img.Src)
+					dv.Images = append(dv.Images, imageView{Src: url, Caption: img.Caption.Get(loc, def), W: w, H: h})
 				}
 				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
 				dv.PageTitle = dv.Name + " · " + cfg.Site.Title
@@ -285,15 +291,21 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 		}
 
 		for _, p := range cfg.Site.Pages {
-			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Paragraphs: paragraphs(p.Body.Get(loc, def))}
+			body := p.Body.Get(loc, def)
+			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Intro: mdBlocks(body, mdCtx{pClass: "page-intro", media: media})}
+			firstSec := ""
 			for _, s := range p.Sections {
-				sv.Sections = append(sv.Sections, sectionView{Title: s.Title.Get(loc, def), Paragraphs: paragraphs(s.Body.Get(loc, def))})
+				secBody := s.Body.Get(loc, def)
+				if firstSec == "" {
+					firstSec = secBody
+				}
+				sv.Sections = append(sv.Sections, sectionView{Title: s.Title.Get(loc, def), Body: mdBlocks(secBody, mdCtx{media: media})})
 			}
 			sv.PageTitle = sv.Title + " · " + cfg.Site.Title
-			if len(sv.Paragraphs) > 0 {
-				sv.MetaDesc = sv.Paragraphs[0]
-			} else if len(sv.Sections) > 0 && len(sv.Sections[0].Paragraphs) > 0 {
-				sv.MetaDesc = sv.Sections[0].Paragraphs[0]
+			if ps := paragraphs(body); len(ps) > 0 {
+				sv.MetaDesc = mdText(ps[0])
+			} else if ps := paragraphs(firstSec); len(ps) > 0 {
+				sv.MetaDesc = mdText(ps[0])
 			}
 			sv.SwitchPath = p.ID + "/"
 			page, err := render("page.tmpl", sv)

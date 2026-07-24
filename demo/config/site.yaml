@@ -56,11 +56,13 @@ pages:
       - title: { fr: Éditeur, en: Publisher }
         body:
           fr: >
-            Ce site est édité par Prénom Nom, à titre personnel et non
-            commercial. Contact : contact@exemple.org.
+            Ce site est édité par **Prénom Nom**, à titre personnel et non
+            commercial. Contact :
+            [contact@exemple.org](mailto:contact@exemple.org).
           en: >
-            This site is published by First Last, in a personal,
-            non-commercial capacity. Contact: contact@example.org.
+            This site is published by **First Last**, in a personal,
+            non-commercial capacity. Contact:
+            [contact@example.org](mailto:contact@example.org).
       - title: { fr: Directeur de la publication, en: Publishing director }
         body:
           fr: "Prénom Nom, en qualité d'éditeur du site."
@@ -101,13 +103,13 @@ pages:
       - title: { fr: Cookies, en: Cookies }
         body:
           fr: >
-            Deux cookies au plus, strictement fonctionnels : locale
-            mémorise la langue choisie via le sélecteur, about retient la
+            Deux cookies au plus, strictement fonctionnels : `locale`
+            mémorise la langue choisie via le sélecteur, `about` retient la
             fermeture du message d'accueil. Chacun dure un an, est exempté
             de consentement et n'est lu par personne d'autre que ce site.
           en: >
-            At most two cookies, strictly functional: locale remembers the
-            language picked with the switcher, about remembers that you
+            At most two cookies, strictly functional: `locale` remembers the
+            language picked with the switcher, `about` remembers that you
             closed the welcome note. Each lasts one year, is exempt from
             consent and is read by no one but this site.
       - title: { fr: Services tiers, en: Third parties }
@@ -116,14 +118,14 @@ pages:
             Les icônes des services proviennent du CDN jsdelivr.net :
             votre navigateur lui adresse une requête au chargement de la
             page, ce qui lui révèle votre adresse IP. Pour un site sans
-            aucun tiers, l'éditeur peut héberger ses propres icônes (voir
-            la documentation de cairn).
+            aucun tiers, l'éditeur peut
+            [héberger ses propres icônes](https://github.com/MorganKryze/cairn/blob/main/docs/recipes/icons.md).
           en: >
             Service icons come from the jsdelivr.net CDN: your browser
             sends it a request when the page loads, which reveals your IP
             address to it. For a site with no third parties at all, the
-            publisher can host their own icons (see the cairn
-            documentation).
+            publisher can
+            [host their own icons](https://github.com/MorganKryze/cairn/blob/main/docs/recipes/icons.md).
       - title: { fr: Vos droits, en: Your rights }
         body:
           fr: >

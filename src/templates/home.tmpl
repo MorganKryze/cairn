@@ -2,7 +2,7 @@
 <h1 class="visually-hidden">{{.SiteTitle}}</h1>
 {{if .About}}<section class="about">
   <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>{{.S.Dismiss}}</span></button>
-  {{range .About}}<p>{{.}}</p>
+  {{range .About}}{{.}}
   {{end}}</section>
 {{end}}{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
   <ul>

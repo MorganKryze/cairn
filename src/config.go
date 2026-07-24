@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -153,6 +158,7 @@ type Config struct {
 	Site       Site
 	Categories []Category
 	CustomCSS  bool
+	MediaDims  map[string][2]int // media/ file -> intrinsic width, height
 }
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
@@ -367,11 +373,35 @@ func loadConfig(dir string) (*Config, error) {
 		}
 	}
 
-	cfg := &Config{Site: site, Categories: groupCategories(services, metas)}
+	cfg := &Config{Site: site, Categories: groupCategories(services, metas), MediaDims: mediaDims(filepath.Join(dir, "media"))}
 	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
 		cfg.CustomCSS = true
 	}
 	return cfg, nil
+}
+
+// mediaDims reads the intrinsic size of every image in media/, so the pages
+// can carry width/height attributes and never shift while loading.
+func mediaDims(dir string) map[string][2]int {
+	out := map[string][2]int{}
+	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return nil
+		}
+		c, _, err := image.DecodeConfig(f)
+		_ = f.Close()
+		if err == nil {
+			if rel, rerr := filepath.Rel(dir, p); rerr == nil {
+				out[filepath.ToSlash(rel)] = [2]int{c.Width, c.Height}
+			}
+		}
+		return nil
+	})
+	return out
 }
 
 // strictDecode decodes a yaml node rejecting unknown fields, which

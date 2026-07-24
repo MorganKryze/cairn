@@ -13,10 +13,10 @@ so is every key in it.
 | `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |
-| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Blank line = new paragraph. |
+| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md). |
 | `links`        | `[]`      | Header navigation links, with optional icons; see below. |
 | `footer`       | `[]`      | Links at the bottom of every page.                |
-| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. |
+| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md). |
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
 | `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
@@ -117,4 +117,4 @@ pages:
 Page ids share the URL namespace with service ids; a collision is a config
 error that names both sides.
 
-Next: [Theming](theming.md)
+Next: [Writing text](text.md)

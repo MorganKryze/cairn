@@ -24,7 +24,7 @@ file at reload keeps the previous config serving and logs the same error.
 | `url`      | yes      | n/a           | `http(s)://…` or absolute path |
 | `name`     | yes      | n/a           | text (plain or per-locale map) |
 | `desc`     | no       | empty         | text                    |
-| `details`  | no       | empty         | text; blank lines split paragraphs; enables the card's "Learn more" link |
+| `details`  | no       | empty         | long text ([markdown subset](configuration/text.md)); enables the card's "Learn more" link |
 | `images`   | no       | `[]`          | detail-page previews; list of `name.png` (a file in `/config/media/`) or `{src, caption: text}`; URLs and absolute paths pass through; also enables "Learn more" |
 | `category` | no       | `other`       | slug                    |
 | `icon`     | no       | neutral glyph | slug, URL, or `/assets/…` path |
@@ -40,10 +40,10 @@ file at reload keeps the previous config serving and logs the same error.
 | `logo`         | none      | URL or `/assets/…` path    |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |
-| `about`        | empty     | dismissable welcome note under the hero, text |
+| `about`        | empty     | dismissable welcome note under the hero, long text ([markdown subset](configuration/text.md)) |
 | `links`        | `[]`      | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}` |
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
-| `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: text, sections: [{title, body}]}`; body and/or sections required |
+| `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: long text, sections: [{title, body}]}`; body and/or sections required; bodies take the [markdown subset](configuration/text.md) |
 | `credit`       | `true`    | bool; `false` removes the footer "powered by cairn" |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |
 | `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |

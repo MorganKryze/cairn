@@ -541,13 +541,34 @@ html { scrollbar-gutter: stable; }
 .page { padding-bottom: 2.5rem; }
 .page-intro { color: var(--muted); }
 .page-sec { margin-top: 2rem; }
-.page-sec h2 {
+.page-sec h2,
+.detail > h2,
+.about h2 {
   margin: 0 0 .6rem;
   font-size: .8rem;
   font-weight: 650;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: color-mix(in oklab, var(--accent) 55%, var(--muted));
+}
+.detail > h2, .about h2 { margin-top: 1.8rem; }
+
+/* ---- rich text (the markdown subset) ---- */
+
+:is(.about, .detail) :is(p, li, figcaption) a:not(.btn) {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+:is(.about, .detail) ul { margin: 0 0 .9rem; padding-left: 1.15rem; }
+:is(.about, .detail) li { line-height: 1.7; margin-bottom: .3rem; }
+:is(.about, .detail) li::marker { color: var(--accent-ink); }
+:is(.about, .detail) code {
+  font-size: .88em;
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: .35em;
+  padding: .08em .35em;
 }
 
 /* ---- empty state ---- */
