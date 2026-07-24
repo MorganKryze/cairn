@@ -91,3 +91,37 @@ func TestLocaleChoiceAndNegotiation(t *testing.T) {
 		t.Errorf("explicit choice should beat the browser language, got %s", loc)
 	}
 }
+
+func TestLocaleCookieSecureFollowsScheme(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current.Store(m)
+
+	for _, tc := range []struct {
+		proto  string
+		secure bool
+	}{{"", false}, {"https", true}} {
+		r := httptest.NewRequest("GET", "/en/?choose", nil)
+		if tc.proto != "" {
+			r.Header.Set("X-Forwarded-Proto", tc.proto)
+		}
+		w := httptest.NewRecorder()
+		home(w, r)
+		cookies := w.Result().Cookies()
+		if len(cookies) != 1 || cookies[0].Name != "locale" {
+			t.Fatalf("proto %q: cookies = %v, want one locale cookie", tc.proto, cookies)
+		}
+		if cookies[0].Secure != tc.secure {
+			t.Errorf("proto %q: Secure = %v, want %v", tc.proto, cookies[0].Secure, tc.secure)
+		}
+	}
+}

@@ -283,7 +283,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// ?choose. A negotiated visit leaves no trace, so a visitor whose
 	// browser language changes is followed until they pick one themselves.
 	if r.URL.Query().Has("choose") {
-		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode, Secure: secureRequest(r)})
 		w.Header().Set("Cache-Control", "no-store")
 		http.Redirect(w, r, "/"+loc+"/", http.StatusFound)
 		return
@@ -319,6 +319,13 @@ func manifest(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		log.Printf("manifest: %v", err)
 	}
+}
+
+// secureRequest reports whether the visitor reached us over https, directly
+// or behind a proxy. The cookies carry Secure exactly then, so they keep
+// working on the plain-http LAN deployments cairn is also made for.
+func secureRequest(r *http.Request) bool {
+	return r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 }
 
 // siteBase prefers the configured public URL; without one it falls back to

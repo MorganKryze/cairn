@@ -7,6 +7,7 @@
   x.addEventListener('click', () => {
     document.documentElement.setAttribute('data-noabout', '');
     const h = document.documentElement.getAttribute('data-about') || 'off';
-    document.cookie = `about=${h}; path=/; max-age=31536000; samesite=lax`;
+    const secure = location.protocol === 'https:' ? '; secure' : '';
+    document.cookie = `about=${h}; path=/; max-age=31536000; samesite=lax${secure}`;
   });
 })();
