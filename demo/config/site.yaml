@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/site.json
 title: cairn demo
 tagline:
   fr: Un annuaire d'exemple, adossé à de vrais services et un vrai Gatus.

@@ -72,6 +72,28 @@ Config mistakes never take the site down: the previous config keeps serving
 and the log (`docker compose logs -f cairn`) tells you the file, the line
 and what was expected.
 
+## Two safety nets while you write
+
+Put this line at the top of a yaml file and any editor with a YAML language
+server (VS Code with the YAML extension, for instance) autocompletes every
+key, documents it on hover, and underlines mistakes as you type:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/services.json
+```
+
+Use `schema/site.json` for `site.yaml` and `schema/categories.json` for
+`categories.yaml`.
+
+And `cairn -check` validates a config directory without serving anything,
+then warns about the likely oversights (a translation missing in one
+locale, a `media/` file nothing references, an image heavy enough to hurt).
+It exits 0 or 1, so it slots into CI if you version your config:
+
+```sh
+docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+```
+
 ## Next
 
 - Add more cards: [Services](configuration/services.md)

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/site.json
 title: Libre Internet
 tagline:
   fr: Des outils libres, simples, pour tout le monde.

@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/categories.json",
+  "title": "cairn categories",
+  "description": "Names and order for the category groups. Docs: https://github.com/MorganKryze/cairn/blob/main/docs/reference.md#categoriesyaml",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Slug matching the services' category key."
+      },
+      "name": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "object", "additionalProperties": { "type": "string" } }
+        ],
+        "description": "Display name, translatable. Defaults to the id, capitalized."
+      },
+      "order": {
+        "type": "integer",
+        "description": "Explicitly ordered categories come first, ascending; the rest are alphabetical."
+      }
+    }
+  }
+}

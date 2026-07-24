@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/site.json",
+  "title": "cairn site settings",
+  "description": "Site chrome: title, languages, welcome note, links, hosted pages, status. Docs: https://github.com/MorganKryze/cairn/blob/main/docs/configuration/site.md",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "The site name, shown in the header and the tab."
+    },
+    "tagline": {
+      "$ref": "#/definitions/lstring",
+      "description": "One sentence describing the site, translatable."
+    },
+    "url": {
+      "type": "string",
+      "description": "Public base URL (https://…). Enables canonical links, hreflang and an absolute sitemap."
+    },
+    "logo": {
+      "type": "string",
+      "description": "Image shown before the title: URL or /assets path."
+    },
+    "locales": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Enabled languages; the first is the default. Codes like fr, en, pt-BR."
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{3,8}$",
+          "description": "The accent color, a hex value like \"#247b7b\"."
+        }
+      }
+    },
+    "about": {
+      "$ref": "#/definitions/lstring",
+      "description": "Dismissable welcome note on the home page, translatable. Long text: paragraphs and the markdown subset."
+    },
+    "links": {
+      "type": "array",
+      "description": "Header navigation links.",
+      "items": {
+        "type": "object",
+        "required": ["label", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "$ref": "#/definitions/lstring" },
+          "url": { "type": "string" },
+          "icon": {
+            "type": "string",
+            "description": "A built-in glyph (book, chat, github, globe, heart, home, key, mail, portfolio, rss, status, user), a URL, or an /assets path."
+          }
+        }
+      }
+    },
+    "footer": {
+      "type": "array",
+      "description": "Footer links, before the hosted pages.",
+      "items": {
+        "type": "object",
+        "required": ["label", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "$ref": "#/definitions/lstring" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "description": "Pages cairn serves itself (legal notice, privacy…), linked in the footer.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "Slug; becomes the page URL."
+          },
+          "title": { "$ref": "#/definitions/lstring" },
+          "body": {
+            "$ref": "#/definitions/lstring",
+            "description": "Intro text. Long text: paragraphs and the markdown subset."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["title", "body"],
+              "additionalProperties": false,
+              "properties": {
+                "title": { "$ref": "#/definitions/lstring" },
+                "body": { "$ref": "#/definitions/lstring" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "credit": {
+      "type": "boolean",
+      "description": "false removes the footer \"powered by cairn\"."
+    },
+    "strings": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/lstring" },
+      "description": "Overrides for built-in UI strings, keyed like search.placeholder."
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gatus": {
+          "type": "string",
+          "description": "Gatus base URL cairn polls for the status pills."
+        },
+        "page": {
+          "type": "string",
+          "description": "Public Gatus URL the pills link to; set it when the poll URL is internal."
+        },
+        "interval": {
+          "type": "string",
+          "description": "Poll cadence, a duration of at least 5s (e.g. 60s)."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "lstring": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object", "additionalProperties": { "type": "string" } }
+      ]
+    }
+  }
+}

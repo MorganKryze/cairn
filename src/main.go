@@ -29,6 +29,7 @@ func main() {
 	cfgDir := flag.String("config", "/config", "config directory")
 	assetsDir := flag.String("assets", "/assets", "optional directory served at /assets/")
 	check := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
+	validate := flag.Bool("check", false, "validate the config directory, print warnings, and exit (0 ok, 1 error)")
 	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
 	ver := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
@@ -39,6 +40,9 @@ func main() {
 	}
 	if *check {
 		os.Exit(probe(*addr))
+	}
+	if *validate {
+		os.Exit(runCheck(*cfgDir))
 	}
 
 	cfg, err := loadConfig(*cfgDir)

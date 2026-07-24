@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/categories.json
 - id: documents
   name: { fr: Documents, en: Documents }
   order: 1

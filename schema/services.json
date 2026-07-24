@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/services.json",
+  "title": "cairn services",
+  "description": "A list of services: the cards on the page. Docs: https://github.com/MorganKryze/cairn/blob/main/docs/configuration/services.md",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "url", "name"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$",
+        "description": "Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes."
+      },
+      "url": {
+        "type": "string",
+        "description": "Where the card links: https://… or an absolute path."
+      },
+      "name": {
+        "$ref": "#/definitions/lstring",
+        "description": "The card title. Plain text, or a per-locale mapping like {fr: …, en: …}."
+      },
+      "desc": {
+        "$ref": "#/definitions/lstring",
+        "description": "One line under the name: what the tool does for the visitor."
+      },
+      "details": {
+        "$ref": "#/definitions/lstring",
+        "description": "Longer text for the detail page; enables the card's Learn more link. Paragraphs split on blank lines, and the markdown subset works here (links, bold, lists…)."
+      },
+      "images": {
+        "type": "array",
+        "description": "Preview images on the detail page. A bare name is a file in the config dir's media/ folder; URLs and absolute paths pass through.",
+        "items": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "required": ["src"],
+              "additionalProperties": false,
+              "properties": {
+                "src": { "type": "string", "description": "File in media/, URL, or absolute path." },
+                "caption": { "$ref": "#/definitions/lstring", "description": "Shown under the image, translatable." }
+              }
+            }
+          ]
+        }
+      },
+      "category": {
+        "type": "string",
+        "description": "Group id; name and order come from categories.yaml. Defaults to \"other\"."
+      },
+      "icon": {
+        "type": "string",
+        "description": "dashboard-icons slug (e.g. jellyfin), URL, or /assets path."
+      },
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Extra search words, invisible on the page. Add synonyms in every language."
+      }
+    }
+  },
+  "definitions": {
+    "lstring": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object", "additionalProperties": { "type": "string" } }
+      ]
+    }
+  }
+}

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/services.json
 # The URLs are what the *visitor's browser* opens (published on 127.0.0.1);
 # gatus/config.yaml probes the same services through the compose network.
 
