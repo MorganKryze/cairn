@@ -68,9 +68,8 @@ func main() {
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(embedded, "assets")
 	mux.Handle("GET /static/", cacheControl(http.StripPrefix("/static/", http.FileServerFS(static))))
-	if st, err := os.Stat(*assetsDir); err == nil && st.IsDir() {
-		mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(*assetsDir)))))
-	}
+	// Mounted unconditionally: a dir that appears after boot just works.
+	mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(*assetsDir)))))
 	// Service preview images live next to the yaml, in <config>/media/.
 	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(*cfgDir, "media"))))))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") })
@@ -155,7 +154,7 @@ func pollStatus() {
 	if cfg := current.Load().Cfg; cfg.Site.Status.Gatus != "" {
 		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
 	}
-	var lastErr string
+	var lastErr, lastMissing string
 	for {
 		m := current.Load()
 		if url := m.Cfg.Site.Status.Gatus; url != "" {
@@ -168,6 +167,12 @@ func pollStatus() {
 				}
 			} else {
 				lastErr = ""
+				if msg := unmonitored(m.Cfg, st); msg != lastMissing {
+					if msg != "" {
+						log.Printf("status: %s", msg)
+					}
+					lastMissing = msg
+				}
 			}
 			if !maps.Equal(st, m.Statuses) {
 				if next, err := buildModel(m.Cfg, st); err == nil {

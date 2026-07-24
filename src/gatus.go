@@ -48,6 +48,23 @@ func gatusKey(group, name string) string {
 	return sanitize(group) + "_" + sanitize(name)
 }
 
+// unmonitored names the services Gatus knows nothing about, so an id
+// mismatch is one log line instead of a silent missing pill.
+func unmonitored(cfg *Config, statuses map[string]bool) string {
+	var ids []string
+	for _, c := range cfg.Categories {
+		for _, s := range c.Services {
+			if _, ok := statuses[s.ID]; !ok {
+				ids = append(ids, s.ID)
+			}
+		}
+	}
+	if len(ids) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d services have no gatus endpoint, their cards show no pill: %s", len(ids), strings.Join(ids, ", "))
+}
+
 // fetchStatuses asks a Gatus instance for its endpoint statuses and returns
 // service-id -> up, keyed by endpoint name.
 func fetchStatuses(base string) (map[string]bool, error) {

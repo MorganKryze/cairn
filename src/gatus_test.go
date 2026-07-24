@@ -152,3 +152,13 @@ func TestStatusConfigValidation(t *testing.T) {
 		t.Errorf("error = %v, want status.interval complaint", err)
 	}
 }
+
+func TestUnmonitored(t *testing.T) {
+	cfg := &Config{Categories: []Category{{ID: "t", Services: []Service{{ID: "seen"}, {ID: "ghost"}}}}}
+	if got := unmonitored(cfg, map[string]bool{"seen": true}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
+		t.Errorf("unmonitored = %q, want it to name only ghost", got)
+	}
+	if got := unmonitored(cfg, map[string]bool{"seen": true, "ghost": false}); got != "" {
+		t.Errorf("unmonitored = %q, want empty when all endpoints exist", got)
+	}
+}
