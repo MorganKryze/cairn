@@ -35,6 +35,9 @@ func checkWarnings(cfg *Config, dir string) []string {
 	var out []string
 	out = append(out, missingTranslations(cfg)...)
 	out = append(out, mediaWarnings(cfg, filepath.Join(dir, "media"))...)
+	if slugs := cdnSlugs(cfg); len(slugs) > 0 {
+		out = append(out, fmt.Sprintf("%d icons load from a CDN in visitors' browsers (%s); run cairn -emit-icons to self-host them", len(slugs), strings.Join(slugs, ", ")))
+	}
 	return out
 }
 

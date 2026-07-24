@@ -70,7 +70,10 @@ locales: [fr, en]
 Save the file: the page updates within a couple of seconds, no restart.
 Config mistakes never take the site down: the previous config keeps serving
 and the log (`docker compose logs -f cairn`) tells you the file, the line
-and what was expected.
+and what was expected. Even before your first file exists, cairn serves a
+getting-started page rather than a dead container, and swaps your site in
+the moment the config is valid; `cairn -init` prints a starter
+`services.yaml` to begin from.
 
 ## Two safety nets while you write
 

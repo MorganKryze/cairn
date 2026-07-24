@@ -36,7 +36,29 @@ type Model struct {
 
 // prePaintScript must stay byte-identical to the inline script in
 // layout.tmpl: its hash is what the CSP allows. A test guards the match.
-const prePaintScript = `if(document.cookie.split('; ').includes('about=off'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
+// The about cookie stores a hash of the note's content (the data-about
+// attribute), so an edited note reappears even for visitors who dismissed
+// the previous one.
+const prePaintScript = `var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
+
+// aboutHash fingerprints the welcome note across all locales; eight hex
+// chars are plenty for a cookie value that only needs to change when the
+// note does.
+func aboutHash(about LString) string {
+	if len(about) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(about))
+	for k := range about {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	h := sha256.New()
+	for _, k := range keys {
+		h.Write([]byte(k + "\x00" + about[k] + "\x00"))
+	}
+	return hex.EncodeToString(h.Sum(nil))[:8]
+}
 
 func accentStyle(accent string) string { return ":root{--accent:" + accent + "}" }
 
@@ -59,12 +81,12 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, OGImage, Accent, SwitchPath, Base, Version string
-	CustomCSS, Search, Credit, Noindex                                                                bool
-	Locales                                                                                           []string
-	Links                                                                                             []linkView
-	Footer                                                                                            []linkView
-	S                                                                                                 uiStrings
+	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
+	CustomCSS, Search, Credit, Noindex                                                                           bool
+	Locales                                                                                                      []string
+	Links                                                                                                        []linkView
+	Footer                                                                                                       []linkView
+	S                                                                                                            uiStrings
 }
 
 type cardView struct {
@@ -205,6 +227,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			Favicon:   cfg.Site.Favicon,
 			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
 			Noindex:   cfg.Site.Index != nil && !*cfg.Site.Index,
+			AboutHash: aboutHash(cfg.Site.About),
 			Accent:    cfg.Site.Theme.Accent,
 			CustomCSS: cfg.CustomCSS,
 			Locales:   cfg.Site.Locales,
@@ -246,7 +269,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			for _, s := range c.Services {
 				card := cardView{
 					URL:    s.URL,
-					Icon:   iconURL(s.Icon),
+					Icon:   iconURL(cfg, s.Icon),
 					Name:   s.Name.Get(loc, def),
 					Desc:   s.Desc.Get(loc, def),
 					Tags:   strings.Join(s.Tags, " "),
@@ -272,7 +295,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					pageView: base,
 					Name:     s.Name.Get(loc, def),
 					Desc:     s.Desc.Get(loc, def),
-					Icon:     iconURL(s.Icon),
+					Icon:     iconURL(cfg, s.Icon),
 					URL:      s.URL,
 					Status:   statusOf(cfg, statuses, s.ID),
 					Body:     mdBlocks(s.Details.Get(loc, def), mdCtx{media: media}),
@@ -365,13 +388,4 @@ func mediaURL(src string) string {
 		return src
 	}
 	return "/media/" + src
-}
-
-// iconURL resolves a bare slug against dashboard-icons, the convention
-// Homepage and Homarr already use; URLs and absolute paths pass through.
-func iconURL(icon string) string {
-	if icon == "" || strings.HasPrefix(icon, "http://") || strings.HasPrefix(icon, "https://") || strings.HasPrefix(icon, "/") {
-		return icon
-	}
-	return "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/" + icon + ".svg"
 }

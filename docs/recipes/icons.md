@@ -46,4 +46,21 @@ icon: /assets/icons/intranet.svg
 The same mount serves the site `logo:` and anything else you need
 (`/assets/...` URLs map directly to the directory).
 
+## Going fully self-hosted
+
+Slug icons load from the jsdelivr CDN in your visitors' browsers: fine for
+most sites, but it is the only third-party request on the page, and on a
+network with no internet it means broken images. cairn removes it in two
+steps and zero YAML edits:
+
+```sh
+docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -emit-icons > get-icons.sh
+cd assets && sh ../get-icons.sh
+```
+
+The script downloads each slug into `assets/icons/`. From then on cairn
+resolves the slug to your local file automatically (an `icons/immich.svg`
+next to your assets wins over the CDN, live, no restart needed), and
+`cairn -check` stops warning about CDN icons.
+
 Next: [Multiple files](multiple-files.md)

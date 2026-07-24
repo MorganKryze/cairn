@@ -62,7 +62,7 @@ account or a manual, and boring for you to operate.
 - **Air-gap friendly**: cairn makes zero outbound requests of its own. Its
   only companions are optional and yours: a self-hosted
   [Gatus](docs/recipes/gatus.md) for status, and icons you can
-  [serve yourself](docs/recipes/icons.md#your-own-files). The
+  [serve yourself](docs/recipes/icons.md#going-fully-self-hosted). The
   [demo](demo/README.md) runs on an internal network with no route out, to
   prove it.
 

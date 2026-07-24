@@ -161,6 +161,7 @@ type Config struct {
 	Categories []Category
 	CustomCSS  bool
 	MediaDims  map[string][2]int // media/ file -> intrinsic width, height
+	LocalIcons map[string]string // slug -> /assets/icons/… when self-hosted
 }
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
@@ -375,7 +376,12 @@ func loadConfig(dir string) (*Config, error) {
 		}
 	}
 
-	cfg := &Config{Site: site, Categories: groupCategories(services, metas), MediaDims: mediaDims(filepath.Join(dir, "media"))}
+	cfg := &Config{
+		Site:       site,
+		Categories: groupCategories(services, metas),
+		MediaDims:  mediaDims(filepath.Join(dir, "media")),
+		LocalIcons: localIcons(filepath.Join(assetsPath, "icons")),
+	}
 	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
 		cfg.CustomCSS = true
 	}

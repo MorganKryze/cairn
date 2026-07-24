@@ -6,6 +6,7 @@
   x.hidden = false;
   x.addEventListener('click', () => {
     document.documentElement.setAttribute('data-noabout', '');
-    document.cookie = 'about=off; path=/; max-age=31536000; samesite=lax';
+    const h = document.documentElement.getAttribute('data-about') || 'off';
+    document.cookie = `about=${h}; path=/; max-age=31536000; samesite=lax`;
   });
 })();

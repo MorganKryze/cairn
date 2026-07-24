@@ -31,11 +31,18 @@ func main() {
 	check := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
 	validate := flag.Bool("check", false, "validate the config directory, print warnings, and exit (0 ok, 1 error)")
 	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
+	emitIcons := flag.Bool("emit-icons", false, "print a shell script that downloads your icon slugs for self-hosting and exit")
+	initCfg := flag.Bool("init", false, "print a commented starter services.yaml and exit")
 	ver := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
+	assetsPath = *assetsDir
 
 	if *ver {
 		fmt.Println("cairn", version)
+		return
+	}
+	if *initCfg {
+		fmt.Print(starterServices)
 		return
 	}
 	if *check {
@@ -46,22 +53,35 @@ func main() {
 	}
 
 	cfg, err := loadConfig(*cfgDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if *emit {
-		out, err := emitGatus(cfg)
+	if *emit || *emitIcons {
+		if err != nil {
+			log.Fatal(err)
+		}
+		var out []byte
+		if *emit {
+			out, err = emitGatus(cfg)
+		} else {
+			out = emitIconsScript(cfg)
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
 		os.Stdout.Write(out)
 		return
 	}
-	m, err := buildModel(cfg, nil)
 	if err != nil {
-		log.Fatal(err)
+		// A dead container helps nobody: serve the getting-started page and
+		// let the watcher swap the real config in the moment it is valid.
+		log.Print(err)
+		log.Printf("no valid config yet: serving the getting-started page, watching %s", *cfgDir)
+		current.Store(starterModel())
+	} else {
+		m, merr := buildModel(cfg, nil)
+		if merr != nil {
+			log.Fatal(merr)
+		}
+		current.Store(m)
 	}
-	current.Store(m)
 	go watch(*cfgDir)
 	go pollStatus()
 
@@ -84,6 +104,7 @@ func main() {
 	// with the /static/ and /assets/ subtrees in the 1.22 mux.
 	mux.HandleFunc("GET /", home)
 
+	cfg = current.Load().Cfg
 	log.Printf("cairn %s: %d services, locales %v, listening on %s", version, countServices(cfg), cfg.Site.Locales, *addr)
 	log.Fatal(http.ListenAndServe(*addr, secureHeaders(mux)))
 }
@@ -126,9 +147,11 @@ func probe(addr string) int {
 // watch polls instead of using inotify: polling survives bind mounts and
 // configmap symlink swaps that file watchers routinely miss.
 func watch(dir string) {
-	last := fingerprint(dir)
+	// Local icons live outside the config dir but change the pages too.
+	iconsDir := filepath.Join(assetsPath, "icons")
+	last := fingerprint(dir) + fingerprint(iconsDir)
 	for range time.Tick(2 * time.Second) {
-		fp := fingerprint(dir)
+		fp := fingerprint(dir) + fingerprint(iconsDir)
 		if fp == last {
 			continue
 		}

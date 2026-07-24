@@ -12,9 +12,11 @@ Everything on one page. The per-topic pages explain; this one enumerates.
 | `media/`          | service preview images, served at `/media/`; optional |
 | any other `*.yaml`/`*.yml` | a list of services; at least one required |
 
-Changes to any of them apply within ~2 seconds. A bad file at boot stops the
-server with an error naming the file, line, problem and expected shape; a bad
-file at reload keeps the previous config serving and logs the same error.
+Changes to any of them apply within ~2 seconds. A bad or missing config at
+boot serves a built-in getting-started page while the log names the file,
+line, problem and expected shape; the real site takes over the moment the
+config is valid. A bad file at reload keeps the previous config serving and
+logs the same error.
 
 ## `services.yaml` (any name)
 
@@ -99,7 +101,9 @@ ids, alphabetically.
 | `-config`      | `/config` | config directory                           |
 | `-assets`      | `/assets` | directory served at `/assets/`, if it exists |
 | `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks |
+| `-init`        | off       | print a commented starter `services.yaml`, then exit |
 | `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit |
+| `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit |
 | `-check`       | off       | validate the config directory, print warnings (missing translations, orphan or heavy media), then exit 0 or 1 |
 | `-version`     | off       | print the version, then exit |
 
