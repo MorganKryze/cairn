@@ -131,6 +131,57 @@ func TestDetailPages(t *testing.T) {
 	}
 }
 
+func TestServiceImages(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"site.yaml": "locales: [fr, en]\n",
+		"services.yaml": "- id: pdf\n  url: https://pdf.example.org\n  name: PDF\n  images:\n" +
+			"    - pdf.png\n" +
+			"    - src: https://example.org/far.png\n      caption: {fr: Légende, en: Caption}\n",
+	})
+	if err := os.MkdirAll(filepath.Join(dir, "media"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "media", "pdf.png"), []byte("png"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := buildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(m.Pages["fr/pdf"].HTML)
+	if !strings.Contains(html, `<img src="/media/pdf.png"`) {
+		t.Errorf("bare image name not resolved to /media/:\n%s", html)
+	}
+	if !strings.Contains(html, `src="https://example.org/far.png"`) || !strings.Contains(html, "<figcaption>Légende</figcaption>") {
+		t.Errorf("URL image or localized caption missing:\n%s", html)
+	}
+	if !strings.Contains(string(m.Pages["fr"].HTML), `href="/fr/pdf/"`) {
+		t.Error("images alone should enable the card more-link")
+	}
+}
+
+func TestServiceImageErrors(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"missing file": {
+			"services.yaml": "- {id: a, url: https://a.example.org, name: A, images: [nope.png]}\n",
+		},
+		"traversal": {
+			"services.yaml": "- {id: a, url: https://a.example.org, name: A, images: [../site.yaml]}\n",
+		},
+		"unknown key": {
+			"services.yaml": "- id: a\n  url: https://a.example.org\n  name: A\n  images:\n    - {src: a.png, captoin: typo}\n",
+		},
+	} {
+		if _, err := loadConfig(writeFiles(t, files)); err == nil {
+			t.Errorf("%s: want an error, got none", name)
+		}
+	}
+}
+
 func TestServiceIDValidation(t *testing.T) {
 	dir := writeFiles(t, map[string]string{
 		"services.yaml": "- {id: Bad ID, url: https://a.example.org, name: A}\n",

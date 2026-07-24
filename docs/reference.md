@@ -9,6 +9,7 @@ Everything on one page. The per-topic pages explain; this one enumerates.
 | `site.yaml`       | site chrome; optional                       |
 | `categories.yaml` | category names and order; optional          |
 | `custom.css`      | loaded after cairn's stylesheet; optional   |
+| `media/`          | service preview images, served at `/media/`; optional |
 | any other `*.yaml`/`*.yml` | a list of services; at least one required |
 
 Changes to any of them apply within ~2 seconds. A bad file at boot stops the
@@ -24,6 +25,7 @@ file at reload keeps the previous config serving and logs the same error.
 | `name`     | yes      | n/a           | text (plain or per-locale map) |
 | `desc`     | no       | empty         | text                    |
 | `details`  | no       | empty         | text; blank lines split paragraphs; enables the card's "Learn more" link |
+| `images`   | no       | `[]`          | detail-page previews; list of `name.png` (a file in `/config/media/`) or `{src, caption: text}`; URLs and absolute paths pass through; also enables "Learn more" |
 | `category` | no       | `other`       | slug                    |
 | `icon`     | no       | neutral glyph | slug, URL, or `/assets/…` path |
 | `tags`     | no       | `[]`          | list of search words    |

@@ -16,6 +16,7 @@ Any text field accepts a plain string or a per-locale map; see
 | `name`     | yes      | n/a           | The card title.                           |
 | `desc`     | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor. |
 | `details`  | no       | empty         | Longer text for the [detail page](#detail-pages). Blank lines split paragraphs. |
+| `images`   | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images). |
 | `category` | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml). |
 | `icon`     | no       | neutral glyph | Slug, URL or `/assets` path; see [Icons](../recipes/icons.md). |
 | `tags`     | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language. |
@@ -43,10 +44,31 @@ Any text field accepts a plain string or a per-locale map; see
 
 Every service gets a page at `/{locale}/{id}/` with its name, description,
 `details` text and an "Open the tool" button. The card shows a discreet
-"Learn more" link only when `details` is set; the card itself always goes
-straight to the tool.
+"Learn more" link only when `details` or `images` is set; the card itself
+always goes straight to the tool.
 
 Write `details` for the visitor who wonders *"when would I use this?"*:
 start from a situation, not from features.
+
+## Preview images
+
+A screenshot answers *"what does it look like?"* better than any paragraph.
+Put the files in a `media/` folder next to your yaml and reference them by
+name; each entry is a plain path or a `{src, caption}` pair:
+
+```yaml
+- id: photos
+  # …
+  images:
+    - screen.png
+    - src: albums.png
+      caption: { fr: La vue albums., en: The albums view. }
+```
+
+They appear on the detail page, in order, between the text and the button.
+cairn serves `media/` itself at `/media/`, so previews stay self-hosted like
+everything else; a full URL or an absolute `/assets/…` path passes through
+unchanged. Referencing a file that is not in `media/` is a config error that
+names the expected location.
 
 Next: [Site](site.md)

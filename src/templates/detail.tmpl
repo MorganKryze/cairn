@@ -10,6 +10,7 @@
   </div>
   {{if .Desc}}<p class="lead">{{.Desc}}</p>
   {{end}}{{range .Paragraphs}}<p>{{.}}</p>
+  {{end}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy">{{if .Caption}}<figcaption>{{.Caption}}</figcaption>{{end}}</figure>
   {{end}}<p><a class="btn" href="{{.URL}}">{{.S.Open}}</a></p>
 </article>
 {{template "bottom" .}}

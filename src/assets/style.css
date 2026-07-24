@@ -492,6 +492,17 @@ html { scrollbar-gutter: stable; }
 }
 .detail .lead { font-size: 1.2rem; margin-top: 1.4rem; }
 .detail p { max-width: 40rem; }
+.shot { margin: 1.6rem 0 0; }
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.shot figcaption { margin-top: .55rem; font-size: .85rem; color: var(--muted); }
 .btn {
   display: inline-block;
   margin-top: 1.4rem;

@@ -65,8 +65,10 @@ func main() {
 	static, _ := fs.Sub(embedded, "assets")
 	mux.Handle("GET /static/", cacheControl(http.StripPrefix("/static/", http.FileServerFS(static))))
 	if st, err := os.Stat(*assetsDir); err == nil && st.IsDir() {
-		mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(*assetsDir))))
+		mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(*assetsDir)))))
 	}
+	// Service preview images live next to the yaml, in <config>/media/.
+	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(*cfgDir, "media"))))))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") })
 	mux.HandleFunc("GET /custom.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
@@ -299,6 +301,18 @@ func sitemap(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", siteBase(r), k)
 	}
 	io.WriteString(w, "</urlset>\n")
+}
+
+// noListing serves files but never directory indexes.
+func noListing(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// After StripPrefix the folder root is the empty path.
+		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func cacheControl(h http.Handler) http.Handler {

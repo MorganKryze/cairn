@@ -39,6 +39,22 @@
   category: tools
   name: { fr: Podinfo, en: Podinfo }
   desc: { fr: Une petite application de démonstration qui dit bonjour., en: A tiny demo application that says hello. }
+  details:
+    fr: |
+      Une application témoin : elle affiche sa version, le nom du conteneur
+      qui répond et un bouton pour la solliciter. C'est aussi la carte qui
+      montre les images de preview : le fichier vit dans config/media/ et la
+      page le sert elle-même.
+    en: |
+      A specimen application: it shows its version, the name of the answering
+      container and a button to poke it. It is also the card that shows off
+      preview images: the file lives in config/media/ and the page serves it
+      itself.
+  images:
+    - src: podinfo.png
+      caption:
+        fr: La page d'accueil de podinfo, capturée depuis cette démo.
+        en: The podinfo home page, captured from this very demo.
   tags: [demo, go]
 
 - id: ghost

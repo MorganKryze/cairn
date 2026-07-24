@@ -96,14 +96,37 @@ type Site struct {
 }
 
 type Service struct {
-	ID       string   `yaml:"id"`
-	URL      string   `yaml:"url"`
-	Category string   `yaml:"category"`
-	Icon     string   `yaml:"icon"`
-	Name     LString  `yaml:"name"`
-	Desc     LString  `yaml:"desc"`
-	Details  LString  `yaml:"details"`
-	Tags     []string `yaml:"tags"`
+	ID       string         `yaml:"id"`
+	URL      string         `yaml:"url"`
+	Category string         `yaml:"category"`
+	Icon     string         `yaml:"icon"`
+	Name     LString        `yaml:"name"`
+	Desc     LString        `yaml:"desc"`
+	Details  LString        `yaml:"details"`
+	Images   []ServiceImage `yaml:"images"`
+	Tags     []string       `yaml:"tags"`
+}
+
+// ServiceImage is a preview shown on the detail page. A plain YAML string is
+// a src without caption. Bare names resolve to files in the config dir's
+// media/ folder, served at /media/; URLs and absolute paths pass through.
+type ServiceImage struct {
+	Src     string  `yaml:"src"`
+	Caption LString `yaml:"caption"`
+}
+
+func (i *ServiceImage) UnmarshalYAML(n *yaml.Node) error {
+	if n.Kind == yaml.ScalarNode {
+		*i = ServiceImage{Src: n.Value}
+		return nil
+	}
+	type plain ServiceImage
+	var v plain
+	if err := strictDecode(n, &v); err != nil {
+		return err
+	}
+	*i = ServiceImage(v)
+	return nil
 }
 
 type CategoryMeta struct {
@@ -270,6 +293,17 @@ func loadConfig(dir string) (*Config, error) {
 	if !foundServices {
 		return nil, fmt.Errorf("config: no services file in %s (expected at least one yaml list of services, e.g. services.yaml)", dir)
 	}
+	for _, s := range services {
+		for _, img := range s.Images {
+			src := img.Src
+			if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+				continue
+			}
+			if st, err := os.Stat(filepath.Join(dir, "media", filepath.FromSlash(src))); err != nil || st.IsDir() {
+				return nil, fmt.Errorf("config: service %q: image %q not found (expected a file at %s, a URL or an absolute path)", s.ID, src, filepath.Join(dir, "media", src))
+			}
+		}
+	}
 	if len(site.Locales) == 0 {
 		site.Locales = []string{"en"}
 	}
@@ -406,6 +440,14 @@ func parseServices(file string, data []byte) ([]Service, error) {
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
+		}
+		for _, img := range s.Images {
+			switch {
+			case img.Src == "":
+				return nil, fmt.Errorf("config: %s line %d: service %q: every images entry needs a src (expected: - screen.png  or  - {src: screen.png, caption: …})", file, item.Line, s.ID)
+			case strings.Contains(img.Src, ".."):
+				return nil, fmt.Errorf("config: %s line %d: service %q: image src %q must not contain %q", file, item.Line, s.ID, img.Src, "..")
+			}
 		}
 		out = append(out, s)
 	}

@@ -130,6 +130,11 @@ type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
 	Paragraphs                                             []string
+	Images                                                 []imageView
+}
+
+type imageView struct {
+	Src, Caption string
 }
 
 type staticView struct {
@@ -240,7 +245,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					Status: statusOf(cfg, statuses, s.ID),
 				}
 				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
-				if len(s.Details) > 0 {
+				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
 				}
 				cv.Cards = append(cv.Cards, card)
@@ -263,6 +268,9 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					URL:        s.URL,
 					Status:     statusOf(cfg, statuses, s.ID),
 					Paragraphs: paragraphs(s.Details.Get(loc, def)),
+				}
+				for _, img := range s.Images {
+					dv.Images = append(dv.Images, imageView{Src: mediaURL(img.Src), Caption: img.Caption.Get(loc, def)})
 				}
 				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
 				dv.PageTitle = dv.Name + " · " + cfg.Site.Title
@@ -315,6 +323,16 @@ func paragraphs(s string) []string {
 		}
 	}
 	return out
+}
+
+// mediaURL resolves a bare image name against the /media/ route, which
+// serves the config dir's media/ folder; URLs and absolute paths pass
+// through, same convention as icons.
+func mediaURL(src string) string {
+	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+		return src
+	}
+	return "/media/" + src
 }
 
 // iconURL resolves a bare slug against dashboard-icons, the convention
