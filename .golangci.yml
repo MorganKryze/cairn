@@ -1,0 +1,20 @@
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+linters:
+  enable:
+    - misspell
+  settings:
+    errcheck:
+      # best-effort writes to an HTTP client or stdout, and deferred closes:
+      # there is nothing useful to do when they fail
+      exclude-functions:
+        - (net/http.ResponseWriter).Write
+        - (*os.File).Write
+        - (io.Closer).Close
+        - io.WriteString
+        - fmt.Fprintf

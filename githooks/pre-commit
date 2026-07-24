@@ -24,6 +24,9 @@ if echo "$staged" | grep -qE '^(src/|go\.(mod|sum))'; then
   fi
   go vet ./...
   go test ./... >/dev/null
+  if command -v golangci-lint >/dev/null 2>&1; then
+    golangci-lint run
+  fi
 fi
 
 if echo "$staged" | grep -q '^\.github/workflows/' && command -v actionlint >/dev/null 2>&1; then

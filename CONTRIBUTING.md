@@ -12,7 +12,9 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `build`, `demo`, `demo-rebuild`, `down`, `logs`, `hooks`.
+`test`, `lint`, `build`, `demo`, `demo-rebuild`, `down`, `logs`, `hooks`.
+Linting is [golangci-lint](https://golangci-lint.run) with a near-default
+config (`.golangci.yml`); CI runs it on every code push.
 
 Run `just hooks` once: it points git at `githooks/`, whose pre-commit runs
 gofmt, vet and the tests when Go files are staged, lints staged workflows,

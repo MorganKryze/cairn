@@ -14,6 +14,11 @@ build:
 test:
     go vet ./... && go test ./...
 
+# run the linter and the format check
+lint:
+    golangci-lint run
+    golangci-lint fmt --diff
+
 # install the git pre-commit hook
 hooks:
     git config core.hooksPath githooks
