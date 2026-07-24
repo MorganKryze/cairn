@@ -153,6 +153,55 @@ header { padding-block: 1.4rem; }
 .langs a:hover { color: var(--fg); }
 .langs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* Above three locales the switcher folds into a menu; <details> keeps it
+   working without JavaScript. */
+.langs-menu { position: relative; display: block; }
+.langs-menu summary {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  list-style: none;
+  cursor: pointer;
+  padding: .3rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: var(--card);
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: var(--fg);
+}
+.langs-menu summary::-webkit-details-marker { display: none; }
+.langs-menu summary svg { width: .85rem; height: .85rem; color: var(--muted); }
+.langs-menu[open] summary svg { transform: rotate(180deg); }
+.langs-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.langs-menu nav {
+  position: absolute;
+  right: 0;
+  top: calc(100% + .4rem);
+  display: flex;
+  flex-direction: column;
+  min-width: 5.5rem;
+  padding: .3rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .7rem;
+  box-shadow: var(--shadow-lift);
+  z-index: 10;
+}
+.langs-menu nav a {
+  padding: .35rem .6rem;
+  border-radius: .45rem;
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-decoration: none;
+  color: var(--muted);
+}
+.langs-menu nav a[aria-current] { color: var(--fg); background: var(--faint); }
+.langs-menu nav a:hover { color: var(--fg); background: var(--faint); }
+.langs-menu nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ---- welcome note ---- */
 
 [data-noabout] .about { display: none; }

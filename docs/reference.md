@@ -36,7 +36,7 @@ logs the same error.
 
 | Key            | Default   | Type                       |
 | -------------- | --------- | -------------------------- |
-| `title`        | `cairn`   | plain string               |
+| `title`        | `cairn`   | text (plain or per-locale map) |
 | `tagline`      | empty     | text; opens the home page, feeds the meta description |
 | `url`          | none      | public base URL; adds canonical + hreflang, absolute sitemap |
 | `logo`         | none      | URL or `/assets/…` path; raster logos double as the og:image when `url` is set |

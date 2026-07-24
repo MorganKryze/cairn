@@ -242,8 +242,25 @@ func TestStrOverrideAndFallback(t *testing.T) {
 	if got := cfg.Str("en", "search.placeholder"); got != "Search for a tool…" {
 		t.Errorf("builtin fallback = %q", got)
 	}
-	if got := cfg.Str("de", "search.empty"); got != "No results. Try another word." {
+	if got := cfg.Str("xx", "search.empty"); got != "No results. Try another word." {
 		t.Errorf("english fallback = %q", got)
+	}
+	if got := cfg.Str("pt-BR", "card.more"); got != "Saber mais" {
+		t.Errorf("base-locale fallback = %q, want the pt table", got)
+	}
+}
+
+func TestLocaleTablesComplete(t *testing.T) {
+	want := builtinStrings["en"]
+	for lang, table := range builtinStrings {
+		if len(table) != len(want) {
+			t.Errorf("locale %q has %d strings, en has %d", lang, len(table), len(want))
+		}
+		for key := range want {
+			if table[key] == "" {
+				t.Errorf("locale %q is missing %q", lang, key)
+			}
+		}
 	}
 }
 

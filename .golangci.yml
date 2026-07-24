@@ -8,6 +8,12 @@ formatters:
 linters:
   enable:
     - misspell
+  exclusions:
+    rules:
+      # locales.go is written in seven languages; misspell only knows one
+      - path: locales\.go
+        linters:
+          - misspell
   settings:
     errcheck:
       # best-effort writes to an HTTP client or stdout, and deferred closes:

@@ -47,6 +47,15 @@ docs/       GitHub-native Markdown, no generator
 - **Accessibility and i18n are not optional.** New UI text goes through the
   strings table (both built-in locales), keyboard and contrast stay intact.
 
+## Add your language
+
+The friendliest first contribution: cairn's interface text lives in
+`src/locales.go`, one small block per language, about eighteen short
+strings. Copy the English block, translate it, and open a pull request; a
+test checks completeness, so if `just test` passes, your table is done.
+Regional variants only need their own block when they genuinely differ
+(`pt-BR` already finds `pt`).
+
 ## Commits
 
 One imperative line, scoped, short:

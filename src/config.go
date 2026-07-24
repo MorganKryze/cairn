@@ -86,7 +86,7 @@ type PageSection struct {
 }
 
 type Site struct {
-	Title   string   `yaml:"title"`
+	Title   LString  `yaml:"title"`
 	Tagline LString  `yaml:"tagline"`
 	URL     string   `yaml:"url"` // public base URL; enables canonical/hreflang
 	Logo    string   `yaml:"logo"`
@@ -173,51 +173,9 @@ func (c *Config) StatusInterval() time.Duration {
 	return 60 * time.Second
 }
 
-var builtinStrings = map[string]map[string]string{
-	"en": {
-		"nav.skip":           "Skip to content",
-		"nav.languages":      "Language",
-		"nav.toc":            "Categories",
-		"nav.links":          "Links",
-		"nav.theme":          "Theme",
-		"about.dismiss":      "Dismiss",
-		"foot.powered":       "powered by",
-		"search.label":       "Search",
-		"search.placeholder": "Search for a tool…",
-		"search.empty":       "No results. Try another word.",
-		"cat.other":          "Other",
-		"card.more":          "Learn more",
-		"detail.open":        "Open the tool",
-		"detail.back":        "Back",
-		"status.up":          "Online",
-		"status.down":        "Offline",
-		"status.unknown":     "Unknown",
-		"status.link":        "view status",
-	},
-	"fr": {
-		"nav.skip":           "Aller au contenu",
-		"nav.languages":      "Langue",
-		"nav.toc":            "Catégories",
-		"nav.links":          "Liens",
-		"nav.theme":          "Thème",
-		"about.dismiss":      "Masquer",
-		"foot.powered":       "propulsé par",
-		"search.label":       "Rechercher",
-		"search.placeholder": "Chercher un outil…",
-		"search.empty":       "Aucun résultat. Essayez un autre mot.",
-		"cat.other":          "Autres",
-		"card.more":          "En savoir plus",
-		"detail.open":        "Ouvrir l’outil",
-		"detail.back":        "Retour",
-		"status.up":          "En ligne",
-		"status.down":        "Hors ligne",
-		"status.unknown":     "Inconnu",
-		"status.link":        "voir le statut",
-	},
-}
-
 // Str resolves a UI string: site.yaml override (only for the locales it
-// defines), then the locale's built-in set, then English, then the key.
+// defines), then the locale's built-in set, its base language (pt-BR finds
+// pt), English, then the key.
 func (c *Config) Str(locale, key string) string {
 	if ls, ok := c.Site.Strings[key]; ok {
 		for _, k := range []string{locale, ""} {
@@ -226,11 +184,11 @@ func (c *Config) Str(locale, key string) string {
 			}
 		}
 	}
-	if s := builtinStrings[locale][key]; s != "" {
-		return s
-	}
-	if s := builtinStrings["en"][key]; s != "" {
-		return s
+	base, _, _ := strings.Cut(locale, "-")
+	for _, l := range []string{locale, strings.ToLower(base), "en"} {
+		if s := builtinStrings[l][key]; s != "" {
+			return s
+		}
 	}
 	return key
 }
@@ -261,7 +219,7 @@ func loadConfig(dir string) (*Config, error) {
 		return nil, fmt.Errorf("config: cannot read %s (mount your yaml files there): %w", dir, err)
 	}
 
-	site := Site{Title: "cairn", Locales: []string{"en"}}
+	site := Site{Title: LString{"": "cairn"}, Locales: []string{"en"}}
 	site.Theme.Accent = "#247b7b"
 
 	var services []Service

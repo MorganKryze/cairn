@@ -24,7 +24,7 @@ The five-minute path lives in
 [Getting started](https://github.com/MorganKryze/cairn/blob/main/docs/getting-started.md).`
 
 func starterModel() *Model {
-	cfg := &Config{Site: Site{Title: "cairn", Locales: []string{"en"}}}
+	cfg := &Config{Site: Site{Title: LString{"": "cairn"}, Locales: []string{"en"}}}
 	cfg.Site.Theme.Accent = "#247b7b"
 	cfg.Site.About = LString{"": starterAbout}
 	m, err := buildModel(cfg, nil)

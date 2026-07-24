@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "properties": {
     "title": {
-      "type": "string",
-      "description": "The site name, shown in the header and the tab."
+      "$ref": "#/definitions/lstring",
+      "description": "The site name, shown in the header and the tab. Plain text or a per-locale mapping."
     },
     "tagline": {
       "$ref": "#/definitions/lstring",

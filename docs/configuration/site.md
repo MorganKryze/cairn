@@ -7,7 +7,7 @@ so is every key in it.
 
 | Key            | Default   | What it is                                        |
 | -------------- | --------- | ------------------------------------------------- |
-| `title`        | `cairn`   | Site name: hero heading, header, `<title>`.       |
+| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key. |
 | `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show. |
 | `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines. |
 | `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set. |

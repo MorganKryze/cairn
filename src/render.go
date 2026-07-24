@@ -222,7 +222,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			Base:      cfg.Site.URL,
 			Version:   version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
-			SiteTitle: cfg.Site.Title,
+			SiteTitle: cfg.Site.Title.Get(loc, def),
 			Logo:      cfg.Site.Logo,
 			Favicon:   cfg.Site.Favicon,
 			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
@@ -262,7 +262,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 
 		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def), About: mdBlocks(cfg.Site.About.Get(loc, def), mdCtx{media: media})}
 		hv.Search = true
-		hv.PageTitle = cfg.Site.Title
+		hv.PageTitle = hv.SiteTitle
 		hv.MetaDesc = hv.Tagline
 		for _, c := range cfg.Categories {
 			cv := catView{ID: c.ID, Name: cfg.categoryName(c, loc)}
@@ -305,7 +305,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: img.Caption.Get(loc, def), W: w, H: h})
 				}
 				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
-				dv.PageTitle = dv.Name + " · " + cfg.Site.Title
+				dv.PageTitle = dv.Name + " · " + base.SiteTitle
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"
 				page, err := render("detail.tmpl", dv)
@@ -327,7 +327,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				}
 				sv.Sections = append(sv.Sections, sectionView{Title: s.Title.Get(loc, def), Body: mdBlocks(secBody, mdCtx{media: media})})
 			}
-			sv.PageTitle = sv.Title + " · " + cfg.Site.Title
+			sv.PageTitle = sv.Title + " · " + base.SiteTitle
 			if ps := paragraphs(body); len(ps) > 0 {
 				sv.MetaDesc = mdText(ps[0])
 			} else if ps := paragraphs(firstSec); len(ps) > 0 {
