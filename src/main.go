@@ -113,7 +113,10 @@ func main() {
 
 	cfg = current.Load().Cfg
 	log.Printf("cairn %s: %d services, locales %v, listening on %s", version, countServices(cfg), cfg.Site.Locales, *addr)
-	log.Fatal(http.ListenAndServe(*addr, secureHeaders(mux)))
+	// ReadHeaderTimeout caps slow-header (Slowloris) clients; the request body
+	// stays untimed since cairn only ever reads tiny GETs.
+	srv := &http.Server{Addr: *addr, Handler: secureHeaders(mux), ReadHeaderTimeout: 10 * time.Second}
+	log.Fatal(srv.ListenAndServe())
 }
 
 // secureHeaders sets the response headers a security scan would ask for.
