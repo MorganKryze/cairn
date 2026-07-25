@@ -16,11 +16,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
 var current atomic.Pointer[Model]
+
+// reloadMu serializes the two writers of current (config watcher and status
+// poller) so neither clobbers the other's half of the model.
+var reloadMu sync.Mutex
 
 // version is stamped by the build: -ldflags "-X main.version=…"
 var version = "dev"
@@ -163,12 +168,16 @@ func watch(dir string) {
 			log.Printf("reload failed, keeping previous config: %v", err)
 			continue
 		}
+		reloadMu.Lock()
 		m, err := buildModel(cfg, current.Load().Statuses)
+		if err == nil {
+			current.Store(m)
+		}
+		reloadMu.Unlock()
 		if err != nil {
 			log.Printf("reload failed, keeping previous config: %v", err)
 			continue
 		}
-		current.Store(m)
 		log.Printf("config reloaded: %d services, locales %v", countServices(cfg), cfg.Site.Locales)
 	}
 }
@@ -199,13 +208,18 @@ func pollStatus() {
 					lastMissing = msg
 				}
 			}
-			if !maps.Equal(st, m.Statuses) {
-				if next, err := buildModel(m.Cfg, st); err == nil {
+			reloadMu.Lock()
+			// Re-read under the lock so a config reload that landed mid-poll
+			// is merged with, not overwritten by, the fresh statuses.
+			cur := current.Load()
+			if !maps.Equal(st, cur.Statuses) {
+				if next, err := buildModel(cur.Cfg, st); err == nil {
 					current.Store(next)
 				} else {
 					log.Printf("status: render failed, keeping previous pages: %v", err)
 				}
 			}
+			reloadMu.Unlock()
 		}
 		time.Sleep(m.Cfg.StatusInterval())
 	}
@@ -349,10 +363,7 @@ func baseURL(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
-func noindex() bool {
-	idx := current.Load().Cfg.Site.Index
-	return idx != nil && !*idx
-}
+func noindex() bool { return current.Load().Cfg.Noindex() }
 
 func robots(w http.ResponseWriter, r *http.Request) {
 	if noindex() {
