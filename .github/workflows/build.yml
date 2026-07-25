@@ -31,6 +31,27 @@ jobs:
         with:
           version: latest
 
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # publishes the badge to the orphan `badges` branch
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+      - name: measure and gate
+        run: |
+          go test -covermode=atomic -coverprofile=cov.out ./src/...
+          pct=$(go tool cover -func=cov.out | awk '/^total:/ {sub(/%/,"",$NF); print $NF}')
+          echo "coverage: ${pct}%"
+          awk -v p="$pct" 'BEGIN { exit (p + 0 >= 70) ? 0 : 1 }' \
+            || { echo "::error::coverage ${pct}% is below the 70% floor"; exit 1; }
+          echo "PCT=$pct" >> "$GITHUB_ENV"
+      - name: publish badge
+        if: github.ref == 'refs/heads/main'
+        run: bash .github/coverage-badge.sh "$PCT"
+
   image:
     runs-on: ubuntu-latest
     steps:

@@ -14,6 +14,11 @@ build:
 test:
     go vet ./... && go test ./...
 
+# measure coverage (add `-html=/tmp/cov.out` to the last line for a report)
+coverage:
+    go test -covermode=atomic -coverprofile=/tmp/cov.out ./... >/dev/null
+    go tool cover -func=/tmp/cov.out | tail -1
+
 # run the linter and the format check
 lint:
     golangci-lint run
