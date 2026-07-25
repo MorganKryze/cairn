@@ -134,7 +134,7 @@ func linkGlyphNames() []string {
 func linkIcon(v *linkView, icon string) {
 	switch {
 	case icon == "":
-	case strings.HasPrefix(icon, "http://") || strings.HasPrefix(icon, "https://") || strings.HasPrefix(icon, "/"):
+	case isURLOrAbs(icon):
 		v.IconIMG = icon
 	default:
 		v.IconSVG = template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` + linkGlyphs[icon] + `</svg>`)
@@ -227,7 +227,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			Favicon:   cfg.Site.Favicon,
 			TouchIcon: touchIcon(cfg.Site.Favicon),
 			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
-			Noindex:   cfg.Site.Index != nil && !*cfg.Site.Index,
+			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
 			Accent:    cfg.Site.Theme.Accent,
 			CustomCSS: cfg.CustomCSS,
@@ -394,7 +394,7 @@ func ogImage(base, logo string) string {
 // serves the config dir's media/ folder; URLs and absolute paths pass
 // through, same convention as icons.
 func mediaURL(src string) string {
-	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+	if isURLOrAbs(src) {
 		return src
 	}
 	return "/media/" + src
