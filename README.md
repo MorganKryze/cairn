@@ -54,33 +54,30 @@ account or a manual, and boring for you to operate.
 
 ## What you get as the operator
 
-- **One binary, `FROM scratch`, ~14 MB**, zero runtime dependencies, no
-  database, no tracking.
+- **One static binary, ~14 MB**, zero runtime dependencies, no database.
 - **YAML mounted read-only**; edits apply live within seconds, and a config
   error names the file, the line and the expected shape instead of taking the
   site down.
 - **Legal pages served by cairn itself** (legal notice, privacy…): the pages
   self-hosters never have anywhere to put.
-- The strictest container settings just work: `read_only`, `cap_drop: ALL`,
-  self-probing healthcheck. See the [hardened compose](docs/deployment/docker-compose.md).
-- **Air-gap friendly**: cairn makes zero outbound requests of its own. Its
-  only companions are optional and yours: a self-hosted
-  [Gatus](docs/recipes/gatus.md) for status, and icons you can
-  [serve yourself](docs/recipes/icons.md#going-fully-self-hosted). The
-  [demo](demo/README.md) runs on an internal network with no route out, to
-  prove it.
 
 ## Secure by subtraction
 
-The safest surface is the one that isn't there: cairn has no database, no
-accounts, no admin panel, no Docker socket, and no form to submit. What little
-remains is kept deliberately tight.
+The safest surface is the one that isn't there: cairn stores nothing, signs no
+one in, and takes no input it has to trust. What little runs is kept
+deliberately tight, from the image down to the wire.
 
 - **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
   image, so a compromised process has nothing to pivot into.
+- **Runs locked down**: `read_only`, `cap_drop: ALL` and a self-probing
+  healthcheck all work out of the box. See the [hardened compose](docs/deployment/docker-compose.md).
 - **A strict Content-Security-Policy** (`default-src 'none'`, inline fragments
   pinned by hash) and the hardening headers, with no third-party script or
   font to trust.
+- **No outbound requests of its own**: air-gap friendly, its only companions
+  optional and yours, a self-hosted [Gatus](docs/recipes/gatus.md) for status
+  and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
+  The [demo](demo/README.md) runs on a network with no route out, to prove it.
 - **A watched supply chain**: every push runs `govulncheck`, a Trivy image
   scan, CodeQL and Dependabot. See [security.yml](.github/workflows/security.yml).
 
@@ -134,8 +131,7 @@ docker compose up -d --build
 Everything lives in [docs/](docs/README.md), and it is written to be read, not
 just grepped: each page teaches the why before the how, in plain prose a
 developer can enjoy rather than a reference dump to endure. If you like
-understanding how a thing works, not only pasting config that does, start
-anywhere below.
+understanding how a thing works, start anywhere below.
 
 |               |                                                                                                                                                                      |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
