@@ -39,6 +39,7 @@
         fr: La réponse de whoami au navigateur sans tête qui a pris cette capture.
         en: whoami answering the headless browser that took this screenshot.
   tags: [echo, debug, requête, request]
+  selfhosted: true
 
 - id: podinfo
   url: http://localhost:8085
@@ -62,6 +63,7 @@
         fr: La page d'accueil de podinfo, capturée depuis cette démo.
         en: The podinfo home page, captured from this very demo.
   tags: [demo, go]
+  selfhosted: true
 
 - id: ghost
   url: http://localhost:8086
@@ -89,6 +91,7 @@
   name: { fr: Code source de cairn, en: cairn source code }
   desc: { fr: Le dépôt de la page que vous regardez., en: The repository of the page you are looking at. }
   tags: [github, source]
+  selfhosted: false
 
 - id: gatus-dashboard
   url: http://localhost:8081

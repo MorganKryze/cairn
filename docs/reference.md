@@ -31,6 +31,7 @@ logs the same error.
 | `category` | no       | `other`       | slug                    |
 | `icon`     | no       | neutral glyph | slug, URL, or `/assets/…` path |
 | `tags`     | no       | `[]`          | list of search words    |
+| `selfhosted` | no     | none          | `true`/`false`: shows a self-hosted / hosted-elsewhere flag on the card ([details](configuration/services.md#hosting-flag)) |
 
 ## `site.yaml`
 

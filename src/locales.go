@@ -26,6 +26,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Offline",
 		"status.unknown":     "Unknown",
 		"status.link":        "view status",
+		"host.self":          "Self-hosted",
+		"host.external":      "External",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -46,6 +48,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Hors ligne",
 		"status.unknown":     "Inconnu",
 		"status.link":        "voir le statut",
+		"host.self":          "Auto-hébergé",
+		"host.external":      "Externe",
 	},
 	"de": {
 		"nav.skip":           "Zum Inhalt springen",
@@ -66,6 +70,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Offline",
 		"status.unknown":     "Unbekannt",
 		"status.link":        "Status ansehen",
+		"host.self":          "Selbst gehostet",
+		"host.external":      "Extern",
 	},
 	"es": {
 		"nav.skip":           "Saltar al contenido",
@@ -86,6 +92,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Fuera de línea",
 		"status.unknown":     "Desconocido",
 		"status.link":        "ver estado",
+		"host.self":          "Autoalojado",
+		"host.external":      "Externo",
 	},
 	"it": {
 		"nav.skip":           "Salta al contenuto",
@@ -106,6 +114,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Offline",
 		"status.unknown":     "Sconosciuto",
 		"status.link":        "vedi stato",
+		"host.self":          "Auto-ospitato",
+		"host.external":      "Esterno",
 	},
 	"nl": {
 		"nav.skip":           "Naar inhoud",
@@ -126,6 +136,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Offline",
 		"status.unknown":     "Onbekend",
 		"status.link":        "status bekijken",
+		"host.self":          "Zelf gehost",
+		"host.external":      "Extern",
 	},
 	"pt": {
 		"nav.skip":           "Ir para o conteúdo",
@@ -146,5 +158,7 @@ var builtinStrings = map[string]map[string]string{
 		"status.down":        "Offline",
 		"status.unknown":     "Desconhecido",
 		"status.link":        "ver estado",
+		"host.self":          "Auto-hospedado",
+		"host.external":      "Externo",
 	},
 }

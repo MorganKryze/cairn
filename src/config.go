@@ -119,6 +119,9 @@ type Service struct {
 	Details  LString        `yaml:"details"`
 	Images   []ServiceImage `yaml:"images"`
 	Tags     []string       `yaml:"tags"`
+	// Selfhosted flags where the service runs: true self-hosted, false hosted
+	// elsewhere, nil no flag at all.
+	Selfhosted *bool `yaml:"selfhosted"`
 }
 
 // ServiceImage is a preview shown on the detail page. A plain YAML string is

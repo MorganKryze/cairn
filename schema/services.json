@@ -60,6 +60,10 @@
         "type": "array",
         "items": { "type": "string" },
         "description": "Extra search words, invisible on the page. Add synonyms in every language."
+      },
+      "selfhosted": {
+        "type": "boolean",
+        "description": "true if you host this service yourself, false if it is hosted elsewhere. Shows a small flag on the card that unfurls its label on hover; omit for no flag."
       }
     }
   },

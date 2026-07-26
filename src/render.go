@@ -91,6 +91,7 @@ type pageView struct {
 
 type cardView struct {
 	URL, Icon, Name, Desc, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	HostKind, HostLabel                                                    string // "self"/"external"/"" and its localized label
 }
 
 type catView struct {
@@ -279,6 +280,13 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = "/" + loc + "/" + s.ID + "/"
+				}
+				if s.Selfhosted != nil {
+					if *s.Selfhosted {
+						card.HostKind, card.HostLabel = "self", cfg.Str(loc, "host.self")
+					} else {
+						card.HostKind, card.HostLabel = "external", cfg.Str(loc, "host.external")
+					}
 				}
 				cv.Cards = append(cv.Cards, card)
 			}

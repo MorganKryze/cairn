@@ -20,6 +20,7 @@ Any text field accepts a plain string or a per-locale map; see
 | `category` | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml). |
 | `icon`     | no       | neutral glyph | Slug, URL or `/assets` path; see [Icons](../recipes/icons.md). |
 | `tags`     | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language. |
+| `selfhosted` | no     | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag). |
 
 ## Full example
 
@@ -49,6 +50,26 @@ always goes straight to the tool.
 
 Write `details` for the visitor who wonders *"when would I use this?"*:
 start from a situation, not from features.
+
+## Hosting flag
+
+Set `selfhosted: true` on a service you run yourself, or `selfhosted: false`
+on one hosted by someone else. The card gains a small flag, bottom-left, that
+shows an icon at rest and unfurls its label ("Self-hosted" / "External") on
+hover or keyboard focus; on touch it stays open. Omit the key and the card
+carries no flag.
+
+It is a data-location cue for your guests: which tools keep their data on your
+server, and which send them to a third party.
+
+The labels are translated in every built-in language and, like all UI text,
+can be reworded per locale from `site.yaml`:
+
+```yaml
+strings:
+  host.self: { fr: Chez moi, en: On my server }
+  host.external: { fr: Cloud tiers, en: Third-party }
+```
 
 ## Preview images
 
