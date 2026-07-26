@@ -131,7 +131,11 @@ docker compose up -d --build
 
 ## Documentation
 
-Everything lives in [docs/](docs/README.md):
+Everything lives in [docs/](docs/README.md), and it is written to be read, not
+just grepped: each page teaches the why before the how, in plain prose a
+developer can enjoy rather than a reference dump to endure. If you like
+understanding how a thing works, not only pasting config that does, start
+anywhere below.
 
 |               |                                                                                                                                                                      |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
