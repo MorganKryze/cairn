@@ -19,10 +19,12 @@
 
 <div align="center">
 
+<a href="https://cairn.libresoftware.cloud" title="Open the live demo">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/home-dark.png">
   <img src="docs/assets/home-light.png" alt="cairn home page: a welcome note, service cards grouped by category with live status pills, and a category trail in the margin" width="100%">
 </picture>
+</a>
 
 </div>
 
