@@ -5,6 +5,7 @@
 **The directory page for the people you host services _for_.**
 
 [![Build](https://github.com/MorganKryze/cairn/actions/workflows/build.yml/badge.svg)](https://github.com/MorganKryze/cairn/actions/workflows/build.yml)
+[![Security](https://github.com/MorganKryze/cairn/actions/workflows/security.yml/badge.svg)](https://github.com/MorganKryze/cairn/actions/workflows/security.yml)
 [![Coverage](https://raw.githubusercontent.com/MorganKryze/cairn/badges/coverage.svg)](https://github.com/MorganKryze/cairn/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
@@ -68,6 +69,20 @@ account or a manual, and boring for you to operate.
   [serve yourself](docs/recipes/icons.md#going-fully-self-hosted). The
   [demo](demo/README.md) runs on an internal network with no route out, to
   prove it.
+
+## Secure by subtraction
+
+The safest surface is the one that isn't there: cairn has no database, no
+accounts, no admin panel, no Docker socket, and no form to submit. What little
+remains is kept deliberately tight.
+
+- **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
+  image, so a compromised process has nothing to pivot into.
+- **A strict Content-Security-Policy** (`default-src 'none'`, inline fragments
+  pinned by hash) and the hardening headers, with no third-party script or
+  font to trust.
+- **A watched supply chain**: every push runs `govulncheck`, a Trivy image
+  scan, CodeQL and Dependabot. See [security.yml](.github/workflows/security.yml).
 
 ## Quickstart
 
