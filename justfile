@@ -45,3 +45,11 @@ down:
 # follow the demo logs
 logs:
     docker compose -f demo/compose.yaml logs -f
+
+# refresh the README hero from the running demo; do this before every release
+# (playwright lands in a gitignored node_modules, nothing is committed)
+shots: demo-rebuild
+    @sleep 4
+    @npm --silent install --no-save --no-package-lock playwright
+    @npx --yes playwright install --only-shell chromium
+    @node scripts/screenshots.mjs
