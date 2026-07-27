@@ -12,14 +12,11 @@ on:
       - "go.sum"
       - "docker/**"
       - ".github/workflows/security.yml"
+  # No paths filter here on purpose: these jobs are required checks, and a
+  # required check that never runs leaves a docs-only pull request waiting
+  # forever. The push trigger above keeps its filter.
   pull_request:
     branches: [main]
-    paths:
-      - "src/**"
-      - "go.mod"
-      - "go.sum"
-      - "docker/**"
-      - ".github/workflows/security.yml"
 
 permissions:
   contents: read
