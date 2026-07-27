@@ -85,3 +85,23 @@ func TestGatusReadsANormalAnswer(t *testing.T) {
 		t.Errorf("statuses = %v, want pad up (the last result wins)", st)
 	}
 }
+
+// html/template strips the "data-" prefix before guessing an attribute's type,
+// so a name like data-one reads as an on* event handler and its value comes
+// back JSON-quoted. The search announcement carries plural forms in data
+// attributes; this pins the naming that keeps them literal.
+func TestLiveRegionAttributesAreNotJSEscaped(t *testing.T) {
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	html := string(current.Load().Pages["en"].HTML)
+	for _, want := range []string{`data-single="1 result"`, `data-plural="%d results"`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("missing %s in the live region", want)
+		}
+	}
+	if strings.Contains(html, "&#34;1 result&#34;") {
+		t.Error("the count string was JS-escaped: an attribute is being read as an on* handler")
+	}
+}

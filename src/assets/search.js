@@ -24,6 +24,17 @@
   const COMBINING = /[̀-ͯ]/g;
   const norm = s => s.normalize('NFD').replace(COMBINING, '').toLowerCase();
   const cats = Array.from(document.querySelectorAll('.cat'));
+  // Filtering is a visual change; a live region is what makes it reach a
+  // screen reader (WCAG 4.1.3). It also names the card Enter would open.
+  const count = document.getElementById('count');
+  const announce = (n, name) => {
+    if (!count) return;
+    if (!n) { count.textContent = ''; return; }
+    // data-single/-plural, not data-one: html/template strips "data-" and would
+    // read "one" as an on* event handler, JSON-quoting the value.
+    const label = n === 1 ? count.dataset.single : count.dataset.plural.replace('%d', n);
+    count.textContent = name ? `${label}, ${name}` : label;
+  };
   const cards = Array.from(document.querySelectorAll('.card'), (el, dom) => {
     const main = el.querySelector('.card-main').cloneNode(true);
     main.querySelectorAll('.visually-hidden, .status-pill').forEach(n => n.remove());
@@ -31,6 +42,7 @@
       el,
       dom,                                    // original position, the tie-breaker
       cat: cats.indexOf(el.closest('.cat')),  // which category row it lives in
+      label: el.querySelector('.card-name').textContent.trim(), // as written, for the announcement
       name: norm(el.querySelector('.card-name').textContent),
       text: norm(main.textContent + ' ' + (el.dataset.tags || '')),
     };
@@ -92,17 +104,19 @@
       for (let i = 1; i < matches.length; i++) if (matches[i].score > matches[best].score) best = i;
       setSel(best);
     }
+    announce(words.length ? matches.length : 0, sel >= 0 ? matches[sel].label : '');
   };
 
   input.addEventListener('input', apply);
 
-  // ponytail: a class + a real link click, not a full ARIA combobox. Upgrade to
-  // listbox/aria-activedescendant if screen-reader nav is ever asked for.
+  // ponytail: a class + a real link click, not a full ARIA combobox. The live
+  // region above carries the count and the pick, which is what a listbox would
+  // announce anyway; upgrade only if real screen-reader testing asks for it.
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') { input.value = ''; apply(); return; }
     if (!matches.length) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(sel + 1, matches.length - 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(sel - 1, 0)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(sel + 1, matches.length - 1)); announce(matches.length, matches[sel].label); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(sel - 1, 0)); announce(matches.length, matches[sel].label); }
     else if (e.key === 'Enter' && sel >= 0) { e.preventDefault(); matches[sel].el.querySelector('.card-name').click(); }
   });
 })();

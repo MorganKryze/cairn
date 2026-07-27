@@ -77,7 +77,7 @@ func buildCSP(cfg *Config) string {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
 }
 
 type pageView struct {
@@ -241,6 +241,8 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				SearchLabel:       cfg.Str(loc, "search.label"),
 				SearchPlaceholder: cfg.Str(loc, "search.placeholder"),
 				SearchEmpty:       cfg.Str(loc, "search.empty"),
+				SearchOne:         cfg.Str(loc, "search.one"),
+				SearchMany:        cfg.Str(loc, "search.many"),
 				Open:              cfg.Str(loc, "detail.open"),
 				Back:              cfg.Str(loc, "detail.back"),
 				More:              cfg.Str(loc, "card.more"),
