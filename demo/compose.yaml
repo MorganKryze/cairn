@@ -2,6 +2,11 @@ name: cairn-demo
 
 # Everything lives on an internal network with no route to the outside;
 # only the gateway, a dumb TCP forwarder, also touches the host side.
+# None of these images comes from Docker Hub: anonymous pulls there share a
+# rate limit across the whole CI runner pool, which failed this stack twice in
+# one day. The three project images are their maintainers' own ghcr.io builds;
+# nginx and httpd exist only on Docker Hub, so they come through Google's
+# public mirror, which needs no account.
 networks:
   demo:
     internal: true
@@ -9,7 +14,7 @@ networks:
 
 services:
   gateway:
-    image: nginx:alpine
+    image: mirror.gcr.io/library/nginx:alpine
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
@@ -60,7 +65,7 @@ services:
       start_period: 5s
 
   gatus:
-    image: twinproduction/gatus:latest
+    image: ghcr.io/twin/gatus:latest
     volumes:
       - ./gatus:/config:ro
     networks:
@@ -71,24 +76,24 @@ services:
       - no-new-privileges:true
 
   whoami:
-    image: traefik/whoami
+    image: ghcr.io/traefik/whoami
     networks:
       - demo
     cap_drop:
       - ALL
 
   welcome:
-    image: nginx:alpine
+    image: mirror.gcr.io/library/nginx:alpine
     networks:
       - demo
 
   httpd:
-    image: httpd:alpine
+    image: mirror.gcr.io/library/httpd:alpine
     networks:
       - demo
 
   podinfo:
-    image: stefanprodan/podinfo
+    image: ghcr.io/stefanprodan/podinfo
     networks:
       - demo
     cap_drop:
