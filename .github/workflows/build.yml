@@ -92,7 +92,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker compose -f demo/compose.yaml up -d --build --wait
+      - name: bring the demo up (retry past registry hiccups)
+        run: |
+          for i in 1 2 3; do
+            docker compose -f demo/compose.yaml up -d --build --wait && exit 0
+            echo "attempt $i failed (registry?), retrying"; sleep $((i * 10))
+          done
+          exit 1
       - name: the pills settle green and red
         run: |
           for _ in $(seq 1 12); do
