@@ -50,6 +50,7 @@ logs the same error.
 | `footer`       | `[]`      | list of `{label: text, url: string}` |
 | `pages`        | `[]`      | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: long text, sections: [{title, body}]}`; body and/or sections required; bodies take the [markdown subset](configuration/text.md) |
 | `credit`       | `true`    | bool; `false` removes the footer "powered by cairn" |
+| `show_version` | `false`   | bool; `true` shows the running version next to the credit, linked to its release or commit |
 | `strings`      | built-ins | map of key → text ([keys](configuration/i18n.md#ui-strings)) |
 | `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |

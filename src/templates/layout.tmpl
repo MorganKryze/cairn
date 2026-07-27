@@ -75,7 +75,7 @@
 {{define "bottom"}}</div></main>
 <footer><div class="wrap foot">
   {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
-  {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a></span>
+  {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a>{{if .ShowVer}} {{if .VerHref}}<a class="foot-version" href="{{.VerHref}}">{{.VerLabel}}</a>{{else}}<span class="foot-version">{{.VerLabel}}</span>{{end}}{{end}}</span>
   {{end}}</div></footer>
 <a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
 <script src="{{.Prefix}}/static/search.js" defer></script>

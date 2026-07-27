@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -84,7 +85,8 @@ type pageView struct {
 	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
 	Prefix                                                                                                                  string // "" or "/cairn", see basePath
 	Dir                                                                                                                     string // "ltr" or "rtl", from the locale
-	CustomCSS, Search, Credit, Noindex                                                                                      bool
+	CustomCSS, Search, Credit, Noindex, ShowVer                                                                             bool
+	VerLabel, VerHref                                                                                                       string
 	Locales                                                                                                                 []string
 	Links                                                                                                                   []linkView
 	Footer                                                                                                                  []linkView
@@ -227,6 +229,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			Base:      cfg.Site.URL + basePath,
 			Version:   version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
+			ShowVer:   cfg.Site.ShowVer,
 			SiteTitle: cfg.Site.Title.Get(loc, def),
 			Logo:      appURL(cfg.Site.Logo),
 			Favicon:   appURL(cfg.Site.Favicon),
@@ -258,6 +261,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				Top:               cfg.Str(loc, "nav.top"),
 			},
 		}
+		base.VerLabel, base.VerHref = versionInfo(version)
 		for _, l := range cfg.Site.Links {
 			lv := linkView{Label: l.Label.Get(loc, def), URL: l.URL}
 			linkIcon(&lv, l.Icon)
@@ -414,4 +418,28 @@ func mediaURL(src string) string {
 		return src
 	}
 	return "/media/" + src
+}
+
+// The repository the credit and the version stamp point at.
+const repoURL = "https://github.com/MorganKryze/cairn"
+
+var (
+	semverRe = regexp.MustCompile(`^\d+\.\d+\.\d+`)
+	commitRe = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
+)
+
+// versionInfo turns the build stamp into what the footer shows and where it
+// points, which depends on where the binary came from: a tagged release links
+// to its release notes, a build off main links to the commit it was cut from,
+// and anything else (a local `go build`, which stamps nothing) is named but
+// not linked, since there is no public page for it.
+func versionInfo(v string) (label, href string) {
+	switch {
+	case semverRe.MatchString(v):
+		return v, repoURL + "/releases/tag/v" + v
+	case commitRe.MatchString(v):
+		return "@" + v[:7], repoURL + "/commit/" + v
+	default:
+		return v, ""
+	}
 }

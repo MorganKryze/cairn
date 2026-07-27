@@ -20,6 +20,7 @@ so is every key in it.
 | `footer`       | `[]`      | Links at the bottom of every page.                |
 | `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md). |
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
+| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
 | `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
 
