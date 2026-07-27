@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -77,13 +78,16 @@ func fetchStatuses(base string) (map[string]bool, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("gatus answered %s", resp.Status)
 	}
+	// Bound the body: the timeout alone would not stop a fast endless stream
+	// from eating the process. A few thousand endpoints fit well under this.
+	body := io.LimitReader(resp.Body, 8<<20)
 	var list []struct {
 		Name    string `json:"name"`
 		Results []struct {
 			Success bool `json:"success"`
 		} `json:"results"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
+	if err := json.NewDecoder(body).Decode(&list); err != nil {
 		return nil, err
 	}
 	out := make(map[string]bool, len(list))

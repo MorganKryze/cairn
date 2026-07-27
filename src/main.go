@@ -141,9 +141,17 @@ func main() {
 
 	cfg = current.Load().Cfg
 	log.Printf("cairn %s: %d services, locales %v, listening on %s%s", version, countServices(cfg), cfg.Site.Locales, *addr, basePath)
-	// ReadHeaderTimeout caps slow-header (Slowloris) clients; the request body
-	// stays untimed since cairn only ever reads tiny GETs.
-	srv := &http.Server{Addr: *addr, Handler: mount(secureHeaders(mux)), ReadHeaderTimeout: 10 * time.Second}
+	// ReadHeaderTimeout caps slow-header (Slowloris) clients; WriteTimeout
+	// drops the ones that never read their answer; IdleTimeout reclaims
+	// keep-alives. Every response is a small pre-rendered page, so these are
+	// generous.
+	srv := &http.Server{
+		Addr:              *addr,
+		Handler:           mount(secureHeaders(mux)),
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -174,6 +182,11 @@ func secureHeaders(h http.Handler) http.Handler {
 		hd.Set("X-Frame-Options", "DENY")
 		hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		hd.Set("Content-Security-Policy", current.Load().CSP)
+		// HSTS only once the visit is already https, like the cookies: sending
+		// it over plain http would strand the LAN deployments cairn also serves.
+		if secureRequest(r) {
+			hd.Set("Strict-Transport-Security", "max-age=31536000")
+		}
 		h.ServeHTTP(w, r)
 	})
 }
