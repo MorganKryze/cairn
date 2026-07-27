@@ -9,6 +9,7 @@
   name: { fr: Page nginx, en: nginx page }
   desc: { fr: La page de bienvenue du serveur web nginx., en: The nginx web server welcome page. }
   tags: [nginx, web]
+  selfhosted: true
 
 - id: httpd
   url: http://localhost:8084
@@ -17,6 +18,7 @@
   name: { fr: Page Apache, en: Apache page }
   desc: { fr: La page de bienvenue du serveur web Apache., en: The Apache web server welcome page. }
   tags: [apache, web]
+  selfhosted: true
 
 - id: whoami
   url: http://localhost:8082
@@ -80,9 +82,10 @@
       notices and cairn shows the red dot: exactly what your visitors would
       see if a real service went down.
   tags: [status, down, panne]
+  selfhosted: true
 
-# The two below are plain links: no container, no Gatus endpoint. Note
-# how cards without monitoring simply show no status pill.
+# The three below are external references: no container, no Gatus endpoint,
+# just links out. Note how cards without monitoring simply show no status pill.
 
 - id: cairn-source
   url: https://github.com/MorganKryze/cairn
@@ -93,10 +96,20 @@
   tags: [github, source]
   selfhosted: false
 
-- id: gatus-dashboard
-  url: http://localhost:8081
+- id: cairn-prod
+  url: https://libresoftware.cloud
+  category: links
+  icon: /static/favicon.svg
+  name: { fr: cairn en production, en: cairn in production }
+  desc: { fr: "Une vraie instance de cairn, en ligne.", en: "A real cairn instance, live." }
+  tags: [prod, libresoftware, demo]
+  selfhosted: false
+
+- id: gatus-project
+  url: https://github.com/TwiN/gatus
   category: links
   icon: gatus
-  name: { fr: Tableau de bord Gatus, en: Gatus dashboard }
-  desc: { fr: La source des pastilles de statut de cette page., en: Where the status pills on this page come from. }
+  name: { fr: Projet Gatus, en: Gatus project }
+  desc: { fr: L'outil qui alimente les pastilles de statut., en: The tool that powers the status pills. }
   tags: [gatus, status, monitoring]
+  selfhosted: false
