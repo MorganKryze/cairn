@@ -1,6 +1,6 @@
 {{template "top" .}}
 <article class="detail">
-  <p><a class="back" href="/{{.Locale}}/">← {{.S.Back}}</a></p>
+  <p><a class="back" href="{{.Prefix}}/{{.Locale}}/">← {{.S.Back}}</a></p>
   <div class="detail-head">
     <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">

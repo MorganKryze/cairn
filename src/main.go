@@ -30,10 +30,37 @@ var reloadMu sync.Mutex
 // version is stamped by the build: -ldflags "-X main.version=…"
 var version = "dev"
 
+// basePath mirrors the -base-path flag: "" at the domain root, "/cairn" when
+// the site is mounted under a sub-path. Every URL cairn generates carries it,
+// and the router strips it back off, so the proxy in front needs no rewriting.
+// It is fixed for the life of the process on purpose: pages are pre-rendered
+// once per config, so the prefix cannot be a per-request header.
+var basePath = ""
+
+// normalizeBase turns what an operator may type ("cairn", "/cairn/", "/")
+// into the one shape the rest of the code expects: "" or "/cairn".
+func normalizeBase(p string) string {
+	p = strings.Trim(strings.TrimSpace(p), "/")
+	if p == "" {
+		return ""
+	}
+	return "/" + p
+}
+
+// appURL prefixes a root-absolute local path with the base path. Empty
+// values and absolute URLs (icons on a CDN, operator links) pass through.
+func appURL(p string) string {
+	if !strings.HasPrefix(p, "/") {
+		return p
+	}
+	return basePath + p
+}
+
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	cfgDir := flag.String("config", "/config", "config directory")
 	assetsDir := flag.String("assets", "/assets", "optional directory served at /assets/")
+	base := flag.String("base-path", "", "serve under a sub-path of the domain, e.g. /cairn (default: the domain root)")
 	check := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
 	validate := flag.Bool("check", false, "validate the config directory, print warnings, and exit (0 ok, 1 error)")
 	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
@@ -42,6 +69,7 @@ func main() {
 	ver := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	assetsPath = *assetsDir
+	basePath = normalizeBase(*base)
 
 	if *ver {
 		fmt.Println("cairn", version)
@@ -98,7 +126,7 @@ func main() {
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(*assetsDir)))))
 	// Service preview images live next to the yaml, in <config>/media/.
 	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(*cfgDir, "media"))))))
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") })
+	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /custom.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFile(w, r, filepath.Join(*cfgDir, "custom.css"))
@@ -112,11 +140,28 @@ func main() {
 	mux.HandleFunc("GET /", home)
 
 	cfg = current.Load().Cfg
-	log.Printf("cairn %s: %d services, locales %v, listening on %s", version, countServices(cfg), cfg.Site.Locales, *addr)
+	log.Printf("cairn %s: %d services, locales %v, listening on %s%s", version, countServices(cfg), cfg.Site.Locales, *addr, basePath)
 	// ReadHeaderTimeout caps slow-header (Slowloris) clients; the request body
 	// stays untimed since cairn only ever reads tiny GETs.
-	srv := &http.Server{Addr: *addr, Handler: secureHeaders(mux), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Addr: *addr, Handler: mount(secureHeaders(mux)), ReadHeaderTimeout: 10 * time.Second}
 	log.Fatal(srv.ListenAndServe())
+}
+
+func healthz(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") }
+
+// mount puts the whole site under basePath. /healthz stays at the root
+// whatever the prefix: a container healthcheck talks to cairn directly, not
+// through the proxy that adds it.
+func mount(h http.Handler) http.Handler {
+	if basePath == "" {
+		return h
+	}
+	outer := http.NewServeMux()
+	outer.HandleFunc("GET /healthz", healthz)
+	// registering the subtree also makes ServeMux redirect a bare /cairn to
+	// /cairn/, so the mount point works with or without its trailing slash
+	outer.Handle(basePath+"/", http.StripPrefix(basePath, h))
+	return outer
 }
 
 // secureHeaders sets the response headers a security scan would ask for.
@@ -242,7 +287,7 @@ func fingerprint(dir string) string {
 func root(w http.ResponseWriter, r *http.Request) {
 	m := current.Load()
 	w.Header().Set("Cache-Control", "no-store")
-	http.Redirect(w, r, "/"+negotiate(r, m.Cfg.Site.Locales)+"/", http.StatusFound)
+	http.Redirect(w, r, basePath+"/"+negotiate(r, m.Cfg.Site.Locales)+"/", http.StatusFound)
 }
 
 func negotiate(r *http.Request, locales []string) string {
@@ -287,12 +332,12 @@ func home(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(loc, "/") {
 			http.NotFound(w, r)
 		} else {
-			http.Redirect(w, r, "/", http.StatusFound)
+			http.Redirect(w, r, basePath+"/", http.StatusFound)
 		}
 		return
 	}
 	if r.URL.Path != "/"+loc+"/" {
-		http.Redirect(w, r, "/"+loc+"/", http.StatusMovedPermanently)
+		http.Redirect(w, r, basePath+"/"+loc+"/", http.StatusMovedPermanently)
 		return
 	}
 	locale, _, _ := strings.Cut(loc, "/")
@@ -300,9 +345,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// ?choose. A negotiated visit leaves no trace, so a visitor whose
 	// browser language changes is followed until they pick one themselves.
 	if r.URL.Query().Has("choose") {
-		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode, Secure: secureRequest(r)})
+		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: basePath + "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode, Secure: secureRequest(r)})
 		w.Header().Set("Cache-Control", "no-store")
-		http.Redirect(w, r, "/"+loc+"/", http.StatusFound)
+		http.Redirect(w, r, basePath+"/"+loc+"/", http.StatusFound)
 		return
 	}
 	h := w.Header()
@@ -322,13 +367,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 func manifest(w http.ResponseWriter, r *http.Request) {
 	cfg := current.Load().Cfg
 	name := cfg.Site.Title.Get(negotiate(r, cfg.Site.Locales), cfg.DefaultLocale())
-	icon := touchIcon(cfg.Site.Favicon)
+	icon := appURL(touchIcon(cfg.Site.Favicon))
 	w.Header().Set("Content-Type", "application/manifest+json")
 	w.Header().Set("Cache-Control", "no-cache")
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"name":             name,
 		"short_name":       name,
-		"start_url":        "/",
+		"start_url":        basePath + "/",
 		"display":          "minimal-ui",
 		"background_color": "#eef0ea",
 		"theme_color":      cfg.Site.Theme.Accent,
@@ -349,9 +394,9 @@ func secureRequest(r *http.Request) bool {
 // what the request headers suggest.
 func siteBase(r *http.Request) string {
 	if u := current.Load().Cfg.Site.URL; u != "" {
-		return u
+		return u + basePath
 	}
-	return baseURL(r)
+	return baseURL(r) + basePath
 }
 
 func baseURL(r *http.Request) string {

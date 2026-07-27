@@ -64,6 +64,10 @@ account or a manual, and boring for you to operate.
   site down.
 - **Legal pages served by cairn itself** (legal notice, privacy…): the pages
   self-hosters never have anywhere to put.
+- **Wherever your domain has room**: a domain, a subdomain, or a sub-path of
+  one you already use (`example.org/cairn/`, one flag). cairn handles the
+  prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no
+  rewriting rule.
 
 ## Secure by subtraction
 

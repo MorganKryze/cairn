@@ -1,6 +1,7 @@
 @font-face {
   font-family: "Fraunces";
-  src: url("/static/fonts/fraunces.woff2") format("woff2");
+  /* relative to this stylesheet, so it resolves under any -base-path */
+  src: url("fonts/fraunces.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

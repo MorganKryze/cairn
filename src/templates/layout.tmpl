@@ -1,5 +1,5 @@
 {{define "top"}}<!doctype html>
-<html lang="{{.Locale}}"{{if .AboutHash}} data-about="{{.AboutHash}}"{{end}}>
+<html lang="{{.Locale}}"{{if .Prefix}} data-base="{{.Prefix}}"{{end}}{{if .AboutHash}} data-about="{{.AboutHash}}"{{end}}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,20 +17,20 @@
 {{end}}<link rel="alternate" hreflang="x-default" href="{{.Base}}/">
 {{end}}
 {{if .Favicon}}<link rel="icon" href="{{.Favicon}}">
-{{else}}<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{{else}}<link rel="icon" href="{{.Prefix}}/static/favicon.svg" type="image/svg+xml">
 {{end}}<link rel="apple-touch-icon" href="{{.TouchIcon}}">
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" href="{{.Prefix}}/manifest.webmanifest">
 
-<link rel="preload" href="/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/static/style.css">
+<link rel="preload" href="{{.Prefix}}/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{.Prefix}}/static/style.css">
 <style>:root{--accent:{{.Accent}}}</style>
 <script>var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-{{if .CustomCSS}}<link rel="stylesheet" href="/custom.css">
+{{if .CustomCSS}}<link rel="stylesheet" href="{{.Prefix}}/custom.css">
 {{end}}</head>
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
 <header><div class="wrap topbar">
-  <a class="brand" href="/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
+  <a class="brand" href="{{.Prefix}}/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
   <div class="topbar-tools">
     <button class="theme-toggle" id="theme-toggle" hidden aria-label="{{.S.Theme}}">
       <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -39,11 +39,11 @@
     {{$v := .}}{{if gt (len .Locales) 3}}<details class="langs langs-menu">
       <summary aria-label="{{.S.Languages}}">{{upper .Locale}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
       <nav aria-label="{{.S.Languages}}">{{range .Locales}}
-        <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
+        <a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
       </nav>
     </details>
     {{else}}<nav class="langs" aria-label="{{.S.Languages}}">{{range .Locales}}
-      <a href="/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
+      <a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
     </nav>{{end}}
   </div>
 </div>
@@ -78,11 +78,11 @@
   {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a></span>
   {{end}}</div></footer>
 <a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
-<script src="/static/search.js" defer></script>
-<script src="/static/toc.js" defer></script>
-<script src="/static/nav.js" defer></script>
-<script src="/static/about.js" defer></script>
-<script src="/static/theme.js" defer></script>
+<script src="{{.Prefix}}/static/search.js" defer></script>
+<script src="{{.Prefix}}/static/toc.js" defer></script>
+<script src="{{.Prefix}}/static/nav.js" defer></script>
+<script src="{{.Prefix}}/static/about.js" defer></script>
+<script src="{{.Prefix}}/static/theme.js" defer></script>
 </body>
 </html>
 {{end}}

@@ -82,6 +82,7 @@ type uiStrings struct {
 
 type pageView struct {
 	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
+	Prefix                                                                                                                  string // "" or "/cairn", see basePath
 	CustomCSS, Search, Credit, Noindex                                                                                      bool
 	Locales                                                                                                                 []string
 	Links                                                                                                                   []linkView
@@ -136,7 +137,7 @@ func linkIcon(v *linkView, icon string) {
 	switch {
 	case icon == "":
 	case isURLOrAbs(icon):
-		v.IconIMG = icon
+		v.IconIMG = appURL(icon)
 	default:
 		v.IconSVG = template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` + linkGlyphs[icon] + `</svg>`)
 	}
@@ -214,20 +215,21 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 	def := cfg.DefaultLocale()
 	media := func(src string) (string, int, int) {
 		d := cfg.MediaDims[src]
-		return mediaURL(src), d[0], d[1]
+		return appURL(mediaURL(src)), d[0], d[1]
 	}
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
 			Locale:    loc,
-			Base:      cfg.Site.URL,
+			Prefix:    basePath,
+			Base:      cfg.Site.URL + basePath,
 			Version:   version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			SiteTitle: cfg.Site.Title.Get(loc, def),
-			Logo:      cfg.Site.Logo,
-			Favicon:   cfg.Site.Favicon,
-			TouchIcon: touchIcon(cfg.Site.Favicon),
-			OGImage:   ogImage(cfg.Site.URL, cfg.Site.Logo),
+			Logo:      appURL(cfg.Site.Logo),
+			Favicon:   appURL(cfg.Site.Favicon),
+			TouchIcon: appURL(touchIcon(cfg.Site.Favicon)),
+			OGImage:   ogImage(cfg.Site.URL+basePath, appURL(cfg.Site.Logo)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
 			Accent:    cfg.Site.Theme.Accent,
@@ -261,7 +263,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			base.Footer = append(base.Footer, linkView{Label: f.Label.Get(loc, def), URL: f.URL})
 		}
 		for _, p := range cfg.Site.Pages {
-			base.Footer = append(base.Footer, linkView{Label: p.Title.Get(loc, def), URL: "/" + loc + "/" + p.ID + "/"})
+			base.Footer = append(base.Footer, linkView{Label: p.Title.Get(loc, def), URL: basePath + "/" + loc + "/" + p.ID + "/"})
 		}
 
 		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def), About: mdBlocks(cfg.Site.About.Get(loc, def), mdCtx{media: media})}
@@ -273,7 +275,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			for _, s := range c.Services {
 				card := cardView{
 					URL:    s.URL,
-					Icon:   iconURL(cfg, s.Icon),
+					Icon:   appURL(iconURL(cfg, s.Icon)),
 					Name:   s.Name.Get(loc, def),
 					Desc:   s.Desc.Get(loc, def),
 					Tags:   strings.Join(s.Tags, " "),
@@ -281,7 +283,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				}
 				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
-					card.MoreHref = "/" + loc + "/" + s.ID + "/"
+					card.MoreHref = basePath + "/" + loc + "/" + s.ID + "/"
 				}
 				if s.Selfhosted != nil {
 					if *s.Selfhosted {
@@ -306,7 +308,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 					pageView: base,
 					Name:     s.Name.Get(loc, def),
 					Desc:     s.Desc.Get(loc, def),
-					Icon:     iconURL(cfg, s.Icon),
+					Icon:     appURL(iconURL(cfg, s.Icon)),
 					URL:      s.URL,
 					Status:   statusOf(cfg, statuses, s.ID),
 					Body:     mdBlocks(s.Details.Get(loc, def), mdCtx{media: media}),

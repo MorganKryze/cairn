@@ -90,7 +90,7 @@ ids, alphabetically.
 | `/static/…`     | embedded assets, cached one day                           |
 | `/assets/…`     | your mounted files, if the mount exists                   |
 | `/custom.css`   | your stylesheet, if present                               |
-| `/healthz`      | `200 ok`                                                  |
+| `/healthz`      | `200 ok`; stays at the domain root even with `-base-path` |
 | `/sitemap.xml`  | every page, absolute URLs from `Host`/`X-Forwarded-Proto` |
 | `/robots.txt`   | allow all + sitemap URL                                   |
 
@@ -101,12 +101,18 @@ ids, alphabetically.
 | `-addr`        | `:8080`   | listen address                             |
 | `-config`      | `/config` | config directory                           |
 | `-assets`      | `/assets` | directory served at `/assets/`, if it exists |
+| `-base-path`   | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn` |
 | `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks |
 | `-init`        | off       | print a commented starter `services.yaml`, then exit |
 | `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit |
 | `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit |
 | `-check`       | off       | validate the config directory, print warnings (missing translations, orphan or heavy media), then exit 0 or 1 |
 | `-version`     | off       | print the version, then exit |
+
+With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
+`/cairn/static/…`) and cairn strips it back off itself, so the proxy in front
+needs no rewriting. `/healthz` is the one exception: it answers at the root
+too, because container healthchecks reach cairn directly.
 
 No environment variables, no other state. The binary serves HTTP on one port,
 reads one directory, and optionally polls the one Gatus URL you configured.

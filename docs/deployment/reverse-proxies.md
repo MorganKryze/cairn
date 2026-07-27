@@ -5,6 +5,11 @@ defaults. One detail matters: forward `X-Forwarded-Proto`, so `sitemap.xml`
 and `robots.txt` emit `https://` URLs. All the proxies below do it out of the
 box.
 
+A domain, a subdomain and a sub-subdomain all work with no extra
+configuration: `tools.example.org` and `cairn.tools.example.org` are the same
+case as far as cairn is concerned. Serving from a **sub-path** of an existing
+domain takes one flag, [below](#under-a-sub-path).
+
 ## Caddy
 
 ```caddy
@@ -45,5 +50,62 @@ server {
 Add a resource pointing at `http://cairn:8080` (or the host port you
 published). No special headers or path rules needed; leave authentication off:
 cairn is meant to be the public front door.
+
+## Under a sub-path
+
+Some organisations have one domain and hand out paths rather than subdomains:
+`example.org/cairn/` instead of `cairn.example.org`. Tell cairn where it
+lives and every URL it writes carries the prefix:
+
+```yaml
+# compose.yaml
+services:
+  cairn:
+    image: ghcr.io/morgankryze/cairn:latest
+    command: ["-base-path", "/cairn"]
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/config:ro
+```
+
+cairn then answers on `/cairn/…` and strips the prefix back off itself, so
+**the proxy needs no path rewriting**. Point it at cairn and stop there:
+
+```nginx
+location /cairn/ {
+    proxy_pass http://cairn:8080;          # no trailing slash: keep the prefix
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+```caddy
+example.org {
+    handle /cairn/* {
+        reverse_proxy cairn:8080           # handle, not handle_path: keep the prefix
+    }
+}
+```
+
+```yaml
+# Traefik, on the cairn service in compose.yaml
+labels:
+  - traefik.enable=true
+  - traefik.http.routers.cairn.rule=Host(`example.org`) && PathPrefix(`/cairn`)
+  - traefik.http.services.cairn.loadbalancer.server.port=8080
+  # no stripprefix middleware: cairn expects the full path
+```
+
+Three things worth knowing:
+
+- **The prefix is fixed at startup**, not read from a header. cairn renders
+  its pages once per config and serves the bytes, so the mount point has to be
+  known when they are built. Restart to change it.
+- **`/healthz` also answers at the domain root**, so the container healthcheck
+  keeps working unchanged: it talks to cairn directly, not through the proxy.
+- **Set `url` in `site.yaml` to the origin only** (`https://example.org`, no
+  path). cairn appends the base path itself for canonical links, the sitemap
+  and `robots.txt`.
 
 Next: [Icons](../recipes/icons.md)
