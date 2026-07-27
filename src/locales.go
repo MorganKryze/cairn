@@ -27,6 +27,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Unknown",
 		"status.link":        "view status",
 		"host.self":          "Self-hosted",
+		"nav.menu":           "Menu",
+		"nav.top":            "Back to top",
 		"host.external":      "External",
 	},
 	"fr": {
@@ -49,6 +51,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Inconnu",
 		"status.link":        "voir le statut",
 		"host.self":          "Auto-hébergé",
+		"nav.menu":           "Menu",
+		"nav.top":            "Haut de page",
 		"host.external":      "Externe",
 	},
 	"de": {
@@ -71,6 +75,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Unbekannt",
 		"status.link":        "Status ansehen",
 		"host.self":          "Selbst gehostet",
+		"nav.menu":           "Menü",
+		"nav.top":            "Nach oben",
 		"host.external":      "Extern",
 	},
 	"es": {
@@ -93,6 +99,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Desconocido",
 		"status.link":        "ver estado",
 		"host.self":          "Autoalojado",
+		"nav.menu":           "Menú",
+		"nav.top":            "Volver arriba",
 		"host.external":      "Externo",
 	},
 	"it": {
@@ -115,6 +123,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Sconosciuto",
 		"status.link":        "vedi stato",
 		"host.self":          "Auto-ospitato",
+		"nav.menu":           "Menu",
+		"nav.top":            "Torna su",
 		"host.external":      "Esterno",
 	},
 	"nl": {
@@ -137,6 +147,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Onbekend",
 		"status.link":        "status bekijken",
 		"host.self":          "Zelf gehost",
+		"nav.menu":           "Menu",
+		"nav.top":            "Naar boven",
 		"host.external":      "Extern",
 	},
 	"pt": {
@@ -159,6 +171,8 @@ var builtinStrings = map[string]map[string]string{
 		"status.unknown":     "Desconhecido",
 		"status.link":        "ver estado",
 		"host.self":          "Auto-hospedado",
+		"nav.menu":           "Menu",
+		"nav.top":            "Voltar ao topo",
 		"host.external":      "Externo",
 	},
 }

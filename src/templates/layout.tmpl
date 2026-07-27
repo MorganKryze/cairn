@@ -47,8 +47,12 @@
     </nav>{{end}}
   </div>
 </div>
-<div class="wrap menu"{{if .Links}} role="navigation" aria-label="{{.S.LinksLabel}}"{{end}}>
-  {{range .Links}}<a class="menu-link" href="{{.URL}}">{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
+<div class="wrap menu">
+  {{if .Links}}<details class="nav">
+    <summary class="nav-burger" aria-label="{{.S.LinksLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>{{.S.Menu}}</span></summary>
+    <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}">{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
+    {{end}}</nav>
+  </details>
   {{end}}{{if .Search}}<div class="search" id="search">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
@@ -70,12 +74,13 @@
 
 {{define "bottom"}}</div></main>
 <footer><div class="wrap foot">
-  <span class="foot-mark">{{template "glyph"}}</span>
   {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
-  {{end}}{{if .Credit}}<span class="powered">{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a></span>
+  {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a></span>
   {{end}}</div></footer>
+<a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
 <script src="/static/search.js" defer></script>
 <script src="/static/toc.js" defer></script>
+<script src="/static/nav.js" defer></script>
 <script src="/static/about.js" defer></script>
 <script src="/static/theme.js" defer></script>
 </body>

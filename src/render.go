@@ -77,7 +77,7 @@ func buildCSP(cfg *Config) string {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
 }
 
 type pageView struct {
@@ -248,6 +248,8 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 				Dismiss:           cfg.Str(loc, "about.dismiss"),
 				Theme:             cfg.Str(loc, "nav.theme"),
 				Powered:           cfg.Str(loc, "foot.powered"),
+				Menu:              cfg.Str(loc, "nav.menu"),
+				Top:               cfg.Str(loc, "nav.top"),
 			},
 		}
 		for _, l := range cfg.Site.Links {

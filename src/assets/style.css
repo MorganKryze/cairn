@@ -108,6 +108,23 @@ header { padding-block: 1.4rem; }
 .menu-link svg { width: .95rem; height: .95rem; opacity: .85; flex: none; }
 .menu-link img { width: 1rem; height: 1rem; flex: none; }
 
+/* nav: the header links live in a <details>. On desktop the wrapper is
+   transparent (display:contents) so the links flow inline and the burger is
+   hidden; the mobile block turns it into a real burger + dropdown. */
+.nav { display: contents; }
+.nav-burger { display: none; }
+/* closed <details> hides its content: newer engines via content-visibility on
+   the ::details-content wrapper, older ones via display:none. Undo both so the
+   links show inline on desktop; the mobile block shows/hides via .nav-links. */
+.nav::details-content { content-visibility: visible; display: contents; }
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem 1.5rem;
+  min-width: 0;
+}
+
 .topbar-tools { display: flex; align-items: center; gap: .5rem; }
 .theme-toggle {
   display: grid;
@@ -337,6 +354,7 @@ header { padding-block: 1.4rem; }
 /* A fixed rail beside the content: one diamond per category on a vertical
    line, waypoints on the trail. Shown only where the margin can hold it. */
 .toc { display: none; }
+.toc-jump { display: none; } /* the mobile jump-to select; shown in the mobile block */
 @media (min-width: 88rem) {
   .toc {
     display: block;
@@ -486,6 +504,7 @@ html { scrollbar-gutter: stable; }
 @media (prefers-reduced-motion: reduce) {
   .flag { transition: none; max-width: 14rem; }
   .flag-label { transition: none; opacity: 1; }
+  header, .nav-links { transition: none; }
 }
 .card-name {
   min-width: 0;
@@ -691,7 +710,8 @@ footer {
 .foot-links { display: flex; flex-wrap: wrap; gap: 1.3rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
-.powered { margin-left: auto; font-size: .82rem; color: var(--muted); }
+.powered { display: inline-flex; align-items: center; gap: .45rem; margin-left: auto; font-size: .82rem; color: var(--muted); }
+.powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { color: var(--accent-ink); font-weight: 500; }
 .powered a:hover, .powered a:focus-visible { color: var(--accent-ink); text-decoration: underline; }
 
@@ -727,8 +747,161 @@ footer {
 
 /* ---- print: the version that ends up on the fridge ---- */
 
+/* back-to-top: a fixed pill, mobile-only, shown once you have scrolled a
+   screen (where scroll-driven animations exist; otherwise always on). */
+.totop {
+  display: none;
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  width: 2.9rem;
+  height: 2.9rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-lift);
+  text-decoration: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+.totop.show { opacity: 1; visibility: visible; pointer-events: auto; }
+.totop svg { width: 1.15rem; height: 1.15rem; }
+.totop:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+.totop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* ---- mobile (below 44rem): a burger for the header links (the search stays
+   put), the category trail as a wrapping chip row, finger-sized targets, a
+   one-column footer, and the back-to-top button. ---- */
+@media (max-width: 44rem) {
+  .wrap { padding-inline: 1.15rem; }
+
+  /* auto-hiding sticky header: nav.js toggles .header-hidden by scroll
+     direction (down hides, up shows), so a long page keeps search in reach */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding-block: .9rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    transition: transform .3s ease;
+  }
+  header.header-hidden { transform: translateY(-100%); }
+  .cat { scroll-margin-top: 4.5rem; }
+
+  /* the header links fold behind a burger; the search stays visible beside it.
+     Drop the desktop divider and even the rhythm so the row sits centered. */
+  .menu { flex-wrap: nowrap; align-items: center; gap: .6rem; margin-top: .9rem; padding-block: 0; border-top: 0; }
+  .nav { display: inline-flex; position: relative; flex: none; }
+  .nav-burger {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    min-height: 2.75rem;
+    padding: 0 .75rem;
+    border: 1px solid var(--border);
+    border-radius: .6rem;
+    background: var(--card);
+    color: var(--muted);
+    font-size: .88rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+  }
+  .nav-burger::-webkit-details-marker { display: none; }
+  .nav-burger svg { width: 1.15rem; height: 1.15rem; flex: none; }
+  .nav[open] .nav-burger { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .nav-links {
+    display: flex; /* laid out (absolute, out of flow); revealed on open */
+    position: absolute;
+    top: calc(100% + .4rem);
+    left: 0;
+    z-index: 30;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .15rem;
+    min-width: 12rem;
+    padding: .4rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .7rem;
+    box-shadow: var(--shadow-lift);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-.4rem);
+    pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease, visibility .16s;
+  }
+  .nav[open] .nav-links { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+  .nav-links .menu-link { display: flex; justify-content: flex-start; min-height: 2.75rem; padding: 0 .6rem; border-radius: .5rem; }
+  .nav-links .menu-link:hover { background: var(--faint); }
+  .search { flex: 1; min-width: 0; margin-left: 0; width: auto; }
+  .search:focus-within { width: auto; }
+
+  /* finger-sized controls (44px) */
+  .theme-toggle { width: 2.75rem; height: 2.75rem; }
+  .langs a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+  .search-box input { padding-block: .55rem; }
+  .about-x { height: 2.75rem; padding-inline: .85rem; }
+
+  /* the category trail becomes a wrapping chip row under the intro */
+  .toc { display: block; margin: 1.5rem 0 .3rem; }
+  .toc ul { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .toc ul::before { display: none; }
+  .toc a {
+    min-height: 2.5rem;
+    padding: 0 .85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+    font-size: .85rem;
+  }
+  .toc-mark { display: none; }
+  .toc a[aria-current] {
+    color: var(--fg);
+    font-weight: 500;
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+    background: color-mix(in oklab, var(--accent) 8%, var(--card));
+  }
+
+  /* above ~7 categories the chips give way to a compact jump-to select */
+  .toc.many { display: none; }
+  .toc-jump { display: block; margin: 1.5rem 0 .3rem; }
+  .toc-select {
+    width: 100%;
+    max-width: 22rem;
+    min-height: 2.75rem;
+    padding: .3rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: .7rem;
+    background: var(--card);
+    color: var(--fg);
+    font: inherit;
+    font-size: .9rem;
+  }
+
+  /* nav.js reveals the back-to-top button (via .show) past a screen of scroll */
+  .totop { display: grid; }
+
+  /* footer: one clean column, logo grouped with the credit */
+  .foot { flex-direction: column; align-items: flex-start; gap: 1.1rem; padding-block: 1.6rem 2rem; }
+  .foot-links { flex-direction: column; gap: .9rem; }
+  .powered { margin-left: 0; }
+}
+
+
 @media print {
-  .skip, .topbar-tools, .menu, .toc, .about-x, .card-foot, .btn, .back, .powered { display: none !important; }
+  .skip, .topbar-tools, .menu, .toc, .about-x, .card-foot, .btn, .back, .powered, .totop { display: none !important; }
   body { background: #fff; }
   .about, .card { border: 1px solid #999; box-shadow: none; background: #fff; }
   .cards { grid-template-columns: 1fr; }
