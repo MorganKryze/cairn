@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // The built-in UI strings, one small table per language. Adding a language
 // is exactly one block here plus nothing else: every key must exist (a test
 // enforces completeness against the English table), and site.yaml `strings`
@@ -189,4 +191,21 @@ var builtinStrings = map[string]map[string]string{
 		"nav.top":            "Voltar ao topo",
 		"host.external":      "Externo",
 	},
+}
+
+// rtlLocales lists the base language codes written right to left. None of the
+// built-in UI languages is among them, but a site's own content can be, and
+// the html dir attribute is what makes the whole layout follow.
+var rtlLocales = map[string]bool{
+	"ar": true, "arc": true, "ckb": true, "dv": true, "fa": true, "he": true,
+	"ku": true, "ps": true, "sd": true, "ug": true, "ur": true, "yi": true,
+}
+
+// localeDir gives the writing direction for a locale tag ("ar", "ar-EG").
+func localeDir(locale string) string {
+	base, _, _ := strings.Cut(locale, "-")
+	if rtlLocales[strings.ToLower(base)] {
+		return "rtl"
+	}
+	return "ltr"
 }

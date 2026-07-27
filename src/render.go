@@ -83,6 +83,7 @@ type uiStrings struct {
 type pageView struct {
 	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
 	Prefix                                                                                                                  string // "" or "/cairn", see basePath
+	Dir                                                                                                                     string // "ltr" or "rtl", from the locale
 	CustomCSS, Search, Credit, Noindex                                                                                      bool
 	Locales                                                                                                                 []string
 	Links                                                                                                                   []linkView
@@ -222,6 +223,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 		base := pageView{
 			Locale:    loc,
 			Prefix:    basePath,
+			Dir:       localeDir(loc),
 			Base:      cfg.Site.URL + basePath,
 			Version:   version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,

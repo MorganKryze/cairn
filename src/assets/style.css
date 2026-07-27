@@ -195,7 +195,7 @@ header { padding-block: 1.4rem; }
 .langs-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .langs-menu nav {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   top: calc(100% + .4rem);
   display: flex;
   flex-direction: column;
@@ -237,7 +237,7 @@ header { padding-block: 1.4rem; }
 .about-x {
   position: absolute;
   top: .8rem;
-  right: .8rem;
+  inset-inline-end: .8rem;
   display: inline-flex;
   align-items: center;
   height: 1.9rem;
@@ -261,7 +261,7 @@ header { padding-block: 1.4rem; }
 /* width lives on the wrapper: as a flex item it would otherwise size to the
    box's max-content and leave the box shy of the right edge */
 .search {
-  margin-left: auto;
+  margin-inline-start: auto;
   width: min(14.5rem, 100%);
   transition: width .2s ease;
 }
@@ -288,7 +288,7 @@ header { padding-block: 1.4rem; }
   transition: border-color .15s, box-shadow .15s;
 }
 @media (max-width: 44rem) {
-  .search, .search:focus-within { flex: 1 1 100%; margin-left: 0; width: 100%; }
+  .search, .search:focus-within { flex: 1 1 100%; margin-inline-start: 0; width: 100%; }
 }
 .search-box:focus-within {
   border-color: var(--accent);
@@ -308,7 +308,7 @@ header { padding-block: 1.4rem; }
 .search-box input:focus { outline: none; }
 .search-kbd {
   flex: none;
-  margin-right: .5rem;
+  margin-inline-end: .5rem;
   padding: .1rem .45rem;
   font-family: inherit;
   font-size: .72rem;
@@ -361,7 +361,7 @@ header { padding-block: 1.4rem; }
     display: block;
     position: fixed;
     top: 8.6rem;
-    left: calc(50% + var(--maxw) / 2 + 1.6rem);
+    inset-inline-start: calc(50% + var(--maxw) / 2 + 1.6rem);
     max-width: 10rem;
   }
 }
@@ -374,7 +374,7 @@ header { padding-block: 1.4rem; }
 .toc ul::before {
   content: "";
   position: absolute;
-  left: .2rem;
+  inset-inline-start: .2rem;
   top: .8rem;
   bottom: .8rem;
   width: 1px;
@@ -483,7 +483,7 @@ html { scrollbar-gutter: stable; }
   gap: .5rem;
   padding: 0 .85rem .8rem;
 }
-.card-foot .status-pill { margin-left: auto; }
+.card-foot .status-pill { margin-inline-start: auto; }
 
 /* Host flag: an icon at rest that unfurls its label on hover or focus. The
    label stays in the DOM (clipped, not removed) for screen readers; on touch
@@ -508,7 +508,7 @@ html { scrollbar-gutter: stable; }
 /* overflow visible: the cloud glyph's right lobe reaches the viewBox edge and
    its stroke would be clipped flat; the flag's own padding absorbs the spill. */
 .flag svg { width: .9rem; height: .9rem; flex: none; overflow: visible; }
-.flag-label { opacity: 0; padding-right: .14rem; transition: opacity .18s; }
+.flag-label { opacity: 0; padding-inline-end: .14rem; transition: opacity .18s; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
 .card:hover .flag, .card:focus-within .flag { max-width: 14rem; }
 .card:hover .flag-label, .card:focus-within .flag-label { opacity: 1; }
@@ -538,13 +538,13 @@ html { scrollbar-gutter: stable; }
   position: relative;
   z-index: 1;
   white-space: nowrap;
-  margin-left: .5rem;
+  margin-inline-start: .5rem;
   font-size: .85rem;
   font-weight: 500;
   color: var(--accent-ink);
   text-decoration: none;
 }
-.card-more::after { content: "→"; display: inline-block; margin-left: .3rem; transition: transform .16s; }
+.card-more::after { content: "→"; display: inline-block; margin-inline-start: .3rem; transition: transform .16s; }
 .card:hover .card-more::after { transform: translateX(3px); }
 .card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
@@ -587,6 +587,7 @@ html { scrollbar-gutter: stable; }
 /* ---- detail page ---- */
 
 .detail { max-width: 44rem; margin-inline: auto; padding-block: 1.4rem 1rem; }
+.back::before { content: "\2190"; }
 .back {
   display: inline-flex;
   align-items: center;
@@ -691,7 +692,7 @@ html { scrollbar-gutter: stable; }
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-:is(.about, .detail) ul { margin: 0 0 .9rem; padding-left: 1.15rem; }
+:is(.about, .detail) ul { margin: 0 0 .9rem; padding-inline-start: 1.15rem; }
 :is(.about, .detail) li { line-height: 1.7; margin-bottom: .3rem; }
 :is(.about, .detail) li::marker { color: var(--accent-ink); }
 :is(.about, .detail) code {
@@ -725,7 +726,7 @@ footer {
 .foot-links { display: flex; flex-wrap: wrap; gap: 1.3rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
-.powered { display: inline-flex; align-items: center; gap: .45rem; margin-left: auto; font-size: .82rem; color: var(--muted); }
+.powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { color: var(--accent-ink); font-weight: 500; }
 .powered a:hover, .powered a:focus-visible { color: var(--accent-ink); text-decoration: underline; }
@@ -734,7 +735,7 @@ footer {
 
 .skip {
   position: absolute;
-  left: -999px;
+  inset-inline-start: -999px;
   top: .5rem;
   z-index: 2;
   padding: .5rem 1rem;
@@ -744,7 +745,7 @@ footer {
   color: var(--fg);
   text-decoration: none;
 }
-.skip:focus { left: .5rem; }
+.skip:focus { inset-inline-start: .5rem; }
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -767,7 +768,7 @@ footer {
 .totop {
   display: none;
   position: fixed;
-  right: 1rem;
+  inset-inline-end: 1rem;
   bottom: 1rem;
   z-index: 20;
   width: 2.9rem;
@@ -840,7 +841,7 @@ footer {
     display: flex; /* laid out (absolute, out of flow); revealed on open */
     position: absolute;
     top: calc(100% + .4rem);
-    left: 0;
+    inset-inline-start: 0;
     z-index: 30;
     flex-direction: column;
     align-items: stretch;
@@ -860,7 +861,7 @@ footer {
   .nav[open] .nav-links { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
   .nav-links .menu-link { display: flex; justify-content: flex-start; min-height: 2.75rem; padding: 0 .6rem; border-radius: .5rem; }
   .nav-links .menu-link:hover { background: var(--faint); }
-  .search { flex: 1; min-width: 0; margin-left: 0; width: auto; }
+  .search { flex: 1; min-width: 0; margin-inline-start: 0; width: auto; }
   .search:focus-within { width: auto; }
 
   /* finger-sized controls (44px) */
@@ -911,7 +912,7 @@ footer {
   /* footer: one clean column, logo grouped with the credit */
   .foot { flex-direction: column; align-items: flex-start; gap: 1.1rem; padding-block: 1.6rem 2rem; }
   .foot-links { flex-direction: column; gap: .9rem; }
-  .powered { margin-left: 0; }
+  .powered { margin-inline-start: 0; }
 }
 
 
@@ -934,3 +935,8 @@ footer {
   }
   .shot { break-inside: avoid; }
 }
+
+/* Right-to-left: the layout follows from the logical properties above, only
+   the two literal arrows have to be turned around by hand. */
+[dir="rtl"] .card-more::after { content: "\2190"; }
+[dir="rtl"] .back::before { content: "\2192"; }
