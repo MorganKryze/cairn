@@ -114,5 +114,42 @@ With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
 needs no rewriting. `/healthz` is the one exception: it answers at the root
 too, because container healthchecks reach cairn directly.
 
+## The display font
+
+`src/assets/fonts/fraunces.woff2` is not the upstream file: it is
+[Fraunces](https://github.com/undercasetype/Fraunces) cut down to what the
+pages use, which halves it (118 KB to 62 KB) on a page that would otherwise be
+two-thirds font. The Latin ranges are kept, the `SOFT` and `WONK` axes are
+pinned to the single values the stylesheet asks for, and `opsz` and `wght` stay
+variable so headings keep their optical sizing.
+
+To rebuild it after a font update:
+
+```sh
+pip install fonttools brotli
+python - <<'EOF'
+from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
+from fontTools import subset
+
+f = TTFont("Fraunces[SOFT,WONK,opsz,wght].ttf")
+instancer.instantiateVariableFont(f, {"WONK": 0, "SOFT": 50}, inplace=True)
+o = subset.Options()
+o.layout_features = ["kern", "liga", "calt", "ccmp", "locl"]
+o.name_IDs = ["*"]
+s = subset.Subsetter(options=o)
+s.populate(unicodes=subset.parse_unicodes(
+    "U+0000-00FF,U+0100-017F,U+0180-024F,U+2000-206F,U+20A0-20BF,U+2122"))
+s.subset(f)
+f.flavor = "woff2"
+f.save("src/assets/fonts/fraunces.woff2")
+EOF
+```
+
+Those ranges cover the seven built-in languages and the rest of Latin-script
+Europe. A site whose headings need Greek, Cyrillic or CJK should point
+`--font-display` at its own face through
+[custom.css](configuration/theming.md).
+
 No environment variables, no other state. The binary serves HTTP on one port,
 reads one directory, and optionally polls the one Gatus URL you configured.

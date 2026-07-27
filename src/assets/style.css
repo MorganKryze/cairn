@@ -1,4 +1,8 @@
 @font-face {
+  /* Fraunces, cut down from the upstream variable font: Latin ranges only, and
+     the SOFT and WONK axes pinned to the single values used below. That halves
+     the file (118 -> 62 KB) while keeping opsz, so headings still get their
+     proper optical size. Rebuild: see docs/reference.md#the-display-font. */
   font-family: "Fraunces";
   /* relative to this stylesheet, so it resolves under any -base-path */
   src: url("fonts/fraunces.woff2") format("woff2");
@@ -76,7 +80,7 @@ header { padding-block: 1.4rem; }
   align-items: center;
   gap: .55rem;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 40, "SOFT" 40, "WONK" 0;
+  font-variation-settings: "opsz" 40;
   font-weight: 560;
   font-size: 1.3rem;
   letter-spacing: -.01em;
@@ -339,7 +343,7 @@ header { padding-block: 1.4rem; }
 .way-name {
   margin: 0;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 60, "SOFT" 50, "WONK" 0;
+  font-variation-settings: "opsz" 60;
   font-weight: 540;
   font-size: 1.5rem;
   letter-spacing: -.012em;
@@ -607,7 +611,7 @@ html { scrollbar-gutter: stable; }
 .detail-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 96, "SOFT" 55, "WONK" 0;
+  font-variation-settings: "opsz" 96;
   font-weight: 470;
   font-size: clamp(1.9rem, 4.5vw, 2.7rem);
   letter-spacing: -.015em;
@@ -651,7 +655,7 @@ html { scrollbar-gutter: stable; }
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 96, "SOFT" 55, "WONK" 0;
+  font-variation-settings: "opsz" 96;
   font-weight: 470;
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   letter-spacing: -.015em;
@@ -678,7 +682,7 @@ html { scrollbar-gutter: stable; }
 .tagline {
   margin: 2.1rem 0 0;
   font-family: var(--font-display);
-  font-variation-settings: "opsz" 40, "SOFT" 55, "WONK" 0;
+  font-variation-settings: "opsz" 40;
   font-style: italic;
   font-size: 1.25rem;
   color: var(--muted);
