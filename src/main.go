@@ -213,34 +213,46 @@ func probe(addr string) int {
 }
 
 // watch polls instead of using inotify: polling survives bind mounts and
-// configmap symlink swaps that file watchers routinely miss.
+// configmap symlink swaps that file watchers routinely miss. The loop is only
+// the clock; reloadOnce does the work and is what the tests drive.
 func watch(dir string) {
-	// Local icons live outside the config dir but change the pages too.
-	iconsDir := filepath.Join(assetsPath, "icons")
-	last := fingerprint(dir) + fingerprint(iconsDir)
+	last := watchPrint(dir)
 	for range time.Tick(2 * time.Second) {
-		fp := fingerprint(dir) + fingerprint(iconsDir)
-		if fp == last {
-			continue
-		}
-		last = fp
-		cfg, err := loadConfig(dir)
-		if err != nil {
-			log.Printf("reload failed, keeping previous config: %v", err)
-			continue
-		}
-		reloadMu.Lock()
-		m, err := buildModel(cfg, current.Load().Statuses)
-		if err == nil {
-			current.Store(m)
-		}
-		reloadMu.Unlock()
-		if err != nil {
-			log.Printf("reload failed, keeping previous config: %v", err)
-			continue
-		}
-		log.Printf("config reloaded: %d services, locales %v", countServices(cfg), cfg.Site.Locales)
+		last = reloadOnce(dir, last)
 	}
+}
+
+// watchPrint fingerprints everything a page is built from: the config dir, and
+// the local icons that live outside it but change the pages too.
+func watchPrint(dir string) string {
+	return fingerprint(dir) + fingerprint(filepath.Join(assetsPath, "icons"))
+}
+
+// reloadOnce runs one iteration of the watcher and returns the fingerprint to
+// compare against next time. An unchanged directory costs one stat sweep; a
+// broken config is logged and the previous pages stay up.
+func reloadOnce(dir, last string) string {
+	fp := watchPrint(dir)
+	if fp == last {
+		return last
+	}
+	cfg, err := loadConfig(dir)
+	if err != nil {
+		log.Printf("reload failed, keeping previous config: %v", err)
+		return fp
+	}
+	reloadMu.Lock()
+	m, err := buildModel(cfg, current.Load().Statuses)
+	if err == nil {
+		current.Store(m)
+	}
+	reloadMu.Unlock()
+	if err != nil {
+		log.Printf("reload failed, keeping previous config: %v", err)
+		return fp
+	}
+	log.Printf("config reloaded: %d services, locales %v", countServices(cfg), cfg.Site.Locales)
+	return fp
 }
 
 // pollStatus feeds the status dots from the Gatus API, server-side only. On
@@ -249,40 +261,52 @@ func pollStatus() {
 	if cfg := current.Load().Cfg; cfg.Site.Status.Gatus != "" {
 		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
 	}
-	var lastErr, lastMissing string
+	var seen pollLog
 	for {
 		m := current.Load()
-		if url := m.Cfg.Site.Status.Gatus; url != "" {
-			st, err := fetchStatuses(url)
-			if err != nil {
-				st = nil
-				if err.Error() != lastErr {
-					log.Printf("status: %v (dots hidden until gatus answers)", err)
-					lastErr = err.Error()
-				}
-			} else {
-				lastErr = ""
-				if msg := unmonitored(m.Cfg, st); msg != lastMissing {
-					if msg != "" {
-						log.Printf("status: %s", msg)
-					}
-					lastMissing = msg
-				}
-			}
-			reloadMu.Lock()
-			// Re-read under the lock so a config reload that landed mid-poll
-			// is merged with, not overwritten by, the fresh statuses.
-			cur := current.Load()
-			if !maps.Equal(st, cur.Statuses) {
-				if next, err := buildModel(cur.Cfg, st); err == nil {
-					current.Store(next)
-				} else {
-					log.Printf("status: render failed, keeping previous pages: %v", err)
-				}
-			}
-			reloadMu.Unlock()
-		}
+		pollOnce(m.Cfg.Site.Status.Gatus, &seen)
 		time.Sleep(m.Cfg.StatusInterval())
+	}
+}
+
+// pollLog remembers the last messages printed, so a Gatus that stays down
+// says so once instead of every interval.
+type pollLog struct{ err, missing string }
+
+// pollOnce runs one status poll and swaps the pages in when the dots changed.
+// An empty url is a no-op: a site without Gatus shows no pill at all.
+func pollOnce(url string, seen *pollLog) {
+	if url == "" {
+		return
+	}
+	st, err := fetchStatuses(url)
+	if err != nil {
+		st = nil
+		if err.Error() != seen.err {
+			log.Printf("status: %v (dots hidden until gatus answers)", err)
+			seen.err = err.Error()
+		}
+	} else {
+		seen.err = ""
+		if msg := unmonitored(current.Load().Cfg, st); msg != seen.missing {
+			if msg != "" {
+				log.Printf("status: %s", msg)
+			}
+			seen.missing = msg
+		}
+	}
+	reloadMu.Lock()
+	defer reloadMu.Unlock()
+	// Re-read under the lock so a config reload that landed mid-poll is merged
+	// with, not overwritten by, the fresh statuses.
+	cur := current.Load()
+	if maps.Equal(st, cur.Statuses) {
+		return
+	}
+	if next, err := buildModel(cur.Cfg, st); err == nil {
+		current.Store(next)
+	} else {
+		log.Printf("status: render failed, keeping previous pages: %v", err)
 	}
 }
 

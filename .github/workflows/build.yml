@@ -54,8 +54,8 @@ jobs:
           go test -covermode=atomic -coverprofile=cov.out ./src/...
           pct=$(go tool cover -func=cov.out | awk '/^total:/ {sub(/%/,"",$NF); print $NF}')
           echo "coverage: ${pct}%"
-          awk -v p="$pct" 'BEGIN { exit (p + 0 >= 70) ? 0 : 1 }' \
-            || { echo "::error::coverage ${pct}% is below the 70% floor"; exit 1; }
+          awk -v p="$pct" 'BEGIN { exit (p + 0 >= 80) ? 0 : 1 }' \
+            || { echo "::error::coverage ${pct}% is below the 80% floor"; exit 1; }
           echo "PCT=$pct" >> "$GITHUB_ENV"
       - name: publish badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
