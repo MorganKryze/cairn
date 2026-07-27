@@ -53,6 +53,9 @@ account or a manual, and boring for you to operate.
 - **At home on a phone**: the layout reflows to one hand, the header steps
   aside as you scroll and returns the moment you head back up, and a burger
   keeps search within thumb's reach.
+- **Readable by everyone**: contrast that clears WCAG AA in both themes, a
+  skip link, named landmarks, results announced to screen readers, and
+  right-to-left languages laid out the right way round.
 - **Calm typography, light and dark, keyboard-friendly**, and every feature
   degrades gracefully without JavaScript.
 
@@ -85,7 +88,8 @@ deliberately tight, from the image down to the wire.
 - **No outbound requests of its own**: air-gap friendly, its only companions
   optional and yours, a self-hosted [Gatus](docs/recipes/gatus.md) for status
   and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
-  The [demo](demo/README.md) runs on a network with no route out, to prove it.
+  The [demo](demo/README.md) runs on a network with no route out and serves its
+  own icons, so the page it shows you makes no third-party request at all.
 - **A watched supply chain**: every push and pull request runs `govulncheck`,
   a Trivy image scan and CodeQL, Dependabot follows the dependencies, and every
   CI action is pinned to a commit rather than a movable tag.

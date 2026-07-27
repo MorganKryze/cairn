@@ -66,3 +66,8 @@ docs: quickstart readme and example config
 ```
 
 No trailers, no bodies unless the *why* genuinely needs a sentence.
+
+## Conduct
+
+Be decent, assume good faith, critique the work and not the person. The full
+version is in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

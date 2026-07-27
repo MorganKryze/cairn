@@ -44,6 +44,13 @@ air-gap story cairn is built for, demonstrated: try
 `docker exec cairn-demo-cairn-1 wget example.org` from any service, it has
 nowhere to go.
 
+The *page* is air-gapped too, not just the containers: the service icons are
+served from `assets/icons/` rather than the jsdelivr CDN, so loading this demo
+in a browser makes **zero third-party requests**. That is the setup
+[`cairn -emit-icons`](../docs/recipes/icons.md#going-fully-self-hosted)
+produces for any site; refresh them with
+`cairn -config demo/config -emit-icons`.
+
 ## Ports (all bound to 127.0.0.1; nothing is exposed to your network)
 
 | Port | What                    |

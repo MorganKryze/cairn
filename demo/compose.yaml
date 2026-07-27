@@ -36,6 +36,10 @@ services:
       dockerfile: docker/Dockerfile
     volumes:
       - ./config:/config:ro
+      # The icons are served from here, not from a CDN: the demo page makes
+      # zero third-party requests, which is the claim it exists to prove.
+      # Refresh them with: cairn -config demo/config -emit-icons
+      - ./assets:/assets:ro
     networks:
       - demo
     read_only: true
