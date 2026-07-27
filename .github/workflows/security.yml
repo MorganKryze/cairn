@@ -12,6 +12,14 @@ on:
       - "go.sum"
       - "docker/**"
       - ".github/workflows/security.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "go.mod"
+      - "go.sum"
+      - "docker/**"
+      - ".github/workflows/security.yml"
 
 permissions:
   contents: read

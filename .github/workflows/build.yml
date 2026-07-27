@@ -10,10 +10,19 @@ on:
       - "go.mod"
       - "go.sum"
       - ".github/workflows/build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "docker/**"
+      - "demo/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/build.yml"
 
+# Least privilege by default; the two jobs that write ask for it themselves.
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -49,17 +58,23 @@ jobs:
             || { echo "::error::coverage ${pct}% is below the 70% floor"; exit 1; }
           echo "PCT=$pct" >> "$GITHUB_ENV"
       - name: publish badge
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash .github/coverage-badge.sh "$PCT"
 
   image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # pushes ghcr.io/…:unstable, on main only
     steps:
       - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v4
+      # A pull request builds the image but never publishes it, so a fork PR
+      # needs no registry credentials.
+      - if: github.event_name == 'push'
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -80,7 +95,7 @@ jobs:
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ steps.meta.outputs.version }}
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
