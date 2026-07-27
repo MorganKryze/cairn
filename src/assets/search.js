@@ -35,21 +35,59 @@
   const cats = Array.from(document.querySelectorAll('.cat'));
   const empty = document.getElementById('empty');
 
-  input.addEventListener('input', () => {
-    const words = norm(input.value).split(/\s+/).filter(Boolean);
+  // The visible matches, in document order, and the index of the "selected"
+  // one (the one Enter opens). -1 when the box is empty or nothing matches.
+  let matches = [];
+  let sel = -1;
+
+  const setSel = i => {
+    if (sel >= 0 && matches[sel]) matches[sel].el.classList.remove('sel');
+    sel = i;
+    if (sel >= 0 && matches[sel]) {
+      const el = matches[sel].el;
+      el.classList.add('sel');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  };
+
+  const apply = () => {
+    const q = norm(input.value).trim();
+    const words = q.split(/\s+/).filter(Boolean);
     // Name matches win: when the query hits a service's name, show only those,
     // so a full name doesn't drag in cards that merely mention it. Fall back to
     // the full text (descriptions, tags) only when no name matches.
     const nameHit = c => words.every(w => c.name.includes(w));
     const byName = words.length > 0 && cards.some(nameHit);
     const hit = byName ? nameHit : c => words.every(w => c.text.includes(w));
-    let shown = 0;
+    matches = [];
     for (const c of cards) {
       const ok = hit(c);
       c.el.hidden = !ok;
-      if (ok) shown++;
+      c.el.classList.remove('sel');
+      if (ok) matches.push(c);
     }
     for (const s of cats) s.hidden = !s.querySelector('.card:not([hidden])');
-    empty.hidden = shown > 0;
+    empty.hidden = matches.length > 0;
+    // Preselect the strongest match so Enter lands on the obvious one: exact
+    // name > prefix > name substring > keyword-only. Only while actively typing.
+    sel = -1;
+    if (words.length && matches.length) {
+      const score = c => c.name === q ? 4 : c.name.startsWith(q) ? 3 : c.name.includes(q) ? 2 : 1;
+      let best = 0, top = -1;
+      matches.forEach((c, i) => { const s = score(c); if (s > top) { top = s; best = i; } });
+      setSel(best);
+    }
+  };
+
+  input.addEventListener('input', apply);
+
+  // ponytail: a class + a real link click, not a full ARIA combobox. Upgrade to
+  // listbox/aria-activedescendant if screen-reader nav is ever asked for.
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { input.value = ''; apply(); return; }
+    if (!matches.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(sel + 1, matches.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(sel - 1, 0)); }
+    else if (e.key === 'Enter' && sel >= 0) { e.preventDefault(); matches[sel].el.querySelector('.card-name').click(); }
   });
 })();

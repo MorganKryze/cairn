@@ -441,6 +441,20 @@ html { scrollbar-gutter: stable; }
   transform: translateY(-3px);
   box-shadow: var(--shadow-lift);
 }
+/* the keyboard-selected match: the card Enter opens while searching. The ring
+   pings outward like the online indicator's beacon; the accent border keeps
+   the selection legible between pulses (and when motion is reduced). */
+.card.sel {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent), var(--shadow-lift);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card.sel { animation: card-beacon 2.8s cubic-bezier(.15, .6, .3, 1) infinite; }
+}
+@keyframes card-beacon {
+  from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent), var(--shadow-lift); }
+  to { box-shadow: 0 0 0 10px color-mix(in oklab, var(--accent) 0%, transparent), var(--shadow-lift); }
+}
 .card-main {
   display: flex;
   gap: .95rem;
