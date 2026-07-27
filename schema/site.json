@@ -117,6 +117,10 @@
       "type": "boolean",
       "description": "false removes the footer \"powered by cairn\"."
     },
+    "show_version": {
+      "type": "boolean",
+      "description": "true prints the running cairn version beside the credit: the release number for a tagged build, the commit for a build off main. Off by default."
+    },
     "strings": {
       "type": "object",
       "additionalProperties": { "$ref": "#/definitions/lstring" },

@@ -733,6 +733,11 @@ footer {
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { color: var(--accent-ink); font-weight: 500; }
+/* the optional build stamp: present for whoever needs it, quiet enough that
+   the footer still reads as one line */
+.foot-version { font-size: .95em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.powered a.foot-version { color: var(--muted); font-weight: 400; }
+.powered a.foot-version:hover { color: var(--fg); }
 .powered a:hover, .powered a:focus-visible { color: var(--accent-ink); text-decoration: underline; }
 
 /* ---- utilities ---- */

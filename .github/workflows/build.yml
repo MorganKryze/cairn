@@ -90,7 +90,9 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          build-args: VERSION=${{ steps.meta.outputs.version }}
+          # The commit, not "unstable": with show_version on, an untagged build
+          # then names the exact revision it was cut from, and links to it.
+          build-args: VERSION=${{ github.sha }}
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -100,7 +100,8 @@ type Site struct {
 	Links   []FooterLink       `yaml:"links"`
 	Footer  []FooterLink       `yaml:"footer"`
 	Pages   []SitePage         `yaml:"pages"`
-	Credit  *bool              `yaml:"credit"` // the footer "powered by cairn"; nil means true
+	Credit  *bool              `yaml:"credit"`       // the footer "powered by cairn"; nil means true
+	ShowVer bool               `yaml:"show_version"` // print the running version beside the credit; off by default
 	Strings map[string]LString `yaml:"strings"`
 	Status  struct {
 		Gatus    string `yaml:"gatus"`

@@ -5,6 +5,7 @@ tagline:
   en: A sample directory backed by real services and a real Gatus.
 logo: /static/favicon.svg           # your own image goes in /assets (see docs)
 locales: [fr, en]
+show_version: true
 status:
   gatus: http://gatus:8080        # cairn polls this over the compose network
   page: http://localhost:8081     # the pill links visitors to the published port
