@@ -1,4 +1,8 @@
-<!-- Copy this into the release notes (gh release create vX.Y.Z --notes-file …).
+<!-- Before cutting the release, refresh the README hero so it shows what the
+     version actually looks like:  just shots
+     Commit the two files under docs/assets/ if they changed.
+
+     Copy this into the release notes (gh release create vX.Y.Z --notes-file …).
      Sections in this order; delete a section entirely when it is empty. -->
 
 One or two sentences: what this release is about, in plain words.

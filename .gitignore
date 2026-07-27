@@ -1,1 +1,4 @@
 /cairn
+
+# just shots installs playwright here on demand; nothing to commit
+node_modules/

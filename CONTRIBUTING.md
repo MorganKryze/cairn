@@ -67,6 +67,13 @@ docs: quickstart readme and example config
 
 No trailers, no bodies unless the *why* genuinely needs a sentence.
 
+## Releasing
+
+`just shots` regenerates the README hero, light and dark, from the running
+demo. Run it before every release: the screenshot is the first thing anyone
+sees, and it goes stale quietly. Playwright installs itself into a gitignored
+`node_modules/` on demand, so nothing is added to the repository.
+
 ## Conduct
 
 Be decent, assume good faith, critique the work and not the person. The full
