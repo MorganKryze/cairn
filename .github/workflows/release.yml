@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # attaches the tarballs to the release
+      id-token: write # signs the provenance attestation, keylessly
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -29,7 +31,14 @@ jobs:
               go build -trimpath -ldflags="-s -w -X main.version=$version" -o cairn ./src
             tar -czf "cairn_${version}_${os}_${arch}.tar.gz" cairn
           done
-          gh release upload "$GITHUB_REF_NAME" cairn_*.tar.gz --clobber
+          sha256sum cairn_*.tar.gz > checksums.txt
+          gh release upload "$GITHUB_REF_NAME" cairn_*.tar.gz checksums.txt --clobber
+
+      # Says which workflow, at which commit, produced these exact bytes.
+      # Verify with: gh attestation verify cairn_… --repo MorganKryze/cairn
+      - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: cairn_*.tar.gz
 
 
   image:
@@ -37,10 +46,13 @@ jobs:
     permissions:
       contents: read
       packages: write # pushes the versioned tags to ghcr.io
+      id-token: write # cosign signs keylessly against this workflow identity
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4
         with:
@@ -60,7 +72,8 @@ jobs:
             type=raw,value=latest
 
       # vet + tests run inside the Dockerfile, so they gate the push.
-      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+      - id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           file: docker/Dockerfile
@@ -70,6 +83,24 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          provenance: false
+          # SLSA provenance and a software bill of materials, both attached to
+          # the image so a puller can see how it was built and what is inside.
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Keyless: the signature is bound to this workflow's identity, no key to
+      # store or rotate. Verify with:
+      #   cosign verify ghcr.io/morgankryze/cairn:stable \
+      #     --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: sign the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          for tag in $TAGS; do
+            cosign sign --yes "${tag%%:*}@${DIGEST}"
+            break # one signature covers the digest, whatever tags point at it
+          done

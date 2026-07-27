@@ -15,6 +15,38 @@ You can expect an acknowledgement within a week. If the report is confirmed,
 the fix lands in a patch release and the advisory is published once the
 release is out.
 
+## Verifying what you pulled
+
+Every release is signed and carries the record of how it was built, so you can
+check that an artifact really came from this repository's CI and not from
+someone in between.
+
+The image is signed keylessly with [cosign](https://github.com/sigstore/cosign):
+there is no maintainer key to steal, the signature is bound to the workflow
+identity.
+
+```sh
+cosign verify ghcr.io/morgankryze/cairn:stable \
+  --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+It also ships SLSA build provenance and a software bill of materials:
+
+```sh
+docker buildx imagetools inspect ghcr.io/morgankryze/cairn:stable \
+  --format '{{ json .Provenance }}'
+```
+
+The release binaries carry their own attestation:
+
+```sh
+gh attestation verify cairn_1.8.0_linux_amd64.tar.gz --repo MorganKryze/cairn
+```
+
+A `checksums.txt` is attached to each release too, for the plain `sha256sum -c`
+route.
+
 ## Scope worth knowing
 
 cairn's attack surface is deliberately small: no auth, no database, no

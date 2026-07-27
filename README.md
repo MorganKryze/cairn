@@ -86,8 +86,13 @@ deliberately tight, from the image down to the wire.
   optional and yours, a self-hosted [Gatus](docs/recipes/gatus.md) for status
   and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
   The [demo](demo/README.md) runs on a network with no route out, to prove it.
-- **A watched supply chain**: every push runs `govulncheck`, a Trivy image
-  scan, CodeQL and Dependabot. See [security.yml](.github/workflows/security.yml).
+- **A watched supply chain**: every push and pull request runs `govulncheck`,
+  a Trivy image scan and CodeQL, Dependabot follows the dependencies, and every
+  CI action is pinned to a commit rather than a movable tag.
+- **Artifacts you can check**: the image is signed with cosign and ships SLSA
+  provenance and an SBOM; the release binaries carry their own attestation.
+  The [verification commands](SECURITY.md#verifying-what-you-pulled) are two
+  lines.
 
 ## Quickstart
 
