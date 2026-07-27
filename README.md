@@ -47,8 +47,12 @@ account or a manual, and boring for you to operate.
   never the visitor's browser.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
-- **Search from anywhere**: just start typing, or ⌘K. Works accent-insensitive
-  over names, descriptions and hidden tags.
+- **Search from anywhere**: just start typing, or ⌘K. A name finds that one
+  service, not everything that mentions it; keyword search still reaches
+  descriptions and hidden tags, accent-insensitive.
+- **At home on a phone**: the layout reflows to one hand, the header steps
+  aside as you scroll and returns the moment you head back up, and a burger
+  keeps search within thumb's reach.
 - **Calm typography, light and dark, keyboard-friendly**, and every feature
   degrades gracefully without JavaScript.
 
