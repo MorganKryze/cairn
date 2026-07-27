@@ -23,20 +23,22 @@
 
   const COMBINING = /[̀-ͯ]/g;
   const norm = s => s.normalize('NFD').replace(COMBINING, '').toLowerCase();
-  const cards = Array.from(document.querySelectorAll('.card'), el => {
+  const cats = Array.from(document.querySelectorAll('.cat'));
+  const cards = Array.from(document.querySelectorAll('.card'), (el, dom) => {
     const main = el.querySelector('.card-main').cloneNode(true);
     main.querySelectorAll('.visually-hidden, .status-pill').forEach(n => n.remove());
     return {
       el,
+      dom,                                    // original position, the tie-breaker
+      cat: cats.indexOf(el.closest('.cat')),  // which category row it lives in
       name: norm(el.querySelector('.card-name').textContent),
       text: norm(main.textContent + ' ' + (el.dataset.tags || '')),
     };
   });
-  const cats = Array.from(document.querySelectorAll('.cat'));
   const empty = document.getElementById('empty');
 
-  // The visible matches, in document order, and the index of the "selected"
-  // one (the one Enter opens). -1 when the box is empty or nothing matches.
+  // The visible matches, in the order they now read on screen, and the index of
+  // the "selected" one (the one Enter opens). -1 when nothing is selected.
   let matches = [];
   let sel = -1;
 
@@ -59,22 +61,35 @@
     const nameHit = c => words.every(w => c.name.includes(w));
     const byName = words.length > 0 && cards.some(nameHit);
     const hit = byName ? nameHit : c => words.every(w => c.text.includes(w));
-    matches = [];
+    // exact name > prefix > name substring > keyword-only
+    const score = c => c.name === q ? 4 : c.name.startsWith(q) ? 3 : c.name.includes(q) ? 2 : 1;
+
+    const hits = [];
     for (const c of cards) {
       const ok = hit(c);
       c.el.hidden = !ok;
       c.el.classList.remove('sel');
-      if (ok) matches.push(c);
+      if (ok && words.length) {
+        c.score = score(c);
+        c.el.style.order = String(-c.score); // the better the match, the further left in its row
+        hits.push(c);
+      } else {
+        c.el.style.order = '';
+      }
     }
+    // read them in on-screen order: category by category, best score first,
+    // original order breaking ties
+    hits.sort((a, b) => a.cat - b.cat || b.score - a.score || a.dom - b.dom);
+    matches = hits;
+
     for (const s of cats) s.hidden = !s.querySelector('.card:not([hidden])');
     empty.hidden = matches.length > 0;
-    // Preselect the strongest match so Enter lands on the obvious one: exact
-    // name > prefix > name substring > keyword-only. Only while actively typing.
+    // Preselect the strongest match: it also sits first-left in its category, so
+    // typing a name lands you on that one card, top-left of its row.
     sel = -1;
-    if (words.length && matches.length) {
-      const score = c => c.name === q ? 4 : c.name.startsWith(q) ? 3 : c.name.includes(q) ? 2 : 1;
-      let best = 0, top = -1;
-      matches.forEach((c, i) => { const s = score(c); if (s > top) { top = s; best = i; } });
+    if (matches.length) {
+      let best = 0;
+      for (let i = 1; i < matches.length; i++) if (matches[i].score > matches[best].score) best = i;
       setSel(best);
     }
   };
