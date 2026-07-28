@@ -22,7 +22,7 @@ so is every key in it.
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
-| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md). |
 
 ## Full example
 

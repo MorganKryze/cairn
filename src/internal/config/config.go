@@ -117,6 +117,9 @@ type Site struct {
 		Gatus    string `yaml:"gatus"`
 		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
+		// Linked nil means true: the pills link to the status page. false
+		// makes them display-only, for a Gatus a visitor cannot reach.
+		Linked *bool `yaml:"linked"`
 	} `yaml:"status"`
 }
 
@@ -199,6 +202,13 @@ func (c *Config) StatusInterval() time.Duration {
 
 // Noindex reports whether the site asks search engines to stay away.
 func (c *Config) Noindex() bool { return c.Site.Index != nil && !*c.Site.Index }
+
+// StatusLinked reports whether a status pill is a link to the status page.
+// It is, unless the operator says otherwise: cairn cannot tell whether the
+// Gatus it polls is one a visitor can reach, so only they can.
+func (c *Config) StatusLinked() bool {
+	return c.Site.Status.Linked == nil || *c.Site.Status.Linked
+}
 
 // Str resolves a UI string: site.yaml override (only for the locales it
 // defines), then the locale's built-in set, its base language (pt-BR finds

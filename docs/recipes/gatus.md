@@ -49,7 +49,20 @@ status:
   page: https://status.example.org   # public: the pill links visitors here
 ```
 
-When `status.page` is omitted, the pill links to `status.gatus`.
+When `status.page` is omitted, the pill links to `status.gatus`. If you have
+no Gatus your visitors should reach at all, say so instead:
+
+```yaml
+status:
+  gatus: http://gatus:8080           # internal, and staying that way
+  linked: false                      # the pills state the status, nothing more
+```
+
+`linked: false` keeps the dot and its label and drops the link. The pills
+stop being controls: no target, no keyboard stop, and on a card a click goes
+where the rest of the card goes, to the service itself. Use it when your
+Gatus is internal, or when you would rather visitors saw the state than went
+looking at a monitoring dashboard.
 
 Each card gets a small status pill in its bottom-right corner (top of the
 page on detail pages), a dot plus a localized label ("Online" /

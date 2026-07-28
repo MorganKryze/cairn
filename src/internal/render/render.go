@@ -102,6 +102,7 @@ type pageView struct {
 
 type cardView struct {
 	URL, Icon, Name, Desc, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	StatusA11y                                                             string // set only when the pill is a link
 	HostKind, HostLabel                                                    string // "self"/"external"/"" and its localized label
 }
 
@@ -136,6 +137,7 @@ type homeView struct {
 type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
+	StatusA11y                                             string
 	Body                                                   []template.HTML
 	Images                                                 []imageView
 }
@@ -157,11 +159,17 @@ type sectionView struct {
 	Body  []template.HTML
 }
 
-// statusMeta returns the localized label and the Gatus link for a status, so
-// the pill can name itself and send the visitor to its own endpoint page.
-func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label, href string) {
+// statusMeta fills a pill: its label, where it links, and the label a screen
+// reader reads instead. An empty href makes it display-only, which is what
+// status.linked: false asks for and the only shape the templates need to
+// tell the two apart.
+func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label, href, a11y string) {
 	if state == "" {
-		return "", ""
+		return "", "", ""
+	}
+	label = cfg.Str(loc, "status."+state)
+	if !cfg.StatusLinked() {
+		return label, "", ""
 	}
 	// The pill link is for the visitor's browser, so it uses the public
 	// status.page URL; status.gatus may be an internal poll-only address.
@@ -170,7 +178,9 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label,
 		base = cfg.Site.Status.Gatus
 	}
 	href = strings.TrimSuffix(base, "/") + "/endpoints/" + status.Key(s.Category, s.ID)
-	return cfg.Str(loc, "status."+state), href
+	// A link has to name its target on its own: read out of the card, "Online"
+	// alone says nothing about which service, nor that it leads anywhere.
+	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
 }
 
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not
@@ -269,7 +279,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 					Tags:   strings.Join(s.Tags, " "),
 					Status: statusOf(cfg, statuses, s.ID),
 				}
-				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
+				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 				}
@@ -305,7 +315,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 					url, w, h := media(img.Src)
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: img.Caption.Get(loc, def), W: w, H: h})
 				}
-				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
+				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s)
 				dv.PageTitle = dv.Name + " · " + base.SiteTitle
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"
