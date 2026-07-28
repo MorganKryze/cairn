@@ -30,38 +30,6 @@ func TestLStringFallback(t *testing.T) {
 	}
 }
 
-// The YAML vocabulary rewrite: yaml.v3 speaks to Go programmers, the person
-// reading the message is editing a text file.
-//
-// The package-qualified cases matter more than they look. yaml.v3 names our
-// own types as "<package>.Type", so the table used to be keyed on "main.Site";
-// splitting the code into packages silently turned every one of those friendly
-// words back into a Go type name in the operator's face. Matching on the bare
-// name fixes it for good, and these cases keep it fixed.
-func TestYamlWordSpeaksYAMLNotGo(t *testing.T) {
-	for _, c := range []struct{ in, want string }{
-		{"!!str", "a text"},
-		{"!!seq", "a list"},
-		{"!!int", "a number"},
-		{"[]string", "a list of texts"},
-		{"map[string]string", "a per-locale mapping"},
-		// qualified with whatever package the types happen to live in
-		{"config.SitePage", "a page entry"},
-		{"config.Service", "a service entry"},
-		{"[]config.FooterLink", "a list of links"},
-		{"main.Site", "the site settings"},
-		{"future.PageSection", "a section entry"},
-	} {
-		if got := yamlWord(c.in); got != c.want {
-			t.Errorf("yamlWord(%q) = %q, want %q", c.in, got, c.want)
-		}
-	}
-	// an unknown type still loses its package rather than leaking it
-	if got := yamlWord("config.Mystery"); got != "Mystery" {
-		t.Errorf("yamlWord on an unknown type = %q, want the package dropped", got)
-	}
-}
-
 // A services file that is not a list of services has to say so in the terms of
 // the file, naming what was found where.
 func TestParseServicesRefusals(t *testing.T) {

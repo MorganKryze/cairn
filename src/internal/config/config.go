@@ -143,12 +143,17 @@ type ServiceImage struct {
 	Caption LString `yaml:"caption"`
 }
 
+// imageEntry is ServiceImage without its UnmarshalYAML, which decoding the
+// mapping form would otherwise re-enter forever. It sits at package level
+// rather than inside the method so an unknown key in an image entry can be
+// told what an image entry accepts; yaml names this type in its error.
+type imageEntry ServiceImage
+
 func (i *ServiceImage) UnmarshalYAML(n *yaml.Node) error {
 	if n.Kind == yaml.ScalarNode {
 		*i = ServiceImage{Src: n.Value}
 		return nil
 	}
-	type imageEntry ServiceImage
 	var v imageEntry
 	if err := strictDecode(n, &v); err != nil {
 		return err
@@ -254,8 +259,7 @@ func Load(dir string) (*Config, error) {
 		return nil, fmt.Errorf("config: cannot read %s (mount your yaml files there): %w", dir, err)
 	}
 
-	site := Site{Title: LString{"": "cairn"}, Locales: []string{"en"}}
-	site.Theme.Accent = "#247b7b"
+	site := defaultSite()
 
 	var services []Service
 	var metas []CategoryMeta
@@ -273,10 +277,9 @@ func Load(dir string) (*Config, error) {
 		}
 		switch strings.TrimSuffix(strings.TrimSuffix(name, ".yaml"), ".yml") {
 		case "site":
-			dec := yaml.NewDecoder(bytes.NewReader(data))
-			dec.KnownFields(true)
-			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, favicon, icons, index, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
+			site, err = parseSite(name, data)
+			if err != nil {
+				return nil, err
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -397,6 +400,27 @@ func strictDecode(n *yaml.Node, out any) error {
 	return nil
 }
 
+// defaultSite is what a directory with no site.yaml means, and equally the
+// base a site.yaml decodes onto: every key in the file is optional, so the
+// two have to agree. One function so they cannot stop agreeing.
+func defaultSite() Site {
+	s := Site{Title: LString{"": "cairn"}, Locales: []string{"en"}}
+	s.Theme.Accent = "#247b7b"
+	return s
+}
+
+// parseSite decodes site.yaml over those defaults. An empty file is a legal
+// site.yaml, so io.EOF means "nothing set", not "broken".
+func parseSite(file string, data []byte) (Site, error) {
+	site := defaultSite()
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
+		return Site{}, fmt.Errorf("config: %s: %s", file, yamlErr(err))
+	}
+	return site, nil
+}
+
 func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -414,7 +438,7 @@ func parseCategories(file string, data []byte) ([]CategoryMeta, error) {
 	for _, item := range root.Content {
 		var m CategoryMeta
 		if err := strictDecode(item, &m); err != nil {
-			return nil, fmt.Errorf("config: %s line %d: %v", file, item.Line, err)
+			return nil, fmt.Errorf("config: %s line %d: %s", file, item.Line, entryErr(err))
 		}
 		if m.ID == "" {
 			return nil, fmt.Errorf("config: %s line %d: category missing id (expected: id: documents)", file, item.Line)
@@ -444,7 +468,7 @@ func parseServices(file string, data []byte) ([]Service, error) {
 	for _, item := range root.Content {
 		var s Service
 		if err := strictDecode(item, &s); err != nil {
-			return nil, fmt.Errorf("config: %s line %d: %v", file, item.Line, err)
+			return nil, fmt.Errorf("config: %s line %d: %s", file, item.Line, entryErr(err))
 		}
 		switch {
 		case s.ID == "":

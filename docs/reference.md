@@ -57,8 +57,11 @@ logs the same error.
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 | `status.interval` | `60s`  | poll cadence, duration ≥ `5s`         |
 
-Unknown keys are errors, in `site.yaml` and in every service and category
-entry alike.
+Unknown keys are errors everywhere: in `site.yaml`, and in every service,
+category, page, section, link, image and icon entry alike. The message names
+the kind of entry that refused the key and lists what that entry accepts, so
+a misspelt `show_versions` is answered with `show_version` rather than with
+the keys of some other part of the file.
 
 ## `categories.yaml`
 
