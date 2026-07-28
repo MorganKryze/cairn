@@ -89,8 +89,9 @@ var mdImgRefRe = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
 // hurt the visitors of the pages that show them.
 func mediaWarnings(cfg *config.Config, mediaDir string) []string {
 	used := map[string]bool{}
+	// Only a bare name refers to a file in media/; anything else is a link.
 	markUsed := func(src string) {
-		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") && !strings.HasPrefix(src, "/") {
+		if !config.IsURLOrAbs(src) {
 			used[src] = true
 		}
 	}

@@ -249,8 +249,30 @@ func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
+// IsLocalPath reports a root-absolute path that stays on this site.
+//
+// "//cdn.example.org/x" is not one, though it starts with a slash: a browser
+// reads it as a URL on another origin. The backslash form counts as external
+// too, because browsers normalise it to the same thing. Every place that has
+// to prefix a base path or a site URL needs this distinction rather than a
+// bare leading slash, or a protocol-relative logo comes out as
+// "/cairn//cdn.example.org/x", which resolves nowhere.
+func IsLocalPath(s string) bool {
+	return strings.HasPrefix(s, "/") &&
+		!strings.HasPrefix(s, "//") && !strings.HasPrefix(s, `/\`)
+}
+
+// isExternalURL reports a link that leaves this site: an explicit scheme, or
+// the protocol-relative form.
+func isExternalURL(s string) bool {
+	return isHTTPURL(s) || strings.HasPrefix(s, "//") || strings.HasPrefix(s, `/\`)
+}
+
+// IsURLOrAbs gates "is this a link we pass through rather than a slug we
+// resolve". It accepts exactly what it always did; it just no longer confuses
+// the two kinds of leading slash on the way.
 func IsURLOrAbs(s string) bool {
-	return isHTTPURL(s) || strings.HasPrefix(s, "/")
+	return isExternalURL(s) || IsLocalPath(s)
 }
 
 func Load(dir string) (*Config, error) {

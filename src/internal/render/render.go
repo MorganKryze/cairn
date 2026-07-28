@@ -472,7 +472,7 @@ func ogImage(base, logo string) string {
 	if !strings.HasSuffix(l, ".png") && !strings.HasSuffix(l, ".jpg") && !strings.HasSuffix(l, ".jpeg") && !strings.HasSuffix(l, ".webp") && !strings.HasSuffix(l, ".gif") {
 		return ""
 	}
-	if strings.HasPrefix(logo, "/") {
+	if config.IsLocalPath(logo) {
 		return base + logo
 	}
 	return logo

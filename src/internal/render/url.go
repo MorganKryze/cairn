@@ -1,6 +1,10 @@
 package render
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/MorganKryze/cairn/src/internal/config"
+)
 
 // BasePath mirrors the -base-path flag: "" at the domain root, "/cairn" when
 // the site is mounted under a sub-path. Every URL cairn generates carries it,
@@ -19,10 +23,12 @@ func NormalizeBase(p string) string {
 	return "/" + p
 }
 
-// AppURL prefixes a root-absolute local path with the base path. Empty
-// values and absolute URLs (icons on a CDN, operator links) pass through.
+// AppURL prefixes a root-absolute local path with the base path. Empty values
+// and anything already pointing elsewhere pass through untouched, including
+// the protocol-relative "//cdn.example.org/x": it starts with a slash but it
+// is another origin, and prefixing it produced a path resolving nowhere.
 func AppURL(p string) string {
-	if !strings.HasPrefix(p, "/") {
+	if !config.IsLocalPath(p) {
 		return p
 	}
 	return BasePath + p

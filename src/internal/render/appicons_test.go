@@ -117,3 +117,42 @@ func TestAppIconsFollowTheBasePath(t *testing.T) {
 		})
 	}
 }
+
+// A leading slash alone used to mean "local", so a protocol-relative logo or
+// icon was prefixed like one of our own routes and came out pointing nowhere:
+//
+//	AppURL("//cdn.example.org/logo.png") -> "/cairn//cdn.example.org/logo.png"
+//	ogImage(site, "//cdn.example.org/l.png") -> "https://site//cdn.example.org/l.png"
+//
+// Both now pass through, because the value already names another origin.
+func TestProtocolRelativeURLsAreNotOurs(t *testing.T) {
+	old := BasePath
+	BasePath = "/cairn"
+	defer func() { BasePath = old }()
+
+	for _, c := range []struct{ name, in, want string }{
+		{"our own path is prefixed", "/static/x.png", "/cairn/static/x.png"},
+		{"so is the operator's", "/assets/x.png", "/cairn/assets/x.png"},
+		{"a protocol-relative URL is left alone", "//cdn.example.org/x.png", "//cdn.example.org/x.png"},
+		{"and so is the backslash form", `/\cdn.example.org/x.png`, `/\cdn.example.org/x.png`},
+		{"an absolute URL too", "https://cdn.example.org/x.png", "https://cdn.example.org/x.png"},
+		{"a bare name is not ours to prefix", "x.png", "x.png"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := AppURL(c.in); got != c.want {
+				t.Errorf("AppURL(%q) = %q, want %q", c.in, got, c.want)
+			}
+		})
+	}
+
+	const site = "https://tools.example.org"
+	for _, c := range []struct{ in, want string }{
+		{"/assets/logo.png", site + "/assets/logo.png"},              // made absolute
+		{"//cdn.example.org/logo.png", "//cdn.example.org/logo.png"}, // already absolute
+		{"https://cdn.example.org/l.png", "https://cdn.example.org/l.png"},
+	} {
+		if got := ogImage(site, c.in); got != c.want {
+			t.Errorf("ogImage(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
