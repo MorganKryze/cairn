@@ -60,6 +60,38 @@ func TestValidateSiteRejections(t *testing.T) {
 			p := SitePage{ID: "legal", Title: LString{"": "x"}, Body: LString{"": "y"}}
 			s.Pages = []SitePage{p, p}
 		}, []string{"duplicate page id", "legal"}},
+		// The icons list is the one place an operator states a size cairn will
+		// republish verbatim in the manifest, so a typo has to stop at load
+		// rather than reach a phone as a malformed entry.
+		{"icon without a size", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "/assets/i.png"}}
+		}, []string{"icons entry 1", "needs src and sizes"}},
+		{"icon without a src", func(s *Site) {
+			s.Icons = []SiteIcon{{Sizes: "512x512"}}
+		}, []string{"icons entry 1", "needs src and sizes"}},
+		{"icon src that is neither URL nor path", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "brand.png", Sizes: "512x512"}}
+		}, []string{"icons entry 1", "not a URL or an /assets path"}},
+		{"size written the wrong way", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "/assets/i.png", Sizes: "512"}}
+		}, []string{"icons entry 1", "is not a size", "512x512"}},
+		{"size in a unit", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "/assets/i.png", Sizes: "512px"}}
+		}, []string{"is not a size"}},
+		{"an unknown purpose", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "/assets/i.png", Sizes: "512x512", Purpose: "badge"}}
+		}, []string{"icons entry 1", "badge", "any, maskable, monochrome"}},
+		{"a good purpose next to a bad one", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "/assets/i.png", Sizes: "512x512", Purpose: "any sparkly"}}
+		}, []string{"sparkly"}},
+		// The index in the message is the entry's, not the slice's, so the
+		// operator counts entries the way they wrote them.
+		{"the second entry is named second", func(s *Site) {
+			s.Icons = []SiteIcon{
+				{Src: "/assets/a.png", Sizes: "192x192"},
+				{Src: "/assets/b.png", Sizes: "nope"},
+			}
+		}, []string{"icons entry 2"}},
 		{"section without a body", func(s *Site) {
 			s.Pages = []SitePage{{ID: "legal", Title: LString{"": "x"},
 				Sections: []PageSection{{Title: LString{"": "Publisher"}}}}}
@@ -130,6 +162,13 @@ func TestValidateSiteAccepts(t *testing.T) {
 			{ID: "legal-notice", Title: LString{"": "Legal"}, Body: LString{"": "text"}},
 			{ID: "privacy", Title: LString{"": "Privacy"},
 				Sections: []PageSection{{Title: LString{"": "Data"}, Body: LString{"": "None"}}}},
+		},
+		Icons: []SiteIcon{
+			{Src: "/assets/i-192.png", Sizes: "192x192"},
+			{Src: "/assets/i-512.png", Sizes: "512x512", Purpose: "any maskable"},
+			{Src: "https://cdn.example.org/i.svg", Sizes: "any"},
+			{Src: "/assets/i.png", Sizes: "48x48 96x96"}, // an ico carries several
+			{Src: "/assets/i-mono.svg", Sizes: "any", Purpose: "monochrome"},
 		},
 	}
 	s.Theme.Accent = "#0a0"

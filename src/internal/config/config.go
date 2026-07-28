@@ -85,14 +85,24 @@ type PageSection struct {
 	Body  LString `yaml:"body"`
 }
 
+// SiteIcon is one home-screen icon an operator supplies themselves. cairn
+// cannot resize an image without pulling in a scaler, so an operator who wants
+// the full set names the files and their sizes; nothing here is guessed.
+type SiteIcon struct {
+	Src     string `yaml:"src"`
+	Sizes   string `yaml:"sizes"`   // "512x512", or "any" for an svg
+	Purpose string `yaml:"purpose"` // optional: any, maskable, monochrome
+}
+
 type Site struct {
-	Title   LString  `yaml:"title"`
-	Tagline LString  `yaml:"tagline"`
-	URL     string   `yaml:"url"` // public base URL; enables canonical/hreflang
-	Logo    string   `yaml:"logo"`
-	Favicon string   `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
-	Index   *bool    `yaml:"index"`   // nil means true; false asks search engines to stay away
-	Locales []string `yaml:"locales"`
+	Title   LString    `yaml:"title"`
+	Tagline LString    `yaml:"tagline"`
+	URL     string     `yaml:"url"` // public base URL; enables canonical/hreflang
+	Logo    string     `yaml:"logo"`
+	Favicon string     `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
+	Icons   []SiteIcon `yaml:"icons"`   // home-screen set; overrides everything derived from favicon
+	Index   *bool      `yaml:"index"`   // nil means true; false asks search engines to stay away
+	Locales []string   `yaml:"locales"`
 	Theme   struct {
 		Accent string `yaml:"accent"`
 	} `yaml:"theme"`
@@ -166,6 +176,11 @@ type Config struct {
 	CustomCSS  bool
 	MediaDims  map[string][2]int // media/ file -> intrinsic width, height
 	LocalIcons map[string]string // slug -> /assets/icons/… when self-hosted
+	// FaviconDims is the operator favicon's real size, when it is a raster
+	// sitting in the mounted assets dir. Zero for an svg, for a remote URL,
+	// and when no favicon is set: the manifest then says nothing about size
+	// rather than claiming one, which is what it used to do.
+	FaviconDims [2]int
 }
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
@@ -218,6 +233,8 @@ var (
 	accentRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
 	localeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
 	idRe     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	// A manifest icon size: one or more "WxH", or "any" for a scalable one.
+	iconSizesRe = regexp.MustCompile(`^(any|[0-9]+x[0-9]+( [0-9]+x[0-9]+)*)$`)
 )
 
 // isHTTPURL reports an http(s) URL; IsURLOrAbs also accepts a root-absolute
@@ -259,7 +276,7 @@ func Load(dir string) (*Config, error) {
 			dec := yaml.NewDecoder(bytes.NewReader(data))
 			dec.KnownFields(true)
 			if err := dec.Decode(&site); err != nil && !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, favicon, index, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
+				return nil, fmt.Errorf("config: %s: %s (expected keys: title, tagline, url, logo, favicon, icons, index, locales, theme.accent, about, links, footer, pages, credit, strings, status)", name, yamlErr(err))
 			}
 		case "categories":
 			metas, err = parseCategories(name, data)
@@ -306,10 +323,39 @@ func Load(dir string) (*Config, error) {
 		MediaDims:  mediaDims(filepath.Join(dir, "media")),
 		LocalIcons: localIcons(filepath.Join(AssetsPath, "icons")),
 	}
+	cfg.FaviconDims = assetDims(site.Favicon)
 	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
 		cfg.CustomCSS = true
 	}
 	return cfg, nil
+}
+
+// assetDims measures a raster the operator dropped in the mounted assets dir,
+// so the manifest can state its real size instead of guessing one.
+//
+// Anything it cannot open comes back zero, on purpose: a remote URL would need
+// an outbound request, which cairn does not make, and an svg has no intrinsic
+// size to report. Both cases are handled by saying nothing rather than wrong.
+func assetDims(ref string) [2]int {
+	const mount = "/assets/"
+	if !strings.HasPrefix(ref, mount) {
+		return [2]int{}
+	}
+	rel := filepath.FromSlash(strings.TrimPrefix(ref, mount))
+	// Refuse to walk out of the mount, the same rule the file server applies.
+	if rel == "" || strings.Contains(rel, "..") {
+		return [2]int{}
+	}
+	f, err := os.Open(filepath.Join(AssetsPath, rel))
+	if err != nil {
+		return [2]int{}
+	}
+	defer func() { _ = f.Close() }()
+	c, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return [2]int{}
+	}
+	return [2]int{c.Width, c.Height}
 }
 
 // mediaDims reads the intrinsic size of every image in media/, so the pages

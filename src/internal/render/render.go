@@ -376,29 +376,84 @@ func TouchIcon(favicon string) string {
 	return defaultTouchIcon
 }
 
-// AppIcon is one entry of the web app manifest's icon list.
+// AppIcon is one entry of the web app manifest's icon list. Everything but
+// the source is omitted when unknown, rather than filled with a guess.
 type AppIcon struct {
 	Src     string `json:"src"`
-	Sizes   string `json:"sizes"`
-	Type    string `json:"type"`
+	Sizes   string `json:"sizes,omitempty"`
+	Type    string `json:"type,omitempty"`
 	Purpose string `json:"purpose,omitempty"`
+}
+
+// iconType maps a file reference to the mime type the manifest wants. An empty
+// result means we do not recognise it, and the entry then omits the field
+// rather than asserting a format.
+func iconType(ref string) string {
+	i := strings.LastIndex(ref, ".")
+	if i < 0 {
+		return ""
+	}
+	switch strings.ToLower(ref[i+1:]) {
+	case "svg":
+		return "image/svg+xml"
+	case "png":
+		return "image/png"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "webp":
+		return "image/webp"
+	case "gif":
+		return "image/gif"
+	case "ico":
+		return "image/x-icon"
+	}
+	return ""
 }
 
 // AppIcons lists what a phone should use once the site is on a home screen.
 //
-// Chromium refuses to offer "install" unless the manifest carries both a 192
-// and a 512, so cairn's own set ships both. They are declared "any maskable"
-// rather than shipped twice: the usual reason for a separate maskable file is
-// that a full-bleed icon loses its edges to Android's crop, and cairn's mark
-// is a narrow stack that clears that circle with room to spare.
+// The rule throughout is that every field is either true or absent. Sizes are
+// never invented: an entry whose size we cannot establish simply carries no
+// `sizes`, which the manifest spec allows, and the browser decides. The old
+// behaviour was to stamp "180x180" on whatever the operator supplied, which
+// was a guess published as a fact.
 //
-// An operator who supplies their own png gets that one file and nothing else:
-// we cannot resize it, and filling the gaps with cairn's mark would put our
-// logo on their visitors' home screens.
-func AppIcons(favicon string) []AppIcon {
-	if icon := TouchIcon(favicon); icon != defaultTouchIcon {
-		return []AppIcon{{Src: AppURL(icon), Sizes: "180x180", Type: "image/png"}}
+// Three cases, in order:
+//
+//   - The operator listed `icons` themselves. That wins outright, sizes and
+//     all, because they are the only one who can know them.
+//   - They set a `favicon`. An svg is scalable, so it is declared "any" and
+//     serves every size the way cairn's own does; a raster in the mounted
+//     assets dir is measured at load and declared truthfully; a raster behind
+//     a URL is offered with no size, since measuring it means an outbound
+//     request and cairn makes none.
+//   - Neither. cairn's own set, which ships the 192 and the 512 that Chromium
+//     insists on before it will offer to install a site, both declared
+//     "any maskable": the usual reason for a separate padded maskable file is
+//     that a full-bleed icon loses its edges to Android's crop, and this mark
+//     is a narrow stack that clears that circle with room to spare.
+func AppIcons(cfg *config.Config) []AppIcon {
+	if own := cfg.Site.Icons; len(own) > 0 {
+		out := make([]AppIcon, 0, len(own))
+		for _, ic := range own {
+			out = append(out, AppIcon{
+				Src: AppURL(ic.Src), Sizes: ic.Sizes, Type: iconType(ic.Src), Purpose: ic.Purpose,
+			})
+		}
+		return out
 	}
+
+	if fav := cfg.Site.Favicon; fav != "" {
+		icon := AppIcon{Src: AppURL(fav), Type: iconType(fav)}
+		switch {
+		case icon.Type == "image/svg+xml":
+			icon.Sizes = "any"
+		case cfg.FaviconDims != [2]int{}:
+			icon.Sizes = fmt.Sprintf("%dx%d", cfg.FaviconDims[0], cfg.FaviconDims[1])
+		}
+		return []AppIcon{icon}
+	}
+
 	return []AppIcon{
 		{Src: AppURL(defaultTouchIcon), Sizes: "180x180", Type: "image/png"},
 		{Src: AppURL("/static/icon-192.png"), Sizes: "192x192", Type: "image/png", Purpose: "any maskable"},

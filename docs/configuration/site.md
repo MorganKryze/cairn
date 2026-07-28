@@ -95,14 +95,42 @@ none of it can drift:
 | `touch-icon.png` | 180 pixels: an iPhone or iPad home screen. |
 | `icon-192.png`, `icon-512.png` | Android. Chromium offers "install this site" only when the manifest carries both, and cairn's are declared `maskable`, so Android's round crop takes nothing off. |
 
-Setting `favicon` to a **png** replaces all of it with your single file: cairn
-cannot resize your image, and padding out the missing sizes with cairn's own
-mark would put our logo on your visitors' home screens. Your site keeps its
-tab icon and its home-screen icon, and loses the Android install prompt. Set
-`favicon` to an **svg** and only the tab icon changes; the rest stays cairn's.
-
 Nothing here is fetched from anywhere: like every other asset, the icons are
 compiled into the binary and served from it.
+
+### Using your own
+
+Set `favicon` and it becomes the whole set. What cairn then tells browsers
+about it depends on what it can actually establish, and it never guesses:
+
+| What you set | What the manifest says |
+| ------------ | ---------------------- |
+| An **svg**, anywhere | `sizes: any`. An svg is every size, so yours serves the home screen exactly the way cairn's does. |
+| A **raster in `/assets`** | Its real width and height, measured when the config loads. |
+| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none. |
+
+An entry without a size is still a valid manifest entry, and browsers still
+use the icon. What it costs is the install prompt: Chromium offers "install
+this site" only when it sees both a 192 and a 512.
+
+To get that with your own artwork, name the files yourself:
+
+```yaml
+icons:
+  - { src: /assets/brand-192.png, sizes: 192x192 }
+  - { src: /assets/brand-512.png, sizes: 512x512, purpose: any maskable }
+```
+
+`icons` replaces everything derived from `favicon`, which keeps serving the
+browser tab. `sizes` is `WIDTHxHEIGHT`, or `any` for an svg. `purpose` is
+optional and accepts `any`, `maskable` and `monochrome`, combined if you like.
+A **maskable** icon must keep its content inside the middle 80% of the square,
+because Android crops away the rest.
+
+cairn does not resize images: doing it would mean shipping a scaler for one
+rarely used path, and a badly resampled logo is worse than the one you drew.
+Anything wrong in this list is a config error that names the entry, so a typo
+stops at startup rather than reaching a phone.
 
 ## The welcome note
 

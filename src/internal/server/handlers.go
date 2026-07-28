@@ -123,7 +123,7 @@ func manifest(w http.ResponseWriter, r *http.Request) {
 		"display":          "minimal-ui",
 		"background_color": "#eef0ea",
 		"theme_color":      cfg.Site.Theme.Accent,
-		"icons":            render.AppIcons(cfg.Site.Favicon),
+		"icons":            render.AppIcons(cfg),
 	}); err != nil {
 		log.Printf("manifest: %v", err)
 	}

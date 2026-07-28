@@ -41,7 +41,8 @@ logs the same error.
 | `tagline`      | empty     | text; opens the home page, feeds the meta description |
 | `url`          | none      | public base URL; adds canonical + hreflang, absolute sitemap |
 | `logo`         | none      | URL or `/assets/…` path; raster logos double as the og:image when `url` is set |
-| `favicon`      | cairn's   | tab icon; URL or `/assets/…` path |
+| `favicon`      | cairn's   | tab icon; URL or `/assets/…` path. Also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set) |
+| `icons`        | derived   | [home-screen set](configuration/site.md#using-your-own), list of `{src: URL/path, sizes: WxH or any, purpose: any/maskable/monochrome}`; overrides what `favicon` implies |
 | `index`        | `true`    | `false` = robots.txt disallow, noindex meta, no sitemap |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |

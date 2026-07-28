@@ -141,24 +141,50 @@ func TestFaviconICOYieldsToTheOperator(t *testing.T) {
 	}
 }
 
-// An operator's own png is the only icon we advertise: cairn cannot resize it,
-// and padding the set out with cairn's own mark would put our logo on their
-// visitors' home screens.
-func TestManifestKeepsTheOperatorsIconAlone(t *testing.T) {
-	storeModel(t, map[string]string{
-		"site.yaml":     "title: Tools\nlocales: [en]\nfavicon: /assets/brand.png\n",
+// End to end through the handler: what the operator wrote is what a phone
+// reads. The per-case rules live in render's own tests; what matters here is
+// that site.yaml reaches the served json intact.
+func TestManifestServesTheOperatorsIcons(t *testing.T) {
+	icons := func(t *testing.T, yaml string) []struct{ Src, Sizes, Type, Purpose string } {
+		t.Helper()
+		storeModel(t, map[string]string{
+			"site.yaml":     "title: Tools\nlocales: [en]\n" + yaml,
+			"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+		})
+		rec := httptest.NewRecorder()
+		manifest(rec, httptest.NewRequest("GET", "/manifest.webmanifest", nil))
+		var mf struct {
+			Icons []struct{ Src, Sizes, Type, Purpose string }
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &mf); err != nil {
+			t.Fatal(err)
+		}
+		return mf.Icons
+	}
+
+	// A png we cannot open is offered without a size rather than with a wrong
+	// one; cairn's mark never joins it, or our logo lands on their home screen.
+	got := icons(t, "favicon: /assets/brand.png\n")
+	if len(got) != 1 || got[0].Src != "/assets/brand.png" || got[0].Sizes != "" || got[0].Type != "image/png" {
+		t.Errorf("unmeasurable favicon = %+v, want the file alone with no size", got)
+	}
+
+	// An explicit list comes back in order, verbatim.
+	got = icons(t, "icons:\n  - {src: /assets/a-192.png, sizes: 192x192}\n"+
+		"  - {src: /assets/a-512.png, sizes: 512x512, purpose: any maskable}\n")
+	if len(got) != 2 {
+		t.Fatalf("explicit list = %+v, want 2 entries", got)
+	}
+	if got[1].Src != "/assets/a-512.png" || got[1].Sizes != "512x512" || got[1].Purpose != "any maskable" {
+		t.Errorf("second entry = %+v", got[1])
+	}
+
+	// And a typo in it never reaches a phone: it stops the config from loading.
+	if _, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nicons:\n  - {src: /assets/a.png, sizes: 512}\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
-	})
-	rec := httptest.NewRecorder()
-	manifest(rec, httptest.NewRequest("GET", "/manifest.webmanifest", nil))
-	var mf struct {
-		Icons []struct{ Src, Sizes, Type string }
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &mf); err != nil {
-		t.Fatal(err)
-	}
-	if len(mf.Icons) != 1 || mf.Icons[0].Src != "/assets/brand.png" {
-		t.Errorf("icons = %+v, want the operator's file and nothing else", mf.Icons)
+	})); err == nil {
+		t.Error("a malformed icon size was accepted")
 	}
 }
 
