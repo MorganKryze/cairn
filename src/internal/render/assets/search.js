@@ -95,7 +95,12 @@
     matches = hits;
 
     for (const s of cats) s.hidden = !s.querySelector('.card:not([hidden])');
-    empty.hidden = matches.length > 0;
+    // "No results" answers a search that found nothing. An empty box is not a
+    // search: clearing the field brings every card back, and `matches` is empty
+    // then for the keyboard's sake, not because nothing matched. Reading it as
+    // a result made the message appear on the way back to the full list, and
+    // #empty carries role="status", so it was announced too.
+    empty.hidden = !(words.length && matches.length === 0);
     // Preselect the strongest match: it also sits first-left in its category, so
     // typing a name lands you on that one card, top-left of its row.
     sel = -1;

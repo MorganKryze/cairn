@@ -55,3 +55,12 @@ shots: demo-rebuild
     @npm --silent install --no-save --no-package-lock playwright
     @npx --yes playwright install --only-shell chromium
     @node scripts/screenshots.mjs
+
+# drive the search in a real browser: the one behaviour the Go tests cannot see
+test-search:
+    @npm --silent install --no-save --no-package-lock playwright
+    @npx --yes playwright install --only-shell chromium
+    @go build -o /tmp/cairn-search ./src/cmd/cairn
+    @/tmp/cairn-search -config example -addr 127.0.0.1:8099 & echo $! > /tmp/cairn-search.pid
+    @sleep 1
+    @node scripts/search.mjs http://127.0.0.1:8099/en/; s=$?; kill $(cat /tmp/cairn-search.pid); exit $s

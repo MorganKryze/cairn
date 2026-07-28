@@ -12,7 +12,8 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `lint`, `build`, `demo`, `demo-rebuild`, `down`, `logs`, `hooks`.
+`test`, `test-search`, `lint`, `build`, `demo`, `demo-rebuild`, `down`,
+`logs`, `hooks`.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
 
@@ -78,6 +79,18 @@ docs: quickstart readme and example config
 ```
 
 No trailers, no bodies unless the *why* genuinely needs a sentence.
+
+## The search
+
+`search.js` is the only behaviour `go test` cannot reach: the Go tests assert
+the markup that ships, not what happens once someone types into it. `just
+test-search` drives it in a real browser against the example config, and CI
+runs the same script. It pulls nothing from a registry, so unlike the demo job
+it is safe to make a required check.
+
+Anything you change in `search.js` belongs there, particularly the paths back
+to an empty query: clearing the field, Escape, and typing only spaces all have
+to return the full list rather than "no results".
 
 ## Releasing
 
