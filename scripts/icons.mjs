@@ -12,8 +12,12 @@
 //   docs/assets/brand/              not embedded, not served: for the icon
 //     cairn.svg               collections that ask for a copy of the mark,
 //     cairn-light.svg         cropped to its own edges the way they require.
-//     cairn-dark.svg          -light is for dark backgrounds, and vice versa:
-//                             their suffix names the background, not the ink.
+//     cairn-dark.svg
+//
+// The suffix names the ink, so -light is the pale one and belongs on a dark
+// background, -dark the deep one and belongs on a light background. It reads
+// backwards to anyone who parses "-light" as "for the light theme", which is
+// why it is the mistake those collections reject most often.
 //
 // The mark is also inlined in templates/layout.tmpl, as the icon a service
 // falls back to when it declares none. That copy is pinned to favicon.svg by
