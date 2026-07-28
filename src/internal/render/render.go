@@ -364,13 +364,46 @@ func paragraphs(s string) []string {
 	return out
 }
 
+// defaultTouchIcon is cairn's own, the one shipped in assets/.
+const defaultTouchIcon = "/static/touch-icon.png"
+
 // TouchIcon picks the add-to-home-screen icon: the operator's favicon when
 // it is a png (the format phones accept), cairn's own otherwise.
 func TouchIcon(favicon string) string {
 	if strings.HasSuffix(strings.ToLower(favicon), ".png") {
 		return favicon
 	}
-	return "/static/touch-icon.png"
+	return defaultTouchIcon
+}
+
+// AppIcon is one entry of the web app manifest's icon list.
+type AppIcon struct {
+	Src     string `json:"src"`
+	Sizes   string `json:"sizes"`
+	Type    string `json:"type"`
+	Purpose string `json:"purpose,omitempty"`
+}
+
+// AppIcons lists what a phone should use once the site is on a home screen.
+//
+// Chromium refuses to offer "install" unless the manifest carries both a 192
+// and a 512, so cairn's own set ships both. They are declared "any maskable"
+// rather than shipped twice: the usual reason for a separate maskable file is
+// that a full-bleed icon loses its edges to Android's crop, and cairn's mark
+// is a narrow stack that clears that circle with room to spare.
+//
+// An operator who supplies their own png gets that one file and nothing else:
+// we cannot resize it, and filling the gaps with cairn's mark would put our
+// logo on their visitors' home screens.
+func AppIcons(favicon string) []AppIcon {
+	if icon := TouchIcon(favicon); icon != defaultTouchIcon {
+		return []AppIcon{{Src: AppURL(icon), Sizes: "180x180", Type: "image/png"}}
+	}
+	return []AppIcon{
+		{Src: AppURL(defaultTouchIcon), Sizes: "180x180", Type: "image/png"},
+		{Src: AppURL("/static/icon-192.png"), Sizes: "192x192", Type: "image/png", Purpose: "any maskable"},
+		{Src: AppURL("/static/icon-512.png"), Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
+	}
 }
 
 // ogImage derives a social preview image from the logo: only when the site

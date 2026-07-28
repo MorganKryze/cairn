@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -81,7 +82,7 @@ func TestManifest(t *testing.T) {
 	var mf struct {
 		Name       string `json:"name"`
 		ThemeColor string `json:"theme_color"`
-		Icons      []struct{ Src, Sizes, Type string }
+		Icons      []struct{ Src, Sizes, Type, Purpose string }
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &mf); err != nil {
 		t.Fatal(err)
@@ -89,8 +90,75 @@ func TestManifest(t *testing.T) {
 	if mf.Name != "Tools" || mf.ThemeColor != "#0055ff" {
 		t.Errorf("manifest = %+v", mf)
 	}
-	if len(mf.Icons) != 1 || mf.Icons[0].Sizes != "180x180" || mf.Icons[0].Type != "image/png" {
-		t.Errorf("icons = %+v", mf.Icons)
+
+	// Chromium will not offer to install a site whose manifest lacks either a
+	// 192 or a 512, and Android crops anything not declared maskable. Both are
+	// silent failures in a browser, so they are pinned here instead.
+	for _, want := range []struct{ sizes, purpose string }{
+		{"180x180", ""},
+		{"192x192", "any maskable"}, {"512x512", "any maskable"},
+	} {
+		found := false
+		for _, ic := range mf.Icons {
+			if ic.Sizes == want.sizes && ic.Purpose == want.purpose && ic.Type == "image/png" {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("no %s icon with purpose %q in %+v", want.sizes, want.purpose, mf.Icons)
+		}
+	}
+}
+
+// The well-known path is the one a link previewer fetches without reading the
+// html, so it must never hand cairn's mark to a site that has its own.
+func TestFaviconICOYieldsToTheOperator(t *testing.T) {
+	static, err := fs.Sub(render.Embedded, "assets")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := faviconICO(static)
+
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	rec := httptest.NewRecorder()
+	h(rec, httptest.NewRequest("GET", "/favicon.ico", nil))
+	if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+		t.Errorf("default = %d, %d bytes; want cairn's own ico", rec.Code, rec.Body.Len())
+	}
+
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\nfavicon: /assets/brand.svg\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	rec = httptest.NewRecorder()
+	h(rec, httptest.NewRequest("GET", "/favicon.ico", nil))
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/assets/brand.svg" {
+		t.Errorf("with a custom favicon = %d %q, want a redirect to it",
+			rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+// An operator's own png is the only icon we advertise: cairn cannot resize it,
+// and padding the set out with cairn's own mark would put our logo on their
+// visitors' home screens.
+func TestManifestKeepsTheOperatorsIconAlone(t *testing.T) {
+	storeModel(t, map[string]string{
+		"site.yaml":     "title: Tools\nlocales: [en]\nfavicon: /assets/brand.png\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	rec := httptest.NewRecorder()
+	manifest(rec, httptest.NewRequest("GET", "/manifest.webmanifest", nil))
+	var mf struct {
+		Icons []struct{ Src, Sizes, Type string }
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &mf); err != nil {
+		t.Fatal(err)
+	}
+	if len(mf.Icons) != 1 || mf.Icons[0].Src != "/assets/brand.png" {
+		t.Errorf("icons = %+v, want the operator's file and nothing else", mf.Icons)
 	}
 }
 

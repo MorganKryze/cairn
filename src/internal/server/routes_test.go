@@ -52,6 +52,7 @@ func TestRouteTable(t *testing.T) {
 		{"/robots.txt", http.StatusOK},           //
 		{"/sitemap.xml", http.StatusOK},          //
 		{"/manifest.webmanifest", http.StatusOK}, //
+		{"/favicon.ico", http.StatusOK},          // for the tools that skip the html
 		{"/custom.css", http.StatusOK},           // the operator's stylesheet
 		{"/static/style.css", http.StatusOK},     // embedded
 		{"/assets/icons/pad.svg", http.StatusOK}, // mounted
