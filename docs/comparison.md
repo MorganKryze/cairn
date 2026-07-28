@@ -49,10 +49,18 @@ same tab.
   own files if you want them to be, there is no CDN font, no analytics, no
   outbound call except the one Gatus URL you configure. The
   [demo](../demo/README.md) runs on a network with no route out to prove it.
-- **It is a sub-10 MB `FROM scratch` image**, non-root, no shell, no interpreter,
-  one Go dependency. The image is signed, ships SLSA provenance and an SBOM,
-  and the binaries are attested. That matters when the page is the one thing
-  you expose publicly.
+- **The image holds two files.** `FROM scratch` is stricter than distroless:
+  distroless removes the distribution but keeps a small userland, so a scanner
+  still finds packages in it. cairn's image contains the binary and a CA
+  bundle, and nothing else. No shell for a compromised process to spawn, no
+  package manager, no libc, so an entire family of advisories simply does not
+  apply. Trivy reports one target, the Go binary itself. Under 10 MB, non-root,
+  one Go dependency, and the image is signed with SLSA provenance and an SBOM.
+
+  This removes somewhere to go, not the possibility of a bug: a flaw in cairn
+  is still a flaw. What it buys is that the flaw has no shell to pivot into and
+  nothing to install, and that your scanner stays empty without you patching
+  anything.
 - **It reads like a page, not a control panel.** A hero that says what this
   place is, typography meant for prose, contrast measured against WCAG AA, and
   every feature still working with JavaScript turned off.
@@ -81,3 +89,14 @@ Worth knowing now rather than discovering after you have migrated.
 Homer and Homepage configs map over field by field: see
 [Migration](recipes/migration.md). You do not have to choose, and most people
 who adopt cairn keep the dashboard they already had.
+
+That said, cairn exists because its author did choose. I ran Homer as the
+public page and a separate dashboard for myself, and cairn replaced both. Not
+because it does more, but because once the config is YAML in a repository and
+deployment is GitOps, the admin side of what I actually used was a list of
+links I could already read. The widgets I thought I needed turned out to be
+things I looked at once a month.
+
+Whether that works for you is a question about your habits, not about the
+software. If you genuinely watch container states or download queues from your
+dashboard, keep it: cairn will never show them.
