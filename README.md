@@ -1,6 +1,6 @@
 <div align="center">
 
-# <sub><img src="src/assets/favicon.svg" height="34" alt=""></sub> cairn
+# <sub><img src="src/internal/render/assets/favicon.svg" height="34" alt=""></sub> cairn
 
 **The directory page for the people you host services _for_.**
 

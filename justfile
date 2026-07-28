@@ -15,8 +15,10 @@ test:
     go vet ./... && go test ./...
 
 # measure coverage (add `-html=/tmp/cov.out` to the last line for a report)
+# -coverpkg counts a package's code however it is reached: without it, each
+# package only credits its own tests and the figure reads far too low.
 coverage:
-    go test -covermode=atomic -coverprofile=/tmp/cov.out ./... >/dev/null
+    go test -covermode=atomic -coverpkg=./src/... -coverprofile=/tmp/cov.out ./src/... >/dev/null
     go tool cover -func=/tmp/cov.out | tail -1
 
 # run the linter and the format check

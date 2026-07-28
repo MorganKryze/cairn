@@ -47,7 +47,7 @@ jobs:
           go-version: stable
       - name: measure and gate
         run: |
-          go test -covermode=atomic -coverprofile=cov.out ./src/...
+          go test -covermode=atomic -coverpkg=./src/... -coverprofile=cov.out ./src/...
           pct=$(go tool cover -func=cov.out | awk '/^total:/ {sub(/%/,"",$NF); print $NF}')
           echo "coverage: ${pct}%"
           awk -v p="$pct" 'BEGIN { exit (p + 0 >= 80) ? 0 : 1 }' \
