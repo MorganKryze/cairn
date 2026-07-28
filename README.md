@@ -53,9 +53,11 @@ account or a manual, and boring for you to operate.
 - **At home on a phone**: the layout reflows to one hand, the header steps
   aside as you scroll and returns the moment you head back up, and a burger
   keeps search within thumb's reach.
-- **Readable by everyone**: contrast that clears WCAG AA in both themes, a
-  skip link, named landmarks, results announced to screen readers, and
-  right-to-left languages laid out the right way round.
+- **Built to stay readable**: contrast measured against WCAG AA in both
+  themes, a skip link, named landmarks, search results announced through a
+  live region, and right-to-left languages laid out the right way round.
+  Tested with a browser, not yet with a real screen reader: if you use one,
+  [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
 - **Calm typography, light and dark, keyboard-friendly**, and every feature
   degrades gracefully without JavaScript.
 
@@ -100,7 +102,14 @@ deliberately tight, from the image down to the wire.
 
 ## Quickstart
 
-Two files, one command:
+Nothing to write, nothing to mount, just look at it:
+
+```sh
+docker run --rm -p 8080:8080 ghcr.io/morgankryze/cairn:stable
+```
+
+That is a running cairn on <http://localhost:8080>, telling you what to feed
+it. When you are ready to feed it, two files and one command:
 
 ```yaml
 # config/services.yaml

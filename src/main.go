@@ -127,6 +127,7 @@ func main() {
 	// Service preview images live next to the yaml, in <config>/media/.
 	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(*cfgDir, "media"))))))
 	mux.HandleFunc("GET /healthz", healthz)
+	mux.HandleFunc("GET /readyz", readyz)
 	mux.HandleFunc("GET /custom.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFile(w, r, filepath.Join(*cfgDir, "custom.css"))
@@ -155,17 +156,33 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
+// healthz answers while the process serves, whatever the config says. It is
+// the liveness signal: a broken config is not a reason to kill a container
+// that is happily serving the getting-started page.
 func healthz(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "ok\n") }
 
-// mount puts the whole site under basePath. /healthz stays at the root
-// whatever the prefix: a container healthcheck talks to cairn directly, not
-// through the proxy that adds it.
+// readyz is the honest one: 503 while no valid config has ever loaded, so a
+// monitor does not sit green on a site that only says "Almost there". A
+// reload that fails later keeps the last good pages, which is degraded but
+// genuinely serving, so it stays ready.
+func readyz(w http.ResponseWriter, _ *http.Request) {
+	if !current.Load().Ready {
+		http.Error(w, "no valid config yet\n", http.StatusServiceUnavailable)
+		return
+	}
+	io.WriteString(w, "ready\n")
+}
+
+// mount puts the whole site under basePath. The two probes stay at the root
+// whatever the prefix: an orchestrator talks to cairn directly, not through
+// the proxy that adds it.
 func mount(h http.Handler) http.Handler {
 	if basePath == "" {
 		return h
 	}
 	outer := http.NewServeMux()
 	outer.HandleFunc("GET /healthz", healthz)
+	outer.HandleFunc("GET /readyz", readyz)
 	// registering the subtree also makes ServeMux redirect a bare /cairn to
 	// /cairn/, so the mount point works with or without its trailing slash
 	outer.Handle(basePath+"/", http.StripPrefix(basePath, h))

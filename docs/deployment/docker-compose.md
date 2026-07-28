@@ -77,3 +77,30 @@ To build from source instead, replace `image:` with:
 ```
 
 Next: [Podman](podman.md)
+
+## Knowing it is actually serving your site
+
+There are two probes, and the difference matters the day a config edit goes
+wrong.
+
+`/healthz` answers `200` whenever the process is up, whatever the config says.
+That is what the container healthcheck above uses, and what a Kubernetes
+liveness probe should use: cairn deliberately serves a getting-started page
+rather than dying on a bad config, and a probe that killed it for that would
+undo the whole point.
+
+`/readyz` answers `503` while no valid config has ever loaded. Point your
+uptime monitor at that one. Otherwise the day you mount an empty volume by
+mistake, everything is green while your visitors read "Almost there".
+
+```yaml
+# Kubernetes, if that is where you run it
+livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }
+readinessProbe:
+  httpGet: { path: /readyz, port: 8080 }
+```
+
+A reload that fails *after* a good boot keeps the last working pages and stays
+ready, which is the honest answer: the site is serving, just not the newest
+edit. The container log names the file and the line.

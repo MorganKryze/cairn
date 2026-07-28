@@ -32,6 +32,7 @@ func starterModel() *Model {
 		// Templates are embedded; this cannot fail outside development.
 		log.Fatal(err)
 	}
+	m.Ready = false // this page is a stand-in, not the operator's site
 	return m
 }
 

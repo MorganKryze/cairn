@@ -91,7 +91,8 @@ ids, alphabetically.
 | `/static/…`     | embedded assets, cached one day                           |
 | `/assets/…`     | your mounted files, if the mount exists                   |
 | `/custom.css`   | your stylesheet, if present                               |
-| `/healthz`      | `200 ok`; stays at the domain root even with `-base-path` |
+| `/healthz`      | `200 ok` while the process serves, whatever the config says: the liveness signal |
+| `/readyz`       | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in |
 | `/sitemap.xml`  | every page, absolute URLs from `Host`/`X-Forwarded-Proto` |
 | `/robots.txt`   | allow all + sitemap URL                                   |
 
@@ -113,7 +114,7 @@ ids, alphabetically.
 With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
 `/cairn/static/…`) and cairn strips it back off itself, so the proxy in front
 needs no rewriting. `/healthz` is the one exception: it answers at the root
-too, because container healthchecks reach cairn directly.
+too, alongside `/readyz`, because an orchestrator reaches cairn directly.
 
 ## The display font
 

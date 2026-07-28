@@ -33,6 +33,10 @@ type Model struct {
 	Pages    map[string]Page
 	Statuses map[string]bool
 	CSP      string
+	// Ready is false only while the getting-started page stands in for a
+	// config that never loaded. /readyz reports it; /healthz does not, so a
+	// liveness probe cannot restart-loop a container that is serving fine.
+	Ready bool
 }
 
 // prePaintScript must stay byte-identical to the inline script in
@@ -362,7 +366,7 @@ func buildModel(cfg *Config, statuses map[string]bool) (*Model, error) {
 			pages[loc+"/"+p.ID] = page
 		}
 	}
-	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses, CSP: buildCSP(cfg)}, nil
+	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses, CSP: buildCSP(cfg), Ready: true}, nil
 }
 
 func render(name string, v any) (Page, error) {
