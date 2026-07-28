@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20~14%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
+[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20under%2010%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-yes-ff69b4)](docs/deployment/docker-compose.md)
 
 </div>
@@ -63,7 +63,7 @@ account or a manual, and boring for you to operate.
 
 ## What you get as the operator
 
-- **One static binary, ~14 MB**, zero runtime dependencies, no database.
+- **One static binary, under 10 MB**, zero runtime dependencies, no database.
 - **YAML mounted read-only**; edits apply live within seconds, and a config
   error names the file, the line and the expected shape instead of taking the
   site down.

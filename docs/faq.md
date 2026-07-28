@@ -42,7 +42,7 @@ Headings derive from the `category` id unless you name them in
 `categories.yaml`; see the [reference](reference.md#categoriesyaml).
 
 **How big is this?**
-One ~14 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
+One sub-10 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
 shell inside.
 
 **Can visitors switch language permanently?**
