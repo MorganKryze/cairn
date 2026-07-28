@@ -52,4 +52,4 @@ read-only, and cairn never writes anything anyway. Edit the YAML and the
 page follows within seconds; `journalctl -u cairn -f` shows the same logs
 `docker logs` would.
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Kubernetes](kubernetes.md)

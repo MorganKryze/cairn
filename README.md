@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20~14%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
+[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20under%2010%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-yes-ff69b4)](docs/deployment/docker-compose.md)
 
 </div>
@@ -63,7 +63,7 @@ account or a manual, and boring for you to operate.
 
 ## What you get as the operator
 
-- **One static binary, ~14 MB**, zero runtime dependencies, no database.
+- **One static binary, under 10 MB**, zero runtime dependencies, no database.
 - **YAML mounted read-only**; edits apply live within seconds, and a config
   error names the file, the line and the expected shape instead of taking the
   site down.
@@ -163,7 +163,7 @@ understanding how a thing works, start anywhere below.
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Start**     | [Getting started](docs/getting-started.md), the five-minute path                                                                                                     |
 | **Configure** | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Text](docs/configuration/text.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md) |
-| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Podman](docs/deployment/podman.md) · [Bare binary](docs/deployment/binary.md) · [Reverse proxies](docs/deployment/reverse-proxies.md)                                                          |
+| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Podman](docs/deployment/podman.md) · [Bare binary](docs/deployment/binary.md) · [Kubernetes](docs/deployment/kubernetes.md) · [Reverse proxies](docs/deployment/reverse-proxies.md)                                                          |
 | **Recipes**   | [Status page with Gatus](docs/recipes/gatus.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) · [Migration](docs/recipes/migration.md)                                  |
 | **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                               |
 
