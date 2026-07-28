@@ -64,3 +64,10 @@ test-search:
     @/tmp/cairn-search -config example -addr 127.0.0.1:8099 & echo $! > /tmp/cairn-search.pid
     @for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null 2>&1 && break; sleep 1; done
     @node scripts/search.mjs http://127.0.0.1:8099/en/; s=$?; kill $(cat /tmp/cairn-search.pid); exit $s
+
+# regenerate every icon from the one drawing in the script; checks the
+# maskable safe zone the manifest promises Android
+icons:
+    @npm --silent install --no-save --no-package-lock playwright
+    @npx --yes playwright install --only-shell chromium
+    @node scripts/icons.mjs

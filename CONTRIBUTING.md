@@ -13,7 +13,7 @@ passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
 `test`, `test-search`, `lint`, `build`, `demo`, `demo-rebuild`, `down`,
-`logs`, `hooks`.
+`logs`, `hooks`, `icons`.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
 
@@ -91,6 +91,24 @@ it is safe to make a required check.
 Anything you change in `search.js` belongs there, particularly the paths back
 to an empty query: clearing the field, Escape, and typing only spaces all have
 to return the full list rather than "no results".
+
+## The icons
+
+Every icon comes from one drawing, in `scripts/icons.mjs`. `just icons`
+regenerates the lot: the five files the binary embeds and serves, and the three
+in `docs/assets/brand/` that the icon collections ask for, cropped to the mark
+rather than to its padded square. Running it on an unchanged mark rewrites the
+same bytes, so a diff after `just icons` means the drawing moved.
+
+Change the mark there and nowhere else. The same shapes are inlined in
+`layout.tmpl` as the icon a service without one falls back to, and
+`TestTheMarkIsDrawnTheSameInBothPlaces` fails if that copy stops matching
+`favicon.svg`; it has drifted a whole release before.
+
+The script also checks what the manifest promises: the app icons are declared
+`maskable`, which tells Android nothing lives outside the middle 80% of the
+square. It measures the rendered ink and exits non-zero if a redrawn mark
+breaks that.
 
 ## Releasing
 
