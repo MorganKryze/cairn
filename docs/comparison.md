@@ -16,14 +16,14 @@ same tab.
 
 ## Pick by audience
 
-| You want                                          | Use          |
-| ------------------------------------------------- | ------------ |
-| A page your **guests** read: plain language, their language, "what is this and when do I use it" | **cairn**    |
-| A fast personal tile board, huge theme ecosystem  | [Homer](https://github.com/bastienwirtz/homer) |
+| You want | Use |
+| --- | --- |
+| A page your **guests** read: plain language, their language, "what is this and when do I use it" | **cairn** |
+| A fast personal tile board, huge theme ecosystem | [Homer](https://github.com/bastienwirtz/homer) |
 | Widgets and live integrations (Docker, \*arr, monitoring) on your own dashboard | [Homepage](https://github.com/gethomepage/homepage) |
 | A feeds-and-widgets start page (RSS, weather, markets) | [Glance](https://github.com/glanceapp/glance) |
-| A dashboard with a built-in config UI and auth    | [Dashy](https://github.com/Lissy93/dashy) |
-| The most minimal start page with pinned apps      | [Flame](https://github.com/pawelmalak/flame) |
+| A dashboard with a built-in config UI and auth | [Dashy](https://github.com/Lissy93/dashy) |
+| The most minimal start page with pinned apps | [Flame](https://github.com/pawelmalak/flame) |
 | A portal with per-user tabs wrapped around Plex and the \*arrs | [Organizr](https://github.com/causefx/Organizr) |
 | Shared boards for a household or team, edited in a GUI, with accounts | [Homarr](https://github.com/homarr-labs/homarr) |
 
