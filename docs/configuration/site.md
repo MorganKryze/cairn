@@ -11,7 +11,7 @@ so is every key in it.
 | `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show. |
 | `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines. |
 | `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set. |
-| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path.         |
+| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path. See [the icon set](#the-icon-set) for what replacing it costs. |
 | `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web. |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |
@@ -82,6 +82,55 @@ inline so they cost no external request:
 
 Or pass a URL or an `/assets` path for your own image. An unknown glyph name
 is a config error that lists the valid ones.
+
+## The icon set
+
+Out of the box cairn serves a complete set, all generated from one drawing so
+none of it can drift:
+
+| File | Where it shows up |
+| ---- | ----------------- |
+| `favicon.svg` | The browser tab, at any size and on any tab colour. |
+| `favicon.ico` | 16, 32 and 48 pixels, for the feed readers and link previewers that fetch `/favicon.ico` and never read the html. |
+| `touch-icon.png` | 180 pixels: an iPhone or iPad home screen. |
+| `icon-192.png`, `icon-512.png` | Android. Chromium offers "install this site" only when the manifest carries both, and cairn's are declared `maskable`, so Android's round crop takes nothing off. |
+
+Nothing here is fetched from anywhere: like every other asset, the icons are
+compiled into the binary and served from it.
+
+### Using your own
+
+Set `favicon` and it becomes the whole set. What cairn then tells browsers
+about it depends on what it can actually establish, and it never guesses:
+
+| What you set | What the manifest says |
+| ------------ | ---------------------- |
+| An **svg**, anywhere | `sizes: any`. An svg is every size, so yours serves the home screen exactly the way cairn's does. |
+| A **raster in `/assets`** | Its real width and height, measured when the config loads. |
+| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none. |
+
+An entry without a size is still a valid manifest entry, and browsers still
+use the icon. What it costs is the install prompt: Chromium offers "install
+this site" only when it sees both a 192 and a 512.
+
+To get that with your own artwork, name the files yourself:
+
+```yaml
+icons:
+  - { src: /assets/brand-192.png, sizes: 192x192 }
+  - { src: /assets/brand-512.png, sizes: 512x512, purpose: any maskable }
+```
+
+`icons` replaces everything derived from `favicon`, which keeps serving the
+browser tab. `sizes` is `WIDTHxHEIGHT`, or `any` for an svg. `purpose` is
+optional and accepts `any`, `maskable` and `monochrome`, combined if you like.
+A **maskable** icon must keep its content inside the middle 80% of the square,
+because Android crops away the rest.
+
+cairn does not resize images: doing it would mean shipping a scaler for one
+rarely used path, and a badly resampled logo is worse than the one you drew.
+Anything wrong in this list is a config error that names the entry, so a typo
+stops at startup rather than reaching a phone.
 
 ## The welcome note
 

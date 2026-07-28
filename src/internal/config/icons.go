@@ -23,7 +23,7 @@ const iconCDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/"
 // IconURL resolves a service icon: URLs and absolute paths pass through,
 // a slug prefers the operator's own file, then the CDN.
 func IconURL(cfg *Config, icon string) string {
-	if icon == "" || strings.HasPrefix(icon, "http://") || strings.HasPrefix(icon, "https://") || strings.HasPrefix(icon, "/") {
+	if icon == "" || IsURLOrAbs(icon) {
 		return icon
 	}
 	if p := cfg.LocalIcons[icon]; p != "" {
@@ -57,7 +57,7 @@ func CdnSlugs(cfg *Config) []string {
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
 			ic := s.Icon
-			if ic == "" || strings.HasPrefix(ic, "http://") || strings.HasPrefix(ic, "https://") || strings.HasPrefix(ic, "/") {
+			if ic == "" || IsURLOrAbs(ic) {
 				continue
 			}
 			if cfg.LocalIcons[ic] == "" {

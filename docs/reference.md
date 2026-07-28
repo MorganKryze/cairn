@@ -41,7 +41,8 @@ logs the same error.
 | `tagline`      | empty     | text; opens the home page, feeds the meta description |
 | `url`          | none      | public base URL; adds canonical + hreflang, absolute sitemap |
 | `logo`         | none      | URL or `/assets/…` path; raster logos double as the og:image when `url` is set |
-| `favicon`      | cairn's   | tab icon; URL or `/assets/…` path |
+| `favicon`      | cairn's   | tab icon; URL or `/assets/…` path. Also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set) |
+| `icons`        | derived   | [home-screen set](configuration/site.md#using-your-own), list of `{src: URL/path, sizes: WxH or any, purpose: any/maskable/monochrome}`; overrides what `favicon` implies |
 | `index`        | `true`    | `false` = robots.txt disallow, noindex meta, no sitemap |
 | `locales`      | `[en]`    | list; first = default      |
 | `theme.accent` | `#247b7b` | hex color                  |
@@ -56,8 +57,11 @@ logs the same error.
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 | `status.interval` | `60s`  | poll cadence, duration ≥ `5s`         |
 
-Unknown keys are errors, in `site.yaml` and in every service and category
-entry alike.
+Unknown keys are errors everywhere: in `site.yaml`, and in every service,
+category, page, section, link, image and icon entry alike. The message names
+the kind of entry that refused the key and lists what that entry accepts, so
+a misspelt `show_versions` is answered with `show_version` rather than with
+the keys of some other part of the file.
 
 ## `categories.yaml`
 

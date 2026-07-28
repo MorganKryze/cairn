@@ -26,6 +26,29 @@
       "type": "string",
       "description": "Tab icon: URL or /assets path. Defaults to cairn's own."
     },
+    "icons": {
+      "type": "array",
+      "description": "Home-screen icons, for \"add to home screen\" and the browser install prompt. Supply them yourself when you want the full set: cairn never resizes an image. Omit this and the icons are derived from favicon, or are cairn's own.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["src", "sizes"],
+        "properties": {
+          "src": {
+            "type": "string",
+            "description": "URL or /assets path to the image."
+          },
+          "sizes": {
+            "type": "string",
+            "description": "Its real size, like \"512x512\", or \"any\" for an svg. Chromium offers to install a site only when a 192 and a 512 are both present."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "any, maskable or monochrome; they may be combined, as in \"any maskable\". A maskable icon must keep its content inside the middle 80%, because Android crops the rest."
+          }
+        }
+      }
+    },
     "index": {
       "type": "boolean",
       "description": "false asks search engines to stay away: robots.txt disallows, pages carry noindex, the sitemap turns off."

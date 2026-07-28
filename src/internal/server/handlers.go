@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"slices"
@@ -92,12 +93,27 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write(page.HTML)
 }
 
+// faviconICO answers the well-known path. No browser asks for it, since the
+// head declares the icons; it is here for the feed readers, link previewers
+// and bookmark tools that skip the html and fetch /favicon.ico directly.
+//
+// An operator who set their own favicon gets pointed at it. Serving cairn's
+// stones to a link previewer would put our mark on their site's card.
+func faviconICO(static fs.FS) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if own := Current().Cfg.Site.Favicon; own != "" {
+			http.Redirect(w, r, render.AppURL(own), http.StatusFound)
+			return
+		}
+		http.ServeFileFS(w, r, static, "favicon.ico")
+	}
+}
+
 // manifest makes "add to home screen" give the site its own name and icon;
 // deliberately no service worker and no offline mode.
 func manifest(w http.ResponseWriter, r *http.Request) {
 	cfg := Current().Cfg
 	name := cfg.Site.Title.Get(negotiate(r, cfg.Site.Locales), cfg.DefaultLocale())
-	icon := render.AppURL(render.TouchIcon(cfg.Site.Favicon))
 	w.Header().Set("Content-Type", "application/manifest+json")
 	w.Header().Set("Cache-Control", "no-cache")
 	if err := json.NewEncoder(w).Encode(map[string]any{
@@ -107,7 +123,7 @@ func manifest(w http.ResponseWriter, r *http.Request) {
 		"display":          "minimal-ui",
 		"background_color": "#eef0ea",
 		"theme_color":      cfg.Site.Theme.Accent,
-		"icons":            []map[string]string{{"src": icon, "sizes": "180x180", "type": "image/png"}},
+		"icons":            render.AppIcons(cfg),
 	}); err != nil {
 		log.Printf("manifest: %v", err)
 	}

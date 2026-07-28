@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -9,7 +11,7 @@ import (
 // into []string", "not found in type main.Site"). The person reading them
 // edits a yaml file; yamlErr rewrites the vocabulary into their terms.
 var (
-	yamlFieldRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
+	yamlFieldRe = regexp.MustCompile(`field (\S+) not found in type (\S+)`)
 	yamlTypeRe  = regexp.MustCompile("cannot unmarshal (\\S+)( `[^`]*`)? into (\\S+)")
 )
 
@@ -28,6 +30,8 @@ func yamlWord(t string) string {
 		"PageSection":       "a section entry",
 		"FooterLink":        "a link entry",
 		"ServiceImage":      "an image entry",
+		"imageEntry":        "an image entry", // the decoding twin of the above
+		"SiteIcon":          "an icon entry",
 		"[]FooterLink":      "a list of links",
 		"[]SitePage":        "a list of pages",
 		"[]PageSection":     "a list of sections",
@@ -61,9 +65,85 @@ func dropPackage(t string) string {
 	return prefix + t
 }
 
+// yamlKeys lists the keys a struct accepts, in the order they are declared.
+// An inline struct contributes its own keys dotted onto its name, because
+// "theme.accent" is how the operator writes it.
+func yamlKeys(t reflect.Type) []string {
+	var out []string
+	for i := range t.NumField() {
+		f := t.Field(i)
+		name, _, _ := strings.Cut(f.Tag.Get("yaml"), ",")
+		if name == "" || name == "-" {
+			continue
+		}
+		if f.Type.Kind() == reflect.Struct && f.Type.Name() == "" {
+			for _, sub := range yamlKeys(f.Type) {
+				out = append(out, name+"."+sub)
+			}
+			continue
+		}
+		out = append(out, name)
+	}
+	return out
+}
+
+// yamlShapes maps every named struct reachable from a config file to itself,
+// so an "unknown key" error can offer the keys of the entry that actually
+// failed. It is built by reflection rather than written down: the hand-kept
+// list had drifted (it had never gained show_version), a nested entry could
+// only ever be offered the top-level keys, and a service entry got no list at
+// all. None of those can happen to a list nothing maintains.
+var yamlShapes = func() map[string]reflect.Type {
+	shapes := map[string]reflect.Type{}
+	var walk func(reflect.Type)
+	walk = func(t reflect.Type) {
+		for t.Kind() == reflect.Slice || t.Kind() == reflect.Pointer {
+			t = t.Elem()
+		}
+		if t.Kind() != reflect.Struct || t.Name() == "" || shapes[t.Name()] != nil {
+			return
+		}
+		shapes[t.Name()] = t
+		for i := range t.NumField() {
+			walk(t.Field(i).Type)
+		}
+	}
+	for _, root := range []any{Site{}, Service{}, CategoryMeta{}, imageEntry{}} {
+		walk(reflect.TypeOf(root))
+	}
+	return shapes
+}()
+
+// innerLineRe matches the line number yaml counts inside a re-marshalled
+// fragment. It is meaningless outside that fragment: an entry at line 40 of
+// the file would be reported as line 3 of a snippet nobody can see.
+var innerLineRe = regexp.MustCompile(`^line \d+: `)
+
+// entryErr is yamlErr for a caller that already names the entry's real line.
+func entryErr(err error) string {
+	return innerLineRe.ReplaceAllString(err.Error(), "")
+}
+
+// unknownKey phrases the refusal for the entry the operator actually mistyped:
+// which kind of entry it is, and what it does accept.
+func unknownKey(field, typ string) string {
+	out := fmt.Sprintf("unknown key %q", field)
+	shape, ok := yamlShapes[dropPackage(typ)]
+	if !ok {
+		return out
+	}
+	if word := yamlWord(typ); word != typ {
+		out += " in " + word
+	}
+	return out + " (expected: " + strings.Join(yamlKeys(shape), ", ") + ")"
+}
+
 func yamlErr(err error) string {
 	msg := strings.TrimSpace(strings.TrimPrefix(strings.ReplaceAll(err.Error(), "\n", " "), "yaml: unmarshal errors:"))
-	msg = yamlFieldRe.ReplaceAllString(msg, `unknown key "$1"`)
+	msg = yamlFieldRe.ReplaceAllStringFunc(msg, func(m string) string {
+		p := yamlFieldRe.FindStringSubmatch(m)
+		return unknownKey(p[1], p[2])
+	})
 	return yamlTypeRe.ReplaceAllStringFunc(msg, func(m string) string {
 		p := yamlTypeRe.FindStringSubmatch(m)
 		return "found " + yamlWord(p[1]) + p[2] + " where " + yamlWord(p[3]) + " was expected"

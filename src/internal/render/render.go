@@ -364,13 +364,101 @@ func paragraphs(s string) []string {
 	return out
 }
 
+// defaultTouchIcon is cairn's own, the one shipped in assets/.
+const defaultTouchIcon = "/static/touch-icon.png"
+
 // TouchIcon picks the add-to-home-screen icon: the operator's favicon when
 // it is a png (the format phones accept), cairn's own otherwise.
 func TouchIcon(favicon string) string {
 	if strings.HasSuffix(strings.ToLower(favicon), ".png") {
 		return favicon
 	}
-	return "/static/touch-icon.png"
+	return defaultTouchIcon
+}
+
+// AppIcon is one entry of the web app manifest's icon list. Everything but
+// the source is omitted when unknown, rather than filled with a guess.
+type AppIcon struct {
+	Src     string `json:"src"`
+	Sizes   string `json:"sizes,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Purpose string `json:"purpose,omitempty"`
+}
+
+// iconType maps a file reference to the mime type the manifest wants. An empty
+// result means we do not recognise it, and the entry then omits the field
+// rather than asserting a format.
+func iconType(ref string) string {
+	i := strings.LastIndex(ref, ".")
+	if i < 0 {
+		return ""
+	}
+	switch strings.ToLower(ref[i+1:]) {
+	case "svg":
+		return "image/svg+xml"
+	case "png":
+		return "image/png"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "webp":
+		return "image/webp"
+	case "gif":
+		return "image/gif"
+	case "ico":
+		return "image/x-icon"
+	}
+	return ""
+}
+
+// AppIcons lists what a phone should use once the site is on a home screen.
+//
+// The rule throughout is that every field is either true or absent. Sizes are
+// never invented: an entry whose size we cannot establish simply carries no
+// `sizes`, which the manifest spec allows, and the browser decides. The old
+// behaviour was to stamp "180x180" on whatever the operator supplied, which
+// was a guess published as a fact.
+//
+// Three cases, in order:
+//
+//   - The operator listed `icons` themselves. That wins outright, sizes and
+//     all, because they are the only one who can know them.
+//   - They set a `favicon`. An svg is scalable, so it is declared "any" and
+//     serves every size the way cairn's own does; a raster in the mounted
+//     assets dir is measured at load and declared truthfully; a raster behind
+//     a URL is offered with no size, since measuring it means an outbound
+//     request and cairn makes none.
+//   - Neither. cairn's own set, which ships the 192 and the 512 that Chromium
+//     insists on before it will offer to install a site, both declared
+//     "any maskable": the usual reason for a separate padded maskable file is
+//     that a full-bleed icon loses its edges to Android's crop, and this mark
+//     is a narrow stack that clears that circle with room to spare.
+func AppIcons(cfg *config.Config) []AppIcon {
+	if own := cfg.Site.Icons; len(own) > 0 {
+		out := make([]AppIcon, 0, len(own))
+		for _, ic := range own {
+			out = append(out, AppIcon{
+				Src: AppURL(ic.Src), Sizes: ic.Sizes, Type: iconType(ic.Src), Purpose: ic.Purpose,
+			})
+		}
+		return out
+	}
+
+	if fav := cfg.Site.Favicon; fav != "" {
+		icon := AppIcon{Src: AppURL(fav), Type: iconType(fav)}
+		switch {
+		case icon.Type == "image/svg+xml":
+			icon.Sizes = "any"
+		case cfg.FaviconDims != [2]int{}:
+			icon.Sizes = fmt.Sprintf("%dx%d", cfg.FaviconDims[0], cfg.FaviconDims[1])
+		}
+		return []AppIcon{icon}
+	}
+
+	return []AppIcon{
+		{Src: AppURL(defaultTouchIcon), Sizes: "180x180", Type: "image/png"},
+		{Src: AppURL("/static/icon-192.png"), Sizes: "192x192", Type: "image/png", Purpose: "any maskable"},
+		{Src: AppURL("/static/icon-512.png"), Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
+	}
 }
 
 // ogImage derives a social preview image from the logo: only when the site
@@ -384,7 +472,7 @@ func ogImage(base, logo string) string {
 	if !strings.HasSuffix(l, ".png") && !strings.HasSuffix(l, ".jpg") && !strings.HasSuffix(l, ".jpeg") && !strings.HasSuffix(l, ".webp") && !strings.HasSuffix(l, ".gif") {
 		return ""
 	}
-	if strings.HasPrefix(logo, "/") {
+	if config.IsLocalPath(logo) {
 		return base + logo
 	}
 	return logo

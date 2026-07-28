@@ -61,6 +61,7 @@ func routes(cfgDir, assetsDir string) *http.ServeMux {
 		http.ServeFile(w, r, filepath.Join(cfgDir, "custom.css"))
 	})
 	mux.HandleFunc("GET /manifest.webmanifest", manifest)
+	mux.Handle("GET /favicon.ico", cacheControl(http.HandlerFunc(faviconICO(static))))
 	mux.HandleFunc("GET /robots.txt", robots)
 	mux.HandleFunc("GET /sitemap.xml", sitemap)
 	mux.HandleFunc("GET /{$}", root)

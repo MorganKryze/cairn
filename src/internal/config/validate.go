@@ -46,6 +46,26 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			}
 		}
 	}
+	for i, ic := range site.Icons {
+		where := fmt.Sprintf("icons entry %d", i+1)
+		if ic.Src == "" || ic.Sizes == "" {
+			return fmt.Errorf("config: site.yaml: %s needs src and sizes "+
+				"(expected: - {src: /assets/icon-512.png, sizes: 512x512})", where)
+		}
+		if !IsURLOrAbs(ic.Src) {
+			return fmt.Errorf("config: site.yaml: %s src %q is not a URL or an /assets path", where, ic.Src)
+		}
+		if !iconSizesRe.MatchString(ic.Sizes) {
+			return fmt.Errorf("config: site.yaml: %s sizes %q is not a size "+
+				"(expected e.g. 512x512, or \"any\" for an svg)", where, ic.Sizes)
+		}
+		for _, p := range strings.Fields(ic.Purpose) {
+			if p != "any" && p != "maskable" && p != "monochrome" {
+				return fmt.Errorf("config: site.yaml: %s purpose %q is not one of "+
+					"any, maskable, monochrome (they may be combined: \"any maskable\")", where, p)
+			}
+		}
+	}
 	pageIDs := map[string]bool{}
 	for _, p := range site.Pages {
 		switch {
