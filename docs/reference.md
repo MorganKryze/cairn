@@ -118,7 +118,7 @@ too, alongside `/readyz`, because an orchestrator reaches cairn directly.
 
 ## The display font
 
-`src/assets/fonts/fraunces.woff2` is not the upstream file: it is
+`src/internal/render/assets/fonts/fraunces.woff2` is not the upstream file: it is
 [Fraunces](https://github.com/undercasetype/Fraunces) cut down to what the
 pages use, which halves it (118 KB to 62 KB) on a page that would otherwise be
 two-thirds font. The Latin ranges are kept, the `SOFT` and `WONK` axes are
@@ -144,7 +144,7 @@ s.populate(unicodes=subset.parse_unicodes(
     "U+0000-00FF,U+0100-017F,U+0180-024F,U+2000-206F,U+20A0-20BF,U+2122"))
 s.subset(f)
 f.flavor = "woff2"
-f.save("src/assets/fonts/fraunces.woff2")
+f.save("src/internal/render/assets/fonts/fraunces.woff2")
 EOF
 ```
 

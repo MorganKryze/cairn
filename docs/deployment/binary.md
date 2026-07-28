@@ -7,7 +7,7 @@ own with Go:
 
 ```sh
 git clone https://github.com/MorganKryze/cairn.git && cd cairn
-go build -o cairn ./src
+go build -o cairn ./src/cmd/cairn
 ```
 
 Run it against a config folder; every flag is in the

@@ -3,7 +3,7 @@
 ## Dev loop
 
 ```sh
-go run ./src -config example    # http://localhost:8080, live-reloads example/
+go run ./src/cmd/cairn -config example    # http://localhost:8080, live-reloads example/
 go test ./...
 docker compose -f docker/compose.yaml up --build   # what CI and users get
 ```
@@ -23,12 +23,24 @@ and enforces a couple of house style rules on the way.
 ## Layout
 
 ```text
-src/        one Go package: config loading, rendering, HTTP; templates/ and
-            assets/ are embedded into the binary
-docker/     Dockerfile (FROM scratch) and the hardened reference compose
-example/    the config served by the dev loop and the docs
-docs/       GitHub-native Markdown, no generator
+src/cmd/cairn/        wiring only: flags, startup, hand off to the server
+src/internal/
+  config/             read and validate the YAML; depends on nothing
+  render/             config to bytes; templates/ and assets/ embed here
+  status/             the Gatus client
+  server/             routes, handlers, probes, the two background loops
+  check/              backs -check: validates like a boot would
+  testutil/           the one helper shared by every package's tests
+docker/               Dockerfile (FROM scratch) and the hardened compose
+example/              the config served by the dev loop and the docs
+docs/                 GitHub-native Markdown, no generator
 ```
+
+The dependency graph runs one way: `config` knows nothing, `render` and
+`status` know `config`, `server` knows all three, `main` wires them. Keep it
+that way. A test lives beside the package it exercises; the two that genuinely
+span a boundary use an external `_test` package rather than pulling a
+dependency backwards.
 
 ## Ground rules
 

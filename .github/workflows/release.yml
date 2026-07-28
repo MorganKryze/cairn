@@ -28,7 +28,7 @@ jobs:
           for target in linux/amd64 linux/arm64 darwin/arm64; do
             os="${target%/*}"; arch="${target#*/}"
             CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
-              go build -trimpath -ldflags="-s -w -X main.version=$version" -o cairn ./src
+              go build -trimpath -ldflags="-s -w -X main.version=$version" -o cairn ./src/cmd/cairn
             tar -czf "cairn_${version}_${os}_${arch}.tar.gz" cairn
           done
           sha256sum cairn_*.tar.gz > checksums.txt
