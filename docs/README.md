@@ -20,6 +20,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 - [Docker Compose](deployment/docker-compose.md): the hardened reference setup.
 - [Podman](deployment/podman.md): the same container as a systemd quadlet.
 - [Bare binary](deployment/binary.md): no container, a hardened systemd unit.
+- [Kubernetes](deployment/kubernetes.md): a ConfigMap, a Deployment, no volume.
 - [Reverse proxies](deployment/reverse-proxies.md): Caddy, Traefik, Nginx, Pangolin.
 
 **Recipes**
