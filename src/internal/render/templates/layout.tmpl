@@ -18,6 +18,7 @@
 {{end}}
 {{if .Favicon}}<link rel="icon" href="{{.Favicon}}">
 {{else}}<link rel="icon" href="{{.Prefix}}/static/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{{.Prefix}}/static/favicon.ico" sizes="32x32">
 {{end}}<link rel="apple-touch-icon" href="{{.TouchIcon}}">
 <link rel="manifest" href="{{.Prefix}}/manifest.webmanifest">
 
@@ -87,4 +88,4 @@
 </html>
 {{end}}
 
-{{define "glyph"}}<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="5" y="24" width="22" height="4.6" rx="2.3"/><rect x="8.5" y="18.2" width="16.6" height="4.4" rx="2.2"/><rect x="8.8" y="12.6" width="14.4" height="4.2" rx="2.1"/><rect x="9.4" y="7.4" width="11" height="3.9" rx="1.95"/><rect x="12" y="2.6" width="8" height="3.6" rx="1.8"/></svg>{{end}}
+{{define "glyph"}}<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="3.2" y="23.6" width="25" height="5.4" rx="2.4"/><rect x="7.8" y="16.2" width="17.4" height="5.8" rx="2.6"/><rect x="9.4" y="9.4" width="13" height="5.4" rx="2.5"/><rect x="12.4" y="3" width="9.4" height="4.8" rx="2.2" transform="rotate(-9 17.1 5.4)"/></svg>{{end}}
