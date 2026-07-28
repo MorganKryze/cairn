@@ -62,5 +62,5 @@ test-search:
     @npx --yes playwright install --only-shell chromium
     @go build -o /tmp/cairn-search ./src/cmd/cairn
     @/tmp/cairn-search -config example -addr 127.0.0.1:8099 & echo $! > /tmp/cairn-search.pid
-    @sleep 1
+    @for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null 2>&1 && break; sleep 1; done
     @node scripts/search.mjs http://127.0.0.1:8099/en/; s=$?; kill $(cat /tmp/cairn-search.pid); exit $s
