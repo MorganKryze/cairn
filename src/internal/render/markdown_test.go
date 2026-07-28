@@ -87,3 +87,21 @@ func TestMarkdownEndToEnd(t *testing.T) {
 		t.Errorf("details markdown not rendered:\n%s", detail)
 	}
 }
+
+// A link the writer got wrong must come out as visible text, never as broken
+// markup and never as a live link to something unintended.
+func TestMalformedLinksStayText(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"[no closing paren](https://x.org", "[no closing paren](https://x.org"},
+		{"[no target]", "[no target]"},
+		{"[empty]()", `<a href="">empty</a>`},
+		{"[js](javascript:alert(1))", "[js](javascript:alert(1))"},
+		{"[ok](https://x.org)", `<a href="https://x.org">ok</a>`},
+		{"[relative](/legal/)", `<a href="/legal/">relative</a>`},
+		{"[mail](mailto:a@b.org)", `<a href="mailto:a@b.org">mail</a>`},
+	} {
+		if got := mdInline(c.in); got != c.want {
+			t.Errorf("mdInline(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}

@@ -20,23 +20,45 @@ func yamlWord(t string) string {
 		"!!null": "an empty value", "!!timestamp": "a date",
 		"string": "one plain text", "[]string": "a list of texts",
 		"int": "a number", "bool": "true or false", "*bool": "true or false",
-		"map[string]string":   "a per-locale mapping",
-		"main.Site":           "the site settings",
-		"main.Service":        "a service entry",
-		"main.CategoryMeta":   "a category entry",
-		"main.imageEntry":     "an image entry",
-		"main.SitePage":       "a page entry",
-		"main.PageSection":    "a section entry",
-		"main.FooterLink":     "a link entry",
-		"[]main.FooterLink":   "a list of links",
-		"[]main.SitePage":     "a list of pages",
-		"[]main.PageSection":  "a list of sections",
-		"[]main.ServiceImage": "a list of images",
+		"map[string]string": "a per-locale mapping",
+		"Site":              "the site settings",
+		"Service":           "a service entry",
+		"CategoryMeta":      "a category entry",
+		"SitePage":          "a page entry",
+		"PageSection":       "a section entry",
+		"FooterLink":        "a link entry",
+		"ServiceImage":      "an image entry",
+		"[]FooterLink":      "a list of links",
+		"[]SitePage":        "a list of pages",
+		"[]PageSection":     "a list of sections",
+		"[]ServiceImage":    "a list of images",
 	}
 	if w, ok := words[t]; ok {
 		return w
 	}
-	return strings.TrimPrefix(t, "main.")
+	// yaml.v3 qualifies our own types with the package they live in, which is
+	// an implementation detail the operator never needs and which silently
+	// changed the day the packages were split. Match on the bare name.
+	if bare := dropPackage(t); bare != t {
+		if w, ok := words[bare]; ok {
+			return w
+		}
+		return bare
+	}
+	return t
+}
+
+// dropPackage turns "config.SitePage" into "SitePage" and "[]config.SitePage"
+// into "[]SitePage", leaving anything unqualified alone.
+func dropPackage(t string) string {
+	prefix := ""
+	if rest, ok := strings.CutPrefix(t, "[]"); ok {
+		prefix, t = "[]", rest
+	}
+	if _, name, ok := strings.Cut(t, "."); ok {
+		return prefix + name
+	}
+	return prefix + t
 }
 
 func yamlErr(err error) string {
