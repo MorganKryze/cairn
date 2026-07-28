@@ -105,3 +105,34 @@ func TestLiveRegionAttributesAreNotJSEscaped(t *testing.T) {
 		t.Error("the count string was JS-escaped: an attribute is being read as an on* handler")
 	}
 }
+
+// A container whose config never loaded serves the getting-started page. It is
+// alive, so /healthz says so and a liveness probe leaves it running; it is not
+// serving the operator's site, so /readyz says that plainly instead of letting
+// a monitor sit green on "Almost there".
+func TestReadinessSplitsFromLiveness(t *testing.T) {
+	current.Store(starterModel())
+	rec := httptest.NewRecorder()
+	healthz(rec, httptest.NewRequest("GET", "/healthz", nil))
+	if rec.Code != http.StatusOK {
+		t.Errorf("healthz on a stand-in page = %d, want 200: a liveness probe must not restart it", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	readyz(rec, httptest.NewRequest("GET", "/readyz", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("readyz with no valid config = %d, want 503", rec.Code)
+	}
+
+	// once a real config lands, both agree
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	for name, h := range map[string]http.HandlerFunc{"healthz": healthz, "readyz": readyz} {
+		rec = httptest.NewRecorder()
+		h(rec, httptest.NewRequest("GET", "/"+name, nil))
+		if rec.Code != http.StatusOK {
+			t.Errorf("%s with a valid config = %d, want 200", name, rec.Code)
+		}
+	}
+}
