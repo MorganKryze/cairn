@@ -156,3 +156,78 @@ func TestProtocolRelativeURLsAreNotOurs(t *testing.T) {
 		}
 	}
 }
+
+// iOS never reads the manifest for the home screen: it reads the
+// apple-touch-icon link alone. So an operator's own icons list has to reach
+// that link too, or their icons would take effect on Android while an iPhone
+// showed cairn's mark, which is the one outcome supplying your own prevents.
+func TestTouchIconHonoursTheOperatorsList(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		site config.Site
+		want string
+	}{
+		{"nothing set: cairn's own", config.Site{}, "/static/touch-icon.png"},
+		{"an svg favicon cannot serve as one", config.Site{Favicon: "/assets/b.svg"}, "/static/touch-icon.png"},
+		{"a png favicon can", config.Site{Favicon: "/assets/b.png"}, "/assets/b.png"},
+		{
+			"a list wins, largest first",
+			config.Site{Favicon: "/assets/b.svg", Icons: []config.SiteIcon{
+				{Src: "/assets/b-192.png", Sizes: "192x192"},
+				{Src: "/assets/b-512.png", Sizes: "512x512"},
+				{Src: "/assets/b-64.png", Sizes: "64x64"},
+			}},
+			"/assets/b-512.png",
+		},
+		{
+			"whatever order it is written in",
+			config.Site{Icons: []config.SiteIcon{
+				{Src: "/assets/b-512.png", Sizes: "512x512"},
+				{Src: "/assets/b-192.png", Sizes: "192x192"},
+			}},
+			"/assets/b-512.png",
+		},
+		{
+			"a multi-size entry counts at its largest",
+			config.Site{Icons: []config.SiteIcon{
+				{Src: "/assets/b-256.png", Sizes: "256x256"},
+				{Src: "/assets/b-ico.png", Sizes: "48x48 96x96 512x512"},
+			}},
+			"/assets/b-ico.png",
+		},
+		{
+			// "any" is an svg, which iOS may not render; theirs still beats ours,
+			// since a home screen falling back to a screenshot is neutral where
+			// cairn's mark is wrong.
+			"a list of svgs still wins",
+			config.Site{Icons: []config.SiteIcon{{Src: "/assets/b.svg", Sizes: "any"}}},
+			"/assets/b.svg",
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := TouchIcon(&config.Config{Site: c.site}); got != c.want {
+				t.Errorf("TouchIcon = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// End to end: the link in the head, not just the helper.
+func TestTheHeadCarriesTheOperatorsTouchIcon(t *testing.T) {
+	cfg := &config.Config{Site: config.Site{
+		Locales: []string{"en"},
+		Icons:   []config.SiteIcon{{Src: "/assets/brand-512.png", Sizes: "512x512"}},
+	}}
+	cfg.Site.Theme.Accent = "#247b7b"
+	m, err := BuildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(m.Pages["en"].HTML)
+	if !strings.Contains(html, `<link rel="apple-touch-icon" href="/assets/brand-512.png">`) {
+		t.Error("the head does not point at the operator's icon")
+	}
+	if strings.Contains(html, "touch-icon.png") {
+		t.Error("cairn's own touch icon is still in the head")
+	}
+}

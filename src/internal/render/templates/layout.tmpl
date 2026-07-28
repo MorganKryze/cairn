@@ -88,4 +88,11 @@
 </html>
 {{end}}
 
+{{/* The status pill, on a card and on a detail page alike. A link when it
+     leads to a status page the visitor can reach, a plain span when the
+     operator set status.linked: false, in which case it states the state and
+     nothing else: no target, no focus stop, and on a card the click falls
+     through to the service the way the rest of the card behaves. */}}
+{{define "statuspill"}}{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</span>{{end}}{{end}}{{end}}
+
 {{define "glyph"}}<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="3.2" y="23.6" width="25" height="5.4" rx="2.4"/><rect x="7.8" y="16.2" width="17.4" height="5.8" rx="2.6"/><rect x="9.4" y="9.4" width="13" height="5.4" rx="2.5"/><rect x="12.4" y="3" width="9.4" height="4.8" rx="2.2" transform="rotate(-9 17.1 5.4)"/></svg>{{end}}

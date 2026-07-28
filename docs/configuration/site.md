@@ -22,7 +22,7 @@ so is every key in it.
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances. |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
-| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`); see [Status page](../recipes/gatus.md). |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md). |
 
 ## Full example
 
@@ -122,7 +122,11 @@ icons:
 ```
 
 `icons` replaces everything derived from `favicon`, which keeps serving the
-browser tab. `sizes` is `WIDTHxHEIGHT`, or `any` for an svg. `purpose` is
+browser tab. That includes iOS, which ignores the manifest and reads the
+`apple-touch-icon` link alone: cairn points it at the largest entry in your
+list, so an iPhone home screen shows your artwork and not cairn's.
+
+`sizes` is `WIDTHxHEIGHT`, or `any` for an svg. `purpose` is
 optional and accepts `any`, `maskable` and `monochrome`, combined if you like.
 A **maskable** icon must keep its content inside the middle 80% of the square,
 because Android crops away the rest.

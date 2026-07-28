@@ -5,7 +5,7 @@
     <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">
       <h1>{{.Name}}</h1>
-      {{if .Status}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.Name}}, {{.StatusLabel}}, {{.S.Link}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{end}}
+      {{template "statuspill" .}}
     </div>
   </div>
   {{if .Desc}}<p class="lead">{{.Desc}}</p>

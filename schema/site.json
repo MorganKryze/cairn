@@ -164,6 +164,10 @@
         "interval": {
           "type": "string",
           "description": "Poll cadence, a duration of at least 5s (e.g. 60s)."
+        },
+        "linked": {
+          "type": "boolean",
+          "description": "false makes the pills display-only: they still show up, down or unknown, but they stop linking to the status page. For a Gatus your visitors cannot reach."
         }
       }
     }

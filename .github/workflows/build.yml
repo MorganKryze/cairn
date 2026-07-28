@@ -57,6 +57,26 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash .github/coverage-badge.sh "$PCT"
 
+  search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: stable
+      # search.js is the only behaviour the Go tests cannot reach: they assert
+      # the markup that ships, not what happens once someone types into it.
+      # Deliberately not the demo stack, so this pulls nothing from a registry
+      # and can be a required check.
+      - name: drive the search in a browser
+        run: |
+          npm --silent install --no-save --no-package-lock playwright
+          npx --yes playwright install --with-deps --only-shell chromium
+          go build -o /tmp/cairn ./src/cmd/cairn
+          /tmp/cairn -config example -addr 127.0.0.1:8099 &
+          for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null && break; sleep 1; done
+          node scripts/search.mjs http://127.0.0.1:8099/en/
+
   image:
     runs-on: ubuntu-latest
     permissions:

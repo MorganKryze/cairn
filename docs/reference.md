@@ -56,6 +56,7 @@ logs the same error.
 | `status.gatus` | none      | Gatus base URL cairn polls for the [status pills](recipes/gatus.md) |
 | `status.page`  | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal) |
 | `status.interval` | `60s`  | poll cadence, duration ≥ `5s`         |
+| `status.linked` | `true` | `false` makes the pills display-only: the state stays, the link to the status page goes |
 
 Unknown keys are errors everywhere: in `site.yaml`, and in every service,
 category, page, section, link, image and icon entry alike. The message names

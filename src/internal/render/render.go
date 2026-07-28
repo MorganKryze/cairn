@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/MorganKryze/cairn/src/internal/config"
@@ -102,6 +103,7 @@ type pageView struct {
 
 type cardView struct {
 	URL, Icon, Name, Desc, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	StatusA11y                                                             string // set only when the pill is a link
 	HostKind, HostLabel                                                    string // "self"/"external"/"" and its localized label
 }
 
@@ -136,6 +138,7 @@ type homeView struct {
 type detailView struct {
 	pageView
 	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
+	StatusA11y                                             string
 	Body                                                   []template.HTML
 	Images                                                 []imageView
 }
@@ -157,11 +160,17 @@ type sectionView struct {
 	Body  []template.HTML
 }
 
-// statusMeta returns the localized label and the Gatus link for a status, so
-// the pill can name itself and send the visitor to its own endpoint page.
-func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label, href string) {
+// statusMeta fills a pill: its label, where it links, and the label a screen
+// reader reads instead. An empty href makes it display-only, which is what
+// status.linked: false asks for and the only shape the templates need to
+// tell the two apart.
+func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label, href, a11y string) {
 	if state == "" {
-		return "", ""
+		return "", "", ""
+	}
+	label = cfg.Str(loc, "status."+state)
+	if !cfg.StatusLinked() {
+		return label, "", ""
 	}
 	// The pill link is for the visitor's browser, so it uses the public
 	// status.page URL; status.gatus may be an internal poll-only address.
@@ -170,7 +179,9 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label,
 		base = cfg.Site.Status.Gatus
 	}
 	href = strings.TrimSuffix(base, "/") + "/endpoints/" + status.Key(s.Category, s.ID)
-	return cfg.Str(loc, "status."+state), href
+	// A link has to name its target on its own: read out of the card, "Online"
+	// alone says nothing about which service, nor that it leads anywhere.
+	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
 }
 
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not
@@ -213,7 +224,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			SiteTitle: cfg.Site.Title.Get(loc, def),
 			Logo:      AppURL(cfg.Site.Logo),
 			Favicon:   AppURL(cfg.Site.Favicon),
-			TouchIcon: AppURL(TouchIcon(cfg.Site.Favicon)),
+			TouchIcon: AppURL(TouchIcon(cfg)),
 			OGImage:   ogImage(cfg.Site.URL+BasePath, AppURL(cfg.Site.Logo)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
@@ -269,7 +280,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 					Tags:   strings.Join(s.Tags, " "),
 					Status: statusOf(cfg, statuses, s.ID),
 				}
-				card.StatusLabel, card.StatusHref = statusMeta(cfg, loc, card.Status, s)
+				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 				}
@@ -305,7 +316,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 					url, w, h := media(img.Src)
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: img.Caption.Get(loc, def), W: w, H: h})
 				}
-				dv.StatusLabel, dv.StatusHref = statusMeta(cfg, loc, dv.Status, s)
+				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s)
 				dv.PageTitle = dv.Name + " · " + base.SiteTitle
 				dv.MetaDesc = dv.Desc
 				dv.SwitchPath = s.ID + "/"
@@ -367,11 +378,43 @@ func paragraphs(s string) []string {
 // defaultTouchIcon is cairn's own, the one shipped in assets/.
 const defaultTouchIcon = "/static/touch-icon.png"
 
-// TouchIcon picks the add-to-home-screen icon: the operator's favicon when
-// it is a png (the format phones accept), cairn's own otherwise.
-func TouchIcon(favicon string) string {
-	if strings.HasSuffix(strings.ToLower(favicon), ".png") {
-		return favicon
+// widestSize reads the largest width out of a manifest `sizes` value, which
+// may list several ("48x48 96x96") or be "any". Anything unreadable is 0, so
+// it loses to any real number without needing a separate case.
+func widestSize(sizes string) int {
+	best := 0
+	for _, token := range strings.Fields(sizes) {
+		w, _, ok := strings.Cut(token, "x")
+		if !ok {
+			continue
+		}
+		if n, err := strconv.Atoi(w); err == nil && n > best {
+			best = n
+		}
+	}
+	return best
+}
+
+// TouchIcon picks the add-to-home-screen icon.
+//
+// iOS never reads the manifest for this: it reads the apple-touch-icon link
+// and nothing else. So an operator who listed their own icons has to be
+// honoured here too, or their list would take effect on Android while an
+// iPhone home screen showed cairn's mark, which is the one thing supplying
+// your own icons is meant to prevent. The largest is picked, since iOS
+// downsamples and only a too-small icon shows.
+func TouchIcon(cfg *config.Config) string {
+	if own := cfg.Site.Icons; len(own) > 0 {
+		best, bestPx := own[0].Src, widestSize(own[0].Sizes)
+		for _, ic := range own[1:] {
+			if px := widestSize(ic.Sizes); px > bestPx {
+				best, bestPx = ic.Src, px
+			}
+		}
+		return best
+	}
+	if strings.HasSuffix(strings.ToLower(cfg.Site.Favicon), ".png") {
+		return cfg.Site.Favicon
 	}
 	return defaultTouchIcon
 }
