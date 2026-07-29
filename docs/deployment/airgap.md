@@ -15,9 +15,10 @@ page renders, and the icons are simply missing.
 | Artifact | Size | Where it comes from |
 | --- | --- | --- |
 | `cairn-1.12.0.tgz` | 4 KB | `helm pull`, the signed artifact rather than the folder in git |
+| `gatus-1.5.0.tgz` | 9 KB | the Gatus project's own chart |
 | `images.tar` | 26 MB | `docker save` of cairn and Gatus |
 | `assets/icons/*.svg` | a few KB | what `cairn -emit-icons` downloads |
-| your YAML | a few KB | `site.yaml`, `services.yaml`, the Gatus config |
+| your values | a few KB | one file per chart, and they are yours to keep |
 
 The 26 MB is measured on arm64; amd64 lands in the same range. Almost all of it
 is Gatus: cairn's own image is under 14 MB.
@@ -39,6 +40,19 @@ cosign verify ghcr.io/morgankryze/charts/cairn:1.12.0 \
 
 The same two lines for `ghcr.io/morgankryze/cairn:1.12.0`, the image. Keep the
 output: this is the only moment where you can prove where these bytes came from.
+
+Gatus publishes its own chart, from a classic repository rather than a registry,
+so it is fetched differently and travels the same way:
+
+```sh
+helm repo add twin https://twin.github.io/helm-charts
+helm pull twin/gatus --version 1.5.0
+```
+
+That chart versions itself independently of the application it installs, which
+is worth knowing before you trust its number: `1.5.0` ships `appVersion v5.34.0`
+while Gatus is further along. Pin the image yourself rather than inherit it,
+which the values below do.
 
 ### The images, pinned by platform
 
@@ -133,6 +147,25 @@ image:
   tag: "1.12.0"
 ```
 
+The charts belong in there too, if your registry takes them. Both are ordinary
+OCI artifacts, so a project named `helm` holds them next to the images and
+nothing else has to be installed:
+
+```sh
+helm push cairn-1.12.0.tgz oci://harbor.internal/helm
+helm push gatus-1.5.0.tgz oci://harbor.internal/helm
+```
+
+```console
+$ curl -s https://harbor.internal/v2/_catalog
+{"repositories":["helm/cairn","helm/gatus"]}
+```
+
+From then on the cluster installs from `oci://harbor.internal/helm/cairn`, and
+the only files you keep are your values. That is also what makes the whole thing
+consumable by Argo CD: see
+[Helm through Argo CD](helm.md#from-a-registry-through-argo-cd).
+
 ## 4. Inside, without a registry
 
 Every node needs the images in its own store, and a cluster stopped speaking
@@ -179,8 +212,8 @@ config:
     title: Our tools
     locales: [fr, en]
     status:
-      gatus: http://gatus:8080   # internal: cairn polls this, server-side
-      linked: false              # visitors have no route to Gatus
+      gatus: http://gatus       # the Service below, port 80, not 8080
+      linked: false             # visitors have no route to Gatus
   services.yaml: |
     - id: pad
       url: https://pad.internal
@@ -208,50 +241,42 @@ helm install cairn ./cairn-1.12.0.tgz -f values.yaml
 ```
 
 `linked: false` is a decision rather than an omission. Without it the pills link
-visitors to `http://gatus:8080`, an address their browser will never resolve.
+visitors to `http://gatus`, an address their browser will never resolve.
 
-Gatus has no chart in this repository, and needs little:
+Gatus installs from its own chart, out of the tarball you carried or out of your
+registry. No manifest to hand-write, and one less thing that drifts:
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata: { name: gatus }
-data:
-  config.yaml: |
-    storage: { type: memory }
-    # the endpoints cairn -emit-gatus wrote for you
-    endpoints:
-      - name: pad
-        url: https://pad.internal
-        interval: 5m
-        conditions: ["[STATUS] == 200"]
----
-apiVersion: apps/v1
-kind: Deployment
-metadata: { name: gatus }
-spec:
-  selector: { matchLabels: { app: gatus } }
-  template:
-    metadata: { labels: { app: gatus } }
-    spec:
-      containers:
-        - name: gatus
-          image: harbor.internal/gatus:5.36.0
-          imagePullPolicy: IfNotPresent
-          ports: [{ name: http, containerPort: 8080 }]
-          volumeMounts: [{ name: config, mountPath: /config, readOnly: true }]
-      volumes: [{ name: config, configMap: { name: gatus } }]
----
-apiVersion: v1
-kind: Service
-metadata: { name: gatus }
-spec:
-  selector: { app: gatus }
-  ports: [{ port: 8080, targetPort: http }]
+# gatus-values.yaml
+image:
+  repository: harbor.internal/gatus   # ghcr.io/twin/gatus with a route out
+  tag: "5.36.0"                       # the chart's own default trails the app
+
+config:
+  storage: { type: memory }
+  # the endpoints cairn -emit-gatus wrote for you
+  endpoints:
+    - name: pad
+      url: https://pad.internal
+      interval: 5m
+      conditions: ["[STATUS] == 200"]
 ```
 
-The Service has to be named `gatus` for `http://gatus:8080` to resolve from
-cairn's pod in the same namespace.
+```sh
+helm install gatus ./gatus-1.5.0.tgz -f gatus-values.yaml
+```
+
+Two details decide whether the pills ever turn green, and both are easy to get
+wrong from memory.
+
+**The release name becomes the Service name.** Called `gatus`, the release gives
+you a Service called `gatus`; called anything else, you get `<release>-gatus`,
+and cairn's `status.gatus` has to say so.
+
+**That chart's Service listens on 80, not 8080.** Its container does listen on
+8080 and the Service forwards to it, so the address cairn polls is
+`http://gatus`, not `http://gatus:8080`. A wrong port here fails the way this
+whole page fails: nothing crashes, the site serves, and every pill stays grey.
 
 ## 6. When Gatus is behind your own CA
 
