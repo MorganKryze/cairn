@@ -31,6 +31,15 @@ cosign verify ghcr.io/morgankryze/cairn:stable \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
+The [Helm chart](docs/deployment/helm.md) is published the same way, as an OCI
+artifact next to the image, and signed by the same workflow:
+
+```sh
+cosign verify ghcr.io/morgankryze/charts/cairn:1.12.0 \
+  --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
 It also ships SLSA build provenance and a software bill of materials:
 
 ```sh

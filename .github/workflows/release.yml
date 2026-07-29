@@ -104,3 +104,34 @@ jobs:
             cosign sign --yes "${tag%%:*}@${DIGEST}"
             break # one signature covers the digest, whatever tags point at it
           done
+
+
+  chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # pushes the chart as an OCI artifact to ghcr.io
+      id-token: write # cosign signs keylessly, same as the image
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # Chart version and app version both come from the tag, so a chart
+      # pulled at 1.2.3 installs cairn 1.2.3 and there is no second number to
+      # remember at release time. What Chart.yaml carries in git only matters
+      # to someone installing from a checkout.
+      - name: package, push and sign the chart
+        env:
+          ACTOR: ${{ github.actor }}
+          OWNER: ${{ github.repository_owner }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ns=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]') # ghcr paths are lowercase, the owner is not
+          helm package charts/cairn --version "$version" --app-version "$version"
+          echo "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
+          helm push "cairn-${version}.tgz" "oci://ghcr.io/${ns}/charts"
+          cosign sign --yes "ghcr.io/${ns}/charts/cairn:${version}"

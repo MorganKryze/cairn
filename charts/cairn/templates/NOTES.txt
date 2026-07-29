@@ -1,0 +1,18 @@
+cairn {{ .Chart.AppVersion }} is coming up as {{ include "cairn.fullname" . }} in namespace {{ .Release.Namespace }}.
+{{ if .Values.ingress.enabled }}
+Your page: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}{{ .Values.basePath }}/
+{{ else }}
+No Ingress in this release, so reach it directly for now:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "cairn.fullname" . }} 8080:{{ .Values.service.port }}
+
+then open http://localhost:8080{{ .Values.basePath }}/
+{{ end }}
+{{- if and (not .Values.config) (not .Values.existingConfigMap) }}
+There is no config yet, which is a valid state rather than a failure: cairn
+serves its getting-started page and readiness keeps it out of the Service
+until you feed it. Put your YAML under `config:` in your values file, or point
+`existingConfigMap:` at your own, and it lands within a minute, no restart.
+
+  https://github.com/MorganKryze/cairn/blob/main/docs/getting-started.md
+{{ end }}

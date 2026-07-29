@@ -12,8 +12,8 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `test-search`, `lint`, `build`, `demo`, `demo-rebuild`, `down`,
-`logs`, `hooks`, `icons`.
+`test`, `test-search`, `lint`, `build`, `chart`, `demo`, `demo-rebuild`,
+`down`, `logs`, `hooks`, `icons`.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
 
@@ -33,6 +33,7 @@ src/internal/
   check/              backs -check: validates like a boot would
   testutil/           the one helper shared by every package's tests
 docker/               Dockerfile (FROM scratch) and the hardened compose
+charts/cairn/         the Helm chart, same objects as docs/deployment/kubernetes.md
 example/              the config served by the dev loop and the docs
 docs/                 GitHub-native Markdown, no generator
 ```
@@ -116,6 +117,12 @@ breaks that.
 demo. Run it before every release: the screenshot is the first thing anyone
 sees, and it goes stale quietly. Playwright installs itself into a gitignored
 `node_modules/` on demand, so nothing is added to the repository.
+
+The chart needs nothing at release time. CI packages it with the tag as both
+`version` and `appVersion`, so chart 1.2.3 installs cairn 1.2.3 and the numbers
+in `Chart.yaml` only matter to someone installing from a checkout. Changing the
+chart means changing [docs/deployment/helm.md](docs/deployment/helm.md) in the
+same PR: `values.yaml` is a public API, and renaming a key breaks installs.
 
 ## Conduct
 

@@ -1,0 +1,104 @@
+# cairn: https://github.com/MorganKryze/cairn
+#
+# Everything here is optional. The defaults install a running cairn that
+# serves its own getting-started page and tells you what to feed it.
+
+image:
+  repository: ghcr.io/morgankryze/cairn
+  # Empty means the chart's appVersion, which is the cairn this chart was
+  # released with. Set a tag to pin a version or to follow `stable`.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# Your cairn YAML, one entry per file, rendered into a ConfigMap and mounted
+# read-only at /config. Exactly the files you would bind-mount under Docker:
+# https://github.com/MorganKryze/cairn/blob/main/docs/configuration/services.md
+#
+# Leave it empty and cairn still starts: it serves the getting-started page and
+# readiness keeps it out of the Service until a valid config lands.
+config: {}
+#   site.yaml: |
+#     title: Our tools
+#     locales: [fr, en]
+#     about:
+#       fr: Bienvenue. Voici les services que nous hébergeons.
+#       en: Welcome. Here are the services we host.
+#   services.yaml: |
+#     - id: pad
+#       url: https://pad.example.org
+#       icon: hedgedoc
+#       name: { fr: Bloc-notes, en: Notepad }
+#       desc: { fr: Écrire à plusieurs., en: Write together. }
+
+# Keep the ConfigMap out of the release and manage it yourself (kustomize,
+# sops, a git-ops repo of its own). The `config` block above is then ignored
+# and no ConfigMap is created.
+existingConfigMap: ""
+
+# Serve under a sub-path of a domain you already use: "/cairn" puts the site
+# at example.org/cairn/. cairn carries the prefix through every link, redirect
+# and asset itself, so the Ingress needs no rewrite annotation. Set
+# `ingress.path` to the same value.
+basePath: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  # Required as soon as `enabled` is true.
+  host: ""
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: false
+    # Empty means "<release>-tls", which is what cert-manager creates when the
+    # annotation above asks it to.
+    secretName: ""
+
+# Measured on the demo instance: cairn idles near nothing and renders from
+# memory. No CPU limit on purpose, so a burst of visitors is not throttled
+# into slow pages; the memory limit is the one that protects the node.
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    memory: 64Mi
+
+# The hardening is the point of this image, not a suggestion. Override only if
+# your cluster forces something else (OpenShift assigns its own UID range: set
+# runAsUser to null there).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# Anything else you want in the pod: your own icons and logo as a second
+# ConfigMap mounted at /assets, preview images on a volume at /config/media.
+# cairn reads /assets by default, so mounting there needs no extra flag.
+extraVolumes: []
+#   - name: assets
+#     configMap:
+#       name: cairn-assets
+extraVolumeMounts: []
+#   - name: assets
+#     mountPath: /assets
+#     readOnly: true
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

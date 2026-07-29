@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "docker/**"
       - "demo/**"
+      - "charts/**"
       - "go.mod"
       - "go.sum"
       - ".github/workflows/build.yml"
@@ -76,6 +77,23 @@ jobs:
           /tmp/cairn -config example -addr 127.0.0.1:8099 &
           for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null && break; sleep 1; done
           node scripts/search.mjs http://127.0.0.1:8099/en/
+
+  chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      # `helm lint` reads the chart; rendering proves the templates actually
+      # produce manifests. Twice, because the Ingress is the half of the chart
+      # the default values never reach.
+      - name: lint and render the chart
+        run: |
+          helm lint charts/cairn
+          helm template cairn charts/cairn >/dev/null
+          helm template cairn charts/cairn \
+            --set ingress.enabled=true \
+            --set ingress.host=cairn.example.org \
+            --set ingress.tls.enabled=true >/dev/null
 
   image:
     runs-on: ubuntu-latest
