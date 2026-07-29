@@ -56,9 +56,13 @@ logs:
     docker compose -f demo/compose.yaml logs -f
 
 # refresh the README hero from the running demo; do this before every release
-# (playwright lands in a gitignored node_modules, nothing is committed)
+# (playwright lands in a gitignored node_modules, nothing is committed).
+# The loop waits for Gatus to have polled, the way the CI demo job does. A fixed
+# delay used to be enough until it wasn't: it caught the page with every pill on
+# "unknown", which writes both files, fails nothing, and only shows up if
+# someone opens the png.
 shots: demo-rebuild
-    @sleep 4
+    @for i in $(seq 1 24); do p=$(curl -fs http://127.0.0.1:8080/en/ || true); echo "$p" | grep -q status-up && echo "$p" | grep -q status-down && break; [ "$i" = 24 ] && { echo "gatus never settled: every pill would read unknown" >&2; exit 1; }; sleep 5; done
     @npm --silent install --no-save --no-package-lock playwright
     @npx --yes playwright install --only-shell chromium
     @node scripts/screenshots.mjs
