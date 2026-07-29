@@ -218,4 +218,4 @@ helm uninstall cairn
 Everything goes with it. cairn stores nothing, so there is no volume to reclaim
 and no leftover to hunt down.
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Air-gapped](airgap.md)

@@ -63,4 +63,10 @@ resolves the slug to your local file automatically (an `icons/immich.svg`
 next to your assets wins over the CDN, live, no restart needed), and
 `cairn -check` stops warning about CDN icons.
 
+That last part only holds if `-check` can see the folder, which means
+`-assets` on the command line, or a second `-v` on a `docker run`. Given only
+the config it keeps warning about icons you have already downloaded. On a
+network with no route out, that check is the one that tells you whether you
+are really ready: [Air-gapped](../deployment/airgap.md).
+
 Next: [Multiple files](multiple-files.md)

@@ -22,6 +22,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 - [Bare binary](deployment/binary.md): no container, a hardened systemd unit.
 - [Kubernetes](deployment/kubernetes.md): a ConfigMap, a Deployment, no volume.
 - [Helm](deployment/helm.md): the same four objects, and your Ingress from values.
+- [Air-gapped](deployment/airgap.md): what crosses the white station, and the icons that catch everyone.
 - [Reverse proxies](deployment/reverse-proxies.md): Caddy, Traefik, Nginx, Pangolin.
 
 **Recipes**
