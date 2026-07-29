@@ -129,9 +129,20 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -o pipefail
           version="${GITHUB_REF_NAME#v}"
           ns=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]') # ghcr paths are lowercase, the owner is not
           helm package charts/cairn --version "$version" --app-version "$version"
           echo "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
-          helm push "cairn-${version}.tgz" "oci://ghcr.io/${ns}/charts"
-          cosign sign --yes "ghcr.io/${ns}/charts/cairn:${version}"
+          helm push "cairn-${version}.tgz" "oci://ghcr.io/${ns}/charts" 2>&1 | tee push.log
+
+          # Two logins, and neither is redundant: helm writes its own credential
+          # store, cosign reads the docker one. Skipping this fails at the
+          # signing step, once the chart is already published.
+          echo "$TOKEN" | cosign login ghcr.io --username "$ACTOR" --password-stdin
+
+          # Sign the digest rather than the tag it was just pushed under: cosign
+          # warns that tag input is on its way out, and a digest cannot drift.
+          digest=$(awk '/^Digest: /{print $2}' push.log)
+          [ -n "$digest" ] || { echo "::error::helm push printed no digest"; exit 1; }
+          cosign sign --yes "ghcr.io/${ns}/charts/cairn@${digest}"
