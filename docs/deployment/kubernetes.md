@@ -5,6 +5,11 @@ database, no persistent volume, no write anywhere. The whole deployment is a
 ConfigMap holding your YAML, a Deployment reading it, a Service, and whatever
 you already use for ingress.
 
+This page is the manifest, kept complete on purpose: it is what the chart
+renders, and what you want if you template your cluster some other way. If you
+run Helm, the [chart](helm.md) installs the same four objects and takes the
+Ingress off your hands.
+
 ## The whole thing
 
 ```yaml
@@ -143,4 +148,4 @@ natural gate in whatever pipeline renders your manifests:
 docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
 ```
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Helm](helm.md)

@@ -21,6 +21,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 - [Podman](deployment/podman.md): the same container as a systemd quadlet.
 - [Bare binary](deployment/binary.md): no container, a hardened systemd unit.
 - [Kubernetes](deployment/kubernetes.md): a ConfigMap, a Deployment, no volume.
+- [Helm](deployment/helm.md): the same four objects, and your Ingress from values.
 - [Reverse proxies](deployment/reverse-proxies.md): Caddy, Traefik, Nginx, Pangolin.
 
 **Recipes**

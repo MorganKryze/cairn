@@ -20,6 +20,8 @@ https://cairn.libresoftware.cloud
 - [Theming](docs/configuration/theming.md): accent, light/dark toggle, custom.css variables
 - [Languages](docs/configuration/i18n.md): locale negotiation, translatable fields, UI strings
 - [Docker Compose](docs/deployment/docker-compose.md): hardened reference setup and image tags
+- [Kubernetes](docs/deployment/kubernetes.md): ConfigMap, Deployment, Service, why the two probes differ
+- [Helm](docs/deployment/helm.md): chart at oci://ghcr.io/morgankryze/charts/cairn, config in values, Ingress
 - [Reverse proxies](docs/deployment/reverse-proxies.md): Caddy, Traefik, Nginx examples
 - [Status with Gatus](docs/recipes/gatus.md): -emit-gatus, polling, pill behavior
 - [Icons](docs/recipes/icons.md): slugs, URLs, self-hosted files

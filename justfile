@@ -10,6 +10,13 @@ default:
 build:
     docker build -f docker/Dockerfile -t cairn:local .
 
+# lint the Helm chart and render the two shapes CI renders
+chart:
+    helm lint charts/cairn
+    helm template cairn charts/cairn >/dev/null
+    helm template cairn charts/cairn --set ingress.enabled=true --set ingress.host=cairn.example.org --set ingress.tls.enabled=true >/dev/null
+    echo "chart ok"
+
 # run vet + tests
 test:
     go vet ./... && go test ./...
