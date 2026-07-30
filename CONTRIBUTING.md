@@ -19,7 +19,16 @@ config (`.golangci.yml`); CI runs it on every code push.
 
 Run `just hooks` once: it points git at `githooks/`, whose pre-commit runs
 gofmt, vet and the tests when Go files are staged, lints staged workflows,
-and enforces a couple of house style rules on the way.
+checks staged Markdown with [prettier](https://prettier.io), and enforces a
+couple of house style rules on the way.
+
+Every one of those tools is optional: the hook runs what it finds and skips
+what you have not installed, so a missing prettier costs you a nudge from a
+reviewer rather than a blocked commit. Formatting is checked, never applied
+behind your back; when it complains, it prints the `prettier --write` line to
+run. `.prettierrc.json` turns off formatting inside fenced code blocks, because
+the examples in `docs/` are the product and a formatter has no business
+rewriting the YAML someone is about to copy.
 
 ## Layout
 
@@ -79,7 +88,7 @@ config: merge multiple service files
 docs: quickstart readme and example config
 ```
 
-No trailers, no bodies unless the *why* genuinely needs a sentence.
+No trailers, no bodies unless the _why_ genuinely needs a sentence.
 
 ## The search
 

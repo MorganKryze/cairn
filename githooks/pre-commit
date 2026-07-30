@@ -32,3 +32,16 @@ fi
 if echo "$staged" | grep -q '^\.github/workflows/' && command -v actionlint >/dev/null 2>&1; then
   actionlint
 fi
+
+# Markdown formatting, when prettier is around. `|| true` because
+# --list-different exits non-zero on a hit, which set -e would otherwise turn
+# into a silent abort with no message.
+if echo "$staged" | grep -q '\.md$' && command -v prettier >/dev/null 2>&1; then
+  unformatted=$(echo "$staged" | grep '\.md$' | xargs prettier --list-different 2>/dev/null || true)
+  if [ -n "$unformatted" ]; then
+    echo "pre-commit: prettier would rewrite:" >&2
+    echo "$unformatted" | sed 's/^/  /' >&2
+    echo "fix with: prettier --write $(echo "$unformatted" | tr '\n' ' ')" >&2
+    exit 1
+  fi
+fi

@@ -14,7 +14,7 @@ A bare slug resolves against
 the convention Homepage and Homarr already use, so configs migrate as-is.
 Browse the catalog at <https://dashboardicons.com> to find slugs.
 
-These icons load in the *visitor's* browser from jsdelivr's CDN. The cairn
+These icons load in the _visitor's_ browser from jsdelivr's CDN. The cairn
 container itself never phones anywhere. If you want zero third-party
 requests for your visitors too, use the `/assets` form below.
 

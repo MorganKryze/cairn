@@ -44,7 +44,7 @@ air-gap story cairn is built for, demonstrated: try
 `docker exec cairn-demo-cairn-1 wget example.org` from any service, it has
 nowhere to go.
 
-The *page* is air-gapped too, not just the containers: the service icons are
+The _page_ is air-gapped too, not just the containers: the service icons are
 served from `assets/icons/` rather than the jsdelivr CDN, so loading this demo
 in a browser makes **zero third-party requests**. That is the setup
 [`cairn -emit-icons`](../docs/recipes/icons.md#going-fully-self-hosted)
@@ -53,15 +53,15 @@ produces for any site; refresh them with
 
 ## Ports (all bound to 127.0.0.1; nothing is exposed to your network)
 
-| Port | What                    |
-| ---- | ----------------------- |
-| 8080 | cairn                   |
-| 8081 | Gatus dashboard         |
-| 8082 | whoami                  |
-| 8083 | nginx                   |
-| 8084 | Apache                  |
-| 8085 | podinfo                 |
-| 8086 | nothing (the ghost)     |
+| Port | What                |
+| ---- | ------------------- |
+| 8080 | cairn               |
+| 8081 | Gatus dashboard     |
+| 8082 | whoami              |
+| 8083 | nginx               |
+| 8084 | Apache              |
+| 8085 | podinfo             |
+| 8086 | nothing (the ghost) |
 
 One difference with a real deployment: here Gatus probes the services by
 container name (`http://welcome:80`) while cairn's cards use the published

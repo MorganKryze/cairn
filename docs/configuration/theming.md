@@ -41,17 +41,17 @@ The stylesheet is built on custom properties; override those first:
 }
 ```
 
-| Variable       | Role                                       |
-| -------------- | ------------------------------------------ |
-| `--bg`         | page background                            |
-| `--fg`         | text                                       |
-| `--muted`      | secondary text                             |
-| `--card`       | card, tile and search backgrounds          |
-| `--faint`      | icon tiles, subtle fills                   |
-| `--border`     | card, chip and input borders               |
-| `--accent`     | fills, focus rings, buttons (set by `theme.accent`) |
-| `--accent-ink` | accent tuned for text contrast (derived)   |
-| `--up`, `--down` | status dot colors                        |
+| Variable         | Role                                                |
+| ---------------- | --------------------------------------------------- |
+| `--bg`           | page background                                     |
+| `--fg`           | text                                                |
+| `--muted`        | secondary text                                      |
+| `--card`         | card, tile and search backgrounds                   |
+| `--faint`        | icon tiles, subtle fills                            |
+| `--border`       | card, chip and input borders                        |
+| `--accent`       | fills, focus rings, buttons (set by `theme.accent`) |
+| `--accent-ink`   | accent tuned for text contrast (derived)            |
+| `--up`, `--down` | status dot colors                                   |
 
 Anything beyond variables is regular CSS on stable class names (`.card`,
 `.cat`, `.way`, `.tile`, `.about`, `.menu`, `.toc`, `.detail`, `.btn`, …).

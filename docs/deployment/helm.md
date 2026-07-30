@@ -154,19 +154,19 @@ fits comfortably in a second ConfigMap; anything heavier wants a volume. See
 
 ## Every value
 
-| Key                                                | Default                       | What it does                                                     |
-| -------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `config`                                            | `{}`                          | Your YAML, one entry per file, rendered into a ConfigMap          |
-| `existingConfigMap`                                 | `""`                          | Use your own ConfigMap instead; `config` is then ignored          |
-| `basePath`                                          | `""`                          | Serve under a sub-path, e.g. `/cairn`                             |
-| `image.repository` / `image.tag` / `image.pullPolicy` | ghcr.io image, appVersion, `IfNotPresent` | Which cairn to run                             |
-| `replicaCount`                                      | `1`                           | Stateless, so more is fine, and rarely necessary                  |
-| `service.type` / `service.port`                     | `ClusterIP`, `80`             | The Service in front of the pods                                  |
-| `ingress.*`                                         | disabled                      | `enabled`, `className`, `host`, `path`, `pathType`, `annotations`, `tls.enabled`, `tls.secretName` |
-| `resources`                                         | 10m/16Mi requested, 64Mi limit | No CPU limit on purpose, so a burst of visitors is not throttled |
-| `podSecurityContext` / `securityContext`            | the hardened set below        | Change only if your cluster forces it                             |
-| `extraVolumes` / `extraVolumeMounts`                | `[]`                          | Assets, media, anything else on disk                              |
-| `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                 | The usual scheduling knobs                                        |
+| Key                                                         | Default                                   | What it does                                                                                       |
+| ----------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `config`                                                    | `{}`                                      | Your YAML, one entry per file, rendered into a ConfigMap                                           |
+| `existingConfigMap`                                         | `""`                                      | Use your own ConfigMap instead; `config` is then ignored                                           |
+| `basePath`                                                  | `""`                                      | Serve under a sub-path, e.g. `/cairn`                                                              |
+| `image.repository` / `image.tag` / `image.pullPolicy`       | ghcr.io image, appVersion, `IfNotPresent` | Which cairn to run                                                                                 |
+| `replicaCount`                                              | `1`                                       | Stateless, so more is fine, and rarely necessary                                                   |
+| `service.type` / `service.port`                             | `ClusterIP`, `80`                         | The Service in front of the pods                                                                   |
+| `ingress.*`                                                 | disabled                                  | `enabled`, `className`, `host`, `path`, `pathType`, `annotations`, `tls.enabled`, `tls.secretName` |
+| `resources`                                                 | 10m/16Mi requested, 64Mi limit            | No CPU limit on purpose, so a burst of visitors is not throttled                                   |
+| `podSecurityContext` / `securityContext`                    | the hardened set below                    | Change only if your cluster forces it                                                              |
+| `extraVolumes` / `extraVolumeMounts`                        | `[]`                                      | Assets, media, anything else on disk                                                               |
+| `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                                     | The usual scheduling knobs                                                                         |
 
 ## The hardening
 

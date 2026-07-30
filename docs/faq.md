@@ -24,7 +24,7 @@ their system's theme.
 
 **Can I put it behind authentication?**
 You can (any proxy auth works: Authelia, Tinyauth, basic auth), but cairn is
-designed as the *public* front door that explains what's behind the login.
+designed as the _public_ front door that explains what's behind the login.
 It exposes nothing sensitive: it's your config, rendered.
 
 **How do I add or hide a service?**
@@ -33,7 +33,7 @@ and no restart.
 
 **Something broke after an edit, is the site down?**
 No. A config error at reload keeps the last good version serving; the log
-tells you the file, line and expected shape. Even a bad config at *boot*
+tells you the file, line and expected shape. Even a bad config at _boot_
 serves a getting-started page rather than a dead container, and your site
 takes over the moment the config is valid.
 
