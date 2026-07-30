@@ -476,7 +476,7 @@ Any "it works now" that follows a TLS change deserves a negative control. Keep
 one endpoint whose certificate is deliberately absent from the bundle, and check
 that it still fails:
 
-```
+```plain
 alpha    success=true     in the bundle
 beta     success=true     in the bundle, and CA:FALSE
 gamma    success=false    absent: x509: certificate signed by unknown authority
