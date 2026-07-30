@@ -507,12 +507,25 @@ func AppIcons(cfg *config.Config) []AppIcon {
 // ogImage derives a social preview image from the logo: only when the site
 // has a public URL to make it absolute, and only raster formats, which is
 // what the preview crawlers accept.
+// IsRaster reports a format a link previewer can actually display. svg is
+// deliberately out: og:image with a vector is ignored by most platforms, which
+// is why a vector logo quietly means no preview picture at all. -check says so
+// rather than leaving it to be discovered on a shared link.
+func IsRaster(path string) bool {
+	l := strings.ToLower(path)
+	for _, ext := range []string{".png", ".jpg", ".jpeg", ".webp", ".gif"} {
+		if strings.HasSuffix(l, ext) {
+			return true
+		}
+	}
+	return false
+}
+
 func ogImage(base, logo string) string {
 	if base == "" || logo == "" {
 		return ""
 	}
-	l := strings.ToLower(logo)
-	if !strings.HasSuffix(l, ".png") && !strings.HasSuffix(l, ".jpg") && !strings.HasSuffix(l, ".jpeg") && !strings.HasSuffix(l, ".webp") && !strings.HasSuffix(l, ".gif") {
+	if !IsRaster(logo) {
 		return ""
 	}
 	if config.IsLocalPath(logo) {

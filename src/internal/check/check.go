@@ -43,6 +43,16 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	if cfg.Site.URL == "" && !cfg.Noindex() {
 		out = append(out, "site.yaml has no url: pages carry no canonical link, no og:url and no hreflang alternates (set url: https://… to emit them)")
 	}
+	// og:image needs a url and a raster logo, both. With a url but no usable
+	// logo, every link to the site previews as bare text on Mastodon, Slack or
+	// anywhere else, and the page itself gives no hint of it.
+	if cfg.Site.URL != "" && !cfg.Noindex() && !render.IsRaster(cfg.Site.Logo) {
+		if cfg.Site.Logo == "" {
+			out = append(out, "site.yaml has no logo: links to the site preview with no image (og:image wants a png, jpg, webp or gif)")
+		} else {
+			out = append(out, fmt.Sprintf("site.yaml logo %q is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)", cfg.Site.Logo))
+		}
+	}
 	if slugs := config.CdnSlugs(cfg); len(slugs) > 0 {
 		out = append(out, fmt.Sprintf("%d icons load from a CDN in visitors' browsers (%s); run cairn -emit-icons to self-host them", len(slugs), strings.Join(slugs, ", ")))
 	}
