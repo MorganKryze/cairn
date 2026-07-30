@@ -3,7 +3,11 @@ title: cairn demo
 tagline:
   fr: Un annuaire d'exemple, adossé à de vrais services et un vrai Gatus.
   en: A sample directory backed by real services and a real Gatus.
-logo: /static/favicon.svg           # your own image goes in /assets (see docs)
+# A raster logo does double duty: the header mark, and the image on a link
+# preview card. png/jpg/webp/gif only, svg is ignored by most platforms.
+logo: /assets/logo.png
+# The tab icon stays vector: it scales to every size a browser asks for.
+favicon: /static/favicon.svg
 locales: [fr, en]
 show_version: true
 # The demo reports through GitHub's private advisories, which is also what

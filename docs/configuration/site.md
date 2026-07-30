@@ -5,25 +5,25 @@ so is every key in it.
 
 ## Keys
 
-| Key            | Default   | What it is                                                                                                                                                                                        |
-| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key.                                                                                                                                   |
-| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show.                                                              |
-| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines.             |
-| `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set.                           |
-| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path. See [the icon set](#the-icon-set) for what replacing it costs.                                                                                          |
-| `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web. |
-| `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                          |
-| `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                             |
-| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md).                                                |
-| `links`        | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                          |
-| `footer`       | `[]`      | Links at the bottom of every page.                                                                                                                                                                |
-| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md).                                                                                      |
-| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                           |
-| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.             |
-| `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                           |
-| `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                      |
-| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md).                                                  |
+| Key            | Default   | What it is                                                                                                                                                                                                                           |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key.                                                                                                                                                                      |
+| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show.                                                                                                 |
+| `url`          | none      | Public base URL, **the domain alone**: `https://tools.example.org`, never `https://example.org/cairn`. Enables canonical and hreflang links, absolute sitemap URLs and the preview image. See [below](#the-domain-and-nothing-else). |
+| `logo`         | none      | Image in the header, and the picture on a shared link. A URL or an [`/assets` path](../recipes/icons.md#your-own-files); [it has to be a raster](#the-logo-and-the-picture-on-a-shared-link).                                        |
+| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path. See [the icon set](#the-icon-set) for what replacing it costs.                                                                                                                             |
+| `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web.                                    |
+| `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                                                             |
+| `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                                                                |
+| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md).                                                                                   |
+| `links`        | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                                                             |
+| `footer`       | `[]`      | Links at the bottom of every page.                                                                                                                                                                                                   |
+| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md).                                                                                                                         |
+| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                                                              |
+| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                |
+| `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                              |
+| `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                                                         |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md).                                                                                     |
 
 ## Full example
 
@@ -83,6 +83,68 @@ inline so they cost no external request:
 
 Or pass a URL or an `/assets` path for your own image. An unknown glyph name
 is a config error that lists the valid ones.
+
+## The logo, and the picture on a shared link
+
+`logo` puts an image in the header, before the title, sized by the stylesheet
+to the height of the text. It is optional: without one the header carries the
+title alone.
+
+It has a second job that is easy to miss. When `url` is also set, a **raster**
+logo becomes `og:image`, the picture Mastodon, Slack, Signal or a chat client
+shows on the card when someone shares a link to your site.
+
+| Logo                                | Header                 | Preview card |
+| ----------------------------------- | ---------------------- | ------------ |
+| none                                | title alone            | no image     |
+| `logo.svg`                          | fine, scales perfectly | **no image** |
+| `logo.png`, `.jpg`, `.webp`, `.gif` | fine                   | your image   |
+
+The svg row is the one that surprises. A vector logo looks right everywhere on
+the page, and most platforms simply ignore svg for a preview card, so your
+links go out bare. `cairn -check` says so rather than leaving you to discover
+it from a shared link:
+
+```console
+$ cairn -check -config ./config
+warning: site.yaml logo "/assets/logo.svg" is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)
+```
+
+Nothing stops you keeping both: a vector `favicon` for the tab, where it scales
+to every size a browser asks for, and a raster `logo` for the header and the
+card. That is what the demo does.
+
+On size: platforms crop a large card around 1200×630, so an image drawn for
+that gets a full-width banner. A square logo gets a small square thumbnail
+beside the text, which is perfectly respectable and what most self-hosted sites
+want. cairn does not resize anything, it serves the file you point at, so pick
+the shape you want to see.
+
+Two things cairn deliberately will not do: fall back to its own mark when you
+have no logo, because that would put cairn's stones on your link card, and
+derive the tab icon from the logo, which is the separate `favicon` key.
+
+## The domain and nothing else
+
+`url` is the base of your domain, not the address of the page:
+
+```yaml
+url: https://tools.example.org # yes
+url: https://example.org/cairn # no, even if that is where visitors land
+```
+
+If cairn is served under a sub-path, that prefix comes from `-base-path`, and
+cairn adds it to every link itself. Writing it in `url` as well makes it land
+twice: canonical links, hreflang alternates and every entry of the sitemap
+would point at `example.org/cairn/cairn/`, which nothing serves. Search engines
+act on those, so cairn refuses to start rather than emit them:
+
+```console
+config: site.yaml: url "https://example.org/cairn" must be the domain alone, with no path
+(serving under example.org/cairn is what -base-path is for, and cairn adds that prefix itself)
+```
+
+More on the sub-path in [Reverse proxies](../deployment/reverse-proxies.md#under-a-sub-path).
 
 ## The icon set
 

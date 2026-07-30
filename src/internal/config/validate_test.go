@@ -40,6 +40,13 @@ func TestValidateSiteRejections(t *testing.T) {
 			[]string{"status.interval", "at least 5s"}},
 		{"site url that is not a URL", func(s *Site) { s.URL = "tools.example.org" },
 			[]string{"url", "is not a URL"}},
+		// The sub-path trap: writing the address of the site rather than the
+		// domain doubles the prefix in every canonical link and sitemap entry,
+		// and only a crawler would ever notice.
+		{"site url carrying the sub-path", func(s *Site) { s.URL = "https://example.org/cairn" },
+			[]string{"url", "domain alone", "-base-path"}},
+		{"site url carrying any path at all", func(s *Site) { s.URL = "https://example.org/a/b" },
+			[]string{"domain alone"}},
 		// The mistake this field invites: writing the address rather than the
 		// URI. RFC 9116 wants a scheme, and a bare address makes the file
 		// unparseable for the researcher it was written for.
