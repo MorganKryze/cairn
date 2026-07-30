@@ -36,6 +36,16 @@ func secureHeaders(h http.Handler) http.Handler {
 		hd.Set("X-Frame-Options", "DENY")
 		hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		hd.Set("Content-Security-Policy", Current().CSP)
+		// Severs window.opener on the links that leave for a service, so a page
+		// cairn opened cannot navigate the tab it came from. The template
+		// already carries rel="noopener"; this is the belt that survives a
+		// future edit forgetting it.
+		hd.Set("Cross-Origin-Opener-Policy", "same-origin")
+		// same-site rather than same-origin: self-hosters put their services on
+		// sibling subdomains, and one of those pages showing a cairn icon is a
+		// reasonable thing to do. A genuine third party still cannot embed
+		// anything of ours.
+		hd.Set("Cross-Origin-Resource-Policy", "same-site")
 		// HSTS only once the visit is already https, like the cookies: sending
 		// it over plain http would strand the LAN deployments cairn also serves.
 		if secureRequest(r) {
