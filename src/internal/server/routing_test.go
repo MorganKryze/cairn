@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -143,33 +144,47 @@ func TestCompressDropsStaleContentLength(t *testing.T) {
 	}
 }
 
-// http.ServeContent copies through io.Copy, which uses io.ReaderFrom when the
-// writer offers one. Embedding http.ResponseWriter offers one, so without our
-// own ReadFrom the file goes straight to the socket and the compression is
-// silently skipped. This is the case that actually shipped broken: pages came
-// back gzipped, every static file did not.
-func TestCompressSurvivesServeContent(t *testing.T) {
-	css := strings.Repeat(":root{--accent:#247b7b}\n", 60)
-	fsys := fstest.MapFS{"style.css": &fstest.MapFile{Data: []byte(css)}}
-	h := compress(http.FileServerFS(fsys))
+// The one that shipped broken, and the one a ResponseRecorder cannot catch:
+// http.ServeContent calls WriteHeader before copying, so a middleware that
+// decides at Write time mutates headers that have already gone out. Over a
+// real connection the file then arrives gzipped with nothing saying so, and a
+// browser runs the compressed bytes as JavaScript. Only a real server freezes
+// headers the way this needs.
+func TestCompressLabelsWhatItCompressesOverTheWire(t *testing.T) {
+	js := strings.Repeat("function pad(){return 1}\n", 60)
+	fsys := fstest.MapFS{"search.js": &fstest.MapFile{Data: []byte(js)}}
+	srv := httptest.NewServer(compress(http.FileServerFS(fsys)))
+	defer srv.Close()
 
-	rec := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "/style.css", nil)
-	r.Header.Set("Accept-Encoding", "gzip")
-	h.ServeHTTP(rec, r)
-
-	if got := rec.Header().Get("Content-Encoding"); got != "gzip" {
-		t.Fatalf("a file served through ServeContent came back with Content-Encoding %q, want gzip", got)
-	}
-	zr, err := gzip.NewReader(rec.Body)
+	// Transport.DisableCompression stops Go from asking and unwrapping behind
+	// our back, so the test sees exactly what a browser would.
+	c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+	req, err := http.NewRequest("GET", srv.URL+"/search.js", nil)
 	if err != nil {
 		t.Fatal(err)
+	}
+	req.Header.Set("Accept-Encoding", "gzip")
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if got := resp.Header.Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("Content-Encoding = %q, want gzip: the body is compressed but nothing says so", got)
+	}
+	if got := resp.Header.Get("Content-Length"); got == strconv.Itoa(len(js)) {
+		t.Errorf("Content-Length still claims the uncompressed %s", got)
+	}
+	zr, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		t.Fatalf("body is not a gzip stream: %v", err)
 	}
 	back, err := io.ReadAll(zr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(back) != css {
+	if string(back) != js {
 		t.Error("the decompressed file is not the file on disk")
 	}
 }

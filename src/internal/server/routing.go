@@ -57,14 +57,13 @@ func noListing(h http.Handler) http.Handler {
 	})
 }
 
-// gzipWriter compresses on the first write, once the handler has settled its
+// gzipWriter decides at WriteHeader time, once the handler has settled its
 // Content-Type. Deciding earlier would mean guessing from the path, which the
 // /assets tree makes unreliable.
 type gzipWriter struct {
 	http.ResponseWriter
-	gz     *gzip.Writer
-	wrote  bool
-	status int
+	gz      *gzip.Writer
+	decided bool
 }
 
 // compressible covers what cairn actually serves as text. Images, fonts and
@@ -84,24 +83,29 @@ func compressible(ct string) bool {
 	return false
 }
 
+// WriteHeader is where the decision has to be made, not Write: headers are
+// frozen the moment it runs, and http.ServeContent calls it before copying a
+// file. Deciding one write too late meant static files went out compressed
+// with no Content-Encoding to say so, and a browser ran gzip bytes as
+// JavaScript.
 func (w *gzipWriter) WriteHeader(code int) {
-	w.status = code
-	w.ResponseWriter.WriteHeader(code)
-}
-
-func (w *gzipWriter) Write(b []byte) (int, error) {
-	if !w.wrote {
-		w.wrote = true
-		// 304 and friends carry no body, and a compressed empty body is not
-		// empty. Leave them alone.
-		if w.status/100 != 2 || !compressible(w.Header().Get("Content-Type")) {
-			w.gz = nil
-		} else {
+	if !w.decided {
+		w.decided = true
+		// 2xx only: a 304 carries no body, and a compressed empty body is not
+		// empty.
+		if code/100 == 2 && compressible(w.Header().Get("Content-Type")) {
 			// The length is the uncompressed one, and Go would send it as is.
 			w.Header().Del("Content-Length")
 			w.Header().Set("Content-Encoding", "gzip")
 			w.gz = gzip.NewWriter(w.ResponseWriter)
 		}
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *gzipWriter) Write(b []byte) (int, error) {
+	if !w.decided {
+		w.WriteHeader(http.StatusOK)
 	}
 	if w.gz == nil {
 		return w.ResponseWriter.Write(b)
@@ -136,7 +140,7 @@ func compress(h http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 			return
 		}
-		gw := &gzipWriter{ResponseWriter: w, status: http.StatusOK}
+		gw := &gzipWriter{ResponseWriter: w}
 		defer func() {
 			if err := gw.Close(); err != nil {
 				log.Printf("gzip: %v", err)
