@@ -154,19 +154,19 @@ fits comfortably in a second ConfigMap; anything heavier wants a volume. See
 
 ## Every value
 
-| Key                                                | Default                       | What it does                                                     |
-| -------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `config`                                            | `{}`                          | Your YAML, one entry per file, rendered into a ConfigMap          |
-| `existingConfigMap`                                 | `""`                          | Use your own ConfigMap instead; `config` is then ignored          |
-| `basePath`                                          | `""`                          | Serve under a sub-path, e.g. `/cairn`                             |
-| `image.repository` / `image.tag` / `image.pullPolicy` | ghcr.io image, appVersion, `IfNotPresent` | Which cairn to run                             |
-| `replicaCount`                                      | `1`                           | Stateless, so more is fine, and rarely necessary                  |
-| `service.type` / `service.port`                     | `ClusterIP`, `80`             | The Service in front of the pods                                  |
-| `ingress.*`                                         | disabled                      | `enabled`, `className`, `host`, `path`, `pathType`, `annotations`, `tls.enabled`, `tls.secretName` |
-| `resources`                                         | 10m/16Mi requested, 64Mi limit | No CPU limit on purpose, so a burst of visitors is not throttled |
-| `podSecurityContext` / `securityContext`            | the hardened set below        | Change only if your cluster forces it                             |
-| `extraVolumes` / `extraVolumeMounts`                | `[]`                          | Assets, media, anything else on disk                              |
-| `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                 | The usual scheduling knobs                                        |
+| Key                                                         | Default                                   | What it does                                                                                       |
+| ----------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `config`                                                    | `{}`                                      | Your YAML, one entry per file, rendered into a ConfigMap                                           |
+| `existingConfigMap`                                         | `""`                                      | Use your own ConfigMap instead; `config` is then ignored                                           |
+| `basePath`                                                  | `""`                                      | Serve under a sub-path, e.g. `/cairn`                                                              |
+| `image.repository` / `image.tag` / `image.pullPolicy`       | ghcr.io image, appVersion, `IfNotPresent` | Which cairn to run                                                                                 |
+| `replicaCount`                                              | `1`                                       | Stateless, so more is fine, and rarely necessary                                                   |
+| `service.type` / `service.port`                             | `ClusterIP`, `80`                         | The Service in front of the pods                                                                   |
+| `ingress.*`                                                 | disabled                                  | `enabled`, `className`, `host`, `path`, `pathType`, `annotations`, `tls.enabled`, `tls.secretName` |
+| `resources`                                                 | 10m/16Mi requested, 64Mi limit            | No CPU limit on purpose, so a burst of visitors is not throttled                                   |
+| `podSecurityContext` / `securityContext`                    | the hardened set below                    | Change only if your cluster forces it                                                              |
+| `extraVolumes` / `extraVolumeMounts`                        | `[]`                                      | Assets, media, anything else on disk                                                               |
+| `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                                     | The usual scheduling knobs                                                                         |
 
 ## The hardening
 
@@ -179,6 +179,95 @@ They are values rather than hardcoded for one reason: OpenShift assigns its own
 UID range and rejects a fixed `runAsUser`. Set it to `null` there and let the
 platform choose, the image runs under any UID. Anywhere else, leaving this
 block alone is the right move.
+
+## From a registry, through Argo CD
+
+Nothing here assumes you run `helm install` by hand. The chart is an ordinary
+OCI artifact, so it can be mirrored into whatever registry you already keep, and
+driven from there:
+
+```sh
+helm pull oci://ghcr.io/morgankryze/charts/cairn --version 1.12.0
+helm push cairn-1.12.0.tgz oci://harbor.internal/helm
+```
+
+Argo CD needs the repository declared before an Application can name it. Note
+the `url` carries no `oci://` prefix in this field:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-helm
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: harbor-helm
+  type: helm
+  url: harbor.internal/helm
+  enableOCI: "true"
+```
+
+Then the Application. `targetRevision` is the chart version, and since the chart
+version is the cairn version, that one field is the version of cairn you are
+pinning: bumping it is the whole upgrade.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cairn
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: harbor.internal/helm
+    chart: cairn
+    targetRevision: 1.12.0
+    helm:
+      valuesObject:
+        ingress:
+          enabled: true
+          className: nginx
+          host: tools.internal
+        config:
+          site.yaml: |
+            title: Our tools
+            locales: [fr, en]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cairn
+```
+
+Once the values outgrow an inline block, keep them in a repository of their own
+and reference it:
+
+```yaml
+spec:
+  sources:
+    - repoURL: harbor.internal/helm
+      chart: cairn
+      targetRevision: 1.12.0
+      helm:
+        valueFiles:
+          - $values/cairn/values.yaml
+    - repoURL: https://git.internal/infra/values.git
+      targetRevision: main
+      ref: values
+```
+
+The second source has no `path`, so it generates nothing. It is there only to
+make its files reachable as `$values`.
+
+Recent Argo CD versions also accept a source of type `oci`, where `repoURL` does
+carry the `oci://` prefix and `path` is `"."`. Both forms install the same chart;
+the one above is the one that works on the widest range of versions.
+
+A last thing worth knowing here, because it looks like drift and is not: editing
+your config in git changes the ConfigMap, Argo CD syncs it, and no pod restarts.
+cairn reloads on its own, so the Application settles as Synced and Healthy with
+nothing rolled.
 
 ## Checking the chart came from here
 
@@ -218,4 +307,4 @@ helm uninstall cairn
 Everything goes with it. cairn stores nothing, so there is no volume to reclaim
 and no leftover to hunt down.
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Air-gapped](airgap.md)

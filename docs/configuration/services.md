@@ -9,18 +9,18 @@ Any text field accepts a plain string or a per-locale map; see
 
 ## Keys
 
-| Key        | Required | Default       | What it is                                |
-| ---------- | -------- | ------------- | ----------------------------------------- |
-| `id`       | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes. |
-| `url`      | yes      | n/a           | Where the card links. `https://…` or an absolute path. |
-| `name`     | yes      | n/a           | The card title.                           |
-| `desc`     | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor. |
-| `details`  | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and the [markdown subset](text.md). |
-| `images`   | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images). |
-| `category` | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml). |
-| `icon`     | no       | neutral glyph | Slug, URL or `/assets` path; see [Icons](../recipes/icons.md). |
-| `tags`     | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language. |
-| `selfhosted` | no     | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag). |
+| Key          | Required | Default       | What it is                                                                                                               |
+| ------------ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`         | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                             |
+| `url`        | yes      | n/a           | Where the card links. `https://…` or an absolute path.                                                                   |
+| `name`       | yes      | n/a           | The card title.                                                                                                          |
+| `desc`       | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor.                                              |
+| `details`    | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and the [markdown subset](text.md).                         |
+| `images`     | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images).                                                  |
+| `category`   | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml).                                      |
+| `icon`       | no       | neutral glyph | Slug, URL or `/assets` path; see [Icons](../recipes/icons.md).                                                           |
+| `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                               |
+| `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag). |
 
 ## Full example
 
@@ -48,7 +48,7 @@ Every service gets a page at `/{locale}/{id}/` with its name, description,
 "Learn more" link only when `details` or `images` is set; the card itself
 always goes straight to the tool.
 
-Write `details` for the visitor who wonders *"when would I use this?"*:
+Write `details` for the visitor who wonders _"when would I use this?"_:
 start from a situation, not from features.
 
 ## Hosting flag
@@ -73,7 +73,7 @@ strings:
 
 ## Preview images
 
-A screenshot answers *"what does it look like?"* better than any paragraph.
+A screenshot answers _"what does it look like?"_ better than any paragraph.
 Put the files in a `media/` folder next to your yaml and reference them by
 name; each entry is a plain path or a `{src, caption}` pair:
 

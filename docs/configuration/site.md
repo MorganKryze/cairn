@@ -5,24 +5,24 @@ so is every key in it.
 
 ## Keys
 
-| Key            | Default   | What it is                                        |
-| -------------- | --------- | ------------------------------------------------- |
-| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key. |
-| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show. |
-| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines. |
-| `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set. |
-| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path. See [the icon set](#the-icon-set) for what replacing it costs. |
+| Key            | Default   | What it is                                                                                                                                                                                        |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key.                                                                                                                                   |
+| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show.                                                              |
+| `url`          | none      | Public base URL, e.g. `https://tools.example.org`. Enables canonical and hreflang links per page, absolute sitemap URLs and the social preview image; recommended for search engines.             |
+| `logo`         | none      | Image in the header: a URL or an [`/assets` path](../recipes/icons.md#your-own-files). A raster logo (png, jpg…) also becomes the link-preview image when `url` is set.                           |
+| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path. See [the icon set](#the-icon-set) for what replacing it costs.                                                                                          |
 | `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web. |
-| `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md). |
-| `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md). |
-| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md). |
-| `links`        | `[]`      | Header navigation links, with optional icons; see below. |
-| `footer`       | `[]`      | Links at the bottom of every page.                |
-| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md). |
-| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it. |
-| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances. |
-| `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings). |
-| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md). |
+| `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                          |
+| `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                             |
+| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md).                                                |
+| `links`        | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                          |
+| `footer`       | `[]`      | Links at the bottom of every page.                                                                                                                                                                |
+| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md).                                                                                      |
+| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                           |
+| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.             |
+| `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                           |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md).                                                  |
 
 ## Full example
 
@@ -88,11 +88,11 @@ is a config error that lists the valid ones.
 Out of the box cairn serves a complete set, all generated from one drawing so
 none of it can drift:
 
-| File | Where it shows up |
-| ---- | ----------------- |
-| `favicon.svg` | The browser tab, at any size and on any tab colour. |
-| `favicon.ico` | 16, 32 and 48 pixels, for the feed readers and link previewers that fetch `/favicon.ico` and never read the html. |
-| `touch-icon.png` | 180 pixels: an iPhone or iPad home screen. |
+| File                           | Where it shows up                                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `favicon.svg`                  | The browser tab, at any size and on any tab colour.                                                                                                               |
+| `favicon.ico`                  | 16, 32 and 48 pixels, for the feed readers and link previewers that fetch `/favicon.ico` and never read the html.                                                 |
+| `touch-icon.png`               | 180 pixels: an iPhone or iPad home screen.                                                                                                                        |
 | `icon-192.png`, `icon-512.png` | Android. Chromium offers "install this site" only when the manifest carries both, and cairn's are declared `maskable`, so Android's round crop takes nothing off. |
 
 Nothing here is fetched from anywhere: like every other asset, the icons are
@@ -103,11 +103,11 @@ compiled into the binary and served from it.
 Set `favicon` and it becomes the whole set. What cairn then tells browsers
 about it depends on what it can actually establish, and it never guesses:
 
-| What you set | What the manifest says |
-| ------------ | ---------------------- |
-| An **svg**, anywhere | `sizes: any`. An svg is every size, so yours serves the home screen exactly the way cairn's does. |
-| A **raster in `/assets`** | Its real width and height, measured when the config loads. |
-| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none. |
+| What you set              | What the manifest says                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| An **svg**, anywhere      | `sizes: any`. An svg is every size, so yours serves the home screen exactly the way cairn's does. |
+| A **raster in `/assets`** | Its real width and height, measured when the config loads.                                        |
+| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none.        |
 
 An entry without a size is still a valid manifest entry, and browsers still
 use the icon. What it costs is the install prompt: Chromium offers "install

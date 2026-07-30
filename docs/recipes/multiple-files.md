@@ -33,7 +33,7 @@ The rules:
   meaning: the `category` key decides the grouping, one file can feed
   several categories.
 - Files merge in name order; services keep the order of their file. Explicit
-  ordering of the *groups* lives in `categories.yaml`; see the
+  ordering of the _groups_ lives in `categories.yaml`; see the
   [reference](../reference.md#categoriesyaml).
 - A service `id` must be unique across all files. A duplicate is a config
   error naming both files, not a silent override.

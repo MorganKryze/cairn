@@ -8,16 +8,16 @@ Budget fifteen minutes for a handful of services.
 
 Homer's `config.yml` groups items under `services`; each item maps directly:
 
-| Homer                 | cairn                                             |
-| --------------------- | ------------------------------------------------- |
-| `services[].name`     | a `category` id, named in `categories.yaml`       |
-| `items[].name`        | `name`                                            |
-| `items[].subtitle`    | `desc`                                            |
-| `items[].url`         | `url`                                             |
-| `items[].logo` (slug) | `icon`, same slug                                 |
-| `items[].tag`         | `tags`                                            |
-| `title`, `subtitle`   | `site.yaml` `title`, `tagline`                    |
-| `message`             | `site.yaml` `about`, now dismissable              |
+| Homer                 | cairn                                                                      |
+| --------------------- | -------------------------------------------------------------------------- |
+| `services[].name`     | a `category` id, named in `categories.yaml`                                |
+| `items[].name`        | `name`                                                                     |
+| `items[].subtitle`    | `desc`                                                                     |
+| `items[].url`         | `url`                                                                      |
+| `items[].logo` (slug) | `icon`, same slug                                                          |
+| `items[].tag`         | `tags`                                                                     |
+| `title`, `subtitle`   | `site.yaml` `title`, `tagline`                                             |
+| `message`             | `site.yaml` `about`, now dismissable                                       |
 | themes, colors        | `theme.accent`, then [custom.css](../configuration/theming.md) if you must |
 
 ```yaml

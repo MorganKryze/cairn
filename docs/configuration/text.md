@@ -22,15 +22,15 @@ about: |
 
 Long text accepts a small, deliberate subset of markdown:
 
-| You write                  | Visitors see                                    |
-| -------------------------- | ----------------------------------------------- |
-| `[label](url)`             | a link; `https:`, `mailto:` and paths work      |
-| `**words**`                | **bold**                                        |
-| `*words*`                  | *italic*                                        |
-| `` `words` ``              | `inline code`, good for cookie or service names |
-| `- item` (one per line)    | a bulleted list                                 |
-| `## Title` (alone, blank lines around) | a small section heading             |
-| `![caption](file.png)` (alone on its line) | a framed image with its caption |
+| You write                                  | Visitors see                                    |
+| ------------------------------------------ | ----------------------------------------------- |
+| `[label](url)`                             | a link; `https:`, `mailto:` and paths work      |
+| `**words**`                                | **bold**                                        |
+| `*words*`                                  | _italic_                                        |
+| `` `words` ``                              | `inline code`, good for cookie or service names |
+| `- item` (one per line)                    | a bulleted list                                 |
+| `## Title` (alone, blank lines around)     | a small section heading                         |
+| `![caption](file.png)` (alone on its line) | a framed image with its caption                 |
 
 Images resolve exactly like [service preview images](services.md#preview-images):
 a bare name is a file in your `media/` folder, a URL or an absolute path

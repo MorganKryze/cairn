@@ -48,7 +48,7 @@ Why each line holds:
   read your mounted `/config`.
 - **no network egress needed**: cairn makes zero outbound requests, except
   to a [`status.gatus` URL](../recipes/gatus.md) if you configure one. An
-  internal-only egress policy is fine; note that icon *slugs* load in the
+  internal-only egress policy is fine; note that icon _slugs_ load in the
   visitor's browser from jsdelivr, not from the container
   ([avoid that if you want](../recipes/icons.md#your-own-files)).
 
@@ -61,12 +61,12 @@ docker compose pull && docker compose up -d
 Images are published to `ghcr.io/morgankryze/cairn`, always gated by the
 test suite inside the build:
 
-| Tag                   | Follows                                        |
-| --------------------- | ---------------------------------------------- |
-| `latest`, `stable`    | the newest release; what you want in production |
-| `1`, `1.0`, `1.0.0`   | semver, from the release tags; pin as tight as you like |
-| `unstable`            | every commit on `main`                         |
-| a commit hash         | that exact build                               |
+| Tag                 | Follows                                                 |
+| ------------------- | ------------------------------------------------------- |
+| `latest`, `stable`  | the newest release; what you want in production         |
+| `1`, `1.0`, `1.0.0` | semver, from the release tags; pin as tight as you like |
+| `unstable`          | every commit on `main`                                  |
+| a commit hash       | that exact build                                        |
 
 To build from source instead, replace `image:` with:
 
@@ -101,6 +101,6 @@ readinessProbe:
   httpGet: { path: /readyz, port: 8080 }
 ```
 
-A reload that fails *after* a good boot keeps the last working pages and stays
+A reload that fails _after_ a good boot keeps the last working pages and stays
 ready, which is the honest answer: the site is serving, just not the newest
 edit. The container log names the file and the line.

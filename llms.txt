@@ -22,6 +22,7 @@ https://cairn.libresoftware.cloud
 - [Docker Compose](docs/deployment/docker-compose.md): hardened reference setup and image tags
 - [Kubernetes](docs/deployment/kubernetes.md): ConfigMap, Deployment, Service, why the two probes differ
 - [Helm](docs/deployment/helm.md): chart at oci://ghcr.io/morgankryze/charts/cairn, config in values, Ingress
+- [Air-gapped](docs/deployment/airgap.md): offline install with and without a registry, -emit-icons, -check with both mounts
 - [Reverse proxies](docs/deployment/reverse-proxies.md): Caddy, Traefik, Nginx examples
 - [Status with Gatus](docs/recipes/gatus.md): -emit-gatus, polling, pill behavior
 - [Icons](docs/recipes/icons.md): slugs, URLs, self-hosted files

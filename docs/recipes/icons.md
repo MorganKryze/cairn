@@ -14,7 +14,7 @@ A bare slug resolves against
 the convention Homepage and Homarr already use, so configs migrate as-is.
 Browse the catalog at <https://dashboardicons.com> to find slugs.
 
-These icons load in the *visitor's* browser from jsdelivr's CDN. The cairn
+These icons load in the _visitor's_ browser from jsdelivr's CDN. The cairn
 container itself never phones anywhere. If you want zero third-party
 requests for your visitors too, use the `/assets` form below.
 
@@ -62,5 +62,11 @@ The script downloads each slug into `assets/icons/`. From then on cairn
 resolves the slug to your local file automatically (an `icons/immich.svg`
 next to your assets wins over the CDN, live, no restart needed), and
 `cairn -check` stops warning about CDN icons.
+
+That last part only holds if `-check` can see the folder, which means
+`-assets` on the command line, or a second `-v` on a `docker run`. Given only
+the config it keeps warning about icons you have already downloaded. On a
+network with no route out, that check is the one that tells you whether you
+are really ready: [Air-gapped](../deployment/airgap.md).
 
 Next: [Multiple files](multiple-files.md)
