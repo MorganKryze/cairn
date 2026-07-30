@@ -6,6 +6,12 @@ tagline:
 logo: /static/favicon.svg           # your own image goes in /assets (see docs)
 locales: [fr, en]
 show_version: true
+# The demo reports through GitHub's private advisories, which is also what
+# SECURITY.md says. cairn fills Expires, Canonical and Preferred-Languages.
+security:
+  contact: https://github.com/MorganKryze/cairn/security/advisories/new
+  policy: https://github.com/MorganKryze/cairn/blob/main/SECURITY.md
+
 status:
   gatus: http://gatus:8080        # cairn polls this over the compose network
   page: http://localhost:8081     # the pill links visitors to the published port

@@ -36,7 +36,7 @@ func Serve(addr, cfgDir, assetsDir string) error {
 	// generous.
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mount(secureHeaders(routes(cfgDir, assetsDir))),
+		Handler:           mount(secureHeaders(compress(routes(cfgDir, assetsDir)))),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
@@ -64,6 +64,7 @@ func routes(cfgDir, assetsDir string) *http.ServeMux {
 	mux.Handle("GET /favicon.ico", cacheControl(http.HandlerFunc(faviconICO(static))))
 	mux.HandleFunc("GET /robots.txt", robots)
 	mux.HandleFunc("GET /sitemap.xml", sitemap)
+	mux.HandleFunc("GET /.well-known/security.txt", securityTxt)
 	mux.HandleFunc("GET /{$}", root)
 	// Catch-all rather than /{locale}/{$}: a wildcard pattern would conflict
 	// with the /static/ and /assets/ subtrees in the 1.22 mux.

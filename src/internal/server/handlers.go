@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MorganKryze/cairn/src/internal/render"
 )
@@ -165,6 +166,33 @@ func robots(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n", siteBase(r))
+}
+
+// securityTxt answers RFC 9116, and only once an operator has given a contact.
+// Expires is computed per request rather than configured, because a
+// security.txt that has quietly expired is worth less than none at all, and a
+// file regenerated on every read cannot. Canonical and Preferred-Languages are
+// cairn's to fill too: it knows where it is served and which languages it
+// speaks.
+func securityTxt(w http.ResponseWriter, r *http.Request) {
+	sec := Current().Cfg.Site.Security
+	if sec.Contact == "" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintf(w, "Contact: %s\n", sec.Contact)
+	fmt.Fprintf(w, "Expires: %s\n", time.Now().AddDate(1, 0, 0).UTC().Format(time.RFC3339))
+	if sec.Encryption != "" {
+		fmt.Fprintf(w, "Encryption: %s\n", sec.Encryption)
+	}
+	if sec.Policy != "" {
+		fmt.Fprintf(w, "Policy: %s\n", sec.Policy)
+	}
+	if locales := Current().Cfg.Site.Locales; len(locales) > 0 {
+		fmt.Fprintf(w, "Preferred-Languages: %s\n", strings.Join(locales, ", "))
+	}
+	fmt.Fprintf(w, "Canonical: %s/.well-known/security.txt\n", siteBase(r))
 }
 
 func sitemap(w http.ResponseWriter, r *http.Request) {

@@ -260,3 +260,80 @@ func TestConfigHelpers(t *testing.T) {
 		}
 	}
 }
+
+// Nothing is served until an operator gives a contact: an empty security.txt
+// would be a promise cairn cannot keep on their behalf.
+func TestSecurityTxtNeedsAContact(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	Store(mustModel(t, dir))
+	rec := httptest.NewRecorder()
+	securityTxt(rec, httptest.NewRequest("GET", "/.well-known/security.txt", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("unconfigured security.txt = %d, want 404", rec.Code)
+	}
+}
+
+// The three fields cairn fills by itself are the point of serving the file
+// rather than letting the operator drop a static one that rots.
+func TestSecurityTxtFillsWhatItKnows(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "url: https://tools.example.org\nlocales: [fr, en]\n" +
+			"security: {contact: mailto:security@example.org, policy: https://example.org/policy}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	Store(mustModel(t, dir))
+	rec := httptest.NewRecorder()
+	securityTxt(rec, httptest.NewRequest("GET", "/.well-known/security.txt", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"Contact: mailto:security@example.org",
+		"Policy: https://example.org/policy",
+		"Preferred-Languages: fr, en",
+		"Canonical: https://tools.example.org/.well-known/security.txt",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("security.txt missing %q, got:\n%s", want, body)
+		}
+	}
+	// Encryption was not configured, so it must not appear at all rather than
+	// appear empty: a field with no value is a parse error for RFC 9116.
+	if strings.Contains(body, "Encryption:") {
+		t.Error("an unset Encryption was emitted anyway")
+	}
+}
+
+// Expires is the field a hand-written security.txt gets wrong, because it is
+// written once and then forgotten. Computed per request, it cannot be stale.
+func TestSecurityTxtExpiresInTheFuture(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nsecurity: {contact: mailto:security@example.org}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	Store(mustModel(t, dir))
+	rec := httptest.NewRecorder()
+	securityTxt(rec, httptest.NewRequest("GET", "/.well-known/security.txt", nil))
+
+	var raw string
+	for _, line := range strings.Split(rec.Body.String(), "\n") {
+		if v, ok := strings.CutPrefix(line, "Expires: "); ok {
+			raw = v
+		}
+	}
+	if raw == "" {
+		t.Fatalf("no Expires line in:\n%s", rec.Body.String())
+	}
+	when, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		t.Fatalf("Expires %q is not RFC 3339: %v", raw, err)
+	}
+	if !when.After(time.Now()) {
+		t.Errorf("Expires %s is already past", raw)
+	}
+}

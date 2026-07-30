@@ -36,6 +36,13 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	var out []string
 	out = append(out, missingTranslations(cfg)...)
 	out = append(out, mediaWarnings(cfg, filepath.Join(dir, "media"))...)
+	// The canonical, og:url and hreflang links are all built from site.url, so
+	// without it they are simply absent. Nothing fails, the page looks right,
+	// and a multilingual site quietly reads as several duplicates. Skipped
+	// when the operator has already told search engines to stay away.
+	if cfg.Site.URL == "" && !cfg.Noindex() {
+		out = append(out, "site.yaml has no url: pages carry no canonical link, no og:url and no hreflang alternates (set url: https://… to emit them)")
+	}
 	if slugs := config.CdnSlugs(cfg); len(slugs) > 0 {
 		out = append(out, fmt.Sprintf("%d icons load from a CDN in visitors' browsers (%s); run cairn -emit-icons to self-host them", len(slugs), strings.Join(slugs, ", ")))
 	}

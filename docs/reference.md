@@ -35,28 +35,31 @@ logs the same error.
 
 ## `site.yaml`
 
-| Key               | Default        | Type                                                                                                                                                                                                               |
-| ----------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `title`           | `cairn`        | text (plain or per-locale map)                                                                                                                                                                                     |
-| `tagline`         | empty          | text; opens the home page, feeds the meta description                                                                                                                                                              |
-| `url`             | none           | public base URL; adds canonical + hreflang, absolute sitemap                                                                                                                                                       |
-| `logo`            | none           | URL or `/assets/…` path; raster logos double as the og:image when `url` is set                                                                                                                                     |
-| `favicon`         | cairn's        | tab icon; URL or `/assets/…` path. Also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set)                                                                                       |
-| `icons`           | derived        | [home-screen set](configuration/site.md#using-your-own), list of `{src: URL/path, sizes: WxH or any, purpose: any/maskable/monochrome}`; overrides what `favicon` implies                                          |
-| `index`           | `true`         | `false` = robots.txt disallow, noindex meta, no sitemap                                                                                                                                                            |
-| `locales`         | `[en]`         | list; first = default                                                                                                                                                                                              |
-| `theme.accent`    | `#247b7b`      | hex color                                                                                                                                                                                                          |
-| `about`           | empty          | dismissable welcome note under the hero, long text ([markdown subset](configuration/text.md))                                                                                                                      |
-| `links`           | `[]`           | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}`                                                                                                 |
-| `footer`          | `[]`           | list of `{label: text, url: string}`                                                                                                                                                                               |
-| `pages`           | `[]`           | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: long text, sections: [{title, body}]}`; body and/or sections required; bodies take the [markdown subset](configuration/text.md) |
-| `credit`          | `true`         | bool; `false` removes the footer "powered by cairn"                                                                                                                                                                |
-| `show_version`    | `false`        | bool; `true` shows the running version next to the credit, linked to its release or commit                                                                                                                         |
-| `strings`         | built-ins      | map of key → text ([keys](configuration/i18n.md#ui-strings))                                                                                                                                                       |
-| `status.gatus`    | none           | Gatus base URL cairn polls for the [status pills](recipes/gatus.md)                                                                                                                                                |
-| `status.page`     | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal)                                                                                                                                             |
-| `status.interval` | `60s`          | poll cadence, duration ≥ `5s`                                                                                                                                                                                      |
-| `status.linked`   | `true`         | `false` makes the pills display-only: the state stays, the link to the status page goes                                                                                                                            |
+| Key                   | Default        | Type                                                                                                                                                                                                               |
+| --------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `title`               | `cairn`        | text (plain or per-locale map)                                                                                                                                                                                     |
+| `tagline`             | empty          | text; opens the home page, feeds the meta description                                                                                                                                                              |
+| `url`                 | none           | public base URL; adds canonical + hreflang, absolute sitemap                                                                                                                                                       |
+| `logo`                | none           | URL or `/assets/…` path; raster logos double as the og:image when `url` is set                                                                                                                                     |
+| `favicon`             | cairn's        | tab icon; URL or `/assets/…` path. Also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set)                                                                                       |
+| `icons`               | derived        | [home-screen set](configuration/site.md#using-your-own), list of `{src: URL/path, sizes: WxH or any, purpose: any/maskable/monochrome}`; overrides what `favicon` implies                                          |
+| `index`               | `true`         | `false` = robots.txt disallow, noindex meta, no sitemap                                                                                                                                                            |
+| `locales`             | `[en]`         | list; first = default                                                                                                                                                                                              |
+| `theme.accent`        | `#247b7b`      | hex color                                                                                                                                                                                                          |
+| `about`               | empty          | dismissable welcome note under the hero, long text ([markdown subset](configuration/text.md))                                                                                                                      |
+| `links`               | `[]`           | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}`                                                                                                 |
+| `footer`              | `[]`           | list of `{label: text, url: string}`                                                                                                                                                                               |
+| `pages`               | `[]`           | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: long text, sections: [{title, body}]}`; body and/or sections required; bodies take the [markdown subset](configuration/text.md) |
+| `credit`              | `true`         | bool; `false` removes the footer "powered by cairn"                                                                                                                                                                |
+| `show_version`        | `false`        | bool; `true` shows the running version next to the credit, linked to its release or commit                                                                                                                         |
+| `strings`             | built-ins      | map of key → text ([keys](configuration/i18n.md#ui-strings))                                                                                                                                                       |
+| `security.contact`    | none           | URI (`mailto:`, `https://`, `tel:`); setting it serves [`/.well-known/security.txt`](configuration/site.md#telling-researchers-where-to-write)                                                                     |
+| `security.policy`     | none           | URL of your disclosure policy                                                                                                                                                                                      |
+| `security.encryption` | none           | URL of the key a reporter should encrypt to                                                                                                                                                                        |
+| `status.gatus`        | none           | Gatus base URL cairn polls for the [status pills](recipes/gatus.md)                                                                                                                                                |
+| `status.page`         | `status.gatus` | public Gatus URL the pill links to (set when the poll URL is internal)                                                                                                                                             |
+| `status.interval`     | `60s`          | poll cadence, duration ≥ `5s`                                                                                                                                                                                      |
+| `status.linked`       | `true`         | `false` makes the pills display-only: the state stays, the link to the status page goes                                                                                                                            |
 
 Unknown keys are errors everywhere: in `site.yaml`, and in every service,
 category, page, section, link, image and icon entry alike. The message names
@@ -87,19 +90,26 @@ ids, alphabetically.
 
 ## Endpoints
 
-| Path                 | Behavior                                                                                           |
-| -------------------- | -------------------------------------------------------------------------------------------------- |
-| `/`                  | 302 to the negotiated locale (cookie → `Accept-Language` → default)                                |
-| `/{locale}/`         | home; server-rendered, `ETag`, `Cache-Control: no-cache`                                           |
-| `/{locale}/{id}/`    | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching             |
-| `/{locale}/…?choose` | sets the one-year locale cookie, then redirects clean                                              |
-| `/static/…`          | embedded assets, cached one day                                                                    |
-| `/assets/…`          | your mounted files, if the mount exists                                                            |
-| `/custom.css`        | your stylesheet, if present                                                                        |
-| `/healthz`           | `200 ok` while the process serves, whatever the config says: the liveness signal                   |
-| `/readyz`            | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in |
-| `/sitemap.xml`       | every page, absolute URLs from `Host`/`X-Forwarded-Proto`                                          |
-| `/robots.txt`        | allow all + sitemap URL                                                                            |
+| Path                        | Behavior                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `/`                         | 302 to the negotiated locale (cookie → `Accept-Language` → default)                                |
+| `/{locale}/`                | home; server-rendered, `ETag`, `Cache-Control: no-cache`                                           |
+| `/{locale}/{id}/`           | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching             |
+| `/{locale}/…?choose`        | sets the one-year locale cookie, then redirects clean                                              |
+| `/static/…`                 | embedded assets, cached one day                                                                    |
+| `/assets/…`                 | your mounted files, if the mount exists                                                            |
+| `/custom.css`               | your stylesheet, if present                                                                        |
+| `/healthz`                  | `200 ok` while the process serves, whatever the config says: the liveness signal                   |
+| `/readyz`                   | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in |
+| `/sitemap.xml`              | every page, absolute URLs from `Host`/`X-Forwarded-Proto`                                          |
+| `/robots.txt`               | allow all + sitemap URL                                                                            |
+| `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                          |
+
+Text responses are gzipped for clients that ask, which is most of them: a first
+visit to the demo goes from 53 KB on the wire to 14 KB. Images, fonts and the
+`ico` are left alone, since compressing them again only spends CPU to add
+bytes. Every response carries `Vary: Accept-Encoding` so a shared cache cannot
+hand the compressed answer to a client that did not ask for it.
 
 ## Binary flags
 

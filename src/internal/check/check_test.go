@@ -43,7 +43,7 @@ func TestCheckWarnings(t *testing.T) {
 
 func TestCheckMarkdownImageCountsAsUsed(t *testing.T) {
 	dir := testutil.WriteFiles(t, map[string]string{
-		"site.yaml":     "locales: [en]\nabout: \"See ![plan](plan.png)\"\n",
+		"site.yaml":     "url: https://tools.example.org\nlocales: [en]\nabout: \"See ![plan](plan.png)\"\n",
 		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
 	})
 	if err := os.MkdirAll(filepath.Join(dir, "media"), 0o755); err != nil {
@@ -94,7 +94,9 @@ func TestWarningsNameWhatIsMissing(t *testing.T) {
 // makes the warnings worth reading when they do appear.
 func TestCompleteConfigWarnsAboutNothing(t *testing.T) {
 	dir := testutil.WriteFiles(t, map[string]string{
-		"site.yaml":     "locales: [en]\n",
+		// url included: a config without one is not complete for a site that
+		// wants to be found, and -check says so.
+		"site.yaml":     "url: https://tools.example.org\nlocales: [en]\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, desc: Write together.}\n",
 	})
 	cfg, err := config.Load(dir)
@@ -154,5 +156,42 @@ func TestRunCheckRefusals(t *testing.T) {
 	}
 	if code := RunCheck(filepath.Join(t.TempDir(), "absent")); code != 1 {
 		t.Errorf("RunCheck on a missing directory = %d, want 1", code)
+	}
+}
+
+// site.url is what builds the canonical, og:url and hreflang links. Without
+// it they are simply absent, the page looks perfectly fine, and a multilingual
+// site reads to a crawler as several duplicates of each other. Nothing else
+// tells the operator, which is the whole reason this warning exists.
+func TestCheckWarnsAboutMissingSiteURL(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [fr, en]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	warnings := strings.Join(checkWarnings(cfg, dir), "\n")
+	for _, want := range []string{"no url", "canonical", "hreflang"} {
+		if !strings.Contains(warnings, want) {
+			t.Errorf("missing url warning has no %q:\n%s", want, warnings)
+		}
+	}
+}
+
+// An operator who asked search engines to stay away has already answered the
+// question. Warning them anyway is how a check earns being ignored.
+func TestCheckStaysQuietAboutURLWhenNoindex(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := strings.Join(checkWarnings(cfg, dir), "\n"); strings.Contains(w, "canonical") {
+		t.Errorf("noindex site was nagged about canonical links:\n%s", w)
 	}
 }
