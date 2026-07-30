@@ -278,19 +278,150 @@ and cairn's `status.gatus` has to say so.
 `http://gatus`, not `http://gatus:8080`. A wrong port here fails the way this
 whole page fails: nothing crashes, the site serves, and every pill stays grey.
 
-## 6. When Gatus is behind your own CA
+And one that matters only here: **the chart ships an example endpoint pointing
+at `https://example.org`**, probed every 60 seconds. Your own `config.endpoints`
+replaces it, because Helm replaces lists rather than merging them, but a values
+file that only sets `config.storage` leaves it in place. An isolated network
+then spends its life watching a pod fail to reach the internet once a minute.
 
-The image carries the public CA bundle, which is what lets cairn poll a public
-Gatus over TLS. Behind a private PKI it knows none of your certificates: the
-pills stay grey and the log shows `x509: certificate signed by unknown
-authority`. There is no shell in the image to fix that in place, so mount your
-bundle over the one it ships:
+### Exposing Gatus, or not
+
+The values above keep Gatus to itself: cairn polls it from pod to pod, no
+visitor ever reaches it, and `linked: false` states as much on the cairn side.
+One less thing exposed, and the default here.
+
+If you do want the status page reachable, two settings have to agree. Turn on
+the chart's Ingress:
+
+```yaml
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - status.internal
+  tls:
+    - secretName: gatus-tls
+      hosts:
+        - status.internal
+```
+
+and on the cairn side, replace `linked: false` with the address a visitor should
+land on:
+
+```yaml
+status:
+  gatus: http://gatus              # what the server polls, pod to pod
+  page: https://status.internal    # where the pill sends a visitor
+```
+
+Enable one without the other and you get either a status page no pill points
+to, or pills aimed at a host no browser can resolve.
+
+The two charts do not spell their Ingress the same way, which catches everyone
+copying from one file into the other:
+
+| | cairn chart | Gatus chart |
+| --- | --- | --- |
+| class | `className` | `ingressClassName` |
+| host | `host:`, one string | `hosts:`, a list |
+| TLS | `tls.enabled` and `tls.secretName` | `tls:`, a list of `{secretName, hosts}` |
+
+cairn takes one host and one path because that is the shape of every
+self-hosted cairn. The Gatus chart covers the general case.
+
+## 6. Self-signed certificates
+
+Sooner or later a probe meets a certificate nobody outside your network has ever
+heard of. Two different things can fail here, and they fail differently. Read
+the symptom before touching anything:
+
+| What the page shows | What cannot verify what |
+| --- | --- |
+| Pills read **Offline**, in red | Gatus cannot verify the services it probes |
+| Pills read **Unknown**, neutral | cairn cannot verify Gatus |
+
+The logs name it either way:
+
+```console
+# Gatus, per endpoint, in its API and its log
+"errors":["Get \"https://pad.internal\": tls: failed to verify certificate:
+           x509: certificate signed by unknown authority"]
+
+# cairn, once per poll
+status: Get "https://status.internal/api/v1/endpoints/statuses": tls: failed to
+        verify certificate: x509: certificate signed by unknown authority
+        (dots hidden until gatus answers)
+```
+
+The distinction is the useful part. A red pill means Gatus reached its verdict
+and the verdict is bad. "Unknown" means cairn has no verdict to show, so it
+declines to invent one; the log line that follows says why, and its
+parenthesis, "dots hidden until gatus answers", is cairn telling you the state
+it is refusing to guess. Two broken links, two different faces, which matters on
+the day both are broken at once.
+
+### One bundle, however many certificates
+
+A PEM file holds as many certificates as you concatenate into it, and both
+programs read all of them. One file, one ConfigMap, both charts:
+
+```sh
+cat pad.crt photos.crt wiki.crt > ca-bundle.crt
+kubectl create configmap ca-bundle --from-file=ca-certificates.crt=ca-bundle.crt
+```
+
+Two things worth knowing before you reissue anything:
+
+**A self-signed server certificate works as a trust anchor even when it carries
+`CA:FALSE`**, which is what most generators and cert-manager's `selfSigned`
+issuer produce. There is nothing to regenerate.
+
+**The bundle replaces the public store, it does not extend it.** Anything
+presenting a certificate from a public authority stops verifying the moment you
+mount your own. If you have both kinds, concatenate both:
+
+```sh
+cat /etc/ssl/certs/ca-certificates.crt mine.crt > ca-bundle.crt
+```
+
+### Gatus
+
+Gatus has no setting for a custom authority: its `tls:` block configures client
+certificates, not verification. It is a Go binary, so the environment variable
+does the work, and the chart takes both halves:
+
+```yaml
+env:
+  SSL_CERT_FILE: /etc/ssl/internal/ca-certificates.crt
+extraVolumeMounts:
+  - name: ca-bundle
+    mountPath: /etc/ssl/internal
+    readOnly: true
+    existingConfigMap: ca-bundle
+```
+
+That chart carries the volume source inside the mount entry, which is why there
+is an `existingConfigMap` here and no separate `extraVolumes` list.
+
+If one target resists, `client.insecure: true` can be set on that endpoint alone
+rather than on the whole instance. Keep it as a last resort: it also hides the
+day that certificate changes.
+
+### cairn
+
+Ask first whether there is any TLS to verify. Between pods, `http://gatus`
+reaches the Service directly, never leaves the cluster, and meets no certificate
+at all. That is the default on this page, and it makes this half of the section
+unnecessary.
+
+If cairn does poll over `https://`, the chart exposes no environment values, so
+the bundle replaces the one the image ships:
 
 ```yaml
 extraVolumes:
   - name: ca
     configMap:
-      name: internal-ca      # kubectl create configmap internal-ca --from-file=ca-certificates.crt=ca.crt
+      name: ca-bundle          # the same one Gatus reads
 extraVolumeMounts:
   - name: ca
     mountPath: /etc/ssl/certs/ca-certificates.crt
@@ -298,8 +429,39 @@ extraVolumeMounts:
     readOnly: true
 ```
 
-The `subPath` replaces that one file and leaves the rest of the image alone.
-Plain `http://` between pods needs none of this.
+`subPath` replaces that single file and leaves the rest of the image alone,
+which matters more here than elsewhere: `FROM scratch` means there is no shell
+to repair anything in place afterwards.
+
+### Adding a certificate later means a restart
+
+Both programs read their trust store once, at startup. Updating the ConfigMap
+propagates the new file and nothing happens: the certificate stays untrusted
+until the pods restart.
+
+```sh
+kubectl rollout restart deploy/gatus deploy/cairn
+```
+
+This is the one place where cairn does not behave like the rest of this
+deployment. Its configuration reloads by itself within the minute; its trust
+store does not.
+
+### Proving it, rather than hoping
+
+Any "it works now" that follows a TLS change deserves a negative control. Keep
+one endpoint whose certificate is deliberately absent from the bundle, and check
+that it still fails:
+
+```
+alpha    success=true     in the bundle
+beta     success=true     in the bundle, and CA:FALSE
+gamma    success=false    absent: x509: certificate signed by unknown authority
+```
+
+If everything turns green including that last one, verification is switched off
+somewhere rather than fixed, and you have traded a visible failure for an
+invisible one.
 
 ## 7. Checking it without the internet
 
@@ -335,11 +497,18 @@ picks it up within the minute, no pod restarted, nothing to reload by hand.
 
 ---
 
-Both routes above were run end to end on a single-node cluster before this page
-was written: chart installed from a local `.tgz`, images imported into the node
-under a hostname that resolves nowhere, icons served from a ConfigMap, the CA
-bundle replaced through a `subPath`, and the pills settling green and red. The
-registry push in step 3 is the one step taken on faith, since that part is your
-Harbor and not ours.
+Everything on this page was run end to end on a single-node cluster before it
+was written: both charts installed from local `.tgz` files, images imported into
+the node under a hostname that resolves nowhere, icons served from a ConfigMap,
+Gatus reached over its Service on 80, and the pills settling green and red.
+
+The certificate section was built the same way, against three hosts with three
+different self-signed certificates: two in the bundle, one deliberately left
+out, so that the fix could be told apart from a fix that merely stops checking.
+`CA:FALSE` trusting correctly, and the restart being needed after a bundle
+update, are both measured rather than reasoned.
+
+The registry push in step 3 is the one step taken on faith, since that part is
+your Harbor and not ours.
 
 Next: [Reverse proxies](reverse-proxies.md)

@@ -83,6 +83,12 @@ How it behaves, by design:
   says why.
 - Once Gatus answers, a service it does not monitor simply shows no pill.
 
+If your Gatus answers over `https://` with a certificate cairn does not know,
+which is the usual state of affairs on an internal network, every pill reads
+"Unknown" and the log names the `x509` failure. The fix, along with the
+symmetric one for the certificates Gatus itself has to trust, is in
+[Air-gapped](../deployment/airgap.md#6-self-signed-certificates).
+
 ## 3. Link the status page
 
 ```yaml
