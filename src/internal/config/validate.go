@@ -32,6 +32,26 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
 		}
 	}
+	// security.txt is a line-based format, so a newline in any value would let
+	// a typo forge a field. Reject that here rather than escape it later.
+	for _, f := range []struct{ key, val string }{
+		{"security.contact", site.Security.Contact},
+		{"security.policy", site.Security.Policy},
+		{"security.encryption", site.Security.Encryption},
+	} {
+		if f.val == "" {
+			continue
+		}
+		if strings.ContainsAny(f.val, "\r\n") {
+			return fmt.Errorf("config: site.yaml: %s must be one line", f.key)
+		}
+		if !uriRe.MatchString(f.val) {
+			return fmt.Errorf("config: site.yaml: %s %q is not a URI (expected e.g. mailto:security@example.org or https://example.org/security)", f.key, f.val)
+		}
+	}
+	if site.Security.Contact == "" && (site.Security.Policy != "" || site.Security.Encryption != "") {
+		return fmt.Errorf("config: site.yaml: security needs a contact (expected: security: {contact: mailto:security@example.org})")
+	}
 	site.URL = strings.TrimSuffix(site.URL, "/")
 	if u := site.URL; u != "" && !isHTTPURL(u) {
 		return fmt.Errorf("config: site.yaml: url %q is not a URL (expected e.g. https://tools.example.org)", u)

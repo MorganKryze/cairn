@@ -149,6 +149,24 @@
       "additionalProperties": { "$ref": "#/definitions/lstring" },
       "description": "Overrides for built-in UI strings, keyed like search.placeholder."
     },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "type": "string",
+          "description": "Where to report a vulnerability, as a URI: mailto:security@example.org, https://example.org/report, tel:+33.... Setting it is what makes cairn serve /.well-known/security.txt."
+        },
+        "policy": {
+          "type": "string",
+          "description": "URL of your disclosure policy, if you publish one."
+        },
+        "encryption": {
+          "type": "string",
+          "description": "URL of the public key a reporter should encrypt to."
+        }
+      }
+    },
     "status": {
       "type": "object",
       "additionalProperties": false,

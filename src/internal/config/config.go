@@ -113,7 +113,16 @@ type Site struct {
 	Credit  *bool              `yaml:"credit"`       // the footer "powered by cairn"; nil means true
 	ShowVer bool               `yaml:"show_version"` // print the running version beside the credit; off by default
 	Strings map[string]LString `yaml:"strings"`
-	Status  struct {
+	// Security fills /.well-known/security.txt. Contact is the only field an
+	// operator writes: Expires, Canonical and Preferred-Languages are cairn's
+	// to compute, which is the whole reason to serve the file rather than let
+	// one go stale in a folder.
+	Security struct {
+		Contact    string `yaml:"contact"`    // a URI: mailto:…, https://… or tel:…
+		Policy     string `yaml:"policy"`     // where the disclosure policy lives
+		Encryption string `yaml:"encryption"` // where the public key lives
+	} `yaml:"security"`
+	Status struct {
 		Gatus    string `yaml:"gatus"`
 		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
@@ -250,6 +259,10 @@ var (
 	idRe     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	// A manifest icon size: one or more "WxH", or "any" for a scalable one.
 	iconSizesRe = regexp.MustCompile(`^(any|[0-9]+x[0-9]+( [0-9]+x[0-9]+)*)$`)
+	// Any URI with a scheme, since security.txt takes mailto:, https:// and
+	// tel: alike. Checking the scheme is what catches a bare email address,
+	// which is the mistake this field invites.
+	uriRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+$`)
 )
 
 // isHTTPURL reports an http(s) URL; IsURLOrAbs also accepts a root-absolute

@@ -22,6 +22,7 @@ so is every key in it.
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                           |
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.             |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                           |
+| `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                      |
 | `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md).                                                  |
 
 ## Full example
@@ -135,6 +136,47 @@ cairn does not resize images: doing it would mean shipping a scaler for one
 rarely used path, and a badly resampled logo is worse than the one you drew.
 Anything wrong in this list is a config error that names the entry, so a typo
 stops at startup rather than reaching a phone.
+
+## Telling researchers where to write
+
+Somebody who finds a flaw in one of your services has to guess where to send
+it. [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116) settles that with a file
+at a fixed address, and one key makes cairn serve it:
+
+```yaml
+security:
+  contact: mailto:security@example.org
+  policy: https://example.org/disclosure # optional
+  encryption: https://example.org/pgp.asc # optional
+```
+
+`contact` is the only field you write. It takes any URI, so `mailto:`,
+`https://` to a reporting form, or `tel:` all work; writing a bare address
+without its scheme is a config error rather than a file nobody can parse.
+
+The rest cairn fills, because it already knows it:
+
+```
+Contact: mailto:security@example.org
+Expires: 2027-07-30T17:45:16Z
+Preferred-Languages: fr, en
+Canonical: https://tools.example.org/.well-known/security.txt
+```
+
+`Expires` is the field this exists to get right. The RFC makes it mandatory,
+and a security.txt written by hand carries a date somebody chose once and never
+looked at again: past it, the file is worse than absent, because it says the
+address is stale. cairn recomputes it on every request, a year out, so it
+cannot rot. `Preferred-Languages` comes from your `locales` and `Canonical`
+from `url`, or from the request when you have not set one.
+
+Without `security.contact` the path answers `404`, which is the honest answer:
+an empty security.txt is a promise cairn cannot make on your behalf.
+
+One caveat if you serve cairn [under a sub-path](../deployment/reverse-proxies.md#under-a-sub-path):
+the RFC wants this file at the root of the domain, and cairn can only serve it
+under its own prefix. Point your proxy at it, or leave the file to whatever
+owns the root.
 
 ## The welcome note
 

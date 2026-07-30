@@ -40,6 +40,21 @@ func TestValidateSiteRejections(t *testing.T) {
 			[]string{"status.interval", "at least 5s"}},
 		{"site url that is not a URL", func(s *Site) { s.URL = "tools.example.org" },
 			[]string{"url", "is not a URL"}},
+		// The mistake this field invites: writing the address rather than the
+		// URI. RFC 9116 wants a scheme, and a bare address makes the file
+		// unparseable for the researcher it was written for.
+		{"security contact without a scheme", func(s *Site) { s.Security.Contact = "security@example.org" },
+			[]string{"security.contact", "is not a URI", "mailto:"}},
+		{"security policy without a scheme", func(s *Site) {
+			s.Security.Contact = "mailto:security@example.org"
+			s.Security.Policy = "example.org/policy"
+		}, []string{"security.policy", "is not a URI"}},
+		// security.txt is line-based, so a newline in a value forges a field.
+		{"security contact carrying a newline", func(s *Site) {
+			s.Security.Contact = "mailto:a@example.org\nExpires: 1999-01-01T00:00:00Z"
+		}, []string{"security.contact", "one line"}},
+		{"security without a contact", func(s *Site) { s.Security.Policy = "https://example.org/policy" },
+			[]string{"security needs a contact"}},
 		{"link without a label", func(s *Site) { s.Links = []FooterLink{{URL: "https://w.example.org"}} },
 			[]string{"links entry needs label and url"}},
 		{"link without a url", func(s *Site) { s.Links = []FooterLink{{Label: LString{"": "Wiki"}}} },

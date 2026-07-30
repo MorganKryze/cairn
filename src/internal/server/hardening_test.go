@@ -10,6 +10,7 @@ import (
 
 	"github.com/MorganKryze/cairn/src/internal/render"
 	"github.com/MorganKryze/cairn/src/internal/status"
+	"github.com/MorganKryze/cairn/src/internal/testutil"
 )
 
 // HSTS is sent only once the visit is already https: on the plain-http LAN
@@ -36,7 +37,7 @@ func TestHSTSFollowsTheScheme(t *testing.T) {
 	}
 
 	// the rest of the hardening headers ride on every response
-	for _, k := range []string{"X-Content-Type-Options", "Referrer-Policy", "X-Frame-Options", "Permissions-Policy", "Content-Security-Policy"} {
+	for _, k := range []string{"X-Content-Type-Options", "Referrer-Policy", "X-Frame-Options", "Permissions-Policy", "Content-Security-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy"} {
 		if rec.Header().Get(k) == "" {
 			t.Errorf("missing %s", k)
 		}
@@ -137,5 +138,31 @@ func TestReadinessSplitsFromLiveness(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("%s with a valid config = %d, want 200", name, rec.Code)
 		}
+	}
+}
+
+// The two cross-origin headers carry values chosen rather than copied, so the
+// values themselves are worth pinning. COEP is deliberately absent: it would
+// demand a CORP header from every remote image, which is exactly what the
+// CDN icon slugs and the operators' own image hosts do not send.
+func TestCrossOriginHeadersKeepTheirChosenValues(t *testing.T) {
+	Store(mustModel(t, testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})))
+	h := secureHeaders(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+
+	if got := rec.Header().Get("Cross-Origin-Opener-Policy"); got != "same-origin" {
+		t.Errorf("COOP = %q, want same-origin", got)
+	}
+	// same-site keeps a sibling subdomain able to show a cairn icon, which is
+	// how self-hosters lay their services out.
+	if got := rec.Header().Get("Cross-Origin-Resource-Policy"); got != "same-site" {
+		t.Errorf("CORP = %q, want same-site", got)
+	}
+	if got := rec.Header().Get("Cross-Origin-Embedder-Policy"); got != "" {
+		t.Errorf("COEP is set to %q; it breaks every remote icon", got)
 	}
 }

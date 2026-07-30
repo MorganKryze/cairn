@@ -17,7 +17,8 @@ import (
 // in a bad merge, so this walks every path cairn is supposed to answer.
 func TestRouteTable(t *testing.T) {
 	cfgDir := testutil.WriteFiles(t, map[string]string{
-		"site.yaml":     "url: https://tools.example.org\nlocales: [en]\npages: [{id: legal, title: Legal, body: Text.}]\n",
+		"site.yaml": "url: https://tools.example.org\nlocales: [en]\npages: [{id: legal, title: Legal, body: Text.}]\n" +
+			"security: {contact: mailto:security@example.org}\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, details: More.}\n",
 		"custom.css":    ":root{--x:1}\n",
 	})
@@ -42,23 +43,24 @@ func TestRouteTable(t *testing.T) {
 		path string
 		want int
 	}{
-		{"/", http.StatusFound},                  // to the negotiated locale
-		{"/en/", http.StatusOK},                  // a home
-		{"/en/pad/", http.StatusOK},              // a service detail
-		{"/en/legal/", http.StatusOK},            // a hosted page
-		{"/en/nope/", http.StatusNotFound},       // an unknown page under a locale
-		{"/healthz", http.StatusOK},              // liveness
-		{"/readyz", http.StatusOK},               // readiness
-		{"/robots.txt", http.StatusOK},           //
-		{"/sitemap.xml", http.StatusOK},          //
-		{"/manifest.webmanifest", http.StatusOK}, //
-		{"/favicon.ico", http.StatusOK},          // for the tools that skip the html
-		{"/custom.css", http.StatusOK},           // the operator's stylesheet
-		{"/static/style.css", http.StatusOK},     // embedded
-		{"/assets/icons/pad.svg", http.StatusOK}, // mounted
-		{"/media/shot.txt", http.StatusOK},       // next to the yaml
-		{"/assets/", http.StatusNotFound},        // never a directory index
-		{"/media/", http.StatusNotFound},         //
+		{"/", http.StatusFound},                      // to the negotiated locale
+		{"/en/", http.StatusOK},                      // a home
+		{"/en/pad/", http.StatusOK},                  // a service detail
+		{"/en/legal/", http.StatusOK},                // a hosted page
+		{"/en/nope/", http.StatusNotFound},           // an unknown page under a locale
+		{"/healthz", http.StatusOK},                  // liveness
+		{"/readyz", http.StatusOK},                   // readiness
+		{"/robots.txt", http.StatusOK},               //
+		{"/sitemap.xml", http.StatusOK},              //
+		{"/.well-known/security.txt", http.StatusOK}, // once a contact is configured
+		{"/manifest.webmanifest", http.StatusOK},     //
+		{"/favicon.ico", http.StatusOK},              // for the tools that skip the html
+		{"/custom.css", http.StatusOK},               // the operator's stylesheet
+		{"/static/style.css", http.StatusOK},         // embedded
+		{"/assets/icons/pad.svg", http.StatusOK},     // mounted
+		{"/media/shot.txt", http.StatusOK},           // next to the yaml
+		{"/assets/", http.StatusNotFound},            // never a directory index
+		{"/media/", http.StatusNotFound},             //
 		{"/static/does-not-exist", http.StatusNotFound},
 	} {
 		rec := httptest.NewRecorder()
