@@ -12,13 +12,13 @@ page renders, and the icons are simply missing.
 
 ## What crosses
 
-| Artifact | Size | Where it comes from |
-| --- | --- | --- |
-| `cairn-1.12.0.tgz` | 4 KB | `helm pull`, the signed artifact rather than the folder in git |
-| `gatus-1.5.0.tgz` | 9 KB | the Gatus project's own chart |
-| `images.tar` | 26 MB | `docker save` of cairn and Gatus |
-| `assets/icons/*.svg` | a few KB | what `cairn -emit-icons` downloads |
-| your values | a few KB | one file per chart, and they are yours to keep |
+| Artifact             | Size     | Where it comes from                                            |
+| -------------------- | -------- | -------------------------------------------------------------- |
+| `cairn-1.12.0.tgz`   | 4 KB     | `helm pull`, the signed artifact rather than the folder in git |
+| `gatus-1.5.0.tgz`    | 9 KB     | the Gatus project's own chart                                  |
+| `images.tar`         | 26 MB    | `docker save` of cairn and Gatus                               |
+| `assets/icons/*.svg` | a few KB | what `cairn -emit-icons` downloads                             |
+| your values          | a few KB | one file per chart, and they are yours to keep                 |
 
 The 26 MB is measured on arm64; amd64 lands in the same range. Almost all of it
 is Gatus: cairn's own image is under 14 MB.
@@ -236,6 +236,28 @@ ingress:
   host: tools.internal
 ```
 
+If the charts went into your registry at step 3, install from there rather than
+from the tarballs. Same artifact, but the cluster now has one place to get it
+and one version to name, which is also what Argo CD will read:
+
+```sh
+helm registry login harbor.internal --ca-file /etc/pki/internal-ca.crt
+helm install cairn oci://harbor.internal/helm/cairn --version 1.12.0 \
+  --ca-file /etc/pki/internal-ca.crt -f values.yaml
+```
+
+The install URL carries the chart name, the push URL did not: you pushed to
+`oci://harbor.internal/helm` and install from `oci://harbor.internal/helm/cairn`.
+`helm` works the last segment out of the archive itself.
+
+Two flags you will need against an internal registry. `--ca-file` if it serves
+your own certificate, on both the login and the install, since a Harbor behind a
+private PKI fails exactly like everything else on this page. `--plain-http` if
+it serves no TLS at all. And note that `helm registry login` writes its own
+credential store: a `docker login` already done on that host does not count.
+
+Without a registry, install what you carried:
+
 ```sh
 helm install cairn ./cairn-1.12.0.tgz -f values.yaml
 ```
@@ -263,7 +285,8 @@ config:
 ```
 
 ```sh
-helm install gatus ./gatus-1.5.0.tgz -f gatus-values.yaml
+helm install gatus oci://harbor.internal/helm/gatus --version 1.5.0 \
+  -f gatus-values.yaml                       # or ./gatus-1.5.0.tgz without a registry
 ```
 
 Two details decide whether the pills ever turn green, and both are easy to get
@@ -320,11 +343,11 @@ to, or pills aimed at a host no browser can resolve.
 The two charts do not spell their Ingress the same way, which catches everyone
 copying from one file into the other:
 
-| | cairn chart | Gatus chart |
-| --- | --- | --- |
-| class | `className` | `ingressClassName` |
-| host | `host:`, one string | `hosts:`, a list |
-| TLS | `tls.enabled` and `tls.secretName` | `tls:`, a list of `{secretName, hosts}` |
+|       | cairn chart                        | Gatus chart                             |
+| ----- | ---------------------------------- | --------------------------------------- |
+| class | `className`                        | `ingressClassName`                      |
+| host  | `host:`, one string                | `hosts:`, a list                        |
+| TLS   | `tls.enabled` and `tls.secretName` | `tls:`, a list of `{secretName, hosts}` |
 
 cairn takes one host and one path because that is the shape of every
 self-hosted cairn. The Gatus chart covers the general case.
@@ -335,10 +358,10 @@ Sooner or later a probe meets a certificate nobody outside your network has ever
 heard of. Two different things can fail here, and they fail differently. Read
 the symptom before touching anything:
 
-| What the page shows | What cannot verify what |
-| --- | --- |
-| Pills read **Offline**, in red | Gatus cannot verify the services it probes |
-| Pills read **Unknown**, neutral | cairn cannot verify Gatus |
+| What the page shows             | What cannot verify what                    |
+| ------------------------------- | ------------------------------------------ |
+| Pills read **Offline**, in red  | Gatus cannot verify the services it probes |
+| Pills read **Unknown**, neutral | cairn cannot verify Gatus                  |
 
 The logs name it either way:
 
@@ -485,7 +508,7 @@ no shell, no busybox, nothing to attach to. What you need is in the logs, on
 The same crossing, then:
 
 ```sh
-helm upgrade cairn ./cairn-1.13.0.tgz -f values.yaml
+helm upgrade cairn oci://harbor.internal/helm/cairn --version 1.13.0 -f values.yaml
 ```
 
 Always pass your full values file. As soon as one `-f` is present, Helm stops
