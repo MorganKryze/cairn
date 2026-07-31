@@ -1,6 +1,7 @@
 package status
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -68,10 +69,37 @@ func Unmonitored(cfg *config.Config, statuses map[string]bool) string {
 	return fmt.Sprintf("%d services have no gatus endpoint, their cards show no pill: %s", len(ids), strings.Join(ids, ", "))
 }
 
+// verifying and skipping are built once and reused. A client per poll would
+// build a fresh connection pool every interval and leave the old one to be
+// collected with its idle sockets still open.
+//
+// The second one exists because an internal Gatus usually answers with a
+// certificate no public authority signed, and mounting a CA bundle is not
+// always the operator's to arrange. It is a real hole and it is theirs to open:
+// with verification off, anything that can answer on that address decides what
+// the pills say, and the day the certificate changes stops being visible.
+// cairn says so at startup and on every -check rather than only here.
+var (
+	verifying = &http.Client{Timeout: 5 * time.Second}
+	skipping  = &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			// #nosec G402 -- the operator asked for this with status.insecure,
+			// it is logged at startup and warned about by -check, and it covers
+			// the one outbound request cairn makes.
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+		},
+	}
+)
+
 // Fetch asks a Gatus instance for its endpoint statuses and returns
-// service-id -> up, keyed by endpoint name.
-func Fetch(base string) (map[string]bool, error) {
-	client := http.Client{Timeout: 5 * time.Second}
+// service-id -> up, keyed by endpoint name. insecure skips certificate
+// verification, which is status.insecure in site.yaml.
+func Fetch(base string, insecure bool) (map[string]bool, error) {
+	client := verifying
+	if insecure {
+		client = skipping
+	}
 	resp, err := client.Get(strings.TrimSuffix(base, "/") + "/api/v1/endpoints/statuses")
 	if err != nil {
 		return nil, err

@@ -66,6 +66,12 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 		}
 	}
 	out = append(out, unresolvableRefs(cfg)...)
+	// status.insecure is not a mistake, it is a decision, and -check is where a
+	// decision that leaves no trace on the page gets its trace. Nothing else
+	// says it out loud after the startup line has scrolled away.
+	if st := cfg.Site.Status; st.Gatus != "" && st.Insecure {
+		out = append(out, fmt.Sprintf("status.insecure is on: the certificate %s presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)", st.Gatus))
+	}
 	out = append(out, missingAssets(cfg)...)
 	out = append(out, iconSizeClaims(cfg)...)
 	out = append(out, categoryConfusion(cfg)...)
@@ -549,6 +555,9 @@ func inertSettings(cfg *config.Config) []string {
 		}
 		if st.Linked != nil {
 			set = append(set, "status.linked")
+		}
+		if st.Insecure {
+			set = append(set, "status.insecure")
 		}
 		if len(set) > 0 {
 			out = append(out, fmt.Sprintf("%s set without status.gatus: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))

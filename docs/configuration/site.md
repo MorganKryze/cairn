@@ -23,7 +23,7 @@ so is every key in it.
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                              |
 | `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                                                         |
-| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`); see [Status page](../recipes/gatus.md).                                                                                     |
+| `status`       | none      | Live status pills fed by your Gatus (`status.gatus`, `status.page`, `status.interval`, `status.linked`, `status.insecure`); see [Status page](../recipes/gatus.md).                                                                  |
 
 ## Full example
 

@@ -159,6 +159,45 @@ func TestCheckStaysQuietAboutMarkdownImagesItCannotStat(t *testing.T) {
 	}
 }
 
+// status.insecure is a decision rather than a mistake, and this warning is the
+// only trace it leaves once the startup log has scrolled away. It has to fire
+// every run, and only when there is actually a gatus to not-verify.
+func TestCheckKeepsSayingInsecureIsOn(t *testing.T) {
+	withoutAssets(t)
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\nstatus: {gatus: \"https://status.internal\", insecure: true}\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(checkWarnings(cfg, dir), "\n")
+	for _, want := range []string{"status.insecure is on", "https://status.internal", "CA bundle"} {
+		if !strings.Contains(w, want) {
+			t.Errorf("warnings never mention %q:\n%s", want, w)
+		}
+	}
+}
+
+// And stays quiet when it is off, which is the shape every other site has.
+func TestCheckSaysNothingWhenInsecureIsOff(t *testing.T) {
+	withoutAssets(t)
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\nstatus: {gatus: \"https://status.internal\"}\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range checkWarnings(cfg, dir) {
+		if strings.Contains(w, "insecure") {
+			t.Errorf("a verifying site was warned about verification:\n%s", w)
+		}
+	}
+}
+
 // -check is what an operator wires into their own pipeline, so its warnings
 // have to name the thing that is wrong and stay quiet about the rest.
 func TestWarningsNameWhatIsMissing(t *testing.T) {

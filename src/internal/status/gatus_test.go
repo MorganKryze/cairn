@@ -42,7 +42,7 @@ func TestFetchStatuses(t *testing.T) {
 		]`)
 	}))
 	defer srv.Close()
-	st, err := status.Fetch(srv.URL)
+	st, err := status.Fetch(srv.URL, false)
 	if err != nil {
 		t.Fatal(err)
 	}
