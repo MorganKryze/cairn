@@ -28,7 +28,7 @@
       },
       "details": {
         "$ref": "#/definitions/lstring",
-        "description": "Longer text for the detail page; enables the card's Learn more link. Paragraphs split on blank lines, and the markdown subset works here (links, bold, lists…)."
+        "description": "Longer text for the detail page; enables the card's Learn more link. Paragraphs split on blank lines, and CommonMark works here minus raw HTML (links, bold, lists, tables…)."
       },
       "images": {
         "type": "array",

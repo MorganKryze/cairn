@@ -214,8 +214,6 @@ func unsupportedLocales(cfg *config.Config) []string {
 	return out
 }
 
-var mdImgRefRe = regexp.MustCompile(`!\[[^\]]*\]\(([^)\s]+)\)`)
-
 // mediaWarnings flags files nothing references, references naming no file,
 // and files heavy enough to hurt the visitors of the pages that show them.
 func mediaWarnings(cfg *config.Config, mediaDir string) []string {
@@ -259,10 +257,15 @@ func mediaWarnings(cfg *config.Config, mediaDir string) []string {
 			}
 		}
 	}
+	// Asked of the parser that renders the page rather than of a regexp of our
+	// own. The regexp knew only the parenthesised spelling, so `![cap][ref]`
+	// with its definition underneath rendered a broken image and -check still
+	// printed ok. One parser, one answer, and it stays true as the markdown
+	// grows.
 	for _, t := range texts {
 		for _, body := range t.body {
-			for _, m := range mdImgRefRe.FindAllStringSubmatch(body, -1) {
-				markUsed(m[1], t.where)
+			for _, src := range render.ImageRefs(body) {
+				markUsed(src, t.where)
 			}
 		}
 	}

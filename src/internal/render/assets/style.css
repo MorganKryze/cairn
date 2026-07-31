@@ -713,8 +713,14 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .page { padding-bottom: 2.5rem; }
 .page-intro { color: var(--muted); }
 .page-sec { margin-top: 2rem; }
+/* The section label, worn by the hosted page's own section titles and by a
+   markdown ## alike. Child, not descendant, on .detail, or it would also
+   repaint the .page-sec titles nested inside and hand them a top margin the
+   section already provides. The [lang] step is the wrapper the prose template
+   adds when a field falls back to another language: without it, exactly the
+   pages that need the most help rendered their headings as browser defaults. */
 .page-sec h2,
-.detail > h2,
+:is(.detail, .detail > [lang]) > h2,
 .about h2 {
   margin: 0 0 .6rem;
   font-size: .8rem;
@@ -723,7 +729,7 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   text-transform: uppercase;
   color: color-mix(in oklab, var(--accent) 55%, var(--muted));
 }
-.detail > h2, .about h2 { margin-top: 1.8rem; }
+:is(.detail, .detail > [lang]) > h2, .about h2 { margin-top: 1.8rem; }
 
 .tagline {
   margin: 2.1rem 0 0;
@@ -735,16 +741,106 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 }
 .tagline + .about { margin-top: 1.1rem; }
 
-/* ---- rich text (the markdown subset) ---- */
+/* ---- rich text (markdown) ----
 
-:is(.about, .detail) :is(p, li, figcaption) a:not(.btn) {
+   Three containers, one scope. .about is the welcome note, .detail is a
+   service page, and a hosted page is <article class="detail page">, so
+   :is(.about, .detail) already reaches all three and everything below follows
+   it rather than styling bare elements, which would leak into the header, the
+   cards and the footer.
+
+   The voice is deliberately quiet: cairn is a directory page, and prose is the
+   short note beside the links, not the point of the site. */
+
+/* Long unbreakable words are what push a page sideways: a linkified bare URL,
+   a path in inline code, an id in a table cell. break-word (not anywhere)
+   breaks only the word that would otherwise overflow and leaves min-content
+   widths alone, so tables still size themselves the way tables do. */
+:is(.about, .detail) { overflow-wrap: break-word; }
+
+/* Was :is(p, li, figcaption) a, which is where the prose used to live. A link
+   in a table cell or in a heading then got no accent and only the browser's
+   default underline, and the same descendant rule reached down into <p><a
+   class="back">, repainting the quiet back link accent and underlined against
+   its own rule. Scope by container, and name the three anchors inside these
+   articles that are controls rather than prose. */
+:is(.about, .detail) a:not(.btn, .back, .status-pill) {
   color: var(--accent-ink);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Headings. h2 keeps the small uppercase section label set further up, which
+   is the house voice for "a new section starts here" and is what ## has
+   rendered as all along; the rest of the scale is built to sit around it.
+   Left to the browser, h1 came out as 2em of bold body font, louder than the
+   page's own title right above it, and h6 came out smaller than body text.
+   h4 down collapse into one rule: a directory page has no use for four more
+   sizes, and giving them one keeps the deep ones legible. */
+:is(.about, .detail) :is(h1, h3, h4, h5, h6) { margin: 1.7rem 0 .5rem; line-height: 1.3; }
+:is(.about, .detail) h1 {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 40;
+  font-weight: 540;
+  font-size: 1.45rem;
+  letter-spacing: -.012em;
+}
+:is(.about, .detail) h3 { font-size: 1rem; font-weight: 650; }
+:is(.about, .detail) :is(h4, h5, h6) { font-size: .95rem; font-weight: 600; color: var(--muted); }
+
+/* The note's own padding sets its top edge. Without this, a note opening with
+   a heading got the padding and the heading's margin one after the other and
+   sat visibly lower in the card than one opening with a paragraph; padding
+   does not collapse with a child's margin. The dismiss button is absolutely
+   positioned, so the first block of prose is whatever follows it, and one
+   step further in when the note fell back to another language and the prose
+   template wrapped it to say so. */
+.about > .about-x + *,
+.about > [lang] > :first-child { margin-top: 0; }
+/* Space below the last block is the card's padding to give. p:last-of-type
+   used to say this and now says something else entirely: with lists and
+   tables in the mix the last <p> is often mid-note, and every paragraph that
+   ended a list item or a quote matched it too and lost its spacing. */
+:is(.about, .about > [lang]) > :last-child { margin-bottom: 0; }
+
 :is(.about, .detail) ul { margin: 0 0 .9rem; padding-inline-start: 1.15rem; }
+/* ol had no rule at all, so it kept the browser's 40px indent and sat visibly
+   further in than the ul above it. Wider than the ul because the marker is
+   drawn in this padding and a two-digit number needs the room. */
+:is(.about, .detail) ol { margin: 0 0 .9rem; padding-inline-start: 1.6rem; }
 :is(.about, .detail) li { line-height: 1.7; margin-bottom: .3rem; }
 :is(.about, .detail) li::marker { color: var(--accent-ink); }
+/* A nested list closes with the item that holds it. It was inheriting the
+   margin-bottom above, which left a blank line inside the parent item. */
+:is(.about, .detail) li :is(ul, ol) { margin-block: .25rem 0; }
+
+/* GFM task lists. goldmark marks these with the checkbox and nothing else, no
+   class to hook, so the item is found by what it holds: without this the
+   bullet stayed and the item read as two markers side by side. The box hangs
+   back into the list's own indent, so wrapped lines line up under the text
+   rather than under the box. */
+:is(.about, .detail) li:has(> input[type="checkbox"]) { list-style: none; }
+:is(.about, .detail) li > input[type="checkbox"] { margin-inline: -1.15rem .35rem; }
+
+/* A quote reads as a quote by its rule, not by an indent. goldmark's
+   blockquote arrives with the browser's bare 40px margins, so a quote that
+   followed a list looked like one more level of that list. */
+:is(.about, .detail) blockquote {
+  margin: 0 0 .9rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--border);
+  color: var(--muted);
+}
+:is(.about, .detail) blockquote > :last-child { margin-bottom: 0; }
+
+/* The browser's <hr> is a bevelled inset border and reads as the edge of a
+   widget; this is the hairline the header rule and the waypoints already use. */
+:is(.about, .detail) hr { margin: 1.6rem 0; border: 0; border-top: 1px solid var(--border); }
+
+/* The chrome below is for a word inside a sentence. As a descendant selector
+   it also caught every <code> inside a <pre>, and a fenced block came out as a
+   stack of bordered, padded boxes, one per painted line. The block owns the
+   chrome now and the code inside it owns none. */
 :is(.about, .detail) code {
   font-size: .88em;
   background: var(--faint);
@@ -752,6 +848,71 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   border-radius: .35em;
   padding: .08em .35em;
 }
+:is(.about, .detail) pre {
+  margin: 0 0 1rem;
+  padding: .85rem 1rem;
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: .6rem;
+  /* A fenced block is the one run of text nobody can rewrap, so it scrolls
+     itself rather than pushing the whole page sideways. */
+  overflow-x: auto;
+  /* Sized rather than left alone: monospace at the browser's default size
+     draws a visible step smaller than the prose around it, and the two would
+     not agree on what one line is worth. */
+  font-size: .88em;
+  line-height: 1.55;
+}
+:is(.about, .detail) pre code {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Tables. goldmark emits a bare <table> with no wrapper, and a table is the
+   one block that cannot rewrap: enough columns and it pushed the document
+   sideways on a phone. display:block makes the table its own scroll
+   container, which is the only way to get one without an element to wrap it
+   in. The cost is real and worth naming: some engines read the table role off
+   the computed display, so a wrapper <div> in the renderer is the fix that
+   does not pay it. Chromium keeps the role either way. */
+/* The wrapper scrolls, not the table. display:block on a <table> is the usual
+   one-liner and it strips the table role from the accessibility tree in Chrome
+   and Safari, so the cells stop being announced as a table. The renderer emits
+   this div with tabindex, because a region that scrolls has to be reachable
+   from the keyboard. */
+:is(.about, .detail) .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 0 1rem;
+}
+:is(.about, .detail) .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.about, .detail) table {
+  border-collapse: collapse;
+  font-size: .95em;
+}
+:is(.about, .detail) :is(th, td) {
+  padding: .45rem .7rem;
+  border-bottom: 1px solid var(--border);
+  /* Cells opt out of the break-word above: the table has a scroll container of
+     its own, so a long path or an env var keeps its shape and the table
+     scrolls. Left in, one id squeezed its whole column into a ladder of broken
+     syllables while the rest of the table sat half empty. */
+  overflow-wrap: normal;
+}
+/* The browser centres a header cell. Only the ones GFM did not align, or this
+   would beat the align attribute: an attribute is a presentational hint, and
+   any author rule at all outranks it. */
+:is(.about, .detail) th:not([align]) { text-align: start; }
+:is(.about, .detail) thead th { color: var(--muted); }
+
+/* An image written inside a sentence carries the intrinsic width the media
+   resolver measured, so a 512px screenshot ran straight off a 340px column.
+   height:auto is the other half: cap the width attribute and leave the height
+   attribute alone and the picture comes out squashed. */
+:is(.about, .detail) :is(p, li, td, th) img { max-width: 100%; height: auto; }
 
 /* ---- empty state ---- */
 
@@ -1000,6 +1161,12 @@ footer {
     word-break: break-all;
   }
   .shot { break-inside: avoid; }
+  /* On screen a fenced block and a wide table scroll. Paper does not scroll,
+     so whatever hung off the right edge would simply be missing: the block
+     wraps instead, and the table goes back to being laid out as a table. */
+  :is(.about, .detail) pre { overflow-x: visible; white-space: pre-wrap; }
+  :is(.about, .detail) .table-wrap { overflow-x: visible; }
+  :is(.about, .detail) table { width: 100%; }
 }
 
 /* Right-to-left: the layout follows from the logical properties above, only

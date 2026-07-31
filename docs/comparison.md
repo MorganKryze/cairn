@@ -39,8 +39,9 @@ same tab.
   interface languages ship built in, and right-to-left scripts lay out
   properly rather than being bolted on.
 - **It serves the legal pages.** Legal notice, privacy, anything else you
-  need, from the same YAML. Self-hosters, and associations especially, are
-  required to publish these and usually have nowhere to put them.
+  need, from the same YAML, written in ordinary markdown with headings, lists
+  and tables. Self-hosters, and associations especially, are required to
+  publish these and usually have nowhere to put them.
 - **It says where each service lives.** An optional flag marks a tool as
   self-hosted or external, so a visitor can see at a glance which links keep
   their data on your machine and which hand it to someone else. That is a
@@ -55,8 +56,8 @@ same tab.
   bundle, and nothing else. No shell for a compromised process to spawn, no
   package manager, no libc, so an entire family of advisories simply does not
   apply. Trivy reports one target, the Go binary itself. The whole thing is
-  4.3 MB to pull, non-root, one Go dependency, and signed with SLSA provenance
-  and an SBOM.
+  4.3 MB to pull, non-root, two Go dependencies, and signed with SLSA
+  provenance and an SBOM.
 
   This removes somewhere to go, not the possibility of a bug: a flaw in cairn
   is still a flaw. What it buys is that the flaw has no shell to pivot into and

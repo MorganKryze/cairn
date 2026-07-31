@@ -118,7 +118,8 @@ func TestCheckWarnsAboutAMarkdownImageThatIsNotThere(t *testing.T) {
 	withoutAssets(t)
 	dir := testutil.WriteFiles(t, map[string]string{
 		"site.yaml": "locales: [en]\nabout: \"See ![plan](plan.png)\"\n" +
-			"pages: [{id: legal, title: Legal, body: \"![seal](/media/seal.png)\"}]\n",
+			"pages: [{id: legal, title: Legal, body: \"![seal](/media/seal.png)\"}]\n" +
+			"tagline: x\n",
 		"services.yaml": "- {id: a, url: https://a.example.org, name: A, details: \"![shot](sub/shot.png)\"}\n",
 	})
 	cfg, err := config.Load(dir)
@@ -127,7 +128,8 @@ func TestCheckWarnsAboutAMarkdownImageThatIsNotThere(t *testing.T) {
 	}
 	warnings := strings.Join(checkWarnings(cfg, dir), "\n")
 
-	// Both spellings, and the message names where to go and fix it.
+	// Every spelling, including the reference form a regexp of our own could
+	// never see: -check asks the parser that renders the page.
 	for _, want := range []string{
 		`site about shows "plan.png"`,
 		`page "legal" body shows "seal.png"`,
@@ -789,5 +791,29 @@ func TestCheckStaysQuietWhenThoseSettingsWork(t *testing.T) {
 	}
 	if w := strings.Join(inertSettings(cfg), "\n"); w != "" {
 		t.Errorf("a correct config was warned about:\n%s", w)
+	}
+}
+
+// The spelling a regexp cannot see. `![cap][ref]` with its definition further
+// down rendered a broken image while -check printed ok, because the old
+// pattern knew only `![…](…)`. The check reads the AST now, so both forms and
+// the shortcut form all arrive.
+func TestCheckSeesReferenceStyleImages(t *testing.T) {
+	withoutAssets(t)
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "locales: [en]\n" +
+			"about: \"![cap][ref]\\n\\n[ref]: from-ref.png\"\n" +
+			"pages: [{id: legal, title: Legal, body: \"![short]\\n\\n[short]: shortcut.png\"}]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(checkWarnings(cfg, dir), "\n")
+	for _, want := range []string{`site about shows "from-ref.png"`, `page "legal" body shows "shortcut.png"`} {
+		if !strings.Contains(w, want) {
+			t.Errorf("warnings never mention %s:\n%s", want, w)
+		}
 	}
 }

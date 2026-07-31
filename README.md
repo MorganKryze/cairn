@@ -73,7 +73,9 @@ account or a manual, and boring for you to operate.
   error names the file, the line and the expected shape instead of taking the
   site down.
 - **Legal pages served by cairn itself** (legal notice, privacy…): the pages
-  self-hosters never have anywhere to put.
+  self-hosters never have anywhere to put. Written in ordinary
+  [markdown](docs/configuration/text.md), headings and lists and tables, with
+  raw HTML left as text so a config file can never reach the page as markup.
 - **Wherever your domain has room**: a domain, a subdomain, or a sub-path of
   one you already use (`example.org/cairn/`, one flag). cairn handles the
   prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no

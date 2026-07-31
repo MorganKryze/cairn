@@ -15,10 +15,10 @@ so is every key in it.
 | `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web.                                    |
 | `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                                                             |
 | `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                                                                |
-| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and the [markdown subset](text.md).                                                                                   |
+| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and [CommonMark, minus raw HTML](text.md).                                                                            |
 | `links`        | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                                                             |
 | `footer`       | `[]`      | Links at the bottom of every page.                                                                                                                                                                                                   |
-| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept the [markdown subset](text.md).                                                                                                                         |
+| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept [CommonMark, minus raw HTML](text.md).                                                                                                                  |
 | `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                                                              |
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                              |
@@ -357,10 +357,13 @@ button label lives in the `strings` table as `about.dismiss`.
 
 Self-hosters rarely have another place to put a legal notice or a privacy
 policy, so cairn serves these pages itself. Each entry in `pages` becomes
-`/{locale}/{id}/`, rendered in the site layout: the translatable `title` as
-the heading, the translatable `body` as plain-text paragraphs (blank line =
-new paragraph, no markup). Every page is linked automatically at the end of
-the footer, after your `footer` entries, in declaration order.
+`/{locale}/{id}/`, rendered in the site layout: the translatable `title` as the
+page heading, the translatable `body` as [long text](text.md), which is
+CommonMark with raw HTML left as text. Every page is linked automatically at
+the end of the footer, after your `footer` entries, in declaration order.
+
+The `title` is the page's `<h1>`, so start any heading you write in the body at
+`##`; [Writing text](text.md#start-your-headings-one-level-down) says why.
 
 For structured pages, add `sections`: titled blocks rendered after the
 body. With sections present, the body becomes an optional intro; without
