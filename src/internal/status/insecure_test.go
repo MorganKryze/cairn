@@ -29,7 +29,7 @@ func TestInsecureSkipsTheVerificationAndNothingElse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insecure still refused a self-signed gatus: %v", err)
 	}
-	if !st["pad"] {
+	if !st["pad"].Up {
 		t.Errorf("statuses = %v, want pad up: the body has to be read the same way either side of the flag", st)
 	}
 }

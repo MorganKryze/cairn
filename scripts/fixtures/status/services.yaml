@@ -1,0 +1,5 @@
+# Two services, and only one of them carries a host flag. The other is what
+# proves a card foot left holding nothing draws nothing: that is the card of a
+# service the status page has stopped monitoring.
+- { id: alpha, url: https://alpha.example.org, name: Alpha, selfhosted: true }
+- { id: bravo, url: https://bravo.example.org, name: Bravo }

@@ -1,0 +1,10 @@
+# A fixture, not an example: the one shape example/ cannot make, a site with a
+# status page. The Gatus address is a port nothing listens on, on purpose. What
+# scripts/status.mjs drives is the pills changing without a reload, and it
+# answers the refresh itself; a real Gatus here would only make the starting
+# state depend on the weather.
+title: With status
+locales: [en]
+status:
+  gatus: http://127.0.0.1:9/api
+  interval: 5s
