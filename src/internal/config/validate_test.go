@@ -139,9 +139,16 @@ func TestValidateSiteRejections(t *testing.T) {
 		{"footer url that is a script url", func(s *Site) {
 			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "javascript:alert(1)"}}
 		}, []string{"footer url", `"javascript:alert(1)"`}},
-		{"footer icon that is a script url", func(s *Site) {
+		// icon is a links key. A footer entry accepted it and never rendered
+		// it, and schema/site.json has never listed it, so the editor refused
+		// what the loader waved through. The value does not matter: any icon
+		// at all is refused, hostile or not, because none of them render.
+		{"footer entry with an icon", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "https://e.example.org", Icon: "mail"}}
+		}, []string{"footer entry", "has an icon", "move the entry to links"}},
+		{"footer entry with a hostile icon, refused by the same rule", func(s *Site) {
 			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "https://e.example.org", Icon: "javascript:alert(1)"}}
-		}, []string{"footer icon", `"javascript:alert(1)"`, "glyph"}},
+		}, []string{"footer entry", "has an icon"}},
 		// uriRe accepts any scheme, because security.txt takes mailto:, https:
 		// and tel: alike, so this is the one URL field that blessed an
 		// executable scheme outright instead of merely failing to look.

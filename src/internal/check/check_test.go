@@ -441,9 +441,6 @@ func TestCheckNamesSettingsThatDoNothing(t *testing.T) {
 		{"an icons list that drops the install pair",
 			"locales: [en]\nindex: false\nicons: [{src: /assets/a.png, sizes: 180x180}]\n",
 			"stop offering to install"},
-		{"an icon on a footer entry",
-			"locales: [en]\nindex: false\nfooter: [{label: C, url: https://c.example.org, icon: mail}]\n",
-			"only header links render one"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			dir := testutil.WriteFiles(t, map[string]string{

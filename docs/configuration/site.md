@@ -199,9 +199,9 @@ characters before it looks at the scheme. `JavaScript:`, a leading space and a
 tab inside the word are all the same URL as the plain one, so they all get the
 same answer.
 
-## Every footer entry needs a label and a url
+## A footer entry is a label and a url, and only those
 
-`footer` now asks for both, which `links` has always done:
+Both are now required, which `links` has always done:
 
 ```console
 config: site.yaml: every footer entry needs label and url (expected: - {label: Legal, url: /legal})
@@ -211,6 +211,19 @@ An entry missing its `url` used to render an empty `href`, which is a link that
 looks live and silently reloads the page the visitor is already on. One missing
 its `label` rendered as nothing visible at all: an anchor with no text, which a
 screen reader announces as a link and reads out its address.
+
+`icon` is a `links` key and a footer entry carrying one is refused:
+
+```console
+config: site.yaml: footer entry "https://status.example.org" has an icon: only header links render one (move the entry to links, or drop the icon)
+```
+
+The footer is a row of plain text links by design, so the key was accepted and
+then dropped, and `cairn -check` reported it as doing nothing. Meanwhile
+`schema/site.json` had never listed it, so an editor with the schema wired up
+underlined the key while cairn started happily. Refusing it is what makes the
+two agree, and the message says the useful half: there is a list where the icon
+does work.
 
 ## The icon set
 
