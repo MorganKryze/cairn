@@ -161,6 +161,11 @@ type Site struct {
 		// Linked nil means true: the pills link to the status page. false
 		// makes them display-only, for a Gatus a visitor cannot reach.
 		Linked *bool `yaml:"linked"`
+		// Insecure stops cairn verifying the certificate Gatus presents, for
+		// an internal instance whose authority nothing public signed. A hole
+		// the operator opens deliberately, so cairn says so out loud rather
+		// than only obeying: once at startup, and on every -check.
+		Insecure bool `yaml:"insecure"`
 	} `yaml:"status"`
 }
 

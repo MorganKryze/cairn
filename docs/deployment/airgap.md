@@ -486,6 +486,29 @@ extraVolumeMounts:
 which matters more here than elsewhere: `FROM scratch` means there is no shell
 to repair anything in place afterwards.
 
+If mounting a bundle is not yours to arrange, cairn has the same last resort
+Gatus does, and it deserves the same suspicion:
+
+```yaml
+# site.yaml
+status:
+  gatus: https://status.internal
+  insecure: true
+```
+
+It turns the check off for that one connection. Nothing else in cairn makes an
+outbound request, so the blast radius is small, but it is real: with
+verification off, anything that can answer on that address decides what your
+pills say, and the day the certificate changes stops being visible. That is
+what the bundle buys and this does not.
+
+cairn will not let it be quiet about it. The startup log says so once, and
+`cairn -check` says so on every run, for as long as it is on:
+
+```console
+warning: status.insecure is on: the certificate https://status.internal presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)
+```
+
 ### Adding a certificate later means a restart
 
 Both programs read their trust store once, at startup. Updating the ConfigMap

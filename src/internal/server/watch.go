@@ -62,11 +62,14 @@ func reloadOnce(dir, last string) string {
 func Poll() {
 	if cfg := Current().Cfg; cfg.Site.Status.Gatus != "" {
 		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
+		if cfg.Site.Status.Insecure {
+			log.Print("status: insecure is on, so the certificate gatus presents is not verified at all: anything answering on that address decides what the pills say")
+		}
 	}
 	var seen pollLog
 	for {
 		m := Current()
-		pollOnce(m.Cfg.Site.Status.Gatus, &seen)
+		pollOnce(m.Cfg.Site.Status.Gatus, m.Cfg.Site.Status.Insecure, &seen)
 		time.Sleep(m.Cfg.StatusInterval())
 	}
 }
@@ -77,11 +80,11 @@ type pollLog struct{ err, missing string }
 
 // pollOnce runs one status poll and swaps the pages in when the dots changed.
 // An empty url is a no-op: a site without Gatus shows no pill at all.
-func pollOnce(url string, seen *pollLog) {
+func pollOnce(url string, insecure bool, seen *pollLog) {
 	if url == "" {
 		return
 	}
-	st, err := status.Fetch(url)
+	st, err := status.Fetch(url, insecure)
 	if err != nil {
 		st = nil
 		if err.Error() != seen.err {
