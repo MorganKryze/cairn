@@ -20,18 +20,18 @@ logs the same error.
 
 ## `services.yaml` (any name)
 
-| Key          | Required | Default       | Type                                                                                                                                                             |
-| ------------ | -------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`         | yes      | n/a           | slug `[a-z0-9][a-z0-9-]*`, unique across files: it becomes a URL, so no leading dash                                                                             |
-| `url`        | yes      | n/a           | `http(s)://…` or absolute path                                                                                                                                   |
-| `name`       | yes      | n/a           | text (plain or per-locale map)                                                                                                                                   |
-| `desc`       | no       | empty         | text                                                                                                                                                             |
-| `details`    | no       | empty         | long text ([markdown subset](configuration/text.md)); enables the card's "Learn more" link                                                                       |
-| `images`     | no       | `[]`          | detail-page previews; list of `name.png` (a file in `/config/media/`) or `{src, caption: text}`; URLs and absolute paths pass through; also enables "Learn more" |
-| `category`   | no       | `other`       | slug                                                                                                                                                             |
-| `icon`       | no       | neutral glyph | slug, URL, or `/assets/…` path                                                                                                                                   |
-| `tags`       | no       | `[]`          | list of search words                                                                                                                                             |
-| `selfhosted` | no       | none          | `true`/`false`: shows a self-hosted / hosted-elsewhere flag on the card ([details](configuration/services.md#hosting-flag))                                      |
+| Key          | Required | Default       | Type                                                                                                                                                                                                                                    |
+| ------------ | -------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | yes      | n/a           | slug `[a-z0-9][a-z0-9-]*`, unique across files: it becomes a URL, so no leading dash                                                                                                                                                    |
+| `url`        | yes      | n/a           | `http(s)://…` or absolute path                                                                                                                                                                                                          |
+| `name`       | yes      | n/a           | text (plain or per-locale map)                                                                                                                                                                                                          |
+| `desc`       | no       | empty         | text                                                                                                                                                                                                                                    |
+| `details`    | no       | empty         | long text ([markdown subset](configuration/text.md)); enables the card's "Learn more" link                                                                                                                                              |
+| `images`     | no       | `[]`          | detail-page previews; list of `name.png` or `/media/name.png` (both name the same file in `/config/media/`, and both have to be there) or `{src, caption: text}`; URLs and other absolute paths pass through; also enables "Learn more" |
+| `category`   | no       | `other`       | slug                                                                                                                                                                                                                                    |
+| `icon`       | no       | neutral glyph | slug, URL, or `/assets/…` path                                                                                                                                                                                                          |
+| `tags`       | no       | `[]`          | list of search words                                                                                                                                                                                                                    |
+| `selfhosted` | no       | none          | `true`/`false`: shows a self-hosted / hosted-elsewhere flag on the card ([details](configuration/services.md#hosting-flag))                                                                                                             |
 
 ## `site.yaml`
 
@@ -66,6 +66,13 @@ category, page, section, link, image and icon entry alike. The message names
 the kind of entry that refused the key and lists what that entry accepts, so
 a misspelt `show_versions` is answered with `show_version` rather than with
 the keys of some other part of the file.
+
+`javascript:`, `vbscript:` and `data:` are refused in every field above that
+holds a link: `logo`, `favicon`, the `url` and `icon` of a `links` or `footer`
+entry, and the three `security` fields. Those are the ones no other rule
+answers, either because they take a scheme cairn cannot enumerate (`mailto:`)
+or because a bad value there was only ever a `-check` warning. See
+[Links a browser will not follow](configuration/site.md#links-a-browser-will-not-follow).
 
 ## `categories.yaml`
 
@@ -119,23 +126,30 @@ it.
 
 ## Binary flags
 
-| Flag           | Default   | Role                                                                                                                                                                                              |
-| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-addr`        | `:8080`   | listen address                                                                                                                                                                                    |
-| `-config`      | `/config` | config directory                                                                                                                                                                                  |
-| `-assets`      | `/assets` | directory served at `/assets/`, if it exists                                                                                                                                                      |
-| `-base-path`   | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                                                                                             |
-| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                                                                                       |
-| `-init`        | off       | print a commented starter `services.yaml`, then exit                                                                                                                                              |
-| `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit                                                                                                           |
-| `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                       |
-| `-check`       | off       | validate the config directory, print warnings (missing translations, orphan or heavy media, references that resolve nowhere, ids that collide, keys that do nothing, CDN icons), then exit 0 or 1 |
-| `-version`     | off       | print the version, then exit                                                                                                                                                                      |
+| Flag           | Default   | Role                                                                                                                                                                                                                                                                                                 |
+| -------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-addr`        | `:8080`   | listen address                                                                                                                                                                                                                                                                                       |
+| `-config`      | `/config` | config directory                                                                                                                                                                                                                                                                                     |
+| `-assets`      | `/assets` | directory served at `/assets/`, if it exists                                                                                                                                                                                                                                                         |
+| `-base-path`   | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                                                                                                                                                                                                |
+| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                                                                                                                                                                                          |
+| `-init`        | off       | print a commented starter `services.yaml`, then exit                                                                                                                                                                                                                                                 |
+| `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit                                                                                                                                                                                                              |
+| `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                                                                                                                          |
+| `-check`       | off       | validate the config directory, print warnings (partial translations, `strings` or `locales` covering part of the site, orphan or heavy media, references that resolve nowhere or name no file, icon sizes the file contradicts, ids that collide, keys that do nothing, CDN icons), then exit 0 or 1 |
+| `-version`     | off       | print the version, then exit                                                                                                                                                                                                                                                                         |
 
 With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
 `/cairn/static/…`) and cairn strips it back off itself, so the proxy in front
 needs no rewriting. `/healthz` is the one exception: it answers at the root
 too, alongside `/readyz`, because an orchestrator reaches cairn directly.
+
+The `-check` warnings that open a file, a reference under `/assets/` and an
+icon's declared size, are skipped entirely when the `-assets` directory does
+not exist. That directory is there in the container and on nobody's laptop, so
+checking anyway would print a page of wrong warnings and teach you to skim the
+output. Mount it, as [Air-gapped](deployment/airgap.md#2-the-check-that-says-whether-you-are-actually-ready)
+does, and they come back.
 
 ## The display font
 

@@ -173,6 +173,69 @@ func TestServiceImageErrors(t *testing.T) {
 	}
 }
 
+// A file in media/ has two documented spellings, the bare name and the
+// /media/… path it is served at, and they name the same file on disk. Only the
+// bare one was ever stat'd: the same missing image refused to boot written one
+// way and reached the page as a broken img written the other, with -check
+// printing ok both times.
+func TestAbsoluteMediaPathIsCheckedLikeABareName(t *testing.T) {
+	for _, src := range []string{"nope.png", "/media/nope.png"} {
+		dir := testutil.WriteFiles(t, map[string]string{
+			"services.yaml": "- {id: a, url: https://a.example.org, name: A, images: [" + src + "]}\n",
+		})
+		_, err := config.Load(dir)
+		if err == nil {
+			t.Errorf("image %q: a file that is not there was accepted", src)
+			continue
+		}
+		// The message quotes the spelling the operator wrote, not the one the
+		// check normalised to, or they cannot find the line to fix.
+		for _, want := range []string{`service "a"`, `"` + src + `"`, "not found"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("image %q: error %v does not mention %q", src, err, want)
+			}
+		}
+	}
+}
+
+// The same path with the file in place still loads. The rule is about the
+// file, not about the slash.
+func TestAbsoluteMediaPathAcceptsAFileThatIsThere(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A, images: [/media/shot.png]}\n",
+	})
+	if err := os.MkdirAll(filepath.Join(dir, "media"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "media", "shot.png"), []byte("png"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.Load(dir); err != nil {
+		t.Fatalf("refused an image that is on disk: %v", err)
+	}
+}
+
+// Everything cairn does not serve itself keeps passing through unlooked at,
+// with no media/ directory here at all. None of these names a file this
+// directory is responsible for, and stat'ing them would refuse configs that
+// are correct.
+func TestImagesCairnDoesNotServeAreNotCheckedForExistence(t *testing.T) {
+	for _, src := range []string{
+		"https://cdn.example.org/shot.png", // somebody else's server
+		"//cdn.example.org/shot.png",       // the protocol-relative form of it
+		"/assets/shot.png",                 // the mounted assets dir, not this one
+		"/static/shot.png",                 // cairn's own bundled files
+		"/whatever/shot.png",               // anything else behind the base path
+	} {
+		dir := testutil.WriteFiles(t, map[string]string{
+			"services.yaml": "- {id: a, url: https://a.example.org, name: A, images: [\"" + src + "\"]}\n",
+		})
+		if _, err := config.Load(dir); err != nil {
+			t.Errorf("image %q was checked for existence and should not have been: %v", src, err)
+		}
+	}
+}
+
 func TestFriendlyYAMLErrors(t *testing.T) {
 	for _, tc := range []struct{ name, services, want string }{
 		{"scalar for list", "- id: a\n  url: https://a.example.org\n  name: A\n  tags: solo\n",

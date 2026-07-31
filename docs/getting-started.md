@@ -92,15 +92,20 @@ suggests a key your binary does not know yet.
 
 And `cairn -check` validates a config directory without serving anything,
 then warns about everything a serving site would hide: a translation missing
-in one locale, a `media/` file nothing references, an image heavy enough to
-hurt, a logo or a link written so it resolves nowhere, two categories
-differing only by case, a key that was accepted and then does nothing,
-icons that load from a CDN. It exits 0 or 1, so it slots into CI if you
-version your config:
+in one locale, a language cairn has no interface for, a `media/` file nothing
+references, an image heavy enough to hurt, a logo or a link written so it
+resolves nowhere, an `/assets` path naming a file that is not there, an icon
+declaring a size its file contradicts, two categories differing only by case,
+a key that was accepted and then does nothing, icons that load from a CDN. It
+exits 0 or 1, so it slots into CI if you version your config:
 
 ```sh
 docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
 ```
+
+The two warnings that open a file, the `/assets` path and the icon size, need
+that directory mounted too (a second `-v`, or `-assets` on a bare binary).
+Without it they stay quiet rather than call every file missing at once.
 
 The whole GitHub Actions job, for a config repo:
 

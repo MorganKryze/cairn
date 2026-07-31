@@ -6,11 +6,23 @@
   const header = document.querySelector('header');
   const totop = document.querySelector('.totop');
   const nav = document.querySelector('.nav');
+  const burger = nav && nav.querySelector('summary');
   let last = scrollY;
+
+  // A scroll dismisses the open menu, which is right for a pointer and wrong
+  // for a keyboard: tabbing to a menu link the browser has to scroll into view
+  // fires this handler, and closing the menu underneath both takes away what
+  // the user was tabbing through and drops focus to <body>, so the next Tab
+  // restarts at the skip link. Focus on the burger itself is still the pointer
+  // case: clicking it leaves focus there, and the summary survives the close.
+  const keyboardInside = () => {
+    const a = document.activeElement;
+    return !!a && a !== burger && nav.contains(a);
+  };
 
   const update = () => {
     const y = scrollY;
-    if (nav && nav.open) nav.open = false; // a scroll dismisses the open menu
+    if (nav && nav.open && !keyboardInside()) nav.open = false;
     if (header) {
       // near the top or scrolling up: show; scrolling down past a bit: hide
       if (y < 80 || y < last - 4) header.classList.remove('header-hidden');

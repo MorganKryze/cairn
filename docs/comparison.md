@@ -64,8 +64,9 @@ same tab.
   anything.
 
 - **It reads like a page, not a control panel.** A hero that says what this
-  place is, typography meant for prose, contrast measured against WCAG AA, and
-  every feature still working with JavaScript turned off.
+  place is, typography meant for prose, text contrast measured against WCAG AA,
+  and a directory that is still whole with JavaScript turned off: every
+  category, every card, every link, minus the search.
 
 ## What the others do that cairn never will
 

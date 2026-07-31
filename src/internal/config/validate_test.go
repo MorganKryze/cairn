@@ -118,6 +118,35 @@ func TestValidateSiteRejections(t *testing.T) {
 			s.Pages = []SitePage{{ID: "legal", Title: LString{"": "x"},
 				Sections: []PageSection{{Title: LString{"": "Publisher"}}}}}
 		}, []string{"every section needs title and body"}},
+		// The six fields an executable scheme used to reach. Every one is an
+		// error rather than a warning, unlike a missing image file: a typo puts
+		// a real path in the wrong place, and nothing puts javascript: there by
+		// accident. The favicon is the one that escapes html/template entirely,
+		// since it reaches the manifest as JSON and /favicon.ico as a Location.
+		{"logo that is a script url", func(s *Site) { s.Logo = "javascript:alert(1)" },
+			[]string{"logo", `"javascript:alert(1)"`, "javascript: scheme", "/assets"}},
+		{"favicon that is a script url", func(s *Site) { s.Favicon = "vbscript:msgbox(1)" },
+			[]string{"favicon", `"vbscript:msgbox(1)"`, "vbscript: scheme"}},
+		// data:text/html carries a document, script and all. It is refused for
+		// the same reason and named separately, because an operator who reaches
+		// for it is reaching for an inline icon and deserves to be told which
+		// of the three rules they hit.
+		{"favicon that is a data url", func(s *Site) { s.Favicon = "data:text/html,<script>x</script>" },
+			[]string{"favicon", "data: scheme"}},
+		{"links url that is a script url", func(s *Site) {
+			s.Links = []FooterLink{{Label: LString{"": "Wiki"}, URL: "javascript:alert(1)"}}
+		}, []string{"links url", `"javascript:alert(1)"`, "mailto:"}},
+		{"footer url that is a script url", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "javascript:alert(1)"}}
+		}, []string{"footer url", `"javascript:alert(1)"`}},
+		{"footer icon that is a script url", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "https://e.example.org", Icon: "javascript:alert(1)"}}
+		}, []string{"footer icon", `"javascript:alert(1)"`, "glyph"}},
+		// uriRe accepts any scheme, because security.txt takes mailto:, https:
+		// and tel: alike, so this is the one URL field that blessed an
+		// executable scheme outright instead of merely failing to look.
+		{"security contact that is a script url", func(s *Site) { s.Security.Contact = "javascript:alert(1)" },
+			[]string{"security.contact", `"javascript:alert(1)"`, "mailto:"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -208,16 +237,103 @@ func TestValidateSiteNormalizes(t *testing.T) {
 	}
 }
 
+// The plain spelling is the one nobody writes. A browser deletes every tab,
+// newline and carriage return from a URL and strips the leading control
+// characters and spaces before it reads the scheme, so all of the first group
+// are one URL as far as it is concerned. A literal prefix test would refuse
+// the obvious one and wave the rest through, which is worse than no check: it
+// reads like a check that works.
+func TestUnsafeSchemeSeesThroughTheDressing(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		val  string
+		want string
+	}{
+		{"plain", "javascript:alert(1)", "javascript"},
+		{"capitalised", "JavaScript:alert(1)", "javascript"},
+		{"split by a tab", "java\tscript:alert(1)", "javascript"},
+		{"split by a newline", "java\nscript:alert(1)", "javascript"},
+		{"split by a carriage return", "java\rscript:alert(1)", "javascript"},
+		{"led by spaces", "  javascript:alert(1)", "javascript"},
+		{"led by a control character", "\x01javascript:alert(1)", "javascript"},
+		{"vbscript, the same trick", "VB\tScript:msgbox(1)", "vbscript"},
+		// data: is the third because data:text/html is a document with script
+		// in it. The dressing works on it just the same.
+		{"a data document", "data:text/html,<script>alert(1)</script>", "data"},
+		{"a data image, refused all the same", "data:image/svg+xml,<svg/>", "data"},
+		{"data, dressed", " Da\tta:text/html,x", "data"},
+		// The look-alikes. Refusing one of these would be the worse failure of
+		// the two: a config that booted yesterday stops booting on an upgrade,
+		// and the operator is told their perfectly good path runs code.
+		{"a file whose name contains the word", "/assets/javascript-logo.png", ""},
+		{"a mailbox that contains the word", "mailto:javascript@example.org", ""},
+		{"a url whose path contains it", "https://example.org/javascript:alert(1)", ""},
+		{"a file whose name starts with the third word", "/assets/database.png", ""},
+		{"a host that starts with it", "https://data.example.org/logo.png", ""},
+		{"an ordinary asset path", "/assets/logo.png", ""},
+		{"nothing at all", "", ""},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := unsafeScheme(c.val); got != c.want {
+				t.Errorf("unsafeScheme(%q) = %q, want %q", c.val, got, c.want)
+			}
+		})
+	}
+}
+
+// The fields an executable scheme could never have reached, with the gate that
+// stops each one. Nothing was added for them: a second refusal would only say
+// the same thing twice. They are pinned here so that loosening one of those
+// gates shows up as a hole in this rule rather than as a value in the manifest.
+func TestUnsafeSchemeWasAlreadyRefusedWhereAGateExisted(t *testing.T) {
+	for _, c := range []struct {
+		name, want string
+		mut        func(*Site)
+	}{
+		{"icons src, by the URL-or-/assets rule", "not a URL or an /assets path", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "javascript:alert(1)", Sizes: "512x512"}}
+		}},
+		{"links icon, by the glyph rule", "is not a built-in glyph", func(s *Site) {
+			s.Links = []FooterLink{{Label: LString{"": "W"}, URL: "https://w.example.org", Icon: "javascript:alert(1)"}}
+		}},
+		{"status.gatus, by the http rule", "status.gatus", func(s *Site) { s.Status.Gatus = "javascript:alert(1)" }},
+		{"status.page, by the http rule", "status.page", func(s *Site) { s.Status.Page = "javascript:alert(1)" }},
+		{"url, by the http rule", "url", func(s *Site) { s.URL = "javascript:alert(1)" }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = "#247b7b"
+			c.mut(s)
+			err := validateSite(s, map[string]string{})
+			if err == nil {
+				t.Fatal("an executable scheme was accepted")
+			}
+			if !strings.Contains(err.Error(), c.want) {
+				t.Errorf("message %q does not mention %q", err, c.want)
+			}
+		})
+	}
+}
+
 // The shapes that must pass, so a tightened rule cannot quietly start
 // refusing a config that has always been legal.
 func TestValidateSiteAccepts(t *testing.T) {
 	s := &Site{
 		Locales: []string{"fr", "en", "pt-BR"},
 		URL:     "http://tools.example.org",
+		Logo:    "/assets/logo.png",
+		Favicon: "https://cdn.example.org/favicon.png",
 		Links: []FooterLink{
 			{Label: LString{"": "Wiki"}, URL: "https://w.example.org", Icon: "book"},
 			{Label: LString{"": "Logo"}, URL: "https://x.example.org", Icon: "/assets/l.png"},
 			{Label: LString{"": "Plain"}, URL: "https://y.example.org"},
+			// mailto: is a legal link target, and the scheme rule has to let
+			// every scheme but the three named ones through.
+			{Label: LString{"": "Mail"}, URL: "mailto:hi@example.org"},
+		},
+		Footer: []FooterLink{
+			{Label: LString{"": "Legal"}, URL: "/en/legal/"},
+			{Label: LString{"": "Status"}, URL: "https://status.example.org"},
 		},
 		Pages: []SitePage{
 			{ID: "legal-notice", Title: LString{"": "Legal"}, Body: LString{"": "text"}},

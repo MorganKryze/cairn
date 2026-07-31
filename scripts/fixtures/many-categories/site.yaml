@@ -1,0 +1,11 @@
+# A fixture, not an example: the two shapes example/ cannot make, and both of
+# them only appear on a phone. Nine categories is above the seven at which the
+# mobile trail folds into a jump-to select, and header links are what put a
+# burger in the menu bar. scripts/a11y.mjs needs to watch each of them.
+title: Many categories
+locales: [en]
+links:
+  - label: First link
+    url: https://first.example.org
+  - label: Second link
+    url: https://second.example.org

@@ -53,10 +53,14 @@ account or a manual, and boring for you to operate.
 - **At home on a phone**: the layout reflows to one hand, the header steps
   aside as you scroll and returns the moment you head back up, and a burger
   keeps search within thumb's reach.
-- **Built to stay readable**: contrast measured against WCAG AA in both
+- **Built to stay readable**: text contrast measured against WCAG AA in both
   themes, a skip link, named landmarks, search results announced through a
-  live region, and right-to-left languages laid out the right way round.
-  Tested with a browser, not yet with a real screen reader: if you use one,
+  live region, a theme toggle that says which way it is set, and
+  right-to-left languages laid out the right way round. The controls a
+  visitor can operate, the search box and the phone's jump-to select, carry a
+  boundary that clears 3:1, remeasured in a real browser on every pull
+  request. Tested with a browser, never audited as a whole, and not yet with a
+  real screen reader: if you use one,
   [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
 - **Calm typography, light and dark, keyboard-friendly**, and every feature
   degrades gracefully without JavaScript.

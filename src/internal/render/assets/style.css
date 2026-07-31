@@ -36,6 +36,15 @@
   --muted: light-dark(#5c6461, #98a19d);
   --faint: light-dark(#e8e7df, #212829);
   --border: light-dark(#dcdbd2, #2a3130);
+  /* --border is decoration: card outlines, rules, the trail's spine. It sits
+     at 1.21:1 against --bg in light and 1.34:1 in dark, which is fine for
+     decoration and far under the 3:1 WCAG 1.4.11 asks of a control's boundary.
+     Darkening --border to reach it would repaint every card on the page, so
+     this second value exists for the boundary that *is* the control, where
+     nothing else says where to click or type. Measured in the browser against
+     both neighbours: light 3.31:1 on --bg and 3.67:1 on --card, dark 3.63:1
+     and 3.31:1. */
+  --ui-border: light-dark(#7f8482, #6b7270);
   --accent: #247b7b;                                       /* set inline from theme.accent */
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
   --up: light-dark(#2e8b57, #4cb47c);
@@ -309,6 +318,15 @@ header { padding-block: 1.4rem; }
   box-shadow: var(--shadow);
   transition: border-color .15s, box-shadow .15s;
 }
+/* An input's outline is the whole of what says where to type, so WCAG 1.4.11
+   wants 3:1 there. It exempts inactive components, and that is not a shortcut
+   here, it is the shape of the thing: the bar renders disabled and decorative
+   on every page but the home page, purely for layout parity, and nobody can
+   type in it. So the strong border goes exactly where the control is awake and
+   the quiet one stays exactly where it is asleep.
+   :where() holds this at .search-box's own specificity so :focus-within below
+   still gets to paint the border accent. */
+.search-box:where(:has(input:enabled)) { border-color: var(--ui-border); }
 @media (max-width: 44rem) {
   .search, .search:focus-within { flex: 1 1 100%; margin-inline-start: 0; width: 100%; }
 }
@@ -926,15 +944,23 @@ footer {
     background: color-mix(in oklab, var(--accent) 8%, var(--card));
   }
 
-  /* above ~7 categories the chips give way to a compact jump-to select */
-  .toc.many { display: none; }
-  .toc-jump { display: block; margin: 1.5rem 0 .3rem; }
+  /* Above ~7 categories the chips give way to a compact jump-to select, but
+     only where something can drive it: the select's entire behaviour lives in
+     nav.js, so with JavaScript off this swap left a phone with no category
+     navigation at all, on the viewport where the list matters most. The
+     pre-paint script in <head> stamps data-js before first render, so gating
+     on it costs no flash of the wrong one, and the fallback needs no markup:
+     .toc.many simply stays a chip row. */
+  [data-js] .toc.many { display: none; }
+  [data-js] .toc-jump { display: block; margin: 1.5rem 0 .3rem; }
   .toc-select {
     width: 100%;
     max-width: 22rem;
     min-height: 2.75rem;
     padding: .3rem .9rem;
-    border: 1px solid var(--border);
+    /* a form control, so its boundary is the control: --ui-border, not
+       --border, for the same 3:1 reason as the search box */
+    border: 1px solid var(--ui-border);
     border-radius: .7rem;
     background: var(--card);
     color: var(--fg);

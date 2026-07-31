@@ -46,6 +46,13 @@ icon: /assets/icons/intranet.svg
 The same mount serves the site `logo:` and anything else you need
 (`/assets/...` URLs map directly to the directory).
 
+`cairn -check` opens those paths for you. An `/assets/…` logo, favicon,
+home-screen icon or header-link icon that names no file is a warning, because a
+mistyped one boots perfectly and then paints a broken image on every page. It
+only looks when it can see the directory, which means `-assets` on the command
+line or a second `-v` on a `docker run`; without it the check says nothing at
+all, rather than reporting every file in the config as missing.
+
 ## Going fully self-hosted
 
 Slug icons load from the jsdelivr CDN in your visitors' browsers: fine for
