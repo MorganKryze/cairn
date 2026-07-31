@@ -15,6 +15,7 @@ https://cairn.libresoftware.cloud
 ## Docs
 
 - [Getting started](docs/getting-started.md): zero to a served page in five minutes
+- [Upgrading](docs/upgrading.md): the dry run before you switch, and every config shape a version has started refusing, each with its verbatim error and its fix
 - [Services](docs/configuration/services.md): the cards; every key with defaults
 - [Site](docs/configuration/site.md): title, welcome note, header links, hosted legal pages, footer, credit
 - [Writing text](docs/configuration/text.md): paragraphs and the markdown subset the long fields accept

@@ -6,6 +6,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 ## First steps
 
 - [Getting started](getting-started.md): zero to a served page in five minutes.
+- [Upgrading](upgrading.md): what a new version can refuse, each message and its fix.
 
 ## Configuration
 

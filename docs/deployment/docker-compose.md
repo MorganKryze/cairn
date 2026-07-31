@@ -68,6 +68,17 @@ test suite inside the build:
 | `unstable`          | every commit on `main`                                  |
 | a commit hash       | that exact build                                        |
 
+Following `latest` or `stable` means a new version arrives on its own. A
+release occasionally tightens what the config accepts, and this is the
+deployment where that shows: `/healthz` is liveness and stays green, so the
+container comes back up healthy and serves the getting-started page instead of
+your site. One command tells you beforehand, and
+[Upgrading](../upgrading.md) is the page that answers whatever it prints:
+
+```sh
+docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+```
+
 To build from source instead, replace `image:` with:
 
 ```yaml
