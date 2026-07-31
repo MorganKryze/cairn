@@ -88,8 +88,11 @@ name; each entry is a plain path or a `{src, caption}` pair:
 
 They appear on the detail page, in order, between the text and the button.
 cairn serves `media/` itself at `/media/`, so previews stay self-hosted like
-everything else; a full URL or an absolute `/assets/…` path passes through
-unchanged. Referencing a file that is not in `media/` is a config error that
-names the expected location.
+everything else; a full URL or an `/assets/…` path passes through unchanged.
+
+`screen.png` and `/media/screen.png` are two spellings of the same file, and
+cairn opens the file behind either one before it serves the page. A name that
+reaches nothing is a config error giving the path it looked for, so a typo
+stops at startup rather than showing a visitor an empty frame.
 
 Next: [Site](site.md)

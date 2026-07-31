@@ -33,6 +33,19 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
 		}
 	}
+	// logo and favicon are the two image fields nothing else validates: a value
+	// that is not a URL only earns a -check warning, since a missing file is a
+	// plausible typo. A script scheme is not, so it stops the load. The favicon
+	// is the sharp case: it reaches the manifest as JSON, which no html/template
+	// escaping covers, and comes back from /favicon.ico as a Location header.
+	for _, f := range []struct{ key, val string }{
+		{"logo", site.Logo},
+		{"favicon", site.Favicon},
+	} {
+		if hasScriptScheme(f.val) {
+			return scriptSchemeErr(f.key, f.val, "https://… or an /assets path")
+		}
+	}
 	// security.txt is a line-based format, so a newline in any value would let
 	// a typo forge a field. Reject that here rather than escape it later.
 	for _, f := range []struct{ key, val string }{
@@ -45,6 +58,13 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		}
 		if strings.ContainsAny(f.val, "\r\n") {
 			return fmt.Errorf("config: site.yaml: %s must be one line", f.key)
+		}
+		// uriRe takes any scheme, because security.txt takes mailto:, https:
+		// and tel: alike, so it is the one URL check here that a script scheme
+		// walks straight through. Catch it before uriRe has a chance to bless
+		// it, or the researcher this file is written for gets a dead link.
+		if hasScriptScheme(f.val) {
+			return scriptSchemeErr(f.key, f.val, "e.g. mailto:security@example.org or https://example.org/security")
 		}
 		if !uriRe.MatchString(f.val) {
 			return fmt.Errorf("config: site.yaml: %s %q is not a URI (expected e.g. mailto:security@example.org or https://example.org/security)", f.key, f.val)
@@ -72,10 +92,31 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if len(l.Label) == 0 || l.URL == "" {
 			return fmt.Errorf("config: site.yaml: every links entry needs label and url (expected: - {label: Wiki, url: https://…})")
 		}
+		// A link url is the one field here that takes any scheme at all, since
+		// mailto: and tel: are legitimate targets, so nothing else would stop
+		// this one. html/template blanks the href, which means the header link
+		// renders and goes nowhere with no error anywhere.
+		if hasScriptScheme(l.URL) {
+			return scriptSchemeErr("links url", l.URL, "https://…, mailto:… or an absolute path")
+		}
 		if ic := l.Icon; ic != "" && !IsURLOrAbs(ic) {
+			// A script scheme lands here too: it is not a URL, not an /assets
+			// path and not a glyph name, so this refusal already covers it and
+			// a second gate would only say the same thing twice.
 			if _, ok := Glyphs[ic]; !ok {
 				return fmt.Errorf("config: site.yaml: links icon %q is not a built-in glyph (%s), a URL or an /assets path", ic, strings.Join(GlyphNames(), ", "))
 			}
+		}
+	}
+	// Footer entries are validated nowhere else: they carry no icon on the page
+	// and no rule ever asked what their url was. That silence is exactly why a
+	// script scheme has to be caught here rather than left to the next reader.
+	for _, l := range site.Footer {
+		if hasScriptScheme(l.URL) {
+			return scriptSchemeErr("footer url", l.URL, "https://…, mailto:… or an absolute path")
+		}
+		if hasScriptScheme(l.Icon) {
+			return scriptSchemeErr("footer icon", l.Icon, "a built-in glyph name, https://… or an /assets path")
 		}
 	}
 	for i, ic := range site.Icons {
@@ -118,4 +159,30 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// hasScriptScheme reports a value a browser would read as javascript: or
+// vbscript:, however it is dressed up.
+//
+// The dressing is the whole point. A browser removes every tab, newline and
+// carriage return from a URL and strips leading control characters and spaces
+// before it looks at the scheme, so "java\tscript:alert(1)", " javascript:…"
+// and "JavaScript:…" are all the same URL as the plain one. Matching the
+// literal text would refuse the obvious spelling and pass the three that
+// matter, which is worse than not checking: it reads as a check that works.
+func hasScriptScheme(s string) bool {
+	s = strings.Map(func(r rune) rune {
+		if r == '\t' || r == '\n' || r == '\r' {
+			return -1
+		}
+		return r
+	}, s)
+	s = strings.ToLower(strings.TrimLeftFunc(s, func(r rune) bool { return r <= ' ' }))
+	return strings.HasPrefix(s, "javascript:") || strings.HasPrefix(s, "vbscript:")
+}
+
+// scriptSchemeErr words the refusal once for every field that can carry one,
+// so an operator who trips it twice can tell it is one rule and not two.
+func scriptSchemeErr(field, val, accepted string) error {
+	return fmt.Errorf("config: site.yaml: %s %q uses the javascript: or vbscript: scheme, which loads nothing (expected %s)", field, val, accepted)
 }

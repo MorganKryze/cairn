@@ -36,6 +36,15 @@ Images resolve exactly like [service preview images](services.md#preview-images)
 a bare name is a file in your `media/` folder, a URL or an absolute path
 passes through.
 
+They are checked differently, though, and it is worth knowing which way round.
+A missing `images:` entry stops the load and names itself; a missing one here
+only earns a `cairn -check` warning, because prose is not worth refusing a
+whole site over:
+
+```console
+warning: page "legal" body shows "seal.png", which is not there: the page renders a broken image (expected a file at ./config/media/seal.png)
+```
+
 A full example, in a hosted page:
 
 ```yaml

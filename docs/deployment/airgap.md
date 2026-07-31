@@ -131,6 +131,13 @@ ok: 2 services, 1 categories, 0 pages, locales [fr]
 As long as that line names an icon, your air gap has a hole in it. Once it is
 clean, `sha256sum * > SHA256SUMS` and cross.
 
+The mount earns its place twice over, because two other checks go quiet without
+it rather than loud: an `/assets` path that names no file, and an icon whose
+declared `sizes` the file contradicts. Both have to open the file, and with no
+directory to open they say nothing at all. A clean run on `/config` alone is
+therefore worth less than it looks, which matters here more than anywhere: on
+the far side of the gap there is no fixing a broken image with a download.
+
 ## 3. Inside, with a registry
 
 ```sh

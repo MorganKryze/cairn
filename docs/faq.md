@@ -17,10 +17,12 @@ its visitors. Your reverse proxy already writes an access log; if you need
 numbers, count there.
 
 **Does it need JavaScript?**
-No. Pages are fully server-rendered; small scripts progressively add the
-search box, the category trail, the theme toggle and the welcome note's
-dismiss button. Without them, visitors simply see the whole directory in
-their system's theme.
+No. Pages are fully server-rendered; small scripts add the search box, the
+theme toggle, the welcome note's dismiss button and the highlight that follows
+you down the category trail. Without them the directory is all still there,
+every category, every card, every link, in the system's theme. On a phone the
+trail stays a row of chips instead of folding into the compact jump-to select,
+which is a control only a script can drive.
 
 **Can I put it behind authentication?**
 You can (any proxy auth works: Authelia, Tinyauth, basic auth), but cairn is

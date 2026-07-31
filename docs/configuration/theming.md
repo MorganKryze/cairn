@@ -48,16 +48,26 @@ The stylesheet is built on custom properties; override those first:
 | `--muted`        | secondary text                                      |
 | `--card`         | card, tile and search backgrounds                   |
 | `--faint`        | icon tiles, subtle fills                            |
-| `--border`       | card, chip and input borders                        |
+| `--border`       | card, chip and rule outlines                        |
+| `--ui-border`    | the edge of a control you can operate               |
 | `--accent`       | fills, focus rings, buttons (set by `theme.accent`) |
 | `--accent-ink`   | accent tuned for text contrast (derived)            |
 | `--up`, `--down` | status dot colors                                   |
+
+Two border colors, because they answer to different rules. `--border` draws
+decoration: the outline of a card, a rule, the trail's spine, all things the
+page would still be legible without. `--ui-border` draws the edge of something
+a visitor operates, the search box on the home page and the jump-to select a
+phone gets, where nothing else says where to type or tap. That edge is held at
+3:1 against the page and against its own fill, which is the floor
+[WCAG asks for a control's boundary](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html);
+if you override it, keep it there.
 
 Anything beyond variables is regular CSS on stable class names (`.card`,
 `.cat`, `.way`, `.tile`, `.about`, `.menu`, `.toc`, `.detail`, `.btn`, …).
 Keep [WCAG AA
 contrast](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
-in mind; the defaults pass it.
+in mind for text; the defaults pass it.
 
 ### Typography
 

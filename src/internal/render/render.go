@@ -48,7 +48,10 @@ type Model struct {
 // The about cookie stores a hash of the note's content (the data-about
 // attribute), so an edited note reappears even for visitors who dismissed
 // the previous one.
-const prePaintScript = `var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
+// data-js is stamped here rather than from a deferred script because CSS keys
+// off it before first paint: with JavaScript off, the mobile category trail
+// must stay as chips instead of folding into a select only nav.js can drive.
+const prePaintScript = `document.documentElement.setAttribute('data-js','');var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
 
 // aboutHash fingerprints the welcome note across all locales; eight hex
 // chars are plenty for a cookie value that only needs to change when the

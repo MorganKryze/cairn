@@ -12,7 +12,7 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `test-search`, `coverage`, `lint`, `build`, `chart`, `demo`,
+`test`, `test-browser`, `coverage`, `lint`, `build`, `chart`, `demo`,
 `demo-rebuild`, `down`, `logs`, `shots`, `hooks`, `icons`.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
@@ -44,6 +44,7 @@ src/internal/
 docker/               Dockerfile (FROM scratch) and the hardened compose
 charts/cairn/         the Helm chart, same objects as docs/deployment/kubernetes.md
 example/              the config served by the dev loop and the docs
+scripts/              the browser tests and their fixtures, icons, screenshots
 docs/                 GitHub-native Markdown, no generator
 ```
 
@@ -90,17 +91,33 @@ docs: quickstart readme and example config
 
 No trailers, no bodies unless the _why_ genuinely needs a sentence.
 
-## The search
+## The browser tests
 
-`search.js` is the only behaviour `go test` cannot reach: the Go tests assert
-the markup that ships, not what happens once someone types into it. `just
-test-search` drives it in a real browser against the example config, and CI
-runs the same script. It pulls nothing from a registry, so unlike the demo job
-it is safe to make a required check.
+A handful of behaviours are what `go test` cannot reach: the Go tests assert
+the markup that ships, not what happens once someone types, clicks or scrolls.
+`just test-browser` drives them in a real browser and CI runs the same two
+scripts. They pull nothing from a registry, so unlike the demo job they are
+safe to make a required check.
 
-Anything you change in `search.js` belongs there, particularly the paths back
-to an empty query: clearing the field, Escape, and typing only spaces all have
-to return the full list rather than "no results".
+`scripts/search.mjs` drives the search against `example/`. Anything you change
+in `search.js` belongs there, particularly the paths back to an empty query:
+clearing the field, Escape, and typing only spaces all have to return the full
+list rather than "no results".
+
+`scripts/a11y.mjs` drives four things no markup assertion can see: the theme
+toggle's `aria-pressed`, the 3:1 boundary on the controls a visitor can
+operate, the mobile category swap with JavaScript on and with it off, and the
+burger menu surviving a scroll while the keyboard is inside it. The last two
+need a site `example/` cannot provide, so they run against
+`scripts/fixtures/many-categories/`: more than seven categories, which is where
+the chip row gives way to a select, and enough header links to raise the
+burger.
+
+The recipe serves both configs, on 8090 and 8091, and kills them on the way
+out. The CI job stays named `search` whatever else it grows to run: it is a
+required check on a protected branch, and a required check under a new name
+never runs, which leaves every pull request waiting for a job that no longer
+exists.
 
 ## The icons
 

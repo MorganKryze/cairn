@@ -148,6 +148,38 @@ config: site.yaml: url "https://example.org/cairn" must be the domain alone, wit
 
 More on the sub-path in [Reverse proxies](../deployment/reverse-proxies.md#under-a-sub-path).
 
+## Links a browser will not follow
+
+`javascript:` and `vbscript:` are a config error in every field of this file
+that holds a link: `logo`, `favicon`, the `url` and `icon` of a `links` or
+`footer` entry, and the three `security` fields.
+
+```console
+config: site.yaml: footer url "javascript:alert(1)" uses the javascript: or vbscript: scheme, which loads nothing (expected https://…, mailto:… or an absolute path)
+```
+
+The rest of the file was already answered: a service `url` has to be a URL or
+a path, an unknown `links` icon is met with the list of glyphs. These fields
+are the ones where nothing else would have spoken. A header link takes
+`mailto:` and `tel:` besides `https://`, and `security.contact` takes any URI
+at all, which is what [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116) asks
+of it; `logo` and `favicon` are checked by nothing at boot, since a missing
+file there is a plausible typo and earns a `cairn -check` warning rather than a
+refusal.
+
+What the refusal buys is an error instead of a silence. Nothing here would have
+run: `html/template` blanks a `javascript:` href on the way out, so the link
+renders in the header of every page and goes nowhere, with nothing in the log
+to say why. The favicon is the sharper case, since it reaches the web manifest
+as JSON, which template escaping does not cover, and comes back from
+`/favicon.ico` as a `Location` header.
+
+The value is read the way a browser reads it, not the way it is written: a
+browser drops tabs and newlines from a URL and strips leading control
+characters before it looks at the scheme. `JavaScript:`, a leading space and a
+tab inside the word are all the same URL as the plain one, so they all get the
+same answer.
+
 ## The icon set
 
 Out of the box cairn serves a complete set, all generated from one drawing so
@@ -210,6 +242,22 @@ Anything wrong in this list is a config error that names the entry, so a typo
 stops at startup rather than reaching a phone. A list that is merely short of
 the 192 and 512 pair is not wrong, only quieter than you meant, so that one is
 a `cairn -check` warning instead.
+
+So is a `sizes` the file disagrees with. cairn cannot measure for you and
+publishes your number in the manifest as fact, and a wrong one is invisible
+from every side: the manifest validates, the file loads, and a phone simply
+picks it for a slot it does not fill, which is how a home-screen icon comes out
+blurred. With the assets directory in reach, `-check` opens each file and
+compares:
+
+```console
+$ cairn -check -config ./config -assets ./assets
+warning: site.yaml icons entry 2 declares sizes "512x512" but /assets/brand-512.png measures 256x256: the manifest states the declared size as fact, so a phone picks this file for a slot it does not fill (correct sizes, or supply a file that size)
+```
+
+An entry whose `src` names no file at all gets its own line. Both checks need
+that directory, so they say nothing when it is not mounted; see
+[Icons: your own files](../recipes/icons.md#your-own-files).
 
 ## Telling researchers where to write
 

@@ -196,9 +196,6 @@ var builtinStrings = map[string]map[string]string{
 	},
 }
 
-// rtlLocales lists the base language codes written right to left. None of the
-// built-in UI languages is among them, but a site's own content can be, and
-// the html dir attribute is what makes the whole layout follow.
 // StringKeys lists every UI string an operator may override, sorted. A key
 // outside this set is a typo that silently does nothing: Str falls through to
 // the built-in table, so the page looks exactly as it would with no override
@@ -222,6 +219,9 @@ func BuiltinLocales() []string {
 	return out
 }
 
+// rtlLocales lists the base language codes written right to left. None of the
+// built-in UI languages is among them, but a site's own content can be, and
+// the html dir attribute is what makes the whole layout follow.
 var rtlLocales = map[string]bool{
 	"ar": true, "arc": true, "ckb": true, "dv": true, "fa": true, "he": true,
 	"ku": true, "ps": true, "sd": true, "ug": true, "ur": true, "yi": true,

@@ -118,6 +118,29 @@ func TestValidateSiteRejections(t *testing.T) {
 			s.Pages = []SitePage{{ID: "legal", Title: LString{"": "x"},
 				Sections: []PageSection{{Title: LString{"": "Publisher"}}}}}
 		}, []string{"every section needs title and body"}},
+		// The six fields a script scheme used to reach. Every one of them is an
+		// error rather than a warning, unlike a missing image file: a typo puts
+		// a real path in the wrong place, and nothing puts javascript: there by
+		// accident. The favicon is the one that escapes html/template entirely,
+		// since it reaches the manifest as JSON and /favicon.ico as a Location.
+		{"logo that is a script url", func(s *Site) { s.Logo = "javascript:alert(1)" },
+			[]string{"logo", `"javascript:alert(1)"`, "loads nothing", "/assets"}},
+		{"favicon that is a script url", func(s *Site) { s.Favicon = "vbscript:msgbox(1)" },
+			[]string{"favicon", `"vbscript:msgbox(1)"`, "loads nothing"}},
+		{"links url that is a script url", func(s *Site) {
+			s.Links = []FooterLink{{Label: LString{"": "Wiki"}, URL: "javascript:alert(1)"}}
+		}, []string{"links url", `"javascript:alert(1)"`, "mailto:"}},
+		{"footer url that is a script url", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "javascript:alert(1)"}}
+		}, []string{"footer url", `"javascript:alert(1)"`}},
+		{"footer icon that is a script url", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}, URL: "https://e.example.org", Icon: "javascript:alert(1)"}}
+		}, []string{"footer icon", `"javascript:alert(1)"`, "glyph"}},
+		// uriRe accepts any scheme, because security.txt takes mailto:, https:
+		// and tel: alike, so this is the one URL field that blessed a script
+		// scheme outright instead of merely failing to look.
+		{"security contact that is a script url", func(s *Site) { s.Security.Contact = "javascript:alert(1)" },
+			[]string{"security.contact", `"javascript:alert(1)"`, "mailto:"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -208,16 +231,96 @@ func TestValidateSiteNormalizes(t *testing.T) {
 	}
 }
 
+// The plain spelling is the one nobody writes. A browser deletes every tab,
+// newline and carriage return from a URL and strips the leading control
+// characters and spaces before it reads the scheme, so all of the first group
+// are one URL as far as it is concerned. A literal prefix test would refuse
+// the obvious one and wave the rest through, which is worse than no check: it
+// reads like a check that works.
+func TestHasScriptSchemeSeesThroughTheDressing(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		val  string
+		want bool
+	}{
+		{"plain", "javascript:alert(1)", true},
+		{"capitalised", "JavaScript:alert(1)", true},
+		{"split by a tab", "java\tscript:alert(1)", true},
+		{"split by a newline", "java\nscript:alert(1)", true},
+		{"split by a carriage return", "java\rscript:alert(1)", true},
+		{"led by spaces", "  javascript:alert(1)", true},
+		{"led by a control character", "\x01javascript:alert(1)", true},
+		{"vbscript, the same trick", "VB\tScript:msgbox(1)", true},
+		// The look-alikes. Refusing one of these would be the worse failure of
+		// the two: a config that booted yesterday stops booting on an upgrade,
+		// and the operator is told their perfectly good path runs code.
+		{"a file whose name contains the word", "/assets/javascript-logo.png", false},
+		{"a mailbox that contains the word", "mailto:javascript@example.org", false},
+		{"a url whose path contains it", "https://example.org/javascript:alert(1)", false},
+		{"an ordinary asset path", "/assets/logo.png", false},
+		{"nothing at all", "", false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := hasScriptScheme(c.val); got != c.want {
+				t.Errorf("hasScriptScheme(%q) = %v, want %v", c.val, got, c.want)
+			}
+		})
+	}
+}
+
+// The fields a script scheme could never have reached, with the gate that
+// stops each one. Nothing was added for them: a second refusal would only say
+// the same thing twice. They are pinned here so that loosening one of those
+// gates shows up as a hole in this rule rather than as a value in the manifest.
+func TestScriptSchemeWasAlreadyRefusedWhereAGateExisted(t *testing.T) {
+	for _, c := range []struct {
+		name, want string
+		mut        func(*Site)
+	}{
+		{"icons src, by the URL-or-/assets rule", "not a URL or an /assets path", func(s *Site) {
+			s.Icons = []SiteIcon{{Src: "javascript:alert(1)", Sizes: "512x512"}}
+		}},
+		{"links icon, by the glyph rule", "is not a built-in glyph", func(s *Site) {
+			s.Links = []FooterLink{{Label: LString{"": "W"}, URL: "https://w.example.org", Icon: "javascript:alert(1)"}}
+		}},
+		{"status.gatus, by the http rule", "status.gatus", func(s *Site) { s.Status.Gatus = "javascript:alert(1)" }},
+		{"status.page, by the http rule", "status.page", func(s *Site) { s.Status.Page = "javascript:alert(1)" }},
+		{"url, by the http rule", "url", func(s *Site) { s.URL = "javascript:alert(1)" }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = "#247b7b"
+			c.mut(s)
+			err := validateSite(s, map[string]string{})
+			if err == nil {
+				t.Fatal("a script scheme was accepted")
+			}
+			if !strings.Contains(err.Error(), c.want) {
+				t.Errorf("message %q does not mention %q", err, c.want)
+			}
+		})
+	}
+}
+
 // The shapes that must pass, so a tightened rule cannot quietly start
 // refusing a config that has always been legal.
 func TestValidateSiteAccepts(t *testing.T) {
 	s := &Site{
 		Locales: []string{"fr", "en", "pt-BR"},
 		URL:     "http://tools.example.org",
+		Logo:    "/assets/logo.png",
+		Favicon: "https://cdn.example.org/favicon.png",
 		Links: []FooterLink{
 			{Label: LString{"": "Wiki"}, URL: "https://w.example.org", Icon: "book"},
 			{Label: LString{"": "Logo"}, URL: "https://x.example.org", Icon: "/assets/l.png"},
 			{Label: LString{"": "Plain"}, URL: "https://y.example.org"},
+			// mailto: is a legal link target, and the scheme rule has to let
+			// every scheme but the two named ones through.
+			{Label: LString{"": "Mail"}, URL: "mailto:hi@example.org"},
+		},
+		Footer: []FooterLink{
+			{Label: LString{"": "Legal"}, URL: "/en/legal/"},
+			{Label: LString{"": "Status"}, URL: "https://status.example.org"},
 		},
 		Pages: []SitePage{
 			{ID: "legal-notice", Title: LString{"": "Legal"}, Body: LString{"": "text"}},

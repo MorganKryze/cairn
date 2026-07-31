@@ -1,0 +1,12 @@
+# Nine categories, one service each, no icons and no status: the category count
+# is the only thing under test, and everything else would just be one more
+# reason for this file to need editing.
+- { id: one, url: https://one.example.org, name: One, category: alpha }
+- { id: two, url: https://two.example.org, name: Two, category: bravo }
+- { id: three, url: https://three.example.org, name: Three, category: charlie }
+- { id: four, url: https://four.example.org, name: Four, category: delta }
+- { id: five, url: https://five.example.org, name: Five, category: echo }
+- { id: six, url: https://six.example.org, name: Six, category: foxtrot }
+- { id: seven, url: https://seven.example.org, name: Seven, category: golf }
+- { id: eight, url: https://eight.example.org, name: Eight, category: hotel }
+- { id: nine, url: https://nine.example.org, name: Nine, category: india }

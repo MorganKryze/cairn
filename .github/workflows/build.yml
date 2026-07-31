@@ -58,6 +58,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash .github/coverage-badge.sh "$PCT"
 
+  # Named `search` and it stays named `search`, whatever else it grows to run:
+  # this is a required check on a protected branch, and a required check under
+  # a new name never runs, which leaves every pull request waiting forever for
+  # a job that no longer exists.
   search:
     runs-on: ubuntu-latest
     steps:
@@ -65,18 +69,25 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: stable
-      # search.js is the only behaviour the Go tests cannot reach: they assert
-      # the markup that ships, not what happens once someone types into it.
-      # Deliberately not the demo stack, so this pulls nothing from a registry
-      # and can be a required check.
-      - name: drive the search in a browser
+      # search.js, the theme toggle's state, the mobile category swap and the
+      # burger's scroll dismissal are the behaviours the Go tests cannot reach:
+      # they assert the markup that ships, not what happens once someone types,
+      # clicks or scrolls. Deliberately not the demo stack, so this pulls
+      # nothing from a registry and can be a required check. Same two instances
+      # as `just test-browser`: example/, and the fixture with more than seven
+      # categories and a header burger that example/ has neither of.
+      - name: drive search and the accessibility behaviours in a browser
         run: |
           npm --silent install --no-save --no-package-lock playwright
           npx --yes playwright install --with-deps --only-shell chromium
           go build -o /tmp/cairn ./src/cmd/cairn
-          /tmp/cairn -config example -addr 127.0.0.1:8099 &
-          for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null && break; sleep 1; done
-          node scripts/search.mjs http://127.0.0.1:8099/en/
+          /tmp/cairn -config example -addr 127.0.0.1:8090 &
+          /tmp/cairn -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
+          for port in 8090 8091; do
+            for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
+          done
+          node scripts/search.mjs http://127.0.0.1:8090/en/
+          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
 
   chart:
     runs-on: ubuntu-latest

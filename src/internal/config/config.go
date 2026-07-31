@@ -305,6 +305,27 @@ func IsURLOrAbs(s string) bool {
 	return isExternalURL(s) || IsLocalPath(s)
 }
 
+// mediaRef maps an images: entry to the file it names under media/, and
+// reports whether it names one at all.
+//
+// A file in media/ has two documented spellings, the bare name and the
+// /media/… path it is served at, and they have to mean the same thing here:
+// the bare one was stat'd and the absolute one was not, so the same missing
+// file refused to boot written one way and rendered a 404 written the other.
+//
+// Everything else stays out of it, because it is not this directory's to
+// serve: a URL, /assets/… from the mounted assets dir, any other absolute
+// path. Note that a value starting with "/media/" cannot be the
+// protocol-relative "//host/x" or its "/\host/x" twin, so the prefix already
+// draws the line IsLocalPath exists to draw. ".." cannot arrive either;
+// parseServices refuses it in every images entry before this runs.
+func mediaRef(src string) (rel string, ours bool) {
+	if !IsURLOrAbs(src) {
+		return src, true
+	}
+	return strings.CutPrefix(src, "/media/")
+}
+
 func Load(dir string) (*Config, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -359,12 +380,13 @@ func Load(dir string) (*Config, error) {
 	}
 	for _, s := range services {
 		for _, img := range s.Images {
-			src := img.Src
-			if IsURLOrAbs(src) {
+			rel, ours := mediaRef(img.Src)
+			if !ours {
 				continue
 			}
-			if st, err := os.Stat(filepath.Join(dir, "media", filepath.FromSlash(src))); err != nil || st.IsDir() {
-				return nil, fmt.Errorf("config: service %q: image %q not found (expected a file at %s, a URL or an absolute path)", s.ID, src, filepath.Join(dir, "media", src))
+			path := filepath.Join(dir, "media", filepath.FromSlash(rel))
+			if st, err := os.Stat(path); err != nil || st.IsDir() {
+				return nil, fmt.Errorf("config: service %q: image %q not found (expected a file at %s, a URL or an absolute path)", s.ID, img.Src, path)
 			}
 		}
 	}

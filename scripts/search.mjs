@@ -2,13 +2,13 @@
 // search.js is the one piece of behaviour the Go tests cannot reach: they
 // assert the markup that ships, not what happens once someone types into it.
 //
-// Run it with `just test-search`, which builds cairn and serves the example
+// Run it with `just test-browser`, which builds cairn and serves the example
 // config on a scratch port first.
 //
 // Usage: node scripts/search.mjs [url]
 import { chromium } from 'playwright';
 
-const URL = process.argv[2] ?? process.env.CAIRN_URL ?? 'http://127.0.0.1:8099/en/';
+const URL = process.argv[2] ?? process.env.CAIRN_URL ?? 'http://127.0.0.1:8090/en/';
 
 const browser = await chromium.launch();
 const page = await browser.newPage();

@@ -68,33 +68,47 @@ shots: demo-rebuild
     @npx --yes playwright install --only-shell chromium
     @node scripts/screenshots.mjs
 
-# drive the search in a real browser: the one behaviour the Go tests cannot see
-test-search:
+# drive search and the accessibility behaviours in a real browser: what the Go
+# tests cannot see, since they assert the markup that ships and not what
+# happens once someone types, clicks or scrolls
+test-browser:
     #!/usr/bin/env bash
     # One shell for the whole recipe, and a trap. just runs each line of an
     # ordinary recipe in a shell of its own, so the pid was written on one line
-    # and killed on another: aborting in between left cairn bound to 8099 for
+    # and killed on another: aborting in between left cairn bound to 8090 for
     # good. The leak was the smaller half. On the next run the leftover
     # answered the readiness loop instantly, and the browser then drove the
-    # build from before the change under test, green.
+    # build from before the change under test, green. Two instances now, so
+    # both halves of that apply twice: a stale server on either port is enough
+    # to make the whole run measure yesterday's build.
     set -euo pipefail
-    if curl -fsS -o /dev/null http://127.0.0.1:8099/healthz 2>/dev/null; then
-        echo "test-search: something already answers on 127.0.0.1:8099, probably a" >&2
-        echo "leaked cairn. Kill it, or this run measures that one instead." >&2
-        exit 1
-    fi
+    for port in 8090 8091; do
+        if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
+            echo "test-browser: something already answers on 127.0.0.1:$port, probably" >&2
+            echo "a leaked cairn. Kill it, or this run measures that one instead." >&2
+            exit 1
+        fi
+    done
     npm --silent install --no-save --no-package-lock playwright
     npx --yes playwright install --only-shell chromium
-    go build -o /tmp/cairn-search ./src/cmd/cairn
-    /tmp/cairn-search -config example -addr 127.0.0.1:8099 &
-    pid=$!
-    trap 'kill "$pid" 2>/dev/null || true' EXIT INT TERM
-    for _ in $(seq 1 20); do
-        if curl -fsS -o /dev/null http://127.0.0.1:8099/healthz 2>/dev/null; then ready=1; break; fi
-        sleep 1
+    go build -o /tmp/cairn-browser ./src/cmd/cairn
+    # 8090 is the example config; 8091 is the fixture with more than seven
+    # categories and a header burger, neither of which example/ has.
+    /tmp/cairn-browser -config example -addr 127.0.0.1:8090 &
+    pids=$!
+    /tmp/cairn-browser -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
+    pids="$pids $!"
+    trap 'kill $pids 2>/dev/null || true' EXIT INT TERM
+    for port in 8090 8091; do
+        ready=
+        for _ in $(seq 1 20); do
+            if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then ready=1; break; fi
+            sleep 1
+        done
+        [ -n "$ready" ] || { echo "test-browser: cairn never came up on $port" >&2; exit 1; }
     done
-    [ -n "${ready:-}" ] || { echo "test-search: cairn never came up on 8099" >&2; exit 1; }
-    node scripts/search.mjs http://127.0.0.1:8099/en/
+    node scripts/search.mjs http://127.0.0.1:8090/en/
+    node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
 
 # regenerate every icon from the one drawing in the script; checks the
 # maskable safe zone the manifest promises Android
