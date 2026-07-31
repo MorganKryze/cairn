@@ -30,6 +30,7 @@ func main() {
 	health := flag.Bool("healthcheck", false, "probe the running server and exit (for container healthchecks)")
 	validate := flag.Bool("check", false, "validate the config directory, print warnings, and exit (0 ok, 1 error)")
 	emit := flag.Bool("emit-gatus", false, "print a Gatus endpoints config derived from the services and exit")
+	hide := flag.Bool("hide-targets", false, "with -emit-gatus: add the ui block that keeps each endpoint's address off the Gatus dashboard")
 	emitIcons := flag.Bool("emit-icons", false, "print a shell script that downloads your icon slugs for self-hosting and exit")
 	initCfg := flag.Bool("init", false, "print a commented starter services.yaml and exit")
 	ver := flag.Bool("version", false, "print the version and exit")
@@ -55,11 +56,16 @@ func main() {
 	}
 
 	cfg, err := config.Load(*cfgDir)
+	// A flag that quietly does nothing is the thing -check spends its life
+	// reporting; the program itself should not ship one.
+	if *hide && !*emit {
+		log.Fatal("-hide-targets only means something with -emit-gatus: it writes into the Gatus config, not into cairn's own")
+	}
 	if *emit || *emitIcons {
 		if err != nil {
 			log.Fatal(err)
 		}
-		out, err := oneShot(cfg, *emit)
+		out, err := oneShot(cfg, *emit, *hide)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -91,9 +97,9 @@ func main() {
 
 // oneShot answers -emit-gatus and -emit-icons, which both print a derived file
 // and exit without ever serving anything.
-func oneShot(cfg *config.Config, gatus bool) ([]byte, error) {
+func oneShot(cfg *config.Config, gatus, hide bool) ([]byte, error) {
 	if gatus {
-		return status.Emit(cfg)
+		return status.Emit(cfg, hide)
 	}
 	return config.EmitIconsScript(cfg), nil
 }

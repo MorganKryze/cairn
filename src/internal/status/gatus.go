@@ -2,11 +2,14 @@ package status
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -14,15 +17,37 @@ import (
 	"github.com/MorganKryze/cairn/src/internal/config"
 )
 
+// hidden is the Gatus ui block that keeps an endpoint's address off its own
+// dashboard. All three keys, because they hide three different things: the
+// URL, the hostname, and the port, which outlives the other two. hide-url also
+// redacts the address inside the error text, which is the leak that gets
+// forgotten because it only appears when a check fails.
+type hidden struct {
+	URL      bool `yaml:"hide-url"`
+	Hostname bool `yaml:"hide-hostname"`
+	Port     bool `yaml:"hide-port"`
+}
+
 // Emit derives a Gatus endpoints config from the services. Endpoint
 // names are service ids: that is also what the status poller matches on.
-func Emit(cfg *config.Config) ([]byte, error) {
+//
+// hide adds the ui block above to every endpoint. It is off by default because
+// what this writes is the service's own public URL, already printed on its
+// card: hiding that would hide from the status page what the directory shows
+// next to it. It earns its keep once the emitted file is edited to probe an
+// address that is not the published one.
+func Emit(cfg *config.Config, hide bool) ([]byte, error) {
 	type endpoint struct {
 		Name       string   `yaml:"name"`
 		Group      string   `yaml:"group,omitempty"`
 		URL        string   `yaml:"url"`
 		Interval   string   `yaml:"interval"`
 		Conditions []string `yaml:"conditions"`
+		UI         *hidden  `yaml:"ui,omitempty"`
+	}
+	var ui *hidden
+	if hide {
+		ui = &hidden{URL: true, Hostname: true, Port: true}
 	}
 	var eps []endpoint
 	for _, c := range cfg.Categories {
@@ -36,6 +61,7 @@ func Emit(cfg *config.Config) ([]byte, error) {
 				URL:        s.URL,
 				Interval:   "5m",
 				Conditions: []string{"[STATUS] == 200"},
+				UI:         ui,
 			})
 		}
 	}
@@ -103,15 +129,102 @@ var (
 	}
 )
 
-// Fetch asks a Gatus instance for its endpoint statuses and returns
-// service-id -> up, keyed by endpoint name. insecure skips certificate
-// verification, which is status.insecure in site.yaml.
-func Fetch(base string, insecure bool) (map[string]State, error) {
-	client := verifying
-	if insecure {
-		client = skipping
+// Source is where the pills come from: the Gatus API cairn polls, and how much
+// it is willing to trust on the way there. It mirrors the status block in
+// site.yaml, and exists so the two trust settings travel together with the
+// address they apply to rather than as loose parameters.
+type Source struct {
+	URL      string
+	Insecure bool   // status.insecure: verify nothing
+	CA       string // status.ca: verify against this too, a URL or an /assets path
+}
+
+// trusted caches the client built from a bundle, because building one means
+// reading or fetching that bundle and a poll happens every interval.
+//
+// Only a success is cached. A bundle served from an address that is not up yet
+// has to be tried again on the next poll: caching the failure would recreate,
+// one layer down, the bug where cairn started before the thing it depends on
+// and never recovered.
+var trusted struct {
+	sync.Mutex
+	ref    string
+	client *http.Client
+}
+
+// clientFor picks the client for a source: the shared verifying one, the shared
+// skipping one, or one carrying the operator's own authority.
+func clientFor(src Source) (*http.Client, error) {
+	if src.Insecure {
+		return skipping, nil
 	}
-	resp, err := client.Get(strings.TrimSuffix(base, "/") + "/api/v1/endpoints/statuses")
+	if src.CA == "" {
+		return verifying, nil
+	}
+	trusted.Lock()
+	defer trusted.Unlock()
+	if trusted.ref == src.CA && trusted.client != nil {
+		return trusted.client, nil
+	}
+	c, err := trusting(src.CA)
+	if err != nil {
+		return nil, err
+	}
+	trusted.ref, trusted.client = src.CA, c
+	return c, nil
+}
+
+// trusting builds a client that verifies against the system roots plus the
+// bundle at ref. Plus, not instead: a Gatus whose certificate a public
+// authority did sign keeps working, and an operator who adds a bundle has not
+// silently narrowed what else cairn would accept.
+func trusting(ref string) (*http.Client, error) {
+	body, err := bundle(ref)
+	if err != nil {
+		return nil, fmt.Errorf("status.ca %s: %w", ref, err)
+	}
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, fmt.Errorf("status.ca %s: the system roots could not be read to add it to: %w", ref, err)
+	}
+	if !pool.AppendCertsFromPEM(body) {
+		return nil, fmt.Errorf("status.ca %s holds no certificate cairn could read (expected PEM, one or more -----BEGIN CERTIFICATE----- blocks; a DER file has to be converted with openssl x509 -inform der -out ca.crt)", ref)
+	}
+	return &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12},
+		},
+	}, nil
+}
+
+// bundle reads the PEM, from the mounted assets dir or over the network.
+func bundle(ref string) ([]byte, error) {
+	if p := config.AssetFile(ref); p != "" {
+		return os.ReadFile(p)
+	}
+	resp, err := verifying.Get(ref)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("answered %s", resp.Status)
+	}
+	// A CA bundle is kilobytes; the whole public root store is a few hundred.
+	// The cap is what stops an endless stream from eating the process, the
+	// same reason the statuses body has one.
+	return io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+}
+
+// Fetch asks a Gatus instance for its endpoint statuses and returns
+// service-id -> up, keyed by endpoint name.
+func Fetch(src Source) (map[string]State, error) {
+	client, err := clientFor(src)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Get(strings.TrimSuffix(src.URL, "/") + "/api/v1/endpoints/statuses")
 	if err != nil {
 		return nil, err
 	}

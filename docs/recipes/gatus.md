@@ -98,13 +98,82 @@ How it behaves, by design:
 
 If your Gatus answers over `https://` with a certificate cairn does not know,
 which is the usual state of affairs on an internal network, every pill reads
-"Unknown" and the log names the `x509` failure. The fix, along with the
-symmetric one for the certificates Gatus itself has to trust, is in
-[Air-gapped](../deployment/airgap.md#6-self-signed-certificates). There is also
-`status.insecure: true`, which turns the check off rather than satisfying it;
-the same page says what that costs.
+"Unknown" and the log names the `x509` failure. Give cairn the authority that
+signed it:
 
-## 3. Link the status page
+```yaml
+status:
+  gatus: https://status.internal
+  ca: /assets/ca.crt                 # a file in the mounted assets directory
+  # ca: https://pki.internal/ca.crt  # or an address cairn fetches it from
+```
+
+The bundle is added to the roots cairn already trusts, not swapped for them, so
+a Gatus with a publicly signed certificate keeps working and adding a bundle
+narrows nothing else. It is read once and cached, so a rotated authority needs
+a restart, the same as a mounted one.
+
+An `http://` URL is allowed, because an internal PKI often has nowhere better to
+serve from and a bundle cannot be fetched over a certificate nobody trusts yet.
+It is not free: over http, whatever sits on the path to that address decides
+what cairn trusts for the poll, which is where `status.insecure` lands too.
+cairn says which of the two it is at startup and on every `-check`.
+
+There is also `status.insecure: true`, which turns the check off rather than
+satisfying it. Both sides of the connection, and the symmetric fix for the
+certificates Gatus itself has to trust, are in
+[Air-gapped](../deployment/airgap.md#6-self-signed-certificates).
+
+## 3. Keep the history across restarts
+
+Gatus stores results in memory by default, and loses them when it restarts.
+That shows up on cairn: with nothing stored, the API answers with endpoints and
+no results, so every pill reads "Unknown" until the first check of each endpoint
+lands. A file fixes it:
+
+```yaml
+storage:
+  type: sqlite
+  path: /data/data.db   # on a volume, or the file goes with the container
+```
+
+`postgres` is the other option, with a connection URL in the same `path`. Either
+one survives a restart, so a Gatus that comes back up hands cairn the state it
+already knew and the pills never blink.
+
+## 4. Hiding what Gatus probes
+
+If you point Gatus at an address you would rather not publish, an internal IP
+or a URL carrying a token, its dashboard shows it by default. Three keys per
+endpoint take it back:
+
+```yaml
+- name: alpha
+  url: https://10.42.0.7:8443/
+  conditions: ["[STATUS] == 200"]
+  ui: { hide-url: true, hide-hostname: true, hide-port: true }
+```
+
+All three, because they hide three different things. What the API returns for
+the same endpoint, with and without:
+
+|                | plain                                                                          | hidden                                                                          |
+| -------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `hostname`     | `"127.0.0.1"`                                                                  | absent                                                                          |
+| a failed check | `Get "http://127.0.0.1:9/": dial tcp 127.0.0.1:9: connect: connection refused` | `Get "<redacted>": dial tcp <redacted>:<redacted>: connect: connection refused` |
+
+`hide-url` redacts the address inside the error text as well, which is the leak
+worth knowing about: it only appears when a check fails, so it is the one that
+survives a test on a healthy endpoint. The port outlives the other two keys,
+hence `hide-port`. Gatus also has `hide-errors`, which drops the message
+entirely rather than redacting it.
+
+None of this reaches cairn: the pills come from `name`, `key` and whether the
+last check passed, and no `ui` setting hides any of those. `cairn -emit-gatus
+-hide-targets` writes the block on every endpoint, so regenerating the file does
+not lose it.
+
+## 5. Link the status page
 
 ```yaml
 # site.yaml

@@ -11,6 +11,7 @@ import (
 	"github.com/MorganKryze/cairn/src/internal/check"
 	"github.com/MorganKryze/cairn/src/internal/config"
 	"github.com/MorganKryze/cairn/src/internal/render"
+	"github.com/MorganKryze/cairn/src/internal/status"
 	"github.com/MorganKryze/cairn/src/internal/testutil"
 )
 
@@ -85,12 +86,12 @@ func TestPollOnce(t *testing.T) {
 
 	// no gatus configured is a no-op, not a crash
 	before := current.Load()
-	pollOnce("", false, &seen)
+	pollOnce(status.Source{}, &seen)
 	if current.Load() != before {
 		t.Error("an empty gatus url rebuilt the model")
 	}
 
-	pollOnce(srv.URL, false, &seen)
+	pollOnce(status.Source{URL: srv.URL}, &seen)
 	if got := current.Load().Statuses["pad"]; !got.Up {
 		t.Fatalf("statuses = %v, want pad up", current.Load().Statuses)
 	}
@@ -100,14 +101,14 @@ func TestPollOnce(t *testing.T) {
 
 	// same answer twice: no needless rebuild
 	same := current.Load()
-	pollOnce(srv.URL, false, &seen)
+	pollOnce(status.Source{URL: srv.URL}, &seen)
 	if current.Load() != same {
 		t.Error("an unchanged status rebuilt the pages")
 	}
 
 	// gatus falls over: the dots go away instead of lying
 	up = false
-	pollOnce(srv.URL, false, &seen)
+	pollOnce(status.Source{URL: srv.URL}, &seen)
 	if n := len(current.Load().Statuses); n != 0 {
 		t.Errorf("statuses = %d, want none once gatus stops answering", n)
 	}

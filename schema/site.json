@@ -187,7 +187,11 @@
           "type": "boolean",
           "description": "true stops cairn verifying the certificate Gatus presents, for an internal Gatus whose authority nothing public signed. A CA bundle verifies instead of trusting; this only turns the check off. cairn logs it at startup and cairn -check warns about it every run."
         },
-        "linked": {
+        "ca": {
+    "type": "string",
+    "description": "PEM bundle cairn verifies Gatus against, on top of the system roots: an http(s):// URL it fetches once, or an /assets path it reads. The answer status.insecure is not, and the opposite one: this verifies rather than stops checking. Fetched over http it lands where insecure does, so cairn says which of the two it is at startup and on every -check."
+   },
+   "linked": {
           "type": "boolean",
           "description": "false makes the pills display-only: they still show up, down or unknown, but they stop linking to the status page. For a Gatus your visitors cannot reach."
         }

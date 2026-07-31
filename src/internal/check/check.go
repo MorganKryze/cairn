@@ -73,6 +73,7 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	if st := cfg.Site.Status; st.Gatus != "" && st.Insecure {
 		out = append(out, fmt.Sprintf("status.insecure is on: the certificate %s presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)", st.Gatus))
 	}
+	out = append(out, caWarnings(cfg)...)
 	out = append(out, missingAssets(cfg)...)
 	out = append(out, iconSizeClaims(cfg)...)
 	out = append(out, categoryConfusion(cfg)...)
@@ -392,11 +393,6 @@ func unresolvableRefs(cfg *config.Config) []string {
 	return out
 }
 
-// assetMount is the URL prefix the -assets directory is served at. A
-// reference under it names a file the operator dropped there; a URL, a bare
-// name and any other route are somebody else's to resolve.
-const assetMount = "/assets/"
-
 // assetsMounted reports whether the -assets directory is there to look in.
 //
 // -check on a laptop keeps the default /assets, which exists in the container
@@ -410,16 +406,30 @@ func assetsMounted() bool {
 }
 
 // assetPath maps an /assets/… reference to the file it names, and returns ""
-// for anything that is not one. It refuses to climb out of the mount, the
-// same rule the file server and the manifest measurement both apply: a stat
-// of something outside the directory could only ever answer the wrong
-// question, since a browser normalises the ".." away before it ever asks.
-func assetPath(ref string) string {
-	rel, ok := strings.CutPrefix(ref, assetMount)
-	if !ok || rel == "" || strings.Contains(rel, "..") {
-		return ""
+// for anything that is not one. The rule lives in config, next to the mount
+// path it resolves against, because three copies of it had grown: this one,
+// the manifest measurement, and now the CA bundle.
+func assetPath(ref string) string { return config.AssetFile(ref) }
+
+// caWarnings covers the two ways status.ca ends up meaning something other than
+// what it looks like it means.
+//
+// Neither is a mistake cairn can refuse at load: both are legal configs, and
+// both are ones where the trust an operator thinks they set up is not the trust
+// they got. That is exactly the shape -check exists for.
+func caWarnings(cfg *config.Config) []string {
+	st := cfg.Site.Status
+	if st.Gatus == "" || st.CA == "" {
+		return nil
 	}
-	return filepath.Join(config.AssetsPath, filepath.FromSlash(rel))
+	var out []string
+	if st.Insecure {
+		out = append(out, fmt.Sprintf("status.ca %s is set and status.insecure is on, so the bundle is never consulted: verification is off, and turning it off is not made stricter by naming an authority (drop insecure to make the bundle the thing that decides)", st.CA))
+	}
+	if strings.HasPrefix(st.CA, "http://") {
+		out = append(out, fmt.Sprintf("status.ca %s is fetched over http, so whatever sits on the path to that address decides what cairn trusts for the poll, which is where status.insecure lands too (serve it over https, or mount it and point status.ca at an /assets path)", st.CA))
+	}
+	return out
 }
 
 // missingAssets checks that every /assets/… reference reaches a file.
@@ -453,6 +463,11 @@ func missingAssets(cfg *config.Config) []string {
 	}
 	if p, miss := absent(cfg.Site.Favicon); miss {
 		out = append(out, fmt.Sprintf("site.yaml favicon %q is not in the assets directory: the browser tab falls back to a blank page icon (expected a file at %s)", cfg.Site.Favicon, p))
+	}
+	// The loudest of these: with no authority to verify against, every poll
+	// fails and every pill stays grey, and nothing on the page says why.
+	if p, miss := absent(cfg.Site.Status.CA); miss {
+		out = append(out, fmt.Sprintf("site.yaml status.ca %q is not in the assets directory: cairn has nothing to verify gatus against, so every poll fails and every pill stays grey (expected a file at %s)", cfg.Site.Status.CA, p))
 	}
 	for i, ic := range cfg.Site.Icons {
 		if p, miss := absent(ic.Src); miss {
@@ -599,6 +614,9 @@ func inertSettings(cfg *config.Config) []string {
 		}
 		if st.Insecure {
 			set = append(set, "status.insecure")
+		}
+		if st.CA != "" {
+			set = append(set, "status.ca")
 		}
 		if len(set) > 0 {
 			out = append(out, fmt.Sprintf("%s set without status.gatus: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))

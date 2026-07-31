@@ -304,8 +304,18 @@ image:
   repository: harbor.internal/gatus   # ghcr.io/twin/gatus with a route out
   tag: "5.36.0"                       # the chart's own default trails the app
 
+# memory is the default and loses everything on restart, which cairn shows:
+# with no stored results the API answers with endpoints and nothing in them,
+# so every pill reads Unknown until each endpoint has been checked again.
+# The chart mounts its claim at /data, and defaults to not making one.
+persistence:
+  enabled: true
+  size: 200Mi
+
 config:
-  storage: { type: memory }
+  storage:
+    type: sqlite
+    path: /data/data.db
   # the endpoints cairn -emit-gatus wrote for you
   endpoints:
     - name: pad
@@ -467,14 +477,40 @@ reaches the Service directly, never leaves the cluster, and meets no certificate
 at all. That is the default on this page, and it makes this half of the section
 unnecessary.
 
-If cairn does poll over `https://`, the chart exposes no environment values, so
-the bundle replaces the one the image ships:
+If cairn does poll over `https://`, `status.ca` names the authority it should
+verify against. It takes the two shapes the rest of the config takes, a path in
+the mounted assets directory or a URL:
 
 ```yaml
+# site.yaml
+status:
+  gatus: https://status.internal
+  ca: /assets/ca.crt
+```
+
+```yaml
+# values.yaml, mounting the same ConfigMap Gatus reads
 extraVolumes:
   - name: ca
     configMap:
-      name: ca-bundle          # the same one Gatus reads
+      name: ca-bundle
+extraVolumeMounts:
+  - name: ca
+    mountPath: /assets/ca.crt
+    subPath: ca-certificates.crt
+    readOnly: true
+```
+
+The bundle is added to the roots the image already ships, not swapped for them,
+so a Gatus with a publicly signed certificate keeps working and this narrows
+nothing else. Note the `subPath`: it places one file and leaves the rest of the
+mount alone, which matters more here than elsewhere, since `FROM scratch` means
+there is no shell to repair anything in place afterwards.
+
+Replacing the image's own bundle still works, and is what to reach for when
+something other than the status poll needs the authority too:
+
+```yaml
 extraVolumeMounts:
   - name: ca
     mountPath: /etc/ssl/certs/ca-certificates.crt
@@ -482,11 +518,41 @@ extraVolumeMounts:
     readOnly: true
 ```
 
-`subPath` replaces that single file and leaves the rest of the image alone,
-which matters more here than elsewhere: `FROM scratch` means there is no shell
-to repair anything in place afterwards.
+#### When the ConfigMap is not yours to arrange
 
-If mounting a bundle is not yours to arrange, cairn has the same last resort
+`status.ca` also takes a URL, which is the whole reason it is a config key
+rather than a mount:
+
+```yaml
+status:
+  gatus: https://status.internal
+  ca: http://pki.internal/ca-bundle.crt
+```
+
+cairn fetches it once, on the first poll, and keeps the client it built. A fetch
+that fails is retried on the next poll rather than remembered, so a PKI host
+that comes up after cairn does is not a restart.
+
+`http://` is deliberate here, and it is not free. A bundle cannot be served over
+a certificate nobody trusts yet, so requiring `https://` would rule out the case
+this exists for. But over http, whatever sits on the path to that address
+decides what cairn trusts for the poll, which is exactly where `status.insecure`
+lands. Prefer `https://` when the PKI host has a publicly signed certificate,
+and the mounted file when it does not.
+
+cairn will not let that be quiet either:
+
+```console
+warning: status.ca http://pki.internal/ca-bundle.crt is fetched over http, so whatever sits on the path to that address decides what cairn trusts for the poll, which is where status.insecure lands too (serve it over https, or mount it and point status.ca at an /assets path)
+```
+
+`-check` also names a bundle that is not on disk, and says so when `status.ca`
+and `status.insecure` are both set: verification is off then, so the bundle is
+never consulted and the site is the loose one rather than the strict one.
+
+#### The last resort
+
+If neither a mount nor a URL is yours to arrange, cairn has the same last resort
 Gatus does, and it deserves the same suspicion:
 
 ```yaml
@@ -496,11 +562,12 @@ status:
   insecure: true
 ```
 
-It turns the check off for that one connection. Nothing else in cairn makes an
-outbound request, so the blast radius is small, but it is real: with
-verification off, anything that can answer on that address decides what your
-pills say, and the day the certificate changes stops being visible. That is
-what the bundle buys and this does not.
+It turns the check off for that one connection. The status poll and, when
+`status.ca` is a URL, fetching that bundle are the only outbound requests cairn
+makes, so the blast radius is small, but it is real: with verification off,
+anything that can answer on that address decides what your pills say, and the
+day the certificate changes stops being visible. That is what the bundle buys
+and this does not.
 
 cairn will not let it be quiet about it. The startup log says so once, and
 `cairn -check` says so on every run, for as long as it is on:
@@ -511,9 +578,10 @@ warning: status.insecure is on: the certificate https://status.internal presents
 
 ### Adding a certificate later means a restart
 
-Both programs read their trust store once, at startup. Updating the ConfigMap
-propagates the new file and nothing happens: the certificate stays untrusted
-until the pods restart.
+Both programs read their trust store once, at startup, and `status.ca` is read
+once too, on the first poll that needs it. Updating the ConfigMap, or the file
+the URL serves, propagates the new bundle and nothing happens: the certificate
+stays untrusted until the pods restart.
 
 ```sh
 kubectl rollout restart deploy/gatus deploy/cairn

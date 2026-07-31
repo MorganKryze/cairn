@@ -14,7 +14,7 @@ import (
 )
 
 func TestEmitGatus(t *testing.T) {
-	out, err := status.Emit(sample(t))
+	out, err := status.Emit(sample(t), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,6 +26,41 @@ func TestEmitGatus(t *testing.T) {
 	}
 	if strings.Contains(s, "group: \"\"") {
 		t.Error("service without category should omit group")
+	}
+}
+
+// -emit-gatus writes the service's own public URL, the one already printed on
+// its card, so hiding it by default would hide what the page shows next to it.
+// It becomes worth something the moment an operator edits the emitted file to
+// probe an internal address instead, which is what the flag is for.
+func TestEmitCanHideTheTargets(t *testing.T) {
+	plain, err := status.Emit(sample(t), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(plain), "ui:") {
+		t.Errorf("the default emitted a ui block nobody asked for:\n%s", plain)
+	}
+
+	hidden, err := status.Emit(sample(t), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(hidden)
+	// All three, because they hide three different things and the port is the
+	// one that survives the other two.
+	for _, want := range []string{"ui:", "hide-url: true", "hide-hostname: true", "hide-port: true"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("emitted config missing %q:\n%s", want, s)
+		}
+	}
+	if got, endpoints := strings.Count(s, "ui:"), strings.Count(s, "- name:"); got != endpoints {
+		t.Errorf("%d ui blocks for %d endpoints: the flag has to reach every one", got, endpoints)
+	}
+	// The address itself still has to be in the file: it is what Gatus probes.
+	// Hiding is about the dashboard, not about cairn forgetting the URL.
+	if !strings.Contains(s, "https://pdf.example.org") {
+		t.Error("hiding the target dropped the target")
 	}
 }
 
@@ -42,7 +77,7 @@ func TestFetchStatuses(t *testing.T) {
 		]`)
 	}))
 	defer srv.Close()
-	st, err := status.Fetch(srv.URL, false)
+	st, err := status.Fetch(status.Source{URL: srv.URL})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +106,7 @@ func TestPillLinksToTheKeyGatusReports(t *testing.T) {
 		]`)
 	}))
 	defer srv.Close()
-	st, err := status.Fetch(srv.URL, false)
+	st, err := status.Fetch(status.Source{URL: srv.URL})
 	if err != nil {
 		t.Fatal(err)
 	}

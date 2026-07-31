@@ -177,7 +177,7 @@ func TestGatusBodyIsBounded(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if _, err := status.Fetch(srv.URL, false); err == nil {
+	if _, err := status.Fetch(status.Source{URL: srv.URL}); err == nil {
 		t.Error("an over-sized gatus answer was accepted, the cap is not holding")
 	}
 }
@@ -192,7 +192,7 @@ func TestGatusReadsANormalAnswer(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	st, err := status.Fetch(srv.URL, false)
+	st, err := status.Fetch(status.Source{URL: srv.URL})
 	if err != nil {
 		t.Fatal(err)
 	}

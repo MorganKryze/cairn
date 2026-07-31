@@ -34,6 +34,18 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: status.interval %q is not a duration of at least 5s (expected e.g. 60s)", iv)
 		}
 	}
+	// status.ca is a trust anchor, so a value cairn cannot reach is refused
+	// here rather than discovered on the first poll: the failure mode is grey
+	// pills and one log line, which is the shape of problem this file exists
+	// to stop. http is deliberate; the loudness that pays for it is elsewhere.
+	if ca := site.Status.CA; ca != "" {
+		if err := checkLinkScheme("status.ca", ca, imageSchemes, "http://…, https://… or an /assets path"); err != nil {
+			return err
+		}
+		if !isHTTPURL(ca) && AssetFile(ca) == "" {
+			return fmt.Errorf("config: site.yaml: status.ca %q is neither a URL nor a file under the mounted assets dir (expected e.g. https://pki.example.org/ca.crt or /assets/ca.crt)", ca)
+		}
+	}
 	// logo and favicon are the two image fields nothing else validates: a value
 	// that is not a URL only earns a -check warning, since a missing file is a
 	// plausible typo. An executable scheme is not, so it stops the load. The

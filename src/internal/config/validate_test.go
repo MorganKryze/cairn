@@ -38,6 +38,17 @@ func TestValidateSiteRejections(t *testing.T) {
 			[]string{"status.interval", "at least 5s"}},
 		{"interval below the floor", func(s *Site) { s.Status.Interval = "1s" },
 			[]string{"status.interval", "at least 5s"}},
+		// status.ca names a trust anchor. A value cairn cannot fetch or open
+		// would fail on the first poll and take the pills with it, so it is
+		// refused at the file rather than discovered a minute later in a log.
+		{"ca that is neither a URL nor an assets path", func(s *Site) { s.Status.CA = "ca-bundle.crt" },
+			[]string{"status.ca", "neither a URL nor a file", "/assets/"}},
+		{"ca pointing outside the assets mount", func(s *Site) { s.Status.CA = "/assets/../etc/passwd" },
+			[]string{"status.ca", "neither a URL nor a file"}},
+		{"ca with an executable scheme", func(s *Site) { s.Status.CA = "javascript:alert(1)" },
+			[]string{"status.ca", "javascript"}},
+		{"ca as a file: URL", func(s *Site) { s.Status.CA = "file:///etc/ssl/ca.crt" },
+			[]string{"status.ca", "file"}},
 		{"site url that is not a URL", func(s *Site) { s.URL = "tools.example.org" },
 			[]string{"url", "is not a URL"}},
 		// The sub-path trap: writing the address of the site rather than the
@@ -413,5 +424,19 @@ func TestValidateSiteAccepts(t *testing.T) {
 	s.Status.Interval = "30s"
 	if err := validateSite(s, map[string]string{}); err != nil {
 		t.Fatalf("refused a legal config: %v", err)
+	}
+
+	// The three shapes status.ca takes. http is deliberate, not an oversight:
+	// an internal bundle often lives on a plain host, and a CA URL that has to
+	// be https cannot be served by a CA nobody trusts yet.
+	for _, ca := range []string{
+		"https://pki.example.org/ca.crt",
+		"http://pki.internal/ca.crt",
+		"/assets/ca.crt",
+	} {
+		s.Status.CA = ca
+		if err := validateSite(s, map[string]string{}); err != nil {
+			t.Errorf("refused status.ca %q: %v", ca, err)
+		}
 	}
 }
