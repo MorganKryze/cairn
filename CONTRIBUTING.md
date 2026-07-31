@@ -65,9 +65,10 @@ dependency backwards.
   proves it.
 - **Docs are product.** A key without documentation, or a docs page that
   doesn't copy-paste-run, is a bug. Update `docs/` in the same PR.
-- **Dependencies.** The stdlib first; currently the only module dependency is
-  `yaml.v3` and it should stay that way unless something is truly impossible
-  without.
+- **Dependencies.** The stdlib first. There are two: `yaml.v3`, and `goldmark`
+  for the markdown, which replaced a hand-written parser whose failure mode was
+  wrong HTML rather than literal text. A third needs the same argument: what it
+  buys, what it costs in bytes, and why the standard library cannot.
 - **Accessibility and i18n are not optional.** New UI text goes through the
   strings table (both built-in locales), keyboard and contrast stay intact.
 

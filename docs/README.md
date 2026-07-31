@@ -12,7 +12,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 
 - [Services](configuration/services.md): the cards: every key, defaults, examples.
 - [Site](configuration/site.md): title, welcome note, header links, footer, hosted legal pages.
-- [Writing text](configuration/text.md): paragraphs and the markdown subset for long fields.
+- [Writing text](configuration/text.md): the long fields take CommonMark, minus raw HTML.
 - [Theming](configuration/theming.md): accent color, dark mode, `custom.css`.
 - [Languages](configuration/i18n.md): locales, fallbacks, UI string overrides.
 

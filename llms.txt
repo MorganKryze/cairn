@@ -18,7 +18,7 @@ https://cairn.libresoftware.cloud
 - [Upgrading](docs/upgrading.md): the dry run before you switch, and every config shape a version has started refusing, each with its verbatim error and its fix
 - [Services](docs/configuration/services.md): the cards; every key with defaults
 - [Site](docs/configuration/site.md): title, welcome note, header links, hosted legal pages, footer, credit
-- [Writing text](docs/configuration/text.md): paragraphs and the markdown subset the long fields accept
+- [Writing text](docs/configuration/text.md): the long fields take CommonMark plus GFM, minus raw HTML, with a link-scheme allow-list and whole-block images as figures
 - [Theming](docs/configuration/theming.md): accent, light/dark toggle, custom.css variables
 - [Languages](docs/configuration/i18n.md): locale negotiation, translatable fields, UI strings
 - [Docker Compose](docs/deployment/docker-compose.md): hardened reference setup and image tags

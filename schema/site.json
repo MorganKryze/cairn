@@ -71,7 +71,7 @@
     },
     "about": {
       "$ref": "#/definitions/lstring",
-      "description": "Dismissable welcome note on the home page, translatable. Long text: paragraphs and the markdown subset."
+      "description": "Dismissable welcome note on the home page, translatable. Long text: paragraphs and CommonMark, minus raw HTML."
     },
     "links": {
       "type": "array",
@@ -119,7 +119,7 @@
           "title": { "$ref": "#/definitions/lstring" },
           "body": {
             "$ref": "#/definitions/lstring",
-            "description": "Intro text. Long text: paragraphs and the markdown subset."
+            "description": "Intro text. Long text: paragraphs and CommonMark, minus raw HTML. The page title is the h1, so start headings here at ##."
           },
           "sections": {
             "type": "array",
