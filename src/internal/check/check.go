@@ -593,12 +593,8 @@ func inertSettings(cfg *config.Config) []string {
 		}
 	}
 
-	// The struct says icon is for header links; footer entries take it without
-	// complaint and it is never rendered.
-	for _, l := range cfg.Site.Footer {
-		if l.Icon != "" {
-			out = append(out, fmt.Sprintf("footer entry %q has an icon: only header links render one, so it is dropped", l.URL))
-		}
-	}
+	// A footer icon used to be reported here. It is a load error now: the key
+	// never rendered and schema/site.json never listed it, so a warning about a
+	// value that cannot exist is one more line to read past.
 	return out
 }

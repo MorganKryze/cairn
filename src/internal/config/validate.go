@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 )
@@ -43,8 +44,8 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		{"logo", site.Logo},
 		{"favicon", site.Favicon},
 	} {
-		if sc := unsafeScheme(f.val); sc != "" {
-			return unsafeSchemeErr(f.key, f.val, sc, "https://… or an /assets path")
+		if err := checkLinkScheme(f.key, f.val, imageSchemes, "https://… or an /assets path"); err != nil {
+			return err
 		}
 	}
 	// security.txt is a line-based format, so a newline in any value would let
@@ -63,9 +64,11 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		// uriRe takes any scheme, because security.txt takes mailto:, https:
 		// and tel: alike, so it is the one URL check here that an executable
 		// scheme walks straight through. Catch it before uriRe has a chance to
-		// bless it, or the researcher this file is written for gets a dead link.
-		if sc := unsafeScheme(f.val); sc != "" {
-			return unsafeSchemeErr(f.key, f.val, sc, "e.g. mailto:security@example.org or https://example.org/security")
+		// bless it, or the researcher this file is written for gets a dead
+		// link. tel: stays legal here and nowhere else: this file is plain
+		// text, so nothing blanks it, and RFC 9116 names it.
+		if err := checkContactScheme(f.key, f.val); err != nil {
+			return err
 		}
 		if !uriRe.MatchString(f.val) {
 			return fmt.Errorf("config: site.yaml: %s %q is not a URI (expected e.g. mailto:security@example.org or https://example.org/security)", f.key, f.val)
@@ -93,31 +96,39 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if len(l.Label) == 0 || l.URL == "" {
 			return fmt.Errorf("config: site.yaml: every links entry needs label and url (expected: - {label: Wiki, url: https://…})")
 		}
-		// A link url is the one field here that takes any scheme at all, since
-		// mailto: is a legitimate target, so nothing else would stop this one.
-		// html/template blanks the href, which means the header link renders
-		// and goes nowhere with no error anywhere.
-		if sc := unsafeScheme(l.URL); sc != "" {
-			return unsafeSchemeErr("links url", l.URL, sc, "https://…, mailto:… or an absolute path")
+		// mailto: is a legitimate target here, which is why this field gets the
+		// link list rather than the image one.
+		if err := checkLinkScheme("links url", l.URL, linkSchemes, "https://…, mailto:… or an absolute path"); err != nil {
+			return err
 		}
 		if ic := l.Icon; ic != "" && !IsURLOrAbs(ic) {
-			// An executable scheme lands here too: it is not a URL, not an /assets
-			// path and not a glyph name, so this refusal already covers it and
-			// a second gate would only say the same thing twice.
+			// Any scheme at all lands here: it is not a URL, not an /assets path
+			// and not a glyph name, so this refusal already covers the ones
+			// above and a second gate would only say the same thing twice.
 			if _, ok := Glyphs[ic]; !ok {
 				return fmt.Errorf("config: site.yaml: links icon %q is not a built-in glyph (%s), a URL or an /assets path", ic, strings.Join(GlyphNames(), ", "))
 			}
 		}
 	}
-	// Footer entries are validated nowhere else: they carry no icon on the page
-	// and no rule ever asked what their url was. That silence is exactly why an
-	// executable scheme has to be caught here rather than left to the reader.
+	// Footer entries used to be validated nowhere at all: an entry with no url
+	// rendered an empty href, which is a footer link that looks live and
+	// reloads the page, and one with no label rendered as nothing visible at
+	// all. links has always demanded both, and there was never a reason for
+	// the two lists to disagree.
 	for _, l := range site.Footer {
-		if sc := unsafeScheme(l.URL); sc != "" {
-			return unsafeSchemeErr("footer url", l.URL, sc, "https://…, mailto:… or an absolute path")
+		if len(l.Label) == 0 || l.URL == "" {
+			return fmt.Errorf("config: site.yaml: every footer entry needs label and url (expected: - {label: Legal, url: /legal})")
 		}
-		if sc := unsafeScheme(l.Icon); sc != "" {
-			return unsafeSchemeErr("footer icon", l.Icon, sc, "a built-in glyph name, https://… or an /assets path")
+		// icon is a header-link key. A footer entry took it without complaint
+		// and never rendered it, which -check reported as inert; schema/site.json
+		// has never listed it at all, so the editor said one thing and the
+		// loader another. Refusing it is what makes those two agree, and it says
+		// the useful half out loud: there is a list where the icon does work.
+		if l.Icon != "" {
+			return fmt.Errorf("config: site.yaml: footer entry %q has an icon: only header links render one (move the entry to links, or drop the icon)", l.URL)
+		}
+		if err := checkLinkScheme("footer url", l.URL, linkSchemes, "https://…, mailto:… or an absolute path"); err != nil {
+			return err
 		}
 	}
 	for i, ic := range site.Icons {
@@ -162,45 +173,72 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	return nil
 }
 
-// unsafeSchemes are the three a browser can be talked into executing, so they
-// are the three no field of this file may carry.
+// The schemes cairn will actually emit. html/template puts http, https,
+// mailto and paths in an href or a src, and replaces every other scheme with
+// #ZgotmplZ, so a value carrying one renders as a link that goes nowhere and
+// says nothing. tel: fails exactly the way javascript: does, and just as
+// quietly; the only difference between them is intent.
 //
-// javascript: and vbscript: run code outright. data: is here because
-// data:text/html carries a whole document, script and all, and because a list
-// of two invites the next reader to assume the third was weighed and kept. It
-// costs nothing to refuse: html/template emits only http, https, mailto and
-// paths, and replaces every other scheme with #ZgotmplZ, so a data: favicon
-// has never once reached a browser from cairn.
-var unsafeSchemes = []string{"javascript", "vbscript", "data"}
+// An allow-list rather than a list of the dangerous ones. A deny-list is only
+// as current as the last time somebody thought about it, and the question that
+// decides this is not which schemes are hostile but which ones cairn can emit.
+var (
+	linkSchemes = []string{"http", "https", "mailto"}
+	// An image is a file, so mailto: has no business naming one.
+	imageSchemes = []string{"http", "https"}
+	// security.txt is the exception, and the reason the allow-list above is
+	// scoped to links rather than applied to the whole file: that file is
+	// plain text, never markup, so nothing blanks anything on the way out and
+	// RFC 9116 names tel: itself. Only the schemes a browser can be talked
+	// into executing are refused there, and data: is among them because
+	// data:text/html carries a whole document, script and all.
+	unsafeSchemes = []string{"javascript", "vbscript", "data"}
+)
 
-// unsafeScheme names the one s carries, or "" when it carries none.
+// urlScheme returns the scheme a browser would read from s, lowercased, and ""
+// when there is none, which is every relative and root-absolute path.
 //
-// The dressing is the whole point. A browser removes every tab, newline and
-// carriage return from a URL and strips leading control characters and spaces
-// before it looks at the scheme, so "java\tscript:alert(1)", " javascript:…"
-// and "JavaScript:…" are all the same URL as the plain one. Matching the
-// literal text would refuse the obvious spelling and pass the three that
-// matter, which is worse than not checking: it reads as a check that works.
-func unsafeScheme(s string) string {
+// It reads the value the way a browser does rather than the way it is written.
+// A browser removes every tab, newline and carriage return from a URL and
+// strips leading control characters and spaces before it looks at the scheme,
+// so "java\tscript:alert(1)", " javascript:…" and "JavaScript:…" are all the
+// same URL as the plain one. Matching the literal text would refuse the
+// obvious spelling and pass the three that matter, which is worse than not
+// checking: it reads as a check that works.
+func urlScheme(s string) string {
 	s = strings.Map(func(r rune) rune {
 		if r == '\t' || r == '\n' || r == '\r' {
 			return -1
 		}
 		return r
 	}, s)
-	s = strings.ToLower(strings.TrimLeftFunc(s, func(r rune) bool { return r <= ' ' }))
-	for _, sc := range unsafeSchemes {
-		if strings.HasPrefix(s, sc+":") {
-			return sc
-		}
+	s = strings.TrimLeftFunc(s, func(r rune) bool { return r <= ' ' })
+	i := strings.IndexByte(s, ':')
+	// A colon past a slash, a question mark or a hash belongs to the path or
+	// the query: "/assets/a:b.png" is a path and always was.
+	if i < 0 || strings.ContainsAny(s[:i], "/?#") {
+		return ""
 	}
-	return ""
+	return strings.ToLower(s[:i])
 }
 
-// unsafeSchemeErr words the refusal once for every field that can carry one,
-// so an operator who trips it twice can tell it is one rule and not two. It
-// names the scheme it found as well as the rule, because the three spellings
-// that reach here look nothing like each other.
-func unsafeSchemeErr(field, val, scheme, accepted string) error {
-	return fmt.Errorf("config: site.yaml: %s %q uses the %s: scheme; cairn refuses javascript:, vbscript: and data: wherever a link goes (expected %s)", field, val, scheme, accepted)
+// checkLinkScheme refuses a value cairn cannot put in an href or a src.
+//
+// It is an error rather than a warning because the alternative is what this
+// replaces: the page renders, the link is there, it does nothing when clicked,
+// and no log line anywhere mentions it.
+func checkLinkScheme(field, val string, allowed []string, accepted string) error {
+	sc := urlScheme(val)
+	if sc == "" || slices.Contains(allowed, sc) {
+		return nil
+	}
+	return fmt.Errorf("config: site.yaml: %s %q uses the %s: scheme, which cairn does not emit: the link would render dead and nothing would say why (expected %s)", field, val, sc, accepted)
+}
+
+// checkContactScheme is the security.txt half: any URI but an executable one.
+func checkContactScheme(field, val string) error {
+	if sc := urlScheme(val); slices.Contains(unsafeSchemes, sc) {
+		return fmt.Errorf("config: site.yaml: %s %q uses the %s: scheme, which no researcher can act on (expected e.g. mailto:security@example.org, https://example.org/security or tel:+33…)", field, val, sc)
+	}
+	return nil
 }

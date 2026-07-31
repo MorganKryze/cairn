@@ -48,7 +48,7 @@ logs the same error.
 | `theme.accent`        | `#247b7b`      | hex color                                                                                                                                                                                                          |
 | `about`               | empty          | dismissable welcome note under the hero, long text ([markdown subset](configuration/text.md))                                                                                                                      |
 | `links`               | `[]`           | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}`                                                                                                 |
-| `footer`              | `[]`           | list of `{label: text, url: string}`                                                                                                                                                                               |
+| `footer`              | `[]`           | list of `{label: text, url: string}`; both required, as in `links`                                                                                                                                                 |
 | `pages`               | `[]`           | [hosted pages](configuration/site.md#hosted-pages): `{id: slug, title: text, body: long text, sections: [{title, body}]}`; body and/or sections required; bodies take the [markdown subset](configuration/text.md) |
 | `credit`              | `true`         | bool; `false` removes the footer "powered by cairn"                                                                                                                                                                |
 | `show_version`        | `false`        | bool; `true` shows the running version next to the credit, linked to its release or commit                                                                                                                         |
@@ -67,11 +67,12 @@ the kind of entry that refused the key and lists what that entry accepts, so
 a misspelt `show_versions` is answered with `show_version` rather than with
 the keys of some other part of the file.
 
-`javascript:`, `vbscript:` and `data:` are refused in every field above that
-holds a link: `logo`, `favicon`, the `url` and `icon` of a `links` or `footer`
-entry, and the three `security` fields. Those are the ones no other rule
-answers, either because they take a scheme cairn cannot enumerate (`mailto:`)
-or because a bad value there was only ever a `-check` warning. See
+Every field above that becomes a link takes `https://`, `http://`, an absolute
+path, and for `links` and `footer` entries `mailto:`. Every other scheme is
+refused, `tel:` included: `html/template` writes only those in an `href`, and
+replaces anything else with a placeholder that goes nowhere, so the link would
+render dead with nothing in the log to say why. `security.*` is the exception
+and keeps `tel:`, because that file is plain text rather than markup. See
 [Links a browser will not follow](configuration/site.md#links-a-browser-will-not-follow).
 
 ## `categories.yaml`
