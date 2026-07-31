@@ -290,8 +290,9 @@ func TestManifestServesTheOperatorsIcons(t *testing.T) {
 
 func TestNoListing(t *testing.T) {
 	h := noListing(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "file") }))
-	// After StripPrefix a directory request is the empty path or ends in /.
-	for _, p := range []string{"", "sub/"} {
+	// After StripPrefix a directory request is the empty path or ends in /, and
+	// a dot-prefixed segment can sit anywhere along the rest.
+	for _, p := range []string{"", "sub/", ".env", ".git/config", "icons/.svn/entries", "a/b/.hidden.png"} {
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/media/x", nil)
 		r.URL.Path = p

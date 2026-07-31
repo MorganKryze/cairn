@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/MorganKryze/cairn/src/internal/config"
@@ -67,6 +68,62 @@ func TestRouteTable(t *testing.T) {
 		h.ServeHTTP(rec, httptest.NewRequest("GET", c.path, nil))
 		if rec.Code != c.want {
 			t.Errorf("GET %s = %d, want %d", c.path, rec.Code, c.want)
+		}
+	}
+}
+
+// -assets is routinely pointed straight at a working copy, and with dotfiles
+// served /assets/.git/config is a public URL: the remote, and whatever a
+// credential helper wrote beside it. noListing is shared with /media/, so both
+// trees get the same rule, and nothing legitimate is behind it. The icons,
+// logos and previews all have ordinary names, and /.well-known/security.txt is
+// answered by its own handler on the route table rather than out of either
+// tree, which is why it is here to prove the rule cannot reach it.
+func TestDotPrefixedPathsAreNotServed(t *testing.T) {
+	cfgDir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nsecurity: {contact: mailto:security@example.org}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	assetsDir := t.TempDir()
+	write := func(dir, rel, body string) {
+		t.Helper()
+		full := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(assetsDir, ".git/config", "[remote \"origin\"]\n\turl = git@github.com:someone/private.git\n")
+	write(assetsDir, ".env", "TOKEN=hunter2\n")
+	write(assetsDir, "icons/.svn/entries", "12\n")
+	write(assetsDir, "icons/pad.svg", "<svg/>")
+	write(cfgDir, "media/.DS_Store", "\x00\x00\x00\x01")
+	write(cfgDir, "media/shot.png", "x")
+
+	Store(mustModel(t, cfgDir))
+	h := routes(cfgDir, assetsDir)
+
+	for _, c := range []struct {
+		path string
+		want int
+	}{
+		{"/assets/.git/config", http.StatusNotFound},        // the whole reason for the rule
+		{"/assets/.env", http.StatusNotFound},               // a dot at the root of the tree
+		{"/assets/icons/.svn/entries", http.StatusNotFound}, // and one further down it
+		{"/media/.DS_Store", http.StatusNotFound},           // the same rule, the other tree
+		{"/assets/icons/pad.svg", http.StatusOK},            // ordinary files are untouched
+		{"/media/shot.png", http.StatusOK},                  //
+		{"/.well-known/security.txt", http.StatusOK},        // its own handler, not a tree
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", c.path, nil))
+		if rec.Code != c.want {
+			t.Errorf("GET %s = %d, want %d", c.path, rec.Code, c.want)
+		}
+		if c.want == http.StatusNotFound && strings.Contains(rec.Body.String(), "hunter2") {
+			t.Errorf("GET %s handed the file contents over", c.path)
 		}
 	}
 }

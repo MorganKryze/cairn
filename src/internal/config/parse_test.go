@@ -30,6 +30,36 @@ func TestLStringFallback(t *testing.T) {
 	}
 }
 
+// Get alone cannot tell a translation from a fallback, and a page that cannot
+// tell announces another language's wording as its own: the wrong voice on a
+// screen reader, and the wrong way round for a right-to-left language. Get is
+// written in terms of GetLocale, so the two can never answer from different
+// lookup orders.
+func TestGetLocaleReportsWhereTheWordingCameFrom(t *testing.T) {
+	for _, c := range []struct {
+		name               string
+		ls                 LString
+		locale, def        string
+		wantText, wantFrom string
+	}{
+		{"a translation comes from the locale asked for", LString{"fr": "Salut", "en": "Hi"}, "fr", "en", "Salut", "fr"},
+		{"the site default is a fallback and says so", LString{"en": "Hi"}, "de", "en", "Hi", "en"},
+		{"the last resort names the language it found", LString{"ar": "مرحبا", "he": "שלום"}, "fr", "fr", "مرحبا", "ar"},
+		{"one string for every locale is never a fallback", LString{"": "Pad"}, "fr", "en", "Pad", "fr"},
+		{"nothing at all comes from nowhere", LString{}, "fr", "en", "", ""},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			text, from := c.ls.GetLocale(c.locale, c.def)
+			if text != c.wantText || from != c.wantFrom {
+				t.Errorf("GetLocale(%q, %q) = %q, %q, want %q, %q", c.locale, c.def, text, from, c.wantText, c.wantFrom)
+			}
+			if got := c.ls.Get(c.locale, c.def); got != text {
+				t.Errorf("Get says %q where GetLocale says %q", got, text)
+			}
+		})
+	}
+}
+
 // A services file that is not a list of services has to say so in the terms of
 // the file, naming what was found where.
 func TestParseServicesRefusals(t *testing.T) {

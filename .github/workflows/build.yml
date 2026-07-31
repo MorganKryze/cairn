@@ -3,11 +3,18 @@ name: build
 on:
   push:
     branches: [main]
+    # Every path any job below reads, which is the only rule that keeps this
+    # list honest. scripts/ and example/ were missing, and they are what the
+    # `search` job serves and drives: editing a11y.mjs or the fixture skipped
+    # the one job that runs them. The cost of listing them is an image rebuild
+    # on a change that cannot alter the image, which is the cheaper mistake.
     paths:
       - "src/**"
       - "docker/**"
       - "demo/**"
       - "charts/**"
+      - "scripts/**"
+      - "example/**"
       - "go.mod"
       - "go.sum"
       - ".github/workflows/build.yml"

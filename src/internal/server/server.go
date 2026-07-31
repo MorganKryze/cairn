@@ -36,12 +36,35 @@ func Serve(addr, cfgDir, assetsDir string) error {
 	// generous.
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mount(secureHeaders(compress(routes(cfgDir, assetsDir)))),
+		Handler:           handler(cfgDir, assetsDir),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
 	return srv.ListenAndServe()
+}
+
+// handler is the whole chain, written outside in.
+//
+// secureHeaders is outermost because that is the only place nothing can answer
+// from underneath it. mount registers three things of its own at the domain
+// root, /healthz, /readyz and the 404 for everything outside the prefix, and
+// with the headers inside mount those three came back bare under -base-path:
+// no COOP, no CORP, no HSTS. HSTS is the one that costs, because the bare host
+// is exactly where a first visit lands, and a header that never arrives there
+// cannot pin the scheme before someone gets to downgrade it.
+//
+// compress stays inside secureHeaders and still outside mount, so the two
+// deployments answer alike. Without -base-path the probes were already inside
+// both wrappers and nobody chose that difference; putting mount innermost
+// settles it in the direction the default deployment has been running all
+// along. It costs the probes nothing: healthz and readyz set no Content-Type,
+// compress reads the one on the header before net/http gets to sniff one, and
+// an empty type is not compressible, so "ok\n" goes out as three bytes either
+// way. What the two wrappers actually add there is Vary and the hardening
+// headers, which is the whole point.
+func handler(cfgDir, assetsDir string) http.Handler {
+	return secureHeaders(compress(mount(routes(cfgDir, assetsDir))))
 }
 
 // routes maps every path cairn answers. Nothing here is exported: what the

@@ -1,25 +1,27 @@
 {{template "top" .}}
-<h1 class="visually-hidden">{{.SiteTitle}}</h1>
-{{if .Tagline}}<p class="tagline">{{.Tagline}}</p>
-{{end}}{{if .About}}<section class="about">
+<h1 class="visually-hidden"{{.SiteTitle.Attrs}}>{{.SiteTitle}}</h1>
+{{if .Tagline.Text}}<p class="tagline"{{.Tagline.Attrs}}>{{.Tagline}}</p>
+{{end}}{{if .About.Blocks}}<section class="about">
+  {{/* The dismiss button is a cairn string, always in the page's language, so
+       the note's own marking goes on the note and not on the section: putting
+       it here would have claimed the button reads in another language too. */}}
   <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>{{.S.Dismiss}}</span></button>
-  {{range .About}}{{.}}
-  {{end}}</section>
+  {{template "prose" .About}}</section>
 {{end}}{{if gt (len .Cats) 1}}<nav class="toc{{if gt (len .Cats) 7}} many{{end}}" aria-label="{{.S.Toc}}">
   <ul>
-    {{range .Cats}}<li><a href="#cat-{{.ID}}"><span class="toc-mark" aria-hidden="true"></span><span class="toc-name">{{.Name}}</span></a></li>
+    {{range .Cats}}<li><a href="#cat-{{.ID}}"><span class="toc-mark" aria-hidden="true"></span><span class="toc-name"{{.Name.Attrs}}>{{.Name}}</span></a></li>
     {{end}}
   </ul>
 </nav>
 {{if gt (len .Cats) 7}}<label class="toc-jump"><span class="visually-hidden">{{.S.Toc}}</span><select class="toc-select">
   <option value="">{{.S.Toc}}</option>
-  {{range .Cats}}<option value="#cat-{{.ID}}">{{.Name}}</option>
+  {{range .Cats}}<option value="#cat-{{.ID}}"{{.Name.Attrs}}>{{.Name}}</option>
   {{end}}</select></label>
 {{end}}
 {{end}}{{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
   <div class="way">
     <span class="way-mark" aria-hidden="true"></span>
-    <h2 id="cat-{{.ID}}" class="way-name">{{.Name}}</h2>
+    <h2 id="cat-{{.ID}}" class="way-name"{{.Name.Attrs}}>{{.Name}}</h2>
     <span class="way-rule" aria-hidden="true"></span>
   </div>
   <ul class="cards">
@@ -27,8 +29,12 @@
       <div class="card-main">
         <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
-          <a class="card-name" href="{{.URL}}">{{.Name}}</a>
-          {{if .Desc}}<span class="card-desc">{{.Desc}}{{if .MoreHref}} <a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>{{end}}</span>
+          <a class="card-name" href="{{.URL}}"{{.Name.Attrs}}>{{.Name}}</a>
+          {{/* The "Learn more" link shares the card-desc span and is always in
+               the page's language, so a description that fell back to another
+               one is wrapped on its own. The wrapper appears only then, which
+               is why it is not simply always there. */}}
+          {{if .Desc.Text}}<span class="card-desc">{{if .Desc.Attrs}}<span{{.Desc.Attrs}}>{{.Desc}}</span>{{else}}{{.Desc}}{{end}}{{if .MoreHref}} <a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a>{{end}}</span>
           {{else if .MoreHref}}<span class="card-desc"><a class="card-more" href="{{.MoreHref}}">{{$.S.More}}</a></span>{{end}}
         </div>
       </div>

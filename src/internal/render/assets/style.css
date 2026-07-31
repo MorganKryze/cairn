@@ -35,15 +35,19 @@
   --fg: light-dark(#1b2220, #e6e9e5);
   --muted: light-dark(#5c6461, #98a19d);
   --faint: light-dark(#e8e7df, #212829);
-  --border: light-dark(#dcdbd2, #2a3130);
-  /* --border is decoration: card outlines, rules, the trail's spine. It sits
-     at 1.21:1 against --bg in light and 1.34:1 in dark, which is fine for
-     decoration and far under the 3:1 WCAG 1.4.11 asks of a control's boundary.
-     Darkening --border to reach it would repaint every card on the page, so
-     this second value exists for the boundary that *is* the control, where
-     nothing else says where to click or type. Measured in the browser against
-     both neighbours: light 3.31:1 on --bg and 3.67:1 on --card, dark 3.63:1
-     and 3.31:1. */
+  /* --border is decoration: card outlines, rules, the trail's spine. WCAG
+     1.4.11 does not reach it, and it used to sit at 1.21:1 against --bg in
+     light and 1.34:1 in dark, which is a hairline that survives a good screen
+     in a dim room and disappears on a cheap one in daylight. Around 2:1 is a
+     deliberate middle: no rule asks for it, and a card whose edge you cannot
+     find is still a card you cannot scan. Measured: light 1.84:1 on --bg and
+     2.04:1 on --card, dark 2.02:1 and 1.84:1. */
+  --border: light-dark(#b4b3a8, #434c4a);
+  /* The boundary that *is* the control, where nothing else says where to click
+     or type, and where 1.4.11 does ask for 3:1. Kept separate from --border so
+     the decoration above can be chosen for looks and this one cannot. Measured
+     against both neighbours: light 3.31:1 on --bg and 3.67:1 on --card, dark
+     3.63:1 and 3.31:1. */
   --ui-border: light-dark(#7f8482, #6b7270);
   --accent: #247b7b;                                       /* set inline from theme.accent */
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));

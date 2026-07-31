@@ -10,6 +10,14 @@ configuration: `tools.example.org` and `cairn.tools.example.org` are the same
 case as far as cairn is concerned. Serving from a **sub-path** of an existing
 domain takes one flag, [below](#under-a-sub-path).
 
+One thing to leave alone if your proxy or CDN offers to touch it: `ETag` and
+`If-None-Match`. cairn sends `Vary: Accept-Encoding`, and it also suffixes the
+tag with `-gzip` on a compressed answer, so the two representations of a page
+never share a validator. That second signal is there for the caches configured
+to ignore `Vary`, which would otherwise hand gzip bytes to a client that cannot
+inflate them. A layer that rewrites, strips or normalizes either header takes
+the signal back out.
+
 ## Caddy
 
 ```caddy
@@ -123,6 +131,10 @@ Three things worth knowing:
   known when they are built. Restart to change it.
 - **`/healthz` also answers at the domain root**, so the container healthcheck
   keeps working unchanged: it talks to cairn directly, not through the proxy.
+  Those root answers carry the same security headers and the same `Vary` as
+  every page, which they did not before: with a base path set they used to come
+  back bare, and a first visit to the bare host is exactly where HSTS has to
+  arrive to be worth anything.
 - **Set `url` in `site.yaml` to the origin only** (`https://example.org`, no
   path). cairn appends the base path itself for canonical links, the sitemap
   and `robots.txt`.

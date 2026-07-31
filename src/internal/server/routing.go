@@ -57,13 +57,30 @@ func secureHeaders(h http.Handler) http.Handler {
 	})
 }
 
-// noListing serves files but never directory indexes.
+// noListing serves files but never directory indexes, and never anything under
+// a dot-prefixed name.
 func noListing(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// After StripPrefix the folder root is the empty path.
 		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {
 			http.NotFound(w, r)
 			return
+		}
+		// -assets gets pointed at a working copy often enough that it has to be
+		// safe: with the dot served, /assets/.git/config is a public URL, and it
+		// carries the remote and whatever a credential helper wrote into it.
+		// The whole class goes rather than a blocklist, which would be one .env
+		// or .DS_Store behind for as long as the file exists. Nothing cairn
+		// serves lives under a dot: the icons, logos and previews are ordinary
+		// names, and /.well-known/security.txt is answered by its own handler on
+		// the route table, never out of these trees. Segment by segment because
+		// the dot can be anywhere in the path, and this catches a .. that
+		// somehow survived the mux's cleaning on the way here too.
+		for _, seg := range strings.Split(r.URL.Path, "/") {
+			if strings.HasPrefix(seg, ".") {
+				http.NotFound(w, r)
+				return
+			}
 		}
 		h.ServeHTTP(w, r)
 	})
@@ -77,6 +94,39 @@ func noListing(h http.Handler) http.Handler {
 // rather than once per response.
 var gzipPool = sync.Pool{New: func() any { return gzip.NewWriter(io.Discard) }}
 
+// gzipMark separates the compressed representation's validator from the
+// identity one's. The handler tags a page by its html alone, so without this
+// one ETag names two different answers; Vary keeps a compliant cache honest,
+// but a cache configured to ignore it then hands gzip bytes to a client that
+// cannot inflate them, and the client has no way to tell.
+//
+// The mark goes inside the quotes. An entity-tag is a quoted string and
+// nothing but, so Apache's historical `"…"-gzip`, with the mark hung off the
+// outside, is not a valid one; a strict parser drops the tag and revalidation
+// quietly stops happening at all.
+const gzipMark = "-gzip"
+
+// markGzip moves one validator onto the compressed representation. Inserted
+// before the closing quote rather than appended, so a weak `W/"…"` comes back
+// weak instead of turning into something that parses as neither.
+func markGzip(tag string) string {
+	if !strings.HasSuffix(tag, `"`) {
+		return tag
+	}
+	return tag[:len(tag)-1] + gzipMark + `"`
+}
+
+// unmarkGzip is the inverse, over a whole If-None-Match list. ReplaceAll needs
+// no parsing and cannot corrupt a tag: a double quote is the one byte an
+// entity-tag's body may not contain, so `-gzip"` in a well-formed list is
+// always a mark of ours meeting its closing quote, never a slice out of the
+// middle of someone's opaque value. A bare `*` and every unmarked tag come
+// through untouched, and a list is handled in one pass without splitting on a
+// comma, which an entity-tag is allowed to contain.
+func unmarkGzip(list string) string {
+	return strings.ReplaceAll(list, gzipMark+`"`, `"`)
+}
+
 // gzipWriter decides at WriteHeader time, once the handler has settled its
 // Content-Type. Deciding earlier would mean guessing from the path, which the
 // /assets tree makes unreliable.
@@ -84,6 +134,9 @@ type gzipWriter struct {
 	http.ResponseWriter
 	gz      *gzip.Writer
 	decided bool
+	// marked records that the request arrived carrying a marked validator,
+	// which is the only thing a 304 has left to reconstruct one from.
+	marked bool
 }
 
 // compressible covers what cairn actually serves as text. Images, fonts and
@@ -121,6 +174,17 @@ func (w *gzipWriter) WriteHeader(code int) {
 			w.Header().Set("Content-Encoding", "gzip")
 			w.gz = gzipPool.Get().(*gzip.Writer)
 			w.gz.Reset(w.ResponseWriter)
+		}
+		// A validator names the bytes that go out, and this is the line that
+		// settled which ones those are. A 304 sends none, so the representation
+		// being confirmed is the one the client already holds: the right tag
+		// there is the one it sent, which means the mark goes back on exactly
+		// when it came off. Doing it any other way hands an identity cache a
+		// gzip tag, or the reverse, and the next revalidation is wrong.
+		if w.gz != nil || (code == http.StatusNotModified && w.marked) {
+			if tag := w.Header().Get("ETag"); tag != "" {
+				w.Header().Set("ETag", markGzip(tag))
+			}
 		}
 	}
 	w.ResponseWriter.WriteHeader(code)
@@ -180,7 +244,9 @@ func acceptsGzip(h string) bool {
 // compress gzips the text responses for clients that asked. Vary rides on
 // every response, compressed or not: a cache that stored the plain answer must
 // not hand it to a client that would have got the compressed one, and the
-// header is the only thing telling it so.
+// header is the only thing telling it so. The validator is marked to say the
+// same thing a second way, for the caches that are told to ignore Vary; see
+// gzipMark.
 func compress(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Accept-Encoding")
@@ -190,10 +256,29 @@ func compress(h http.Handler) http.Handler {
 		// the uncompressed representation, which is a true one, rather than
 		// advertising the 23 bytes of an empty gzip member.
 		if r.Method == http.MethodHead || !acceptsGzip(r.Header.Get("Accept-Encoding")) {
+			// The mark is deliberately left on the way in here. A client that
+			// cached the compressed page and can no longer inflate one needs
+			// the identity bytes, so its marked tag must fail the handler's
+			// comparison and earn a 200; stripping it unconditionally would
+			// answer 304 and leave it holding gzip it cannot read.
 			h.ServeHTTP(w, r)
 			return
 		}
 		gw := &gzipWriter{ResponseWriter: w}
+		// The handler does its own If-None-Match comparison, and it does it
+		// before this layer would rewrite anything on the way out, so the mark
+		// has to come off here or every conditional request on a compressed
+		// page comes back as a full 200 and the ETag stops saving a byte.
+		// Copied rather than edited in place: a handler is not supposed to find
+		// its request mutated underneath it, and the copy is only paid for by
+		// the requests that actually carry a mark.
+		if inm := r.Header.Get("If-None-Match"); strings.Contains(inm, gzipMark+`"`) {
+			gw.marked = true
+			clone := *r
+			clone.Header = r.Header.Clone()
+			clone.Header.Set("If-None-Match", unmarkGzip(inm))
+			r = &clone
+		}
 		defer func() {
 			if err := gw.Close(); err != nil {
 				log.Printf("gzip: %v", err)

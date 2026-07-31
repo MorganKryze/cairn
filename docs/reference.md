@@ -98,23 +98,23 @@ ids, alphabetically.
 
 ## Endpoints
 
-| Path                        | Behavior                                                                                           |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `/`                         | 302 to the negotiated locale (cookie → `Accept-Language` → default)                                |
-| `/{locale}/`                | home; server-rendered, `ETag`, `Cache-Control: no-cache`                                           |
-| `/{locale}/{id}/`           | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching             |
-| `/{locale}/…?choose`        | sets the one-year locale cookie, then redirects clean                                              |
-| `/static/…`                 | embedded assets, cached one day                                                                    |
-| `/assets/…`                 | your mounted files, if the mount exists                                                            |
-| `/media/…`                  | images from `<config>/media/`, the ones services and long text name                                |
-| `/custom.css`               | your stylesheet, if present                                                                        |
-| `/manifest.webmanifest`     | the web app manifest: site name, theme color, the [icon set](configuration/site.md#the-icon-set)   |
-| `/favicon.ico`              | cairn's own, or a redirect to your `favicon`, for the tools that skip the html                     |
-| `/healthz`                  | `200 ok` while the process serves, whatever the config says: the liveness signal                   |
-| `/readyz`                   | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in |
-| `/sitemap.xml`              | every page, absolute URLs from `Host`/`X-Forwarded-Proto`                                          |
-| `/robots.txt`               | allow all + sitemap URL                                                                            |
-| `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                          |
+| Path                        | Behavior                                                                                                  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `/`                         | 302 to the negotiated locale (cookie → `Accept-Language` → default)                                       |
+| `/{locale}/`                | home; server-rendered, `ETag` (suffixed `-gzip` when the answer is compressed), `Cache-Control: no-cache` |
+| `/{locale}/{id}/`           | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching                    |
+| `/{locale}/…?choose`        | sets the one-year locale cookie, then redirects clean                                                     |
+| `/static/…`                 | embedded assets, cached one day                                                                           |
+| `/assets/…`                 | your mounted files, if the mount exists                                                                   |
+| `/media/…`                  | images from `<config>/media/`, the ones services and long text name                                       |
+| `/custom.css`               | your stylesheet, if present                                                                               |
+| `/manifest.webmanifest`     | the web app manifest: site name, theme color, the [icon set](configuration/site.md#the-icon-set)          |
+| `/favicon.ico`              | cairn's own, or a redirect to your `favicon`, for the tools that skip the html                            |
+| `/healthz`                  | `200 ok` while the process serves, whatever the config says: the liveness signal                          |
+| `/readyz`                   | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in        |
+| `/sitemap.xml`              | every page, absolute URLs from `Host`/`X-Forwarded-Proto`                                                 |
+| `/robots.txt`               | allow all + sitemap URL                                                                                   |
+| `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                                 |
 
 Text responses are gzipped for clients that ask, which is most of them: every
 text response a first visit to the demo pulls, the page and its stylesheet, the

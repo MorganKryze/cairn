@@ -88,37 +88,151 @@ func BuildCSP(cfg *config.Config) string {
 		"font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 }
 
+// locText is one translated string together with the language it turned out
+// to be written in.
+//
+// A field with no translation for the page's locale still renders, in
+// whichever language the config does have, and the page used to claim through
+// <html lang> that the sentence was in its own: a screen reader then reads it
+// in the wrong voice, and an Arabic fallback inside a left-to-right page is
+// laid out the wrong way round, punctuation and all. Attrs is the ` lang="…"
+// dir="…"` that says otherwise, and a template opts into it element by
+// element.
+//
+// Printing is unchanged. String makes {{.Field}} render the wording and
+// nothing else, so every template that only prints keeps printing what it did.
+// Testing is not: this is a struct, and {{if .Field}} on a struct is always
+// true, so a template that shows an element only when the text exists has to
+// ask for {{if .Field.Text}}. TestEmptyFieldsStillRenderNothing is what
+// catches the slip, since the symptom is an empty element nobody looks at.
+//
+// Both Lang and Dir are empty in the overwhelmingly common case, a site whose
+// fields are translated for the locales it lists. A mark on every field would
+// be worse than none: it would say "foreign language" so often that the times
+// it is true would stop meaning anything.
+type locText struct {
+	Text string
+	Lang string // the text's own locale, empty when it is the page's language
+	Dir  string // "ltr"/"rtl", empty unless the text reads the other way round
+}
+
+func (t locText) String() string { return t.Text }
+
+func (t locText) Attrs() template.HTMLAttr { return langAttrs(t.Lang, t.Dir) }
+
+// prose is the same thing for a markdown field: the blocks it rendered to,
+// and the language they are written in when it is not the page's.
+type prose struct {
+	Blocks    []template.HTML
+	Lang, Dir string
+}
+
+func (p prose) Attrs() template.HTMLAttr { return langAttrs(p.Lang, p.Dir) }
+
+// langAttrs builds the attribute pair a marked run of text carries.
+//
+// template.HTMLAttr is an escape hatch: html/template copies it into the tag
+// verbatim, so a forgeable value here would be an injection. Nothing reaching
+// it is forgeable. lang is a locale tag, and IsLocale is checked here rather
+// than assumed from load, so the guarantee holds even if some later field
+// arrives by another road: localeRe is ^[a-zA-Z][a-zA-Z0-9-]*$, which admits
+// letters, digits and dashes and therefore no quote, space, angle bracket or
+// equals sign. dir is compared against the only two values it may ever hold.
+// Anything failing either check is dropped rather than escaped: a page with no
+// mark is merely as wrong as it was before this existed, while a page with a
+// forged attribute is a different kind of wrong.
+//
+// dir is left out when it matches the page's own direction. English text on a
+// French page reads left to right either way, and dir="ltr" on every such
+// field would be noise restating what the browser already inherited.
+func langAttrs(lang, dir string) template.HTMLAttr {
+	if !config.IsLocale(lang) {
+		return ""
+	}
+	attrs := ` lang="` + lang + `"`
+	if dir == "ltr" || dir == "rtl" {
+		attrs += ` dir="` + dir + `"`
+	}
+	return template.HTMLAttr(attrs)
+}
+
+// tr resolves one translated field for the page being built: loc is the
+// page's locale, def the site default that the lookup falls back through.
+func tr(ls config.LString, loc, def string) locText {
+	text, from := ls.GetLocale(loc, def)
+	t := locText{Text: text}
+	if text == "" || config.SameLanguage(from, loc) {
+		return t
+	}
+	t.Lang = from
+	if d := config.LocaleDir(from); d != config.LocaleDir(loc) {
+		t.Dir = d
+	}
+	return t
+}
+
+// proseOf renders a translated markdown field, keeping the language mark with
+// the blocks it produced.
+func proseOf(t locText, ctx mdCtx) prose {
+	return prose{Blocks: mdBlocks(t.Text, ctx), Lang: t.Lang, Dir: t.Dir}
+}
+
+// catName is CategoryName with the marking, and only where there is something
+// to mark. The name an operator wrote is a translation and falls back like any
+// other; the two cairn derives instead (the localized "Other" bucket, and a
+// category id title-cased into a heading) are in the page's language or in no
+// language at all, so neither carries a mark.
+func catName(cfg *config.Config, c config.Category, loc string) locText {
+	if len(c.Name) > 0 {
+		if t := tr(c.Name, loc, cfg.DefaultLocale()); t.Text != "" {
+			return t
+		}
+	}
+	return locText{Text: cfg.CategoryName(c, loc)}
+}
+
 type uiStrings struct {
 	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
 }
 
 type pageView struct {
-	Locale, SiteTitle, PageTitle, MetaDesc, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
-	Prefix                                                                                                                  string // "" or "/cairn", see BasePath
-	Dir                                                                                                                     string // "ltr" or "rtl", from the locale
-	CustomCSS, Search, Credit, Noindex, ShowVer                                                                             bool
-	VerLabel, VerHref                                                                                                       string
-	Locales                                                                                                                 []string
-	Links                                                                                                                   []linkView
-	Footer                                                                                                                  []linkView
-	S                                                                                                                       uiStrings
+	Locale, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
+	// PageTitle and MetaDesc are the <title> and the meta/og description. Both
+	// are text inside markup rather than markup, so neither can carry a lang
+	// attribute, and neither can be split into a marked part and an unmarked
+	// one: a title is one string. A fallback shows there unannounced, and the
+	// only honest thing to do about it is not pretend otherwise. Same for the
+	// og:title and the aria-label statusMeta builds.
+	PageTitle, MetaDesc                         string
+	SiteTitle                                   locText
+	Prefix                                      string // "" or "/cairn", see BasePath
+	Dir                                         string // "ltr" or "rtl", from the locale
+	CustomCSS, Search, Credit, Noindex, ShowVer bool
+	VerLabel, VerHref                           string
+	Locales                                     []string
+	Links                                       []linkView
+	Footer                                      []linkView
+	S                                           uiStrings
 }
 
 type cardView struct {
-	URL, Icon, Name, Desc, Tags, MoreHref, Status, StatusLabel, StatusHref string
-	StatusA11y                                                             string // set only when the pill is a link
-	HostKind, HostLabel                                                    string // "self"/"external"/"" and its localized label
+	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	Name, Desc                                                 locText
+	StatusA11y                                                 string // set only when the pill is a link
+	HostKind, HostLabel                                        string // "self"/"external"/"" and its localized label
 }
 
 type catView struct {
-	ID, Name string
-	Cards    []cardView
+	ID    string
+	Name  locText
+	Cards []cardView
 }
 
 type linkView struct {
-	Label, URL string
-	IconSVG    template.HTML // one of config.Glyphs, trusted markup
-	IconIMG    string        // user-supplied URL or /assets path
+	Label   locText
+	URL     string
+	IconSVG template.HTML // one of config.Glyphs, trusted markup
+	IconIMG string        // user-supplied URL or /assets path
 }
 
 func linkIcon(v *linkView, icon string) {
@@ -133,34 +247,36 @@ func linkIcon(v *linkView, icon string) {
 
 type homeView struct {
 	pageView
-	Tagline string
-	About   []template.HTML
+	Tagline locText
+	About   prose
 	Cats    []catView
 }
 
 type detailView struct {
 	pageView
-	Name, Desc, Icon, URL, Status, StatusLabel, StatusHref string
-	StatusA11y                                             string
-	Body                                                   []template.HTML
-	Images                                                 []imageView
+	Icon, URL, Status, StatusLabel, StatusHref string
+	Name, Desc                                 locText
+	StatusA11y                                 string
+	Body                                       prose
+	Images                                     []imageView
 }
 
 type imageView struct {
-	Src, Caption string
-	W, H         int
+	Src     string
+	Caption locText
+	W, H    int
 }
 
 type staticView struct {
 	pageView
-	Title    string
-	Intro    []template.HTML
+	Title    locText
+	Intro    prose
 	Sections []sectionView
 }
 
 type sectionView struct {
-	Title string
-	Body  []template.HTML
+	Title locText
+	Body  prose
 }
 
 // statusMeta fills a pill: its label, where it links, and the label a screen
@@ -184,6 +300,12 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label,
 	href = strings.TrimSuffix(base, "/") + "/endpoints/" + status.Key(s.Category, s.ID)
 	// A link has to name its target on its own: read out of the card, "Online"
 	// alone says nothing about which service, nor that it leads anywhere.
+	//
+	// The service name here may be a fallback in another language, and this one
+	// cannot be marked: an aria-label is text inside an attribute, so there is
+	// no element to hang lang and dir on, and the name is glued to two strings
+	// in the page's own language besides. The visible pill next to it carries
+	// the marking the label cannot.
 	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
 }
 
@@ -231,7 +353,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			Version:   Version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			ShowVer:   cfg.Site.ShowVer,
-			SiteTitle: cfg.Site.Title.Get(loc, def),
+			SiteTitle: tr(cfg.Site.Title, loc, def),
 			Logo:      AppURL(cfg.Site.Logo),
 			Favicon:   AppURL(cfg.Site.Favicon),
 			TouchIcon: AppURL(TouchIcon(cfg)),
@@ -267,29 +389,33 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 		}
 		base.VerLabel, base.VerHref = versionInfo(Version)
 		for _, l := range cfg.Site.Links {
-			lv := linkView{Label: l.Label.Get(loc, def), URL: l.URL}
+			lv := linkView{Label: tr(l.Label, loc, def), URL: l.URL}
 			linkIcon(&lv, l.Icon)
 			base.Links = append(base.Links, lv)
 		}
 		for _, f := range cfg.Site.Footer {
-			base.Footer = append(base.Footer, linkView{Label: f.Label.Get(loc, def), URL: f.URL})
+			base.Footer = append(base.Footer, linkView{Label: tr(f.Label, loc, def), URL: f.URL})
 		}
 		for _, p := range cfg.Site.Pages {
-			base.Footer = append(base.Footer, linkView{Label: p.Title.Get(loc, def), URL: BasePath + "/" + loc + "/" + p.ID + "/"})
+			base.Footer = append(base.Footer, linkView{Label: tr(p.Title, loc, def), URL: BasePath + "/" + loc + "/" + p.ID + "/"})
 		}
 
-		hv := homeView{pageView: base, Tagline: cfg.Site.Tagline.Get(loc, def), About: mdBlocks(cfg.Site.About.Get(loc, def), mdCtx{media: media})}
+		hv := homeView{
+			pageView: base,
+			Tagline:  tr(cfg.Site.Tagline, loc, def),
+			About:    proseOf(tr(cfg.Site.About, loc, def), mdCtx{media: media}),
+		}
 		hv.Search = true
-		hv.PageTitle = hv.SiteTitle
-		hv.MetaDesc = hv.Tagline
+		hv.PageTitle = hv.SiteTitle.Text
+		hv.MetaDesc = hv.Tagline.Text
 		for _, c := range cfg.Categories {
-			cv := catView{ID: c.ID, Name: cfg.CategoryName(c, loc)}
+			cv := catView{ID: c.ID, Name: catName(cfg, c, loc)}
 			for _, s := range c.Services {
 				card := cardView{
 					URL:    s.URL,
 					Icon:   AppURL(config.IconURL(cfg, s.Icon)),
-					Name:   s.Name.Get(loc, def),
-					Desc:   s.Desc.Get(loc, def),
+					Name:   tr(s.Name, loc, def),
+					Desc:   tr(s.Desc, loc, def),
 					Tags:   strings.Join(s.Tags, " "),
 					Status: statusOf(cfg, statuses, s.ID),
 				}
@@ -318,20 +444,20 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			for _, s := range c.Services {
 				dv := detailView{
 					pageView: base,
-					Name:     s.Name.Get(loc, def),
-					Desc:     s.Desc.Get(loc, def),
+					Name:     tr(s.Name, loc, def),
+					Desc:     tr(s.Desc, loc, def),
 					Icon:     AppURL(config.IconURL(cfg, s.Icon)),
 					URL:      s.URL,
 					Status:   statusOf(cfg, statuses, s.ID),
-					Body:     mdBlocks(s.Details.Get(loc, def), mdCtx{media: media}),
+					Body:     proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
-					dv.Images = append(dv.Images, imageView{Src: url, Caption: img.Caption.Get(loc, def), W: w, H: h})
+					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
 				}
 				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s)
-				dv.PageTitle = dv.Name + " · " + base.SiteTitle
-				dv.MetaDesc = dv.Desc
+				dv.PageTitle = dv.Name.Text + " · " + base.SiteTitle.Text
+				dv.MetaDesc = dv.Desc.Text
 				dv.SwitchPath = s.ID + "/"
 				page, err := render("detail.tmpl", dv)
 				if err != nil {
@@ -342,17 +468,18 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 		}
 
 		for _, p := range cfg.Site.Pages {
-			body := p.Body.Get(loc, def)
-			sv := staticView{pageView: base, Title: p.Title.Get(loc, def), Intro: mdBlocks(body, mdCtx{pClass: "page-intro", media: media})}
+			intro := tr(p.Body, loc, def)
+			body := intro.Text
+			sv := staticView{pageView: base, Title: tr(p.Title, loc, def), Intro: proseOf(intro, mdCtx{pClass: "page-intro", media: media})}
 			firstSec := ""
 			for _, s := range p.Sections {
-				secBody := s.Body.Get(loc, def)
+				sec := tr(s.Body, loc, def)
 				if firstSec == "" {
-					firstSec = secBody
+					firstSec = sec.Text
 				}
-				sv.Sections = append(sv.Sections, sectionView{Title: s.Title.Get(loc, def), Body: mdBlocks(secBody, mdCtx{media: media})})
+				sv.Sections = append(sv.Sections, sectionView{Title: tr(s.Title, loc, def), Body: proseOf(sec, mdCtx{media: media})})
 			}
-			sv.PageTitle = sv.Title + " · " + base.SiteTitle
+			sv.PageTitle = sv.Title.Text + " · " + base.SiteTitle.Text
 			if ps := paragraphs(body); len(ps) > 0 {
 				sv.MetaDesc = mdText(ps[0])
 			} else if ps := paragraphs(firstSec); len(ps) > 0 {
