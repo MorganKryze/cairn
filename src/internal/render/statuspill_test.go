@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MorganKryze/cairn/src/internal/config"
+	"github.com/MorganKryze/cairn/src/internal/status"
 	"github.com/MorganKryze/cairn/src/internal/testutil"
 )
 
@@ -18,7 +19,7 @@ func pages(t *testing.T, site string) (home, detail string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := BuildModel(cfg, map[string]bool{"pad": true})
+	m, err := BuildModel(cfg, map[string]status.State{"pad": {Up: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,6 +41,78 @@ func TestStatusPillLinksByDefault(t *testing.T) {
 			t.Errorf("%s: pill link does not name the service and its target", page.name)
 		}
 	}
+}
+
+// The pages are static, so a tab left open holds whatever Gatus said when it
+// was opened. status.js swaps the pills in place; for that it needs a slot per
+// service that is in the markup whether or not there is a pill in it, since
+// the state it has to reach includes "no pill at all".
+func TestEveryServiceHasAPillSlot(t *testing.T) {
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     withGatus,
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, details: More.}\n- {id: wiki, url: /wiki, name: Wiki}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Gatus has answered and monitors pad only: wiki ends up with no pill.
+	m, err := BuildModel(cfg, map[string]status.State{"pad": {Up: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := string(m.Pages["en"].HTML)
+	if !strings.Contains(home, `<span class="status-slot" data-status="pad"><a class="status-pill status-up"`) {
+		t.Error("the pill is not in a slot naming its service")
+	}
+	if !strings.Contains(home, `<span class="status-slot" data-status="wiki"></span>`) {
+		t.Error("a service gatus does not monitor has no slot, so a pill can never appear there")
+	}
+	if !strings.Contains(string(m.Pages["en/pad"].HTML), `<span class="status-slot" data-status="pad">`) {
+		t.Error("the detail page pill is not in a slot")
+	}
+}
+
+// Without a Gatus there is nothing to refresh, so none of it ships: no slot,
+// no script, and no hole in the CSP for a request the page never makes.
+func TestNoGatusShipsNoRefresh(t *testing.T) {
+	home, _ := pages(t, "locales: [en]\n")
+	for _, unwanted := range []string{"status-slot", "status.js"} {
+		if strings.Contains(home, unwanted) {
+			t.Errorf("a site without a status page still carries %q", unwanted)
+		}
+	}
+	// The header, not the markup: default-src stays 'none' with nothing added
+	// back for a request no script on the page is there to make.
+	if csp := BuildCSP(mustLoad(t, "locales: [en]\n")); strings.Contains(csp, "connect-src") {
+		t.Errorf("the CSP opens connect-src on a site with no status page: %s", csp)
+	}
+}
+
+// The script polls cairn at the interval cairn polls Gatus: asking more often
+// than the server can learn anything new is pure noise.
+func TestRefreshScriptCarriesThePollInterval(t *testing.T) {
+	home, detail := pages(t, withGatus+"  interval: 30s\n")
+	for _, page := range []struct{ name, html string }{{"home", home}, {"detail", detail}} {
+		if !strings.Contains(page.html, `<script src="/static/status.js" defer data-poll="30"></script>`) {
+			t.Errorf("%s: no refresh script, or it does not carry the interval", page.name)
+		}
+	}
+	// default-src is 'none', so the fetch it makes needs saying out loud.
+	if !strings.Contains(BuildCSP(mustLoad(t, withGatus)), "connect-src 'self'") {
+		t.Error("the CSP forbids the request status.js exists to make")
+	}
+}
+
+func mustLoad(t *testing.T, site string) *config.Config {
+	t.Helper()
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     site,
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cfg
 }
 
 // status.linked: false keeps the state and drops everything that made the
@@ -84,7 +157,7 @@ func TestStatusLinkedFalseChangesNothingElse(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Gatus has answered, and knows nothing about this service.
-	m, err := BuildModel(cfg, map[string]bool{"elsewhere": true})
+	m, err := BuildModel(cfg, map[string]status.State{"elsewhere": {Up: true}})
 	if err != nil {
 		t.Fatal(err)
 	}

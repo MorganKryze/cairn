@@ -46,10 +46,10 @@ func TestFetchStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if up, ok := st["pdf"]; !ok || !up {
+	if up, ok := st["pdf"]; !ok || !up.Up {
 		t.Errorf("pdf = %v,%v, want up (last result wins)", up, ok)
 	}
-	if up, ok := st["pad"]; !ok || up {
+	if up, ok := st["pad"]; !ok || up.Up {
 		t.Errorf("pad = %v,%v, want down", up, ok)
 	}
 	if _, ok := st["empty"]; ok {
@@ -57,9 +57,58 @@ func TestFetchStatuses(t *testing.T) {
 	}
 }
 
+// Gatus names its own endpoint pages, and only the operator's Gatus config
+// decides how endpoints are grouped. cairn used to build that URL out of its
+// own category, which is right only for someone who ran -emit-gatus and kept
+// the groups: anyone who wrote their endpoints by hand got a pill pointing at
+// a page that does not exist.
+func TestPillLinksToTheKeyGatusReports(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ungrouped endpoints, though cairn files both services under a category.
+		io.WriteString(w, `[
+			{"name":"pdf","key":"_pdf","results":[{"success":true}]},
+			{"name":"pad","key":"_pad","results":[{"success":true}]}
+		]`)
+	}))
+	defer srv.Close()
+	st, err := status.Fetch(srv.URL, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := st["pdf"].Key; got != "_pdf" {
+		t.Errorf("Fetch dropped the reported key: pdf key = %q, want %q", got, "_pdf")
+	}
+
+	m, err := render.BuildModel(sample(t), st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(m.Pages["fr"].HTML)
+	if !strings.Contains(html, `href="https://status.example.org/endpoints/_pdf"`) {
+		t.Error("pill does not link to the key gatus reported")
+	}
+	if strings.Contains(html, "endpoints/documents_pdf") {
+		t.Error("pill still links to a key cairn guessed from its own category")
+	}
+}
+
+// A key is a path segment cairn did not write, coming off the network from a
+// service that could be anything answering on that address.
+func TestReportedKeyCannotEscapeItsPathSegment(t *testing.T) {
+	m, err := render.BuildModel(sample(t), map[string]status.State{
+		"pdf": {Up: true, Key: "../../../admin"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if html := string(m.Pages["fr"].HTML); strings.Contains(html, "endpoints/../") {
+		t.Error("a reported key climbed out of the endpoints path")
+	}
+}
+
 func TestStatusDots(t *testing.T) {
 	cfg := sample(t)
-	m, err := render.BuildModel(cfg, map[string]bool{"pdf": true, "pad": false})
+	m, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Up: true}, "pad": {}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +134,7 @@ func TestStatusDots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pm, err := render.BuildModel(pub, map[string]bool{"a": true})
+	pm, err := render.BuildModel(pub, map[string]status.State{"a": {Up: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +152,7 @@ func TestStatusDots(t *testing.T) {
 		t.Error("gatus configured but silent: every pill should be unknown")
 	}
 
-	partial, err := render.BuildModel(cfg, map[string]bool{"pdf": true})
+	partial, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Up: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,10 +195,10 @@ func TestStatusConfigValidation(t *testing.T) {
 
 func TestUnmonitored(t *testing.T) {
 	cfg := &config.Config{Categories: []config.Category{{ID: "t", Services: []config.Service{{ID: "seen"}, {ID: "ghost"}}}}}
-	if got := status.Unmonitored(cfg, map[string]bool{"seen": true}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
+	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Up: true}}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
 		t.Errorf("Unmonitored = %q, want it to name only ghost", got)
 	}
-	if got := status.Unmonitored(cfg, map[string]bool{"seen": true, "ghost": false}); got != "" {
+	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Up: true}, "ghost": {}}); got != "" {
 		t.Errorf("Unmonitored = %q, want empty when all endpoints exist", got)
 	}
 }

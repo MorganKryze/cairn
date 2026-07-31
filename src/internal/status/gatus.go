@@ -42,8 +42,19 @@ func Emit(cfg *config.Config) ([]byte, error) {
 	return yaml.Marshal(map[string]any{"endpoints": eps})
 }
 
+// State is what Gatus says about one endpoint: whether its last check passed,
+// and the key it uses for its own endpoint page. The key is reported rather
+// than derived because only the operator's Gatus config decides how endpoints
+// are grouped, and cairn's categories are not that config.
+type State struct {
+	Up  bool
+	Key string
+}
+
 // Key builds the key Gatus uses in its endpoint page URLs
-// (/endpoints/{group}_{name}), mirroring its own sanitization.
+// (/endpoints/{group}_{name}), mirroring its own sanitization. It is the
+// fallback for a Gatus too old to report one, and for the pills that show
+// before Gatus has answered at all.
 func Key(group, name string) string {
 	sanitize := func(s string) string {
 		s = strings.ToLower(s)
@@ -54,7 +65,7 @@ func Key(group, name string) string {
 
 // Unmonitored names the services Gatus knows nothing about, so an id
 // mismatch is one log line instead of a silent missing pill.
-func Unmonitored(cfg *config.Config, statuses map[string]bool) string {
+func Unmonitored(cfg *config.Config, statuses map[string]State) string {
 	var ids []string
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
@@ -95,7 +106,7 @@ var (
 // Fetch asks a Gatus instance for its endpoint statuses and returns
 // service-id -> up, keyed by endpoint name. insecure skips certificate
 // verification, which is status.insecure in site.yaml.
-func Fetch(base string, insecure bool) (map[string]bool, error) {
+func Fetch(base string, insecure bool) (map[string]State, error) {
 	client := verifying
 	if insecure {
 		client = skipping
@@ -113,6 +124,7 @@ func Fetch(base string, insecure bool) (map[string]bool, error) {
 	body := io.LimitReader(resp.Body, 8<<20)
 	var list []struct {
 		Name    string `json:"name"`
+		Key     string `json:"key"`
 		Results []struct {
 			Success bool `json:"success"`
 		} `json:"results"`
@@ -120,10 +132,10 @@ func Fetch(base string, insecure bool) (map[string]bool, error) {
 	if err := json.NewDecoder(body).Decode(&list); err != nil {
 		return nil, err
 	}
-	out := make(map[string]bool, len(list))
+	out := make(map[string]State, len(list))
 	for _, e := range list {
 		if len(e.Results) > 0 {
-			out[e.Name] = e.Results[len(e.Results)-1].Success
+			out[e.Name] = State{Up: e.Results[len(e.Results)-1].Success, Key: e.Key}
 		}
 	}
 	return out, nil

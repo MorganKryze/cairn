@@ -181,7 +181,7 @@
         },
         "interval": {
           "type": "string",
-          "description": "Poll cadence, a duration of at least 5s (e.g. 60s)."
+          "description": "Poll cadence, a duration of at least 5s (e.g. 60s). Also how often a page already open in a browser refreshes its pills."
         },
         "insecure": {
           "type": "boolean",

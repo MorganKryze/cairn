@@ -196,7 +196,7 @@ func TestGatusReadsANormalAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !st["pad"] {
+	if !st["pad"].Up {
 		t.Errorf("statuses = %v, want pad up (the last result wins)", st)
 	}
 }

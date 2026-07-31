@@ -114,11 +114,18 @@ need a site `example/` cannot provide, so they run against
 the chip row gives way to a select, and enough header links to raise the
 burger.
 
-The recipe serves both configs, on 8090 and 8091, and kills them on the way
-out. The CI job stays named `search` whatever else it grows to run: it is a
-required check on a protected branch, and a required check under a new name
-never runs, which leaves every pull request waiting for a job that no longer
-exists.
+`scripts/status.mjs` drives the one thing a static page cannot do on its own:
+a status pill changing in a tab nobody reloaded. It runs against
+`scripts/fixtures/status/`, whose Gatus address is a port nothing listens on,
+and answers the refresh itself with cairn's own markup, so the test needs no
+second server and cannot go green on HTML it wrote itself. It uses Playwright's
+fake clock, so a five-second poll costs no seconds.
+
+The recipe serves all three configs, on 8090, 8091 and 8092, and kills them on
+the way out. The CI job stays named `search` whatever else it grows to run: it
+is a required check on a protected branch, and a required check under a new
+name never runs, which leaves every pull request waiting for a job that no
+longer exists.
 
 ## The icons
 

@@ -67,9 +67,14 @@ looking at a monitoring dashboard.
 Each card gets a small status pill in its bottom-right corner (top of the
 page on detail pages), a dot plus a localized label ("Online" /
 "Offline"), and the pill links straight to that endpoint's page on your
-Gatus (`…/endpoints/{group}_{name}`). The dot matches on endpoint
-**name == service id**; the pill's link also needs **group == category**.
-`-emit-gatus` produces both.
+Gatus. The dot matches on endpoint **name == service id**, which is the one
+thing your Gatus config has to share with cairn; `-emit-gatus` writes it.
+
+The link needs no agreement at all. Gatus reports the key of its own endpoint
+page (`…/endpoints/{group}_{name}`) alongside each status, and cairn uses what
+it reports, so your endpoints can be grouped however you like, or not grouped
+at all. Until Gatus has answered, the pills fall back to the key `-emit-gatus`
+would have produced.
 
 How it behaves, by design:
 
@@ -80,8 +85,16 @@ How it behaves, by design:
   talk only to cairn (and to your Gatus, if they click the pill).
 - Until Gatus has answered once (at boot, or while it is unreachable) every
   pill reads "Unknown" (neutral) rather than stale or absent, and the log
-  says why.
+  says why. cairn keeps asking on every interval; it says so once and stays
+  quiet after that, rather than repeating itself until Gatus is back.
 - Once Gatus answers, a service it does not monitor simply shows no pill.
+- **An open page keeps up.** Start cairn before Gatus and every pill reads
+  Unknown, as it should; when Gatus comes up, the tab already open catches up
+  on its own, without a reload. It refetches the page it is on at
+  `status.interval` and replaces the pills, nothing else: no separate API, and
+  the request goes to cairn, never to Gatus. A tab in the background does not
+  poll, and a pill your keyboard is on is left alone until you move off it.
+  Pages of a site with no `status.gatus` do not ship the script at all.
 
 If your Gatus answers over `https://` with a certificate cairn does not know,
 which is the usual state of affairs on an internal network, every pill reads

@@ -528,6 +528,15 @@ html { scrollbar-gutter: stable; }
   padding: 0 .85rem .8rem;
 }
 .card-foot .status-pill { margin-inline-start: auto; }
+/* status.js swaps what is inside the slot, so the slot has to be in the markup
+   before there is anything to swap. It takes no part in the layout: a pill
+   inside it is still a direct flex item of the foot, and the margin above
+   still pushes it to the end. */
+.status-slot { display: contents; }
+/* Which leaves a foot that holds neither a flag nor a pill drawing its bottom
+   padding around nothing. That is a real card: a site with a status page, for
+   a service the status page does not monitor. */
+.card-foot:not(:has(.flag, .status-pill)) { display: none; }
 
 /* Host flag: an icon at rest that unfurls its label on hover or focus. The
    label stays in the DOM (clipped, not removed) for screen readers; on touch

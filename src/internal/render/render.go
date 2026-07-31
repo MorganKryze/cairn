@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -31,11 +32,11 @@ type Page struct {
 
 // Model is the immutable unit swapped atomically on config reload or status
 // change. Pages is keyed by URL path without slashes: "fr" for a home,
-// "fr/pdf" for a detail. Statuses is service-id -> up, from Gatus.
+// "fr/pdf" for a detail. Statuses is service-id -> what Gatus said about it.
 type Model struct {
 	Cfg      *config.Config
 	Pages    map[string]Page
-	Statuses map[string]bool
+	Statuses map[string]status.State
 	CSP      string
 	// Ready is false only while the getting-started page stands in for a
 	// config that never loaded. /readyz reports it; /healthz does not, so a
@@ -82,10 +83,17 @@ func cspHash(s string) string {
 // BuildCSP allows exactly what the pages use: self assets, the two known
 // inline fragments by hash, and images from anywhere https (icon slugs).
 func BuildCSP(cfg *config.Config) string {
-	return "default-src 'none'; img-src 'self' https: data:; " +
+	csp := "default-src 'none'; img-src 'self' https: data:; " +
 		"style-src 'self' " + cspHash(accentStyle(cfg.Site.Theme.Accent)) + "; " +
 		"script-src 'self' " + cspHash(prePaintScript) + "; " +
 		"font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+	// The one request a cairn page ever makes from the browser: status.js
+	// refetching the page it is on. Sites with no Gatus do not ship the script
+	// and do not get the permission.
+	if cfg.Site.Status.Gatus != "" {
+		csp += "; connect-src 'self'"
+	}
+	return csp
 }
 
 // locText is one translated string together with the language it turned out
@@ -208,17 +216,22 @@ type pageView struct {
 	Prefix                                      string // "" or "/cairn", see BasePath
 	Dir                                         string // "ltr" or "rtl", from the locale
 	CustomCSS, Search, Credit, Noindex, ShowVer bool
-	VerLabel, VerHref                           string
-	Locales                                     []string
-	Links                                       []linkView
-	Footer                                      []linkView
-	S                                           uiStrings
+	// StatusPoll is how often, in seconds, status.js refetches the page to
+	// swap the pills. Zero on a site with no Gatus, where the script does not
+	// ship at all.
+	StatusPoll        int
+	VerLabel, VerHref string
+	Locales           []string
+	Links             []linkView
+	Footer            []linkView
+	S                 uiStrings
 }
 
 type cardView struct {
 	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
 	Name, Desc                                                 locText
 	StatusA11y                                                 string // set only when the pill is a link
+	StatusID                                                   string // names the pill's slot, empty without a Gatus
 	HostKind, HostLabel                                        string // "self"/"external"/"" and its localized label
 }
 
@@ -254,6 +267,7 @@ type homeView struct {
 
 type detailView struct {
 	pageView
+	StatusID                                   string
 	Icon, URL, Status, StatusLabel, StatusHref string
 	Name, Desc                                 locText
 	StatusA11y                                 string
@@ -283,7 +297,7 @@ type sectionView struct {
 // reader reads instead. An empty href makes it display-only, which is what
 // status.linked: false asks for and the only shape the templates need to
 // tell the two apart.
-func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label, href, a11y string) {
+func statusMeta(cfg *config.Config, loc, state string, s config.Service, key string) (label, href, a11y string) {
 	if state == "" {
 		return "", "", ""
 	}
@@ -297,7 +311,18 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label,
 	if base == "" {
 		base = cfg.Site.Status.Gatus
 	}
-	href = strings.TrimSuffix(base, "/") + "/endpoints/" + status.Key(s.Category, s.ID)
+	// Gatus names its own endpoint pages. Deriving that name from cairn's
+	// categories only ever matched an operator who ran -emit-gatus and kept its
+	// grouping; everyone else got a link to a page their Gatus does not serve.
+	// The derived key stays as the fallback for the pills that render before
+	// Gatus has answered, and for a Gatus too old to report one.
+	if key == "" {
+		key = status.Key(s.Category, s.ID)
+	}
+	// The key comes off the network, from whatever answers on the poll address.
+	// PathEscape leaves every key Gatus can produce alone and keeps a hostile
+	// one inside the path segment it was written into.
+	href = strings.TrimSuffix(base, "/") + "/endpoints/" + url.PathEscape(key)
 	// A link has to name its target on its own: read out of the card, "Online"
 	// alone says nothing about which service, nor that it leads anywhere.
 	//
@@ -312,25 +337,46 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service) (label,
 // statusOf returns "", "unknown", "up" or "down". While Gatus has not
 // answered yet (boot, outage) every pill is unknown; once it has, services it
 // does not monitor show no pill at all.
-func statusOf(cfg *config.Config, statuses map[string]bool, id string) string {
+func statusOf(cfg *config.Config, statuses map[string]status.State, id string) string {
 	if cfg.Site.Status.Gatus == "" {
 		return ""
 	}
 	if len(statuses) == 0 {
 		return "unknown"
 	}
-	up, ok := statuses[id]
+	st, ok := statuses[id]
 	switch {
 	case !ok:
 		return ""
-	case up:
+	case st.Up:
 		return "up"
 	default:
 		return "down"
 	}
 }
 
-func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
+// statusSlot names the pill's slot, which is in the markup on every service of
+// a site that has a Gatus, pill or no pill. status.js swaps what is inside it,
+// and one of the states it has to be able to reach is "nothing": a service the
+// status page stops monitoring loses its pill rather than keeping a stale one.
+func statusSlot(cfg *config.Config, id string) string {
+	if cfg.Site.Status.Gatus == "" {
+		return ""
+	}
+	return id
+}
+
+// statusPoll is how often status.js refetches the page, in seconds. It is the
+// interval cairn polls Gatus on: asking cairn more often than cairn can learn
+// anything new would only cost requests.
+func statusPoll(cfg *config.Config) int {
+	if cfg.Site.Status.Gatus == "" {
+		return 0
+	}
+	return int(cfg.StatusInterval().Seconds())
+}
+
+func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, error) {
 	def := cfg.DefaultLocale()
 	media := func(src string) (string, int, int) {
 		// MediaDims is keyed by the name under media/. The /media/… spelling
@@ -346,17 +392,18 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
-			Locale:    loc,
-			Prefix:    BasePath,
-			Dir:       config.LocaleDir(loc),
-			Base:      absBase(cfg),
-			Version:   Version,
-			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
-			ShowVer:   cfg.Site.ShowVer,
-			SiteTitle: tr(cfg.Site.Title, loc, def),
-			Logo:      AppURL(cfg.Site.Logo),
-			Favicon:   AppURL(cfg.Site.Favicon),
-			TouchIcon: AppURL(TouchIcon(cfg)),
+			Locale:     loc,
+			Prefix:     BasePath,
+			Dir:        config.LocaleDir(loc),
+			Base:       absBase(cfg),
+			Version:    Version,
+			Credit:     cfg.Site.Credit == nil || *cfg.Site.Credit,
+			ShowVer:    cfg.Site.ShowVer,
+			StatusPoll: statusPoll(cfg),
+			SiteTitle:  tr(cfg.Site.Title, loc, def),
+			Logo:       AppURL(cfg.Site.Logo),
+			Favicon:    AppURL(cfg.Site.Favicon),
+			TouchIcon:  AppURL(TouchIcon(cfg)),
 			// AppURL has already added BasePath to a local logo, so the base
 			// passed here must not carry it again: it used to, and every
 			// og:image under -base-path pointed at /cairn/cairn/… and 404ed.
@@ -412,14 +459,15 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			cv := catView{ID: c.ID, Name: catName(cfg, c, loc)}
 			for _, s := range c.Services {
 				card := cardView{
-					URL:    s.URL,
-					Icon:   AppURL(config.IconURL(cfg, s.Icon)),
-					Name:   tr(s.Name, loc, def),
-					Desc:   tr(s.Desc, loc, def),
-					Tags:   strings.Join(s.Tags, " "),
-					Status: statusOf(cfg, statuses, s.ID),
+					URL:      s.URL,
+					Icon:     AppURL(config.IconURL(cfg, s.Icon)),
+					Name:     tr(s.Name, loc, def),
+					Desc:     tr(s.Desc, loc, def),
+					Tags:     strings.Join(s.Tags, " "),
+					Status:   statusOf(cfg, statuses, s.ID),
+					StatusID: statusSlot(cfg, s.ID),
 				}
-				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s)
+				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 				}
@@ -449,13 +497,14 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 					Icon:     AppURL(config.IconURL(cfg, s.Icon)),
 					URL:      s.URL,
 					Status:   statusOf(cfg, statuses, s.ID),
+					StatusID: statusSlot(cfg, s.ID),
 					Body:     proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
 				}
-				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s)
+				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
 				dv.PageTitle = dv.Name.Text + " · " + base.SiteTitle.Text
 				dv.MetaDesc = dv.Desc.Text
 				dv.SwitchPath = s.ID + "/"

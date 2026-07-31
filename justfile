@@ -79,10 +79,10 @@ test-browser:
     # good. The leak was the smaller half. On the next run the leftover
     # answered the readiness loop instantly, and the browser then drove the
     # build from before the change under test, green. Two instances now, so
-    # both halves of that apply twice: a stale server on either port is enough
-    # to make the whole run measure yesterday's build.
+    # both halves of that apply to every port: a stale server on any one of
+    # them is enough to make the whole run measure yesterday's build.
     set -euo pipefail
-    for port in 8090 8091; do
+    for port in 8090 8091 8092; do
         if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
             echo "test-browser: something already answers on 127.0.0.1:$port, probably" >&2
             echo "a leaked cairn. Kill it, or this run measures that one instead." >&2
@@ -93,13 +93,16 @@ test-browser:
     npx --yes playwright install --only-shell chromium
     go build -o /tmp/cairn-browser ./src/cmd/cairn
     # 8090 is the example config; 8091 is the fixture with more than seven
-    # categories and a header burger, neither of which example/ has.
+    # categories and a header burger, neither of which example/ has; 8092 is
+    # the one with a status page, which example/ has no business carrying.
     /tmp/cairn-browser -config example -addr 127.0.0.1:8090 &
     pids=$!
     /tmp/cairn-browser -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
     pids="$pids $!"
+    /tmp/cairn-browser -config scripts/fixtures/status -addr 127.0.0.1:8092 &
+    pids="$pids $!"
     trap 'kill $pids 2>/dev/null || true' EXIT INT TERM
-    for port in 8090 8091; do
+    for port in 8090 8091 8092; do
         ready=
         for _ in $(seq 1 20); do
             if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then ready=1; break; fi
@@ -109,6 +112,7 @@ test-browser:
     done
     node scripts/search.mjs http://127.0.0.1:8090/en/
     node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
+    node scripts/status.mjs http://127.0.0.1:8092/en/
 
 # regenerate every icon from the one drawing in the script; checks the
 # maskable safe zone the manifest promises Android
