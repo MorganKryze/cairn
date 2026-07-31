@@ -67,10 +67,10 @@ the kind of entry that refused the key and lists what that entry accepts, so
 a misspelt `show_versions` is answered with `show_version` rather than with
 the keys of some other part of the file.
 
-`javascript:` and `vbscript:` are refused in every field above that holds a
-link: `logo`, `favicon`, the `url` and `icon` of a `links` or `footer` entry,
-and the three `security` fields. Those are the ones no other rule answers,
-either because they take a scheme cairn cannot enumerate (`mailto:`, `tel:`)
+`javascript:`, `vbscript:` and `data:` are refused in every field above that
+holds a link: `logo`, `favicon`, the `url` and `icon` of a `links` or `footer`
+entry, and the three `security` fields. Those are the ones no other rule
+answers, either because they take a scheme cairn cannot enumerate (`mailto:`)
 or because a bad value there was only ever a `-check` warning. See
 [Links a browser will not follow](configuration/site.md#links-a-browser-will-not-follow).
 
