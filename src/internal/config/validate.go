@@ -119,10 +119,15 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if len(l.Label) == 0 || l.URL == "" {
 			return fmt.Errorf("config: site.yaml: every footer entry needs label and url (expected: - {label: Legal, url: /legal})")
 		}
-		if err := checkLinkScheme("footer url", l.URL, linkSchemes, "https://…, mailto:… or an absolute path"); err != nil {
-			return err
+		// icon is a header-link key. A footer entry took it without complaint
+		// and never rendered it, which -check reported as inert; schema/site.json
+		// has never listed it at all, so the editor said one thing and the
+		// loader another. Refusing it is what makes those two agree, and it says
+		// the useful half out loud: there is a list where the icon does work.
+		if l.Icon != "" {
+			return fmt.Errorf("config: site.yaml: footer entry %q has an icon: only header links render one (move the entry to links, or drop the icon)", l.URL)
 		}
-		if err := checkLinkScheme("footer icon", l.Icon, imageSchemes, "a built-in glyph name, https://… or an /assets path"); err != nil {
+		if err := checkLinkScheme("footer url", l.URL, linkSchemes, "https://…, mailto:… or an absolute path"); err != nil {
 			return err
 		}
 	}

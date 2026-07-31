@@ -67,7 +67,7 @@ func (l LString) Get(locale, fallback string) string {
 type FooterLink struct {
 	Label LString `yaml:"label"`
 	URL   string  `yaml:"url"`
-	Icon  string  `yaml:"icon"` // header links only: a built-in glyph name, URL or /assets path
+	Icon  string  `yaml:"icon"` // links only: a built-in glyph name, URL or /assets path; a footer entry carrying one is refused
 }
 
 // SitePage is a page cairn serves itself (legal notice, privacy…), linked
