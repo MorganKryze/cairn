@@ -41,6 +41,7 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	var out []string
 	out = append(out, missingTranslations(cfg)...)
 	out = append(out, partialStringOverrides(cfg)...)
+	out = append(out, topHeadings(cfg)...)
 	out = append(out, unsupportedLocales(cfg)...)
 	out = append(out, mediaWarnings(cfg, filepath.Join(dir, "media"))...)
 	// The canonical, og:url and hreflang links are all built from site.url, so
@@ -214,6 +215,54 @@ func unsupportedLocales(cfg *config.Config) []string {
 	return out
 }
 
+// proseField is one long-text field and the name -check calls it by.
+type proseField struct {
+	where string
+	body  config.LString
+}
+
+// proseFields lists every field that takes markdown, in the order a reader
+// meets them. Shared, so a check added to one of them cannot quietly cover a
+// different set from the checks next to it.
+func proseFields(cfg *config.Config) []proseField {
+	out := []proseField{{"site about", cfg.Site.About}}
+	for _, p := range cfg.Site.Pages {
+		out = append(out, proseField{fmt.Sprintf("page %q body", p.ID), p.Body})
+		for i, s := range p.Sections {
+			out = append(out, proseField{fmt.Sprintf("page %q section %d", p.ID, i+1), s.Body})
+		}
+	}
+	for _, c := range cfg.Categories {
+		for _, s := range c.Services {
+			out = append(out, proseField{fmt.Sprintf("service %q details", s.ID), s.Details})
+		}
+	}
+	return out
+}
+
+// topHeadings names the fields written with a level-one heading. cairn renders
+// it as a level two, because the page already has its <h1> and a second one
+// breaks the outline a screen reader navigates by. That is the right call and
+// it is still worth saying: without this line, "#" and "##" produce identical
+// output and the operator has no way to learn why.
+func topHeadings(cfg *config.Config) []string {
+	var out []string
+	for _, t := range proseFields(cfg) {
+		locales := make([]string, 0, len(t.body))
+		for loc := range t.body {
+			locales = append(locales, loc)
+		}
+		sort.Strings(locales)
+		for _, loc := range locales {
+			if render.HasTopHeading(t.body[loc]) {
+				out = append(out, fmt.Sprintf("%s opens a heading with a single #: cairn renders it as ## because the page already has its own top heading, so # and ## come out the same (write ## and the output is unchanged)", t.where))
+				break
+			}
+		}
+	}
+	return out
+}
+
 // mediaWarnings flags files nothing references, references naming no file,
 // and files heavy enough to hurt the visitors of the pages that show them.
 func mediaWarnings(cfg *config.Config, mediaDir string) []string {
@@ -238,20 +287,9 @@ func mediaWarnings(cfg *config.Config, mediaDir string) []string {
 			used[rel] = where
 		}
 	}
-	type text struct {
-		where string
-		body  config.LString
-	}
-	texts := []text{{"site about", cfg.Site.About}}
-	for _, p := range cfg.Site.Pages {
-		texts = append(texts, text{fmt.Sprintf("page %q body", p.ID), p.Body})
-		for i, s := range p.Sections {
-			texts = append(texts, text{fmt.Sprintf("page %q section %d", p.ID, i+1), s.Body})
-		}
-	}
+	texts := proseFields(cfg)
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
-			texts = append(texts, text{fmt.Sprintf("service %q details", s.ID), s.Details})
 			for _, img := range s.Images {
 				markUsed(img.Src, fmt.Sprintf("service %q images", s.ID))
 			}

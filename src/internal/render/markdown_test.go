@@ -208,7 +208,9 @@ func TestMarkdownFigureShape(t *testing.T) {
 // markdown in a config field and reads it back verbatim on the page.
 func TestMarkdownFullSyntax(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"# Title", "<h1>Title</h1>"},
+		// A single # demotes: the page owns its <h1>. Pinned in full by
+		// TestMarkdownDemotesATopHeading.
+		{"# Title", "<h2>Title</h2>"},
 		{"### Deep", "<h3>Deep</h3>"},
 		{"1. one\n2. two", "<ol>\n<li>one</li>\n<li>two</li>\n</ol>"},
 		{"- a\n  - b", "<ul>\n<li>a\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul>"},
@@ -352,5 +354,34 @@ func TestMarkdownTableScrollsFromAFocusableWrapper(t *testing.T) {
 	}
 	if strings.Contains(got, "<table ") {
 		t.Errorf("the table carries attributes of its own, so the wrapper is not doing the work:\n%s", got)
+	}
+}
+
+// A level-one heading in a field becomes a level two. Every page already has
+// its own <h1>, and a second one leaves a screen reader user navigating by
+// level with two competing tops. Both spellings demote, and nothing below
+// level one moves, so no page written against the old parser changes shape.
+func TestMarkdownDemotesATopHeading(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"# One", "<h2>One</h2>"},
+		{"Setext\n======", "<h2>Setext</h2>"},
+		{"## Two", "<h2>Two</h2>"},
+		{"### Three", "<h3>Three</h3>"},
+		{"###### Six", "<h6>Six</h6>"},
+	} {
+		if got := mdOne(t, c.in, mdCtx{media: testMedia}); got != c.want {
+			t.Errorf("heading %q = %q, want %q", c.in, got, c.want)
+		}
+	}
+	// And the operator can still be told what they wrote, which is what -check
+	// reads: the demotion must not hide the source from the check that
+	// explains it.
+	for _, c := range []struct {
+		in   string
+		want bool
+	}{{"# One", true}, {"Setext\n======", true}, {"## Two", false}, {"no heading", false}, {"", false}} {
+		if got := HasTopHeading(c.in); got != c.want {
+			t.Errorf("HasTopHeading(%q) = %v, want %v", c.in, got, c.want)
+		}
 	}
 }

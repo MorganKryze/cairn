@@ -817,3 +817,28 @@ func TestCheckSeesReferenceStyleImages(t *testing.T) {
 		}
 	}
 }
+
+// cairn demotes a single # rather than emitting a second <h1>, and the warning
+// is what stops that being a puzzle: without it, # and ## produce identical
+// output and nothing explains why.
+func TestCheckExplainsTheDemotedHeading(t *testing.T) {
+	withoutAssets(t)
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "locales: [en]\nindex: false\nabout: \"# My notes\\n\\nText.\"\n" +
+			"pages: [{id: legal, title: Legal, body: \"## Fine\\n\\nText.\"}]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(checkWarnings(cfg, dir), "\n")
+	if !strings.Contains(w, "site about opens a heading with a single #") {
+		t.Errorf("the # was not explained:\n%s", w)
+	}
+	// The page opens at ##, which is the shape being recommended: it must not
+	// be nagged about, or the warning teaches people to ignore the output.
+	if strings.Contains(w, `page "legal" body opens a heading`) {
+		t.Errorf("a page that already starts at ## was warned about:\n%s", w)
+	}
+}

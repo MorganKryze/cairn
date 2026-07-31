@@ -183,6 +183,27 @@ func (mdTransformer) Transform(doc *ast.Document, _ text.Reader, pc parser.Conte
 		n = next
 	}
 
+	// A level-one heading becomes a level two.
+	//
+	// The page already has its <h1>: the site title on the home page, the page
+	// title on a hosted one, the service name on a detail page. A second one
+	// breaks the document outline, and a screen reader user navigating by
+	// heading level lands on two competing tops with no way to tell which is
+	// the page.
+	//
+	// This is not cairn overruling the operator. Someone writing "# Notes" in a
+	// page body wants a heading for their text, not a second title for the
+	// document, and the title they did ask for is the one in the config. Only
+	// the top level moves, so "##" still renders exactly what it always did and
+	// no existing page changes shape. -check says so, because two levels
+	// rendering identically is otherwise a puzzle rather than a rule.
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if h, ok := n.(*ast.Heading); ok && entering && h.Level == 1 {
+			h.Level = 2
+		}
+		return ast.WalkContinue, nil
+	})
+
 	// Images still inline after that pass resolve the same way, so an image in
 	// the middle of a sentence points at the same file as one on its own line
 	// and carries the same anti-jump attributes. The walk only collects: the
@@ -385,6 +406,25 @@ func mdText(s string) string {
 // media resolver every image is unwrapped out of the tree before a walk can
 // see it. Measured, not assumed.
 var mdRefParser = parser.NewParser(mdParserOptions()...)
+
+// HasTopHeading reports whether a field was written with a level-one heading,
+// either "# Title" or the setext underline. It reads the untransformed tree, so
+// it sees what the operator wrote rather than the h2 the renderer emits.
+func HasTopHeading(src string) bool {
+	if src == "" {
+		return false
+	}
+	doc := mdRefParser.Parse(text.NewReader([]byte(src)), parser.WithContext(parser.NewContext()))
+	found := false
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if h, ok := n.(*ast.Heading); ok && entering && h.Level == 1 {
+			found = true
+			return ast.WalkStop, nil
+		}
+		return ast.WalkContinue, nil
+	})
+	return found
+}
 
 // ImageRefs lists every image destination a markdown field references, in the
 // order it references them.

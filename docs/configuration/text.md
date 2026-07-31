@@ -110,17 +110,33 @@ warning: page "legal" body shows "seal.png", which is not there: the page render
 
 ## Two things that catch people out
 
-### Start your headings one level down
+### A single `#` comes out as `##`
 
 Every page cairn renders already has one `<h1>`: the site title on the home
-page, the page or service title everywhere else. `# Title` in your text
-produces a second one, which leaves a screen reader with two competing answers
-to "what is this page about".
+page, the page or service title everywhere else. A second one leaves a screen
+reader with two competing answers to "what is this page about", and someone
+navigating by heading level with no way to tell which is the page.
 
-So open at `##` and go down from there. Nothing stops you writing `#`, and it
-will look right; it is the outline underneath that breaks.
+So cairn demotes it. `# Title` in your text renders `<h2>`, and every level
+below is untouched:
 
-There is also a way to write one without typing `#` at all:
+| You write   | You get |
+| ----------- | ------- |
+| `# Title`   | `<h2>`  |
+| `## Title`  | `<h2>`  |
+| `### Title` | `<h3>`  |
+
+The two top spellings therefore produce the same thing, which is the one part
+worth knowing, and `cairn -check` says so rather than leaving you to discover
+it:
+
+```console
+warning: page "legal" body opens a heading with a single #: cairn renders it as ## because the page already has its own top heading, so # and ## come out the same (write ## and the output is unchanged)
+```
+
+Write `##` and the output is identical. Nothing is lost either way.
+
+There is also a way to write a top heading without typing `#` at all:
 
 ```yaml
 body: |
@@ -128,10 +144,10 @@ body: |
   ===
 ```
 
-A line of `=` directly under text is an older markdown spelling of `<h1>`. A
-line of `-` is the same spelling of `<h2>`, which is why a `---` rule needs a
-blank line above it: with text immediately above, `---` is a heading and not a
-rule.
+A line of `=` directly under text is an older markdown spelling of `<h1>`, and
+it demotes the same way. A line of `-` is the same spelling of `<h2>`, which is
+why a `---` rule needs a blank line above it: with text immediately above,
+`---` is a heading and not a rule.
 
 ### `[^1]` is not a footnote
 
