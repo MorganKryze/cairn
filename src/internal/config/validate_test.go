@@ -40,6 +40,13 @@ func TestValidateSiteRejections(t *testing.T) {
 			[]string{"status.interval", "at least 5s"}},
 		{"site url that is not a URL", func(s *Site) { s.URL = "tools.example.org" },
 			[]string{"url", "is not a URL"}},
+		// The sub-path trap: writing the address of the site rather than the
+		// domain doubles the prefix in every canonical link and sitemap entry,
+		// and only a crawler would ever notice.
+		{"site url carrying the sub-path", func(s *Site) { s.URL = "https://example.org/cairn" },
+			[]string{"url", "domain alone", "-base-path"}},
+		{"site url carrying any path at all", func(s *Site) { s.URL = "https://example.org/a/b" },
+			[]string{"domain alone"}},
 		// The mistake this field invites: writing the address rather than the
 		// URI. RFC 9116 wants a scheme, and a bare address makes the file
 		// unparseable for the researcher it was written for.
@@ -123,6 +130,45 @@ func TestValidateSiteRejections(t *testing.T) {
 				if !strings.Contains(err.Error(), want) {
 					t.Errorf("message %q does not mention %q", err, want)
 				}
+			}
+		})
+	}
+}
+
+// A CSS hex colour has 3, 4, 6 or 8 digits and nothing in between. 5 and 7
+// used to pass here, and a custom property whose value is not a valid colour
+// is dropped at computed-value time: --accent falls back to nothing, and every
+// declaration built on it goes with it, including the focus rings. The site
+// still renders, so only this check can catch it.
+func TestAccentTakesOnlyTheRealHexLengths(t *testing.T) {
+	for _, c := range []struct {
+		accent string
+		ok     bool
+	}{
+		{"#abc", true},      // rgb
+		{"#abcd", true},     // rgba
+		{"#aabbcc", true},   // rrggbb
+		{"#aabbccdd", true}, // rrggbbaa
+		{"#AABBCC", true},   // case is not the browser's business
+		{"#12345", false},   // the one that killed the focus rings
+		{"#1234567", false}, // and its bigger sibling
+		{"#ab", false},      // too short to be anything
+		{"#123456789", false},
+		{"aabbcc", false},  // no hash: a css identifier, not a colour
+		{"#gghhii", false}, // hash but not hex
+		{"", false},        // defaultSite always sets one, so empty means broken
+	} {
+		t.Run(c.accent, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = c.accent
+			err := validateSite(s, map[string]string{})
+			switch {
+			case c.ok && err != nil:
+				t.Errorf("accent %q was refused: %v", c.accent, err)
+			case !c.ok && err == nil:
+				t.Errorf("accent %q was accepted; it makes every var(--accent) rule invalid", c.accent)
+			case !c.ok && !strings.Contains(err.Error(), "theme.accent"):
+				t.Errorf("message %q does not name theme.accent", err)
 			}
 		})
 	}

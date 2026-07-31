@@ -69,6 +69,25 @@ services:
       - ./config:/config:ro
 ```
 
+One rule comes with it, and getting it wrong is silent: `site.yaml`'s `url` is
+the **domain alone**, `https://example.org`, not `https://example.org/cairn`.
+cairn appends the prefix itself, so writing it twice puts it twice in every
+canonical link and sitemap entry. It is a config error rather than something
+cairn emits: on a fresh start the site is replaced by the getting-started page
+with the reason in the log, and on a reload the previous pages keep serving.
+[Site](../configuration/site.md#the-domain-and-nothing-else) has the details.
+
+Worth knowing too: four paths that tools only ever read at the root of a domain
+move under the prefix with everything else, and cairn cannot serve what it does
+not own. `/robots.txt` is never fetched from anywhere but the root, so its
+directives and the `Sitemap:` line it carries go unread; `/favicon.ico` is what
+feed readers and link previewers fetch when they skip the html; and RFC 9116
+wants `/.well-known/security.txt` at the root too. If any of that matters to
+you, alias those paths at the proxy to their prefixed versions. The two probes
+are the exception cairn handles itself: `/healthz` and `/readyz` keep answering
+at the root, because an orchestrator talks to cairn directly rather than
+through the proxy that adds the prefix.
+
 cairn then answers on `/cairn/…` and strips the prefix back off itself, so
 **the proxy needs no path rewriting**. Point it at cairn and stop there:
 

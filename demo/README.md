@@ -40,9 +40,22 @@ The whole stack lives on an `internal` Docker network with no route to the
 outside: the application containers cannot reach the internet at all. The
 only dual-homed piece is a dumb TCP gateway (`gateway/nginx.conf`) that
 forwards the published ports; it holds no logic and no state. That is the
-air-gap story cairn is built for, demonstrated: try
-`docker exec cairn-demo-cairn-1 wget example.org` from any service, it has
-nowhere to go.
+air-gap story cairn is built for, and one `wget` tells you which side of the
+line a container sits on:
+
+```console
+$ docker compose exec welcome wget -T 3 -O /dev/null https://example.org
+wget: bad address 'example.org'
+
+$ docker compose exec gateway wget -T 3 -qO /dev/null https://example.org && echo reachable
+reachable
+```
+
+The name does not even resolve inside, which is the shape a sealed network
+takes: nothing hangs, nothing retries, there is simply nowhere to go. Ask cairn
+itself and you get no answer at all, and that one is about the image rather than
+the network: `FROM scratch` leaves it no shell and no `wget`, so there is
+nothing there to exec.
 
 The _page_ is air-gapped too, not just the containers: the service icons are
 served from `assets/icons/` rather than the jsdelivr CDN, so loading this demo

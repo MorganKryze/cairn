@@ -15,4 +15,10 @@ until you feed it. Put your YAML under `config:` in your values file, or point
 `existingConfigMap:` at your own, and it lands within a minute, no restart.
 
   https://github.com/MorganKryze/cairn/blob/main/docs/getting-started.md
+
+That readiness is also why `--wait` and `--atomic` cannot work on this install:
+they wait for a pod that is deliberately never ready, time out, and `--atomic`
+(`--rollback-on-failure` in Helm 4) then takes the whole release back out. Both
+are worth having once a config is in place, which is when readiness starts
+meaning something.
 {{ end }}

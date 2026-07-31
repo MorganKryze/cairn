@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
 	"maps"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -112,13 +112,28 @@ func pollOnce(url string, seen *pollLog) {
 	}
 }
 
+// fingerprint walks the tree rather than listing one level. A directory's own
+// mtime does not move when a file inside it is overwritten, so media/shot.png
+// replaced in place used to stay invisible: the page kept declaring the old
+// image's width and height until something unrelated touched the top level.
+//
+// The walk is bounded by what a config directory holds, a handful of yaml and
+// a media folder, and it runs on the same two-second tick as before.
 func fingerprint(dir string) string {
 	var b strings.Builder
-	entries, _ := os.ReadDir(dir)
-	for _, e := range entries {
-		if info, err := e.Info(); err == nil {
-			fmt.Fprintf(&b, "%s|%d|%d;", e.Name(), info.Size(), info.ModTime().UnixNano())
+	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// An unreadable entry still has to change the fingerprint when it
+			// appears or goes away, or a permission flip would go unnoticed.
+			fmt.Fprintf(&b, "%s|err;", p)
+			return nil
 		}
-	}
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		fmt.Fprintf(&b, "%s|%d|%d;", p, info.Size(), info.ModTime().UnixNano())
+		return nil
+	})
 	return b.String()
 }

@@ -14,9 +14,14 @@
       input.select();
       return;
     }
-    if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
+    // Space is out: it pages the document down, and it is how a keyboard user
+    // presses a button or opens a <details>. Nobody starts a query with one.
+    if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1 || e.key === ' ') return;
     const a = document.activeElement;
-    if (a === input || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable) return;
+    // The tag list has to hold every element that does something with a plain
+    // key, not just the text fields: stealing focus from a focused button ate
+    // its activation.
+    if (a === input || /^(INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY|A)$/.test(a.tagName) || a.isContentEditable) return;
     // focus on keydown: the default action then types the character here
     input.focus();
   });
@@ -37,7 +42,7 @@
   };
   const cards = Array.from(document.querySelectorAll('.card'), (el, dom) => {
     const main = el.querySelector('.card-main').cloneNode(true);
-    main.querySelectorAll('.visually-hidden, .status-pill').forEach(n => n.remove());
+    main.querySelectorAll('.visually-hidden, .status-pill, .card-more').forEach(n => n.remove());
     return {
       el,
       dom,                                    // original position, the tie-breaker

@@ -16,8 +16,17 @@ await page.goto(URL);
 
 const q = page.locator('#q');
 const empty = page.locator('#empty');
-const visible = () => page.locator('.card:not([hidden])').count();
-const names = () => page.locator('.card:not([hidden]) .card-name').allTextContents();
+// Painted, not merely marked. `.card:not([hidden])` reads the attribute, and
+// the attribute was right the whole time an author `display` rule was quietly
+// overriding the browser's [hidden] and leaving those cards on screen. A test
+// that asks the DOM what it was told cannot catch that; getClientRects asks
+// what the layout actually did.
+const painted = sel =>
+  page.$$eval(sel, els =>
+    els.filter(e => e.getClientRects().length > 0).map(e => e.textContent.trim()),
+  );
+const visible = async () => (await painted('.card')).length;
+const names = () => painted('.card .card-name');
 
 let failures = 0;
 const check = async (what, fn) => {
@@ -43,6 +52,20 @@ const word = first.trim().split(/\s+/)[0].toLowerCase();
 await check('an untouched page shows every card and no message', async () => {
   eq(await visible(), total, 'cards');
   eq(await empty.isHidden(), true, 'the empty message is hidden');
+});
+
+// What the live region says and what the page shows have to be the same
+// number. This is the assertion the old "fewer cards than before" check was
+// missing: with the [hidden] override in place, filtering on a category that
+// also held a non-match announced "1 result" and painted two, and any
+// count-is-smaller test still passed.
+await check('the page shows exactly as many cards as it announces', async () => {
+  await q.fill(word);
+  const said = (await page.locator('#count').textContent()).trim();
+  const announced = Number(said.match(/\d+/)?.[0]);
+  if (!Number.isFinite(announced)) throw new Error(`the live region said ${JSON.stringify(said)}`);
+  eq(await visible(), announced, `cards painted vs announced in ${JSON.stringify(said)}`);
+  await q.fill('');
 });
 
 await check('a query that matches narrows the list', async () => {

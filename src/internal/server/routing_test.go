@@ -188,3 +188,96 @@ func TestCompressLabelsWhatItCompressesOverTheWire(t *testing.T) {
 		t.Error("the decompressed file is not the file on disk")
 	}
 }
+
+// A 206 carries a Content-Range describing the uncompressed representation.
+// Gzipping it produces a response that contradicts itself, and anything that
+// fetches in slices reassembles garbage from it.
+func TestCompressLeavesPartialContentAlone(t *testing.T) {
+	css := strings.Repeat(":root{--accent:#247b7b}\n", 200)
+	fsys := fstest.MapFS{"style.css": &fstest.MapFile{Data: []byte(css)}}
+	srv := httptest.NewServer(compress(http.FileServerFS(fsys)))
+	defer srv.Close()
+
+	c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+	req, err := http.NewRequest("GET", srv.URL+"/style.css", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("Range", "bytes=100-199")
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusPartialContent {
+		t.Fatalf("status = %d, want 206", resp.StatusCode)
+	}
+	if got := resp.Header.Get("Content-Encoding"); got != "" {
+		t.Errorf("a 206 came back with Content-Encoding %q; its Content-Range describes the uncompressed bytes", got)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(body) != 100 {
+		t.Errorf("asked for 100 bytes, got %d", len(body))
+	}
+	if string(body) != css[100:200] {
+		t.Error("the slice is not the bytes at that offset")
+	}
+}
+
+// A HEAD must answer with the headers a GET would. Compressing it made the
+// deferred Close emit an empty gzip member, and net/http advertised its 23
+// bytes as the length of a 30 KB stylesheet.
+func TestCompressAnswersHeadInIdentity(t *testing.T) {
+	css := strings.Repeat(":root{--accent:#247b7b}\n", 200)
+	fsys := fstest.MapFS{"style.css": &fstest.MapFile{Data: []byte(css)}}
+	srv := httptest.NewServer(compress(http.FileServerFS(fsys)))
+	defer srv.Close()
+
+	c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+	req, err := http.NewRequest("HEAD", srv.URL+"/style.css", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept-Encoding", "gzip")
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if got := resp.Header.Get("Content-Encoding"); got != "" {
+		t.Errorf("HEAD claimed Content-Encoding %q", got)
+	}
+	if got, want := resp.Header.Get("Content-Length"), strconv.Itoa(len(css)); got != want {
+		t.Errorf("HEAD said Content-Length %q, want the real %q", got, want)
+	}
+}
+
+// q=0 is how a client that cannot inflate says so. A substring search for
+// "gzip" read it as a yes.
+func TestCompressHonoursQualityZero(t *testing.T) {
+	for _, c := range []struct {
+		header string
+		want   bool
+	}{
+		{"gzip", true},
+		{"gzip, deflate, br", true},
+		{"gzip;q=0.8", true},
+		{"deflate, gzip;q=1.0", true},
+		{"GZIP", true},
+		{"gzip;q=0", false},
+		{"gzip;q=0, identity", false},
+		{"notgzipatall", false},
+		{"identity", false},
+		{"", false},
+	} {
+		if got := acceptsGzip(c.header); got != c.want {
+			t.Errorf("acceptsGzip(%q) = %v, want %v", c.header, got, c.want)
+		}
+	}
+}

@@ -105,3 +105,23 @@ func TestMalformedLinksStayText(t *testing.T) {
 		}
 	}
 }
+
+// A bracket earlier in the paragraph used to be swallowed into the next link's
+// text, because the parser looked for the first "](" anywhere ahead instead of
+// closing at the first "]". There was no way to write a literal [word] in a
+// paragraph that also held a link.
+func TestMarkdownLinkStopsAtItsOwnBracket(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"See [docs] and [here](https://x.org) too",
+			`See [docs] and <a href="https://x.org">here</a> too`},
+		{"array[0] then [link](https://x.org)",
+			`array[0] then <a href="https://x.org">link</a>`},
+		{"[not a link] plain text", "[not a link] plain text"},
+		{"[a](https://x.org) and [b](https://y.org)",
+			`<a href="https://x.org">a</a> and <a href="https://y.org">b</a>`},
+	} {
+		if got := mdInline(c.in); got != c.want {
+			t.Errorf("mdInline(%q)\n got %s\nwant %s", c.in, got, c.want)
+		}
+	}
+}

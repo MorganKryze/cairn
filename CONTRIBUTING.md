@@ -12,8 +12,8 @@ The Docker build runs `go vet` and the test suite; if the image builds, it
 passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
-`test`, `test-search`, `lint`, `build`, `chart`, `demo`, `demo-rebuild`,
-`down`, `logs`, `hooks`, `icons`.
+`test`, `test-search`, `coverage`, `lint`, `build`, `chart`, `demo`,
+`demo-rebuild`, `down`, `logs`, `shots`, `hooks`, `icons`.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
 
@@ -73,8 +73,8 @@ dependency backwards.
 ## Add your language
 
 The friendliest first contribution: cairn's interface text lives in
-`src/locales.go`, one small block per language, about eighteen short
-strings. Copy the English block, translate it, and open a pull request; a
+`src/internal/config/locales.go`, one small block per language, two dozen
+short strings. Copy the English block, translate it, and open a pull request; a
 test checks completeness, so if `just test` passes, your table is done.
 Regional variants only need their own block when they genuinely differ
 (`pt-BR` already finds `pt`).

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"io"
 	"io/fs"
 	"net/http"
@@ -66,6 +67,105 @@ func TestRobotsAndSitemap(t *testing.T) {
 	sitemap(rec, httptest.NewRequest("GET", "/sitemap.xml", nil))
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("sitemap (noindex) = %d, want 404", rec.Code)
+	}
+}
+
+// X-Forwarded-Proto is attacker-controlled until a proxy overwrites it, and
+// what it builds is published in the sitemap. Anything but the two schemes
+// cairn can be reached over is dropped for what this connection actually is,
+// and every value that reaches the document is escaped: an unescaped "&" makes
+// the whole sitemap unparseable, so one crafted request would take the site out
+// of every search index rather than merely poison one URL.
+func TestSitemapStaysWellFormedXML(t *testing.T) {
+	for _, c := range []struct {
+		name, siteYAML, forwarded, host, wantLoc string
+	}{
+		{
+			name:      "a scheme that is not a scheme falls back to the connection",
+			siteYAML:  "locales: [en]\n",
+			forwarded: "x&y",
+			host:      "cairn.local",
+			wantLoc:   "http://cairn.local/en/",
+		},
+		{
+			name:      "javascript: never becomes the scheme of a published link",
+			siteYAML:  "locales: [en]\n",
+			forwarded: "javascript",
+			host:      "cairn.local",
+			wantLoc:   "http://cairn.local/en/",
+		},
+		{
+			// A configured url is the operator's own text and passes validation
+			// with an ampersand in it, so escaping is what keeps the document
+			// parseable rather than the scheme check.
+			name:     "an ampersand in the configured url is escaped, not emitted raw",
+			siteYAML: "url: https://a&b.example.org\nlocales: [en]\n",
+			host:     "cairn.local",
+			wantLoc:  "https://a&b.example.org/en/",
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			storeModel(t, map[string]string{
+				"site.yaml":     c.siteYAML,
+				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+			})
+			r := httptest.NewRequest("GET", "/sitemap.xml", nil)
+			r.Host = c.host
+			if c.forwarded != "" {
+				r.Header.Set("X-Forwarded-Proto", c.forwarded)
+			}
+			rec := httptest.NewRecorder()
+			sitemap(rec, r)
+
+			// Parsed, not grepped: a sitemap that does not parse is a sitemap no
+			// crawler reads, however right the text inside it looks.
+			var doc struct {
+				XMLName xml.Name `xml:"urlset"`
+				URLs    []struct {
+					Loc string `xml:"loc"`
+				} `xml:"url"`
+			}
+			if err := xml.Unmarshal(rec.Body.Bytes(), &doc); err != nil {
+				t.Fatalf("sitemap does not parse: %v\n%s", err, rec.Body.String())
+			}
+			if len(doc.URLs) == 0 {
+				t.Fatalf("sitemap carries no urls:\n%s", rec.Body.String())
+			}
+			// xml.Unmarshal has already turned &amp; back into &, so this compares
+			// the URL a crawler ends up with, not the bytes on the wire.
+			if got := doc.URLs[0].Loc; got != c.wantLoc {
+				t.Errorf("first loc = %q, want %q", got, c.wantLoc)
+			}
+		})
+	}
+}
+
+// The other direction of the same rule: a proxy terminating TLS is the ordinary
+// deployment, and its header still decides the scheme cairn publishes. Refusing
+// the header outright would be a fix that broke every site behind a reverse
+// proxy, which is most of them.
+func TestRobotsHonoursALegitimateForwardedProto(t *testing.T) {
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	for _, c := range []struct{ name, forwarded, want string }{
+		{"a proxy terminating TLS", "https", "Sitemap: https://cairn.local/sitemap.xml"},
+		{"a proxy that does not", "http", "Sitemap: http://cairn.local/sitemap.xml"},
+		{"no proxy at all", "", "Sitemap: http://cairn.local/sitemap.xml"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := httptest.NewRequest("GET", "/robots.txt", nil)
+			r.Host = "cairn.local"
+			if c.forwarded != "" {
+				r.Header.Set("X-Forwarded-Proto", c.forwarded)
+			}
+			rec := httptest.NewRecorder()
+			robots(rec, r)
+			if body := rec.Body.String(); !strings.Contains(body, c.want) {
+				t.Errorf("robots.txt = %q, want %q", body, c.want)
+			}
+		})
 	}
 }
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -55,6 +56,17 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	site.URL = strings.TrimSuffix(site.URL, "/")
 	if u := site.URL; u != "" && !isHTTPURL(u) {
 		return fmt.Errorf("config: site.yaml: url %q is not a URL (expected e.g. https://tools.example.org)", u)
+	}
+	// url is the domain, never the address of the page. cairn appends
+	// -base-path itself, so a path written here is carried twice: an operator
+	// serving example.org/cairn who writes the full public URL ends up with
+	// canonical links, hreflang alternates and a whole sitemap pointing at
+	// example.org/cairn/cairn/. Nothing else would ever say so, and search
+	// engines act on it, so this is an error rather than a warning: a fresh
+	// start then serves the getting-started page with the reason logged, and a
+	// reload keeps the previous pages. cairn never exits on a bad config.
+	if u, err := url.Parse(site.URL); site.URL != "" && err == nil && strings.Trim(u.Path, "/") != "" {
+		return fmt.Errorf("config: site.yaml: url %q must be the domain alone, with no path (serving under example.org/cairn is what -base-path is for, and cairn adds that prefix itself)", site.URL)
 	}
 	for _, l := range site.Links {
 		if len(l.Label) == 0 || l.URL == "" {

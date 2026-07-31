@@ -21,7 +21,8 @@ page renders, and the icons are simply missing.
 | your values          | a few KB | one file per chart, and they are yours to keep                 |
 
 The 26 MB is measured on arm64; amd64 lands in the same range. Almost all of it
-is Gatus: cairn's own image is under 14 MB.
+is Gatus: `docker save` writes cairn as about 4 MB of compressed layers, which
+unpack to roughly 10 MB on the node, nearly all of it the one static binary.
 
 ## 1. On the connected side
 
@@ -145,6 +146,10 @@ Harbor, Zot or `registry:2` you already run. The chart wants one value.
 image:
   repository: harbor.internal/cairn
   tag: "1.12.0"
+# Only if the project is private. The Secrets have to exist in the namespace
+# already; the chart names them, it does not create them.
+imagePullSecrets:
+  - name: harbor
 ```
 
 The charts belong in there too, if your registry takes them. Both are ordinary
@@ -193,13 +198,19 @@ Container image "harbor.internal/gatus:5.36.0" already present on machine
 
 ## 5. Install
 
-The icons become a ConfigMap, and where you mount it matters: cairn looks for
-`<assets>/icons/<slug>.svg`, so the mount point is `/assets/icons`, not
-`/assets`.
+Your files become ConfigMaps, and their depth matters. cairn looks for
+`<assets>/icons/<slug>.svg`, so the icons mount at `/assets/icons`, not at
+`/assets`. And since **a ConfigMap key cannot contain a slash**, one object
+cannot hold both those icons and a logo sitting one level up: it takes one per
+directory.
 
 ```sh
 kubectl create configmap cairn-icons --from-file=assets/icons/
+kubectl create configmap cairn-logo  --from-file=logo.png=assets/logo.png
 ```
+
+The png needs no special handling: `--from-file` spots the binary and stores it
+under `binaryData` on its own.
 
 ```yaml
 # values.yaml
@@ -211,6 +222,12 @@ config:
   site.yaml: |
     title: Our tools
     locales: [fr, en]
+    # The domain alone: cairn adds the sub-path from -base-path itself, and a
+    # path written here would land twice in every canonical link.
+    url: https://tools.internal
+    # Raster, or link previews carry no image. svg is fine for the tab icon,
+    # useless for a preview card.
+    logo: /assets/logo.png
     status:
       gatus: http://gatus       # the Service below, port 80, not 8080
       linked: false             # visitors have no route to Gatus
@@ -222,12 +239,18 @@ config:
       desc: { fr: Écrire à plusieurs., en: Write together. }
 
 extraVolumes:
+  - name: logo
+    configMap:
+      name: cairn-logo
   - name: icons
     configMap:
       name: cairn-icons
 extraVolumeMounts:
+  - name: logo
+    mountPath: /assets # gives /assets/logo.png
+    readOnly: true
   - name: icons
-    mountPath: /assets/icons
+    mountPath: /assets/icons # gives /assets/icons/*.svg
     readOnly: true
 
 ingress:

@@ -11,6 +11,20 @@
   font-display: swap;
 }
 
+/* The browser's own [hidden] rule is display:none, but any author rule with a
+   display beats it, and plenty below set one. That is not academic: .card sets
+   display:flex, so search marked non-matching cards hidden and left them on
+   screen while the live region announced "1 result". The same slip left the
+   theme toggle and the dismiss button clickable and inert without JavaScript,
+   since both ship hidden and are un-hidden by their script.
+
+   !important is the point here rather than a shortcut: this restores a browser
+   invariant that later rules must not be able to take back. Every script that
+   reveals a control clears the attribute (theme.js, about.js, search.js). */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   /* Mineral palette: cool weathered stone, not warm cream. Every variable
      carries its light and dark value; the browser preference picks one, and
@@ -230,7 +244,11 @@ header { padding-block: 1.4rem; }
 .about {
   position: relative;
   margin: 2.2rem 0 2.4rem;
-  padding: 1.3rem 3.4rem 1.3rem 1.5rem;
+  /* Logical, not physical: the close button sits at inset-inline-end, so under
+     RTL a right-hand padding stayed on the right while the button moved left
+     and landed on the text. */
+  padding-block: 1.3rem;
+  padding-inline: 1.5rem 3.4rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -752,7 +770,10 @@ footer {
   position: absolute;
   inset-inline-start: -999px;
   top: .5rem;
-  z-index: 2;
+  /* Above the header, which is sticky at z-index 40 on narrow screens: at 2
+     the first Tab stop was painted over and the skip link, whose whole job is
+     to be seen first, was invisible on a phone. */
+  z-index: 41;
   padding: .5rem 1rem;
   background: var(--card);
   border: 1px solid var(--border);

@@ -214,6 +214,100 @@ func TestCheckWarnsAboutAVectorLogo(t *testing.T) {
 	}
 }
 
+// A bare filename in logo, favicon or a link url is passed through untouched,
+// so the browser resolves it against whatever page it is on: logo.png is
+// /en/logo.png from the home page and /logo.png from the manifest, and 404s
+// from both. Nothing in a running site says so, the header simply shows a
+// broken image, which is why -check has to.
+func TestCheckWarnsAboutRefsThatResolveNowhere(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "url: https://tools.example.org\nlocales: [en]\n" +
+			"logo: logo.png\nfavicon: favicon.ico\n" +
+			"links:\n  - {label: Wiki, url: wiki.example.org}\n" +
+			"footer:\n  - {label: Contact, url: mailto:hello@example.org}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	warnings := strings.Join(checkWarnings(cfg, dir), "\n")
+
+	for _, want := range []string{
+		`logo "logo.png" resolves nowhere`,
+		`favicon "favicon.ico" resolves nowhere`,
+		`links url "wiki.example.org" resolves nowhere`,
+	} {
+		if !strings.Contains(warnings, want) {
+			t.Errorf("warnings missing %q:\n%s", want, warnings)
+		}
+	}
+	// A scheme is a scheme: mailto: and tel: are the two an operator writes in
+	// a footer, and flagging them is how a check earns being ignored.
+	if strings.Contains(warnings, "mailto:hello@example.org") {
+		t.Errorf("a mailto: link was flagged as unresolvable:\n%s", warnings)
+	}
+}
+
+// Two categories differing only in case render as two sections carrying the
+// same name, one of them nearly empty. It reads as a rendering bug and it is a
+// typo in a services.yaml, so the check names both spellings.
+func TestCheckWarnsAboutCategoriesDifferingOnlyByCase(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "url: https://tools.example.org\nlogo: /assets/logo.png\nlocales: [en]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A, category: Documents}\n" +
+			"- {id: b, url: https://b.example.org, name: B, category: documents}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	warnings := strings.Join(checkWarnings(cfg, dir), "\n")
+	for _, want := range []string{"differ only by case", `"Documents"`, `"documents"`} {
+		if !strings.Contains(warnings, want) {
+			t.Errorf("warnings missing %q:\n%s", want, warnings)
+		}
+	}
+}
+
+// A file in media/ can be written two ways, and the docs show both: the bare
+// name and the /media/… path it is served at. Recording only the first made
+// -check announce a file as unreferenced while it sat on the page, which is
+// worse than silence: it invites deleting an image that is in use.
+func TestCheckCountsBothSpellingsOfAMediaReference(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "url: https://tools.example.org\nlogo: /assets/logo.png\nlocales: [en]\n" +
+			"about: \"Layout: ![plan](/media/plan.png)\"\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, images: [/media/shot.png]}\n" +
+			"- {id: doc, url: https://doc.example.org, name: Doc, images: [manual.png]}\n",
+	})
+	media := filepath.Join(dir, "media")
+	if err := os.MkdirAll(media, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"shot.png", "manual.png", "plan.png", "orphan.png"} {
+		if err := os.WriteFile(filepath.Join(media, name), []byte("png"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	warnings := strings.Join(mediaWarnings(cfg, media), "\n")
+
+	for _, used := range []string{"shot.png", "manual.png", "plan.png"} {
+		if strings.Contains(warnings, used) {
+			t.Errorf("%s is on a page and was reported unreferenced:\n%s", used, warnings)
+		}
+	}
+	// And the warning still fires for a file nothing points at, or the test
+	// above would pass just as well with the check switched off.
+	if !strings.Contains(warnings, "orphan.png") {
+		t.Errorf("a genuinely unreferenced file went unreported:\n%s", warnings)
+	}
+}
+
 // Without a url there is no og:image to miss, and the url warning already
 // covers it. Saying both would be saying the same thing twice.
 func TestCheckDoesNotStackTheLogoWarningOnTheURLOne(t *testing.T) {
@@ -227,5 +321,62 @@ func TestCheckDoesNotStackTheLogoWarningOnTheURLOne(t *testing.T) {
 	}
 	if w := strings.Join(checkWarnings(cfg, dir), "\n"); strings.Contains(w, "og:image") {
 		t.Errorf("a config with no url was also nagged about og:image:\n%s", w)
+	}
+}
+
+// Four settings that are accepted, then do nothing, with no error and no hint
+// from the page. Each is written the way an operator would write it.
+func TestCheckNamesSettingsThatDoNothing(t *testing.T) {
+	for _, c := range []struct {
+		name, site string
+		want       string
+	}{
+		{"status keys with nothing to poll",
+			"locales: [en]\nindex: false\nstatus: {page: https://s.example.org, interval: 30s}\n",
+			"without status.gatus"},
+		{"a misspelled strings override",
+			"locales: [en]\nindex: false\nstrings: {card.mode: Read on}\n",
+			`strings key "card.mode" is not one cairn uses`},
+		{"an icons list that drops the install pair",
+			"locales: [en]\nindex: false\nicons: [{src: /assets/a.png, sizes: 180x180}]\n",
+			"stop offering to install"},
+		{"an icon on a footer entry",
+			"locales: [en]\nindex: false\nfooter: [{label: C, url: https://c.example.org, icon: mail}]\n",
+			"only header links render one"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			dir := testutil.WriteFiles(t, map[string]string{
+				"site.yaml":     c.site,
+				"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+			})
+			cfg, err := config.Load(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			w := strings.Join(checkWarnings(cfg, dir), "\n")
+			if !strings.Contains(w, c.want) {
+				t.Errorf("no warning carrying %q:\n%s", c.want, w)
+			}
+		})
+	}
+}
+
+// The same four keys, used the way they are meant to be, must stay silent: a
+// warning that fires on a correct config is how the whole set gets ignored.
+func TestCheckStaysQuietWhenThoseSettingsWork(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "locales: [en]\nindex: false\n" +
+			"status: {gatus: https://s.example.org, page: https://s.example.org, interval: 30s, linked: false}\n" +
+			"strings: {card.more: Read on}\n" +
+			"icons: [{src: /assets/a.png, sizes: 192x192}, {src: /assets/b.png, sizes: 512x512}]\n" +
+			"footer: [{label: C, url: https://c.example.org}]\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := strings.Join(inertSettings(cfg), "\n"); w != "" {
+		t.Errorf("a correct config was warned about:\n%s", w)
 	}
 }

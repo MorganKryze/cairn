@@ -1,6 +1,9 @@
 package config
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // The built-in UI strings, one small table per language. Adding a language
 // is exactly one block here plus nothing else: every key must exist (a test
@@ -196,6 +199,29 @@ var builtinStrings = map[string]map[string]string{
 // rtlLocales lists the base language codes written right to left. None of the
 // built-in UI languages is among them, but a site's own content can be, and
 // the html dir attribute is what makes the whole layout follow.
+// StringKeys lists every UI string an operator may override, sorted. A key
+// outside this set is a typo that silently does nothing: Str falls through to
+// the built-in table, so the page looks exactly as it would with no override
+// at all. -check compares against this.
+func StringKeys() []string {
+	out := make([]string, 0, len(builtinStrings["en"]))
+	for k := range builtinStrings["en"] {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// BuiltinLocales lists the languages cairn dresses its own interface in.
+func BuiltinLocales() []string {
+	out := make([]string, 0, len(builtinStrings))
+	for k := range builtinStrings {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
 var rtlLocales = map[string]bool{
 	"ar": true, "arc": true, "ckb": true, "dv": true, "fa": true, "he": true,
 	"ku": true, "ps": true, "sd": true, "ug": true, "ur": true, "yi": true,

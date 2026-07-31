@@ -104,9 +104,9 @@ ingress:
     enabled: true
 ```
 
-`tls.secretName` defaults to `<release>-tls`, which is what cert-manager
-creates when the annotation above asks it to. Set it yourself if the
-certificate already exists.
+`tls.secretName` defaults to the release's own resource name plus `-tls`, so
+`cairn-tls` for a release named `cairn` and `myrelease-cairn-tls` for one named
+`myrelease`. Set it yourself if the certificate already exists.
 
 One host and one path is all the chart renders. Serving one instance on several
 hostnames is rare enough to deserve its own Ingress object next to the release,
@@ -134,22 +134,43 @@ in the release moves. More in
 
 ## Icons, images, anything that is not text
 
-A ConfigMap holds text and stops at about 1 MiB, which is right for YAML and
-wrong for a logo. Mount whatever you need through the two escape hatches:
+cairn serves `/assets` by default, so whatever you mount there is reachable
+with no extra flag. What trips people up is the shape, not the mount: **a
+ConfigMap key cannot contain a slash**, so one ConfigMap cannot hold both
+`icons/nginx.svg` and `logo.png`. It takes one per directory, mounted at its
+own depth:
+
+```sh
+kubectl create configmap cairn-icons --from-file=assets/icons/
+kubectl create configmap cairn-logo --from-file=logo.png=assets/logo.png
+```
 
 ```yaml
 extraVolumes:
-  - name: assets
+  - name: logo
     configMap:
-      name: cairn-assets
+      name: cairn-logo
+  - name: icons
+    configMap:
+      name: cairn-icons
 extraVolumeMounts:
-  - name: assets
-    mountPath: /assets
+  - name: logo
+    mountPath: /assets # gives /assets/logo.png
+    readOnly: true
+  - name: icons
+    mountPath: /assets/icons # gives /assets/icons/*.svg
     readOnly: true
 ```
 
-cairn serves `/assets` by default, so mounting there needs no extra flag. SVG
-fits comfortably in a second ConfigMap; anything heavier wants a volume. See
+Nesting one mount inside the other is allowed, and the deeper one wins for its
+own subtree: `/assets/logo.png` comes from the first, `/assets/icons/nginx.svg`
+from the second.
+
+Binary files are fine. `kubectl create configmap --from-file` notices a png and
+puts it under `binaryData`, base64 encoded, without being told. The limit is
+the ConfigMap's, about 1 MiB for the whole object, which is roomy for svg
+icons and a logo and too small for a gallery. Preview images under
+`/config/media` are the same story: a volume once they grow. See
 [Icons](../recipes/icons.md).
 
 ## Every value
@@ -166,6 +187,7 @@ fits comfortably in a second ConfigMap; anything heavier wants a volume. See
 | `resources`                                                 | 10m/16Mi requested, 64Mi limit            | No CPU limit on purpose, so a burst of visitors is not throttled                                   |
 | `podSecurityContext` / `securityContext`                    | the hardened set below                    | Change only if your cluster forces it                                                              |
 | `extraVolumes` / `extraVolumeMounts`                        | `[]`                                      | Assets, media, anything else on disk                                                               |
+| `imagePullSecrets`                                          | `[]`                                      | Credentials for a private registry; the Secrets must already exist in the namespace                |
 | `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                                     | The usual scheduling knobs                                                                         |
 
 ## The hardening

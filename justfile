@@ -10,11 +10,12 @@ default:
 build:
     docker build -f docker/Dockerfile -t cairn:local .
 
-# lint the Helm chart and render the two shapes CI renders
+# lint the Helm chart and render the shapes CI renders
 chart:
     helm lint charts/cairn
     helm template cairn charts/cairn >/dev/null
     helm template cairn charts/cairn --set ingress.enabled=true --set ingress.host=cairn.example.org --set ingress.tls.enabled=true >/dev/null
+    helm template cairn charts/cairn --set 'imagePullSecrets[0].name=harbor' >/dev/null
     echo "chart ok"
 
 # run vet + tests
@@ -69,12 +70,31 @@ shots: demo-rebuild
 
 # drive the search in a real browser: the one behaviour the Go tests cannot see
 test-search:
-    @npm --silent install --no-save --no-package-lock playwright
-    @npx --yes playwright install --only-shell chromium
-    @go build -o /tmp/cairn-search ./src/cmd/cairn
-    @/tmp/cairn-search -config example -addr 127.0.0.1:8099 & echo $! > /tmp/cairn-search.pid
-    @for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz >/dev/null 2>&1 && break; sleep 1; done
-    @node scripts/search.mjs http://127.0.0.1:8099/en/; s=$?; kill $(cat /tmp/cairn-search.pid); exit $s
+    #!/usr/bin/env bash
+    # One shell for the whole recipe, and a trap. just runs each line of an
+    # ordinary recipe in a shell of its own, so the pid was written on one line
+    # and killed on another: aborting in between left cairn bound to 8099 for
+    # good. The leak was the smaller half. On the next run the leftover
+    # answered the readiness loop instantly, and the browser then drove the
+    # build from before the change under test, green.
+    set -euo pipefail
+    if curl -fsS -o /dev/null http://127.0.0.1:8099/healthz 2>/dev/null; then
+        echo "test-search: something already answers on 127.0.0.1:8099, probably a" >&2
+        echo "leaked cairn. Kill it, or this run measures that one instead." >&2
+        exit 1
+    fi
+    npm --silent install --no-save --no-package-lock playwright
+    npx --yes playwright install --only-shell chromium
+    go build -o /tmp/cairn-search ./src/cmd/cairn
+    /tmp/cairn-search -config example -addr 127.0.0.1:8099 &
+    pid=$!
+    trap 'kill "$pid" 2>/dev/null || true' EXIT INT TERM
+    for _ in $(seq 1 20); do
+        if curl -fsS -o /dev/null http://127.0.0.1:8099/healthz 2>/dev/null; then ready=1; break; fi
+        sleep 1
+    done
+    [ -n "${ready:-}" ] || { echo "test-search: cairn never came up on 8099" >&2; exit 1; }
+    node scripts/search.mjs http://127.0.0.1:8099/en/
 
 # regenerate every icon from the one drawing in the script; checks the
 # maskable safe zone the manifest promises Android

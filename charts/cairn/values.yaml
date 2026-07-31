@@ -10,6 +10,16 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
+# Needed when `image.repository` points at a registry that asks who you are:
+# the Harbor or Zot an air-gapped install pulls from, typically. The Secrets
+# must already exist in the release namespace, and the chart never holds
+# credentials of its own:
+#
+#   kubectl create secret docker-registry harbor \
+#     --docker-server=harbor.internal --docker-username=… --docker-password=…
+imagePullSecrets: []
+#   - name: harbor
+
 replicaCount: 1
 
 # Your cairn YAML, one entry per file, rendered into a ConfigMap and mounted
@@ -57,8 +67,8 @@ ingress:
   pathType: Prefix
   tls:
     enabled: false
-    # Empty means "<release>-tls", which is what cert-manager creates when the
-    # annotation above asks it to.
+    # Empty means "<release>-cairn-tls", or plain "cairn-tls" when the release
+    # is named cairn: it follows the resource names, not the release alone.
     secretName: ""
 
 # Measured on the demo instance: cairn idles near nothing and renders from
@@ -87,7 +97,8 @@ securityContext:
     drop: ["ALL"]
 
 # Anything else you want in the pod: your own icons and logo as a second
-# ConfigMap mounted at /assets, preview images on a volume at /config/media.
+# ConfigMap. Mind the depth: icons belong at /assets/icons, and a ConfigMap key
+# cannot contain a slash, so a logo one level up needs its own object.
 # cairn reads /assets by default, so mounting there needs no extra flag.
 extraVolumes: []
 #   - name: assets

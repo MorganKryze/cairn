@@ -107,11 +107,17 @@ func mdInline(s string) string {
 	return b.String()
 }
 
+// mdLink reads one [text](url) starting at s[0] == '['. The separator has to
+// be the first ']', not the first "](" anywhere ahead: scanning the whole
+// remaining string made "See [docs] and [here](https://x.org)" swallow
+// everything from the first bracket into one link's text, and left no way to
+// write a literal [word] before a link in the same paragraph.
 func mdLink(s string) (txt, url string, n int) {
-	sep := strings.Index(s, "](")
-	if sep < 0 {
+	close := strings.IndexByte(s, ']')
+	if close < 0 || !strings.HasPrefix(s[close:], "](") {
 		return "", "", 0
 	}
+	sep := close
 	end := strings.IndexByte(s[sep+2:], ')')
 	if end < 0 {
 		return "", "", 0

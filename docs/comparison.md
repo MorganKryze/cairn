@@ -54,8 +54,9 @@ same tab.
   still finds packages in it. cairn's image contains the binary and a CA
   bundle, and nothing else. No shell for a compromised process to spawn, no
   package manager, no libc, so an entire family of advisories simply does not
-  apply. Trivy reports one target, the Go binary itself. Under 10 MB, non-root,
-  one Go dependency, and the image is signed with SLSA provenance and an SBOM.
+  apply. Trivy reports one target, the Go binary itself. The whole thing is
+  4.3 MB to pull, non-root, one Go dependency, and signed with SLSA provenance
+  and an SBOM.
 
   This removes somewhere to go, not the possibility of a bug: a flaw in cairn
   is still a flaw. What it buys is that the flaw has no shell to pivot into and

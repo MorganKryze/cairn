@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# One release at a time. Not keyed on the ref, unlike build.yml: the resource
+# two runs contend for is `stable`, which every release writes and no ref
+# distinguishes, so the group has to be the workflow itself. Cancelling is
+# wrong here too, hence cancel-in-progress: false. A release killed halfway
+# leaves published artifacts behind with nothing pointing at them.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   binaries:
     runs-on: ubuntu-latest
@@ -20,9 +29,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: stable
-      - name: Build and attach the release binaries
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Build the release binaries
         run: |
           version="${GITHUB_REF_NAME#v}"
           for target in linux/amd64 linux/arm64 darwin/arm64; do
@@ -32,13 +39,29 @@ jobs:
             tar -czf "cairn_${version}_${os}_${arch}.tar.gz" cairn
           done
           sha256sum cairn_*.tar.gz > checksums.txt
-          gh release upload "$GITHUB_REF_NAME" cairn_*.tar.gz checksums.txt --clobber
 
       # Says which workflow, at which commit, produced these exact bytes.
       # Verify with: gh attestation verify cairn_… --repo MorganKryze/cairn
+      #
+      # Before the upload, not after. An attestation is keyed by the file's
+      # own digest and lives in GitHub's attestation store, not on the release,
+      # so it can be made while the tarballs are still local files. Attaching
+      # first would mean a failure here left downloadable tarballs that
+      # `gh attestation verify` answers "no attestation" for, which reads as
+      # tampering rather than as a broken workflow.
+      #
+      # checksums.txt is a subject too: it is published next to the tarballs
+      # and people trust it the same way, so it needs the same proof.
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
-          subject-path: cairn_*.tar.gz
+          subject-path: |
+            cairn_*.tar.gz
+            checksums.txt
+
+      - name: Attach the tarballs to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" cairn_*.tar.gz checksums.txt --clobber
 
 
   image:
@@ -60,16 +83,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Publish immutable, prove, then promote.
+      #
+      # Signing before publishing does not exist for OCI: a cosign signature is
+      # itself an object in the registry, alongside the digest it covers, so
+      # there has to be something to sign. Deleting a bad push afterwards is
+      # the other obvious answer and it is worse: GITHUB_TOKEN carries no
+      # delete scope for packages, and it races whoever already pulled.
+      #
+      # What can be ordered is the part that hurts. `stable` and `latest` are
+      # the tags SECURITY.md tells people to verify, and they are the only ones
+      # a failure here can leave pointing somewhere new and unsigned. So they
+      # are not in this list: they are moved further down, onto a digest whose
+      # signature has already been checked. A version tag that fails signing is
+      # a version nobody has been sent to yet, and re-running the tag
+      # republishes and signs the same content.
+      #
+      # A release candidate publishes its own exact version and moves nothing:
+      # `v1.3.0-rc1` matches the `v*.*.*` trigger, and `1.3` and `1` float the
+      # same way `stable` does. The hyphen is what makes a semver version a
+      # prerelease, so it is what the guards test. The action declines to float
+      # `{{major}}` and `{{major}}.{{minor}}` for a prerelease by itself; the
+      # guards say so here anyway, so the rule is readable in the tag list
+      # rather than inherited from an action's semantics.
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ghcr.io/${{ github.repository }}
+          # Without this the action adds `latest` to the push by itself, which
+          # is exactly the tag that must not move before the proof.
+          flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=raw,value=stable
-            type=raw,value=latest
+            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
+            type=semver,pattern={{major}},enable=${{ !contains(github.ref_name, '-') && !startsWith(github.ref, 'refs/tags/v0.') }}
 
       # vet + tests run inside the Dockerfile, so they gate the push.
       - id: build
@@ -91,18 +138,48 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Keyless: the signature is bound to this workflow's identity, no key to
-      # store or rotate. Verify with:
-      #   cosign verify ghcr.io/morgankryze/cairn:stable \
-      #     --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
-      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
-      - name: sign the image
+      # store or rotate. One signature covers the digest, whatever tags point
+      # at it.
+      - name: sign the image and prove the signature
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          for tag in $TAGS; do
-            cosign sign --yes "${tag%%:*}@${DIGEST}"
-            break # one signature covers the digest, whatever tags point at it
+          set -euo pipefail
+          # The image name comes out of the metadata action rather than out of
+          # github.repository: ghcr refuses the capital M in the owner, and the
+          # action has already lowercased it.
+          image=$(printf '%s\n' "$TAGS" | head -n1)
+          image="${image%%:*}"
+          cosign sign --yes "${image}@${DIGEST}"
+
+          # The command SECURITY.md hands the reader, run against what was just
+          # signed. `cosign sign` exiting 0 is not proof that anyone else can
+          # verify the result, and nothing below promotes a tag on the strength
+          # of an exit code alone.
+          cosign verify "${image}@${DIGEST}" \
+            --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+
+      # Retagging is a registry-side copy of the very index that was verified
+      # above, so the digest does not change and `stable` cannot exist
+      # unsigned. The equality check is not ceremony: if a future buildx ever
+      # rebuilds the index instead of copying it, the tag would point at an
+      # unsigned digest, and this is what would catch it.
+      - name: move stable and latest onto the verified digest
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for tag in stable latest; do
+            docker buildx imagetools create --tag "${IMAGE}:${tag}" "${IMAGE}@${DIGEST}"
+            moved=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "${IMAGE}:${tag}")
+            [ "$moved" = "$DIGEST" ] || {
+              echo "::error::${tag} points at ${moved}, not the signed ${DIGEST}"
+              exit 1
+            }
           done
 
 
@@ -146,3 +223,14 @@ jobs:
           digest=$(awk '/^Digest: /{print $2}' push.log)
           [ -n "$digest" ] || { echo "::error::helm push printed no digest"; exit 1; }
           cosign sign --yes "ghcr.io/${ns}/charts/cairn@${digest}"
+
+          # The image job publishes immutable tags and only then moves `stable`
+          # onto a verified digest. There is no equivalent to move here: a
+          # chart is published under its version and nothing else, so the worst
+          # a failure between the push and the signature can do is leave one
+          # version unsigned, at a number nobody has been pointed at yet, which
+          # re-running the tag republishes and signs. What is worth doing is
+          # proving the signature is usable, with the command the docs give.
+          cosign verify "ghcr.io/${ns}/charts/cairn@${digest}" \
+            --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null

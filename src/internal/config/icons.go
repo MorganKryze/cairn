@@ -73,6 +73,12 @@ func CdnSlugs(cfg *Config) []string {
 	return slugs
 }
 
+// shellQuote wraps a value in single quotes, the one form sh treats as fully
+// literal, and closes-escapes-reopens for any quote inside it.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 func EmitIconsScript(cfg *Config) []byte {
 	var b bytes.Buffer
 	b.WriteString("#!/bin/sh\n")
@@ -80,7 +86,10 @@ func EmitIconsScript(cfg *Config) []byte {
 	b.WriteString("# into icons/, and cairn serves them from there automatically.\n")
 	b.WriteString("set -e\nmkdir -p icons\n")
 	for _, slug := range CdnSlugs(cfg) {
-		fmt.Fprintf(&b, "curl -fsSL -o 'icons/%s.svg' '%s%s.svg'\n", slug, iconCDN, slug)
+		// slugRe already keeps a shell metacharacter out of here; quoting the
+		// value anyway means a future loosening of that rule cannot turn this
+		// script, which the docs pipe into sh, into an execution vector.
+		fmt.Fprintf(&b, "curl -fsSL -o %s %s\n", shellQuote("icons/"+slug+".svg"), shellQuote(iconCDN+slug+".svg"))
 	}
 	return b.Bytes()
 }
