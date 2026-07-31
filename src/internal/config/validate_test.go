@@ -147,6 +147,16 @@ func TestValidateSiteRejections(t *testing.T) {
 		// executable scheme outright instead of merely failing to look.
 		{"security contact that is a script url", func(s *Site) { s.Security.Contact = "javascript:alert(1)" },
 			[]string{"security.contact", `"javascript:alert(1)"`, "mailto:"}},
+		// footer entries were validated nowhere at all. An entry with no url
+		// renders an empty href, which is a footer link that looks live and
+		// silently reloads the page; one with no label renders as nothing
+		// visible. links has always demanded both.
+		{"footer entry with no url", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Legal"}}}
+		}, []string{"every footer entry needs label and url"}},
+		{"footer entry with no label", func(s *Site) {
+			s.Footer = []FooterLink{{URL: "/legal"}}
+		}, []string{"every footer entry needs label and url"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -239,11 +249,11 @@ func TestValidateSiteNormalizes(t *testing.T) {
 
 // The plain spelling is the one nobody writes. A browser deletes every tab,
 // newline and carriage return from a URL and strips the leading control
-// characters and spaces before it reads the scheme, so all of the first group
-// are one URL as far as it is concerned. A literal prefix test would refuse
-// the obvious one and wave the rest through, which is worse than no check: it
-// reads like a check that works.
-func TestUnsafeSchemeSeesThroughTheDressing(t *testing.T) {
+// characters and spaces before it reads the scheme, so every dressed spelling
+// below is one URL as far as it is concerned. A literal prefix test would
+// refuse the obvious one and wave the rest through, which is worse than no
+// check: it reads like a check that works.
+func TestURLSchemeReadsWhatABrowserReads(t *testing.T) {
 	for _, c := range []struct {
 		name string
 		val  string
@@ -257,27 +267,70 @@ func TestUnsafeSchemeSeesThroughTheDressing(t *testing.T) {
 		{"led by spaces", "  javascript:alert(1)", "javascript"},
 		{"led by a control character", "\x01javascript:alert(1)", "javascript"},
 		{"vbscript, the same trick", "VB\tScript:msgbox(1)", "vbscript"},
-		// data: is the third because data:text/html is a document with script
-		// in it. The dressing works on it just the same.
 		{"a data document", "data:text/html,<script>alert(1)</script>", "data"},
-		{"a data image, refused all the same", "data:image/svg+xml,<svg/>", "data"},
 		{"data, dressed", " Da\tta:text/html,x", "data"},
-		// The look-alikes. Refusing one of these would be the worse failure of
-		// the two: a config that booted yesterday stops booting on an upgrade,
-		// and the operator is told their perfectly good path runs code.
-		{"a file whose name contains the word", "/assets/javascript-logo.png", ""},
-		{"a mailbox that contains the word", "mailto:javascript@example.org", ""},
-		{"a url whose path contains it", "https://example.org/javascript:alert(1)", ""},
-		{"a file whose name starts with the third word", "/assets/database.png", ""},
-		{"a host that starts with it", "https://data.example.org/logo.png", ""},
-		{"an ordinary asset path", "/assets/logo.png", ""},
+		{"the one this rule was tightened for", "tel:+33123456789", "tel"},
+		// The schemes cairn does emit read the same way; the allow-list, not
+		// this function, is what decides.
+		{"https", "https://tools.example.org", "https"},
+		{"mailto", "mailto:hi@example.org", "mailto"},
+		// A path has no scheme, and neither has a colon that arrives after the
+		// path has started. Reading one of these as a scheme would refuse a
+		// config that has always been legal and tell the operator their file
+		// name is a protocol.
+		{"a root-absolute path", "/assets/logo.png", ""},
+		{"a path whose name contains a colon", "/assets/a:b.png", ""},
+		{"a bare file name", "logo.png", ""},
+		{"a url whose path contains a scheme", "https://example.org/javascript:alert(1)", "https"},
+		{"a query that contains one", "https://example.org/?to=mailto:x@y.org", "https"},
+		{"a fragment that contains one", "/legal#tel:0", ""},
 		{"nothing at all", "", ""},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			if got := unsafeScheme(c.val); got != c.want {
-				t.Errorf("unsafeScheme(%q) = %q, want %q", c.val, got, c.want)
+			if got := urlScheme(c.val); got != c.want {
+				t.Errorf("urlScheme(%q) = %q, want %q", c.val, got, c.want)
 			}
 		})
+	}
+}
+
+// tel: is the case that made this an allow-list rather than a list of the
+// dangerous ones. It is nobody's attack, and it has never worked: html/template
+// blanks it into a dead link exactly the way it blanks javascript:. The one
+// field that keeps it is security.txt, which is plain text rather than markup,
+// so nothing blanks anything and RFC 9116 names tel: itself.
+func TestTelIsRefusedInLinksAndKeptInSecurityTxt(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		mut  func(*Site)
+	}{
+		{"a header link", func(s *Site) {
+			s.Links = []FooterLink{{Label: LString{"": "Call"}, URL: "tel:+33123456789"}}
+		}},
+		{"a footer link", func(s *Site) {
+			s.Footer = []FooterLink{{Label: LString{"": "Call"}, URL: "tel:+33123456789"}}
+		}},
+		{"a logo", func(s *Site) { s.Logo = "tel:+33123456789" }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = "#247b7b"
+			c.mut(s)
+			err := validateSite(s, map[string]string{})
+			if err == nil {
+				t.Fatal("a tel: link was accepted, and it would have rendered dead")
+			}
+			if !strings.Contains(err.Error(), "tel: scheme") {
+				t.Errorf("message %q does not name the scheme", err)
+			}
+		})
+	}
+
+	s := &Site{Locales: []string{"en"}}
+	s.Theme.Accent = "#247b7b"
+	s.Security.Contact = "tel:+33123456789"
+	if err := validateSite(s, map[string]string{}); err != nil {
+		t.Errorf("security.contact refused a scheme RFC 9116 names: %v", err)
 	}
 }
 
