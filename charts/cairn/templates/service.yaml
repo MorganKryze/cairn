@@ -10,6 +10,6 @@ spec:
     {{- include "cairn.selectorLabels" . | nindent 4 }}
   ports:
     - name: http
-      port: {{ .Values.service.port }}
+      port: {{ .Values.service.port | default 80 }}
       targetPort: http
       protocol: TCP

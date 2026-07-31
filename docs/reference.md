@@ -22,7 +22,7 @@ logs the same error.
 
 | Key          | Required | Default       | Type                                                                                                                                                             |
 | ------------ | -------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`         | yes      | n/a           | slug `[a-z0-9-]`, unique across files                                                                                                                            |
+| `id`         | yes      | n/a           | slug `[a-z0-9][a-z0-9-]*`, unique across files: it becomes a URL, so no leading dash                                                                             |
 | `url`        | yes      | n/a           | `http(s)://…` or absolute path                                                                                                                                   |
 | `name`       | yes      | n/a           | text (plain or per-locale map)                                                                                                                                   |
 | `desc`       | no       | empty         | text                                                                                                                                                             |
@@ -41,7 +41,7 @@ logs the same error.
 | `tagline`             | empty          | text; opens the home page, feeds the meta description                                                                                                                                                              |
 | `url`                 | none           | public base URL; adds canonical + hreflang, absolute sitemap                                                                                                                                                       |
 | `logo`                | none           | URL or `/assets/…` path; raster logos double as the og:image when `url` is set                                                                                                                                     |
-| `favicon`             | cairn's        | tab icon; URL or `/assets/…` path. Also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set)                                                                                       |
+| `favicon`             | cairn's        | tab icon; URL or `/assets/…` path. A png also becomes the home-screen icon; see [the icon set](configuration/site.md#the-icon-set)                                                                                 |
 | `icons`               | derived        | [home-screen set](configuration/site.md#using-your-own), list of `{src: URL/path, sizes: WxH or any, purpose: any/maskable/monochrome}`; overrides what `favicon` implies                                          |
 | `index`               | `true`         | `false` = robots.txt disallow, noindex meta, no sitemap                                                                                                                                                            |
 | `locales`             | `[en]`         | list; first = default                                                                                                                                                                                              |
@@ -98,33 +98,39 @@ ids, alphabetically.
 | `/{locale}/…?choose`        | sets the one-year locale cookie, then redirects clean                                              |
 | `/static/…`                 | embedded assets, cached one day                                                                    |
 | `/assets/…`                 | your mounted files, if the mount exists                                                            |
+| `/media/…`                  | images from `<config>/media/`, the ones services and long text name                                |
 | `/custom.css`               | your stylesheet, if present                                                                        |
+| `/manifest.webmanifest`     | the web app manifest: site name, theme color, the [icon set](configuration/site.md#the-icon-set)   |
+| `/favicon.ico`              | cairn's own, or a redirect to your `favicon`, for the tools that skip the html                     |
 | `/healthz`                  | `200 ok` while the process serves, whatever the config says: the liveness signal                   |
 | `/readyz`                   | `200 ready`, or `503` while no valid config has ever loaded and the getting-started page stands in |
 | `/sitemap.xml`              | every page, absolute URLs from `Host`/`X-Forwarded-Proto`                                          |
 | `/robots.txt`               | allow all + sitemap URL                                                                            |
 | `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                          |
 
-Text responses are gzipped for clients that ask, which is most of them: a first
-visit to the demo goes from 53 KB on the wire to 14 KB. Images, fonts and the
-`ico` are left alone, since compressing them again only spends CPU to add
-bytes. Every response carries `Vary: Accept-Encoding` so a shared cache cannot
-hand the compressed answer to a client that did not ask for it.
+Text responses are gzipped for clients that ask, which is most of them: every
+text response a first visit to the demo pulls, the page and its stylesheet, the
+five small scripts, the manifest and the svg icons the demo serves itself, goes
+from 72 KB on the wire to 22 KB. Images, fonts and the `ico` are left alone,
+since compressing them again only spends CPU to add bytes, so the 62 KB font
+weighs 62 KB either way. Every response carries `Vary: Accept-Encoding` so a
+shared cache cannot hand the compressed answer to a client that did not ask for
+it.
 
 ## Binary flags
 
-| Flag           | Default   | Role                                                                                                                        |
-| -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `-addr`        | `:8080`   | listen address                                                                                                              |
-| `-config`      | `/config` | config directory                                                                                                            |
-| `-assets`      | `/assets` | directory served at `/assets/`, if it exists                                                                                |
-| `-base-path`   | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                       |
-| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                 |
-| `-init`        | off       | print a commented starter `services.yaml`, then exit                                                                        |
-| `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit                                     |
-| `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit |
-| `-check`       | off       | validate the config directory, print warnings (missing translations, orphan or heavy media), then exit 0 or 1               |
-| `-version`     | off       | print the version, then exit                                                                                                |
+| Flag           | Default   | Role                                                                                                                                                                                              |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-addr`        | `:8080`   | listen address                                                                                                                                                                                    |
+| `-config`      | `/config` | config directory                                                                                                                                                                                  |
+| `-assets`      | `/assets` | directory served at `/assets/`, if it exists                                                                                                                                                      |
+| `-base-path`   | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                                                                                             |
+| `-healthcheck` | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                                                                                       |
+| `-init`        | off       | print a commented starter `services.yaml`, then exit                                                                                                                                              |
+| `-emit-gatus`  | off       | print a [Gatus endpoints config](recipes/gatus.md) derived from the services, then exit                                                                                                           |
+| `-emit-icons`  | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                       |
+| `-check`       | off       | validate the config directory, print warnings (missing translations, orphan or heavy media, references that resolve nowhere, ids that collide, keys that do nothing, CDN icons), then exit 0 or 1 |
+| `-version`     | off       | print the version, then exit                                                                                                                                                                      |
 
 With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
 `/cairn/static/…`) and cairn strips it back off itself, so the proxy in front

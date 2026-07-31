@@ -1,9 +1,9 @@
 # cairn
 
 > Guest-first, multilingual directory page for self-hosted services. One Go
-> binary (FROM scratch, ~14 MB) renders YAML config into a server-side page
-> with live Gatus status pills, search, light/dark, and hosted legal pages.
-> No database, no tracking, no runtime dependencies.
+> binary (FROM scratch, ~10 MB, 4.3 MB to pull) renders YAML config into a
+> server-side page with live Gatus status pills, search, light/dark, and
+> hosted legal pages. No database, no tracking, no runtime dependencies.
 
 Key facts: config lives in `/config/*.yaml` (site.yaml for the site, any
 other yaml lists services), reloads live within ~2 s, config errors name the
@@ -17,9 +17,12 @@ https://cairn.libresoftware.cloud
 - [Getting started](docs/getting-started.md): zero to a served page in five minutes
 - [Services](docs/configuration/services.md): the cards; every key with defaults
 - [Site](docs/configuration/site.md): title, welcome note, header links, hosted legal pages, footer, credit
+- [Writing text](docs/configuration/text.md): paragraphs and the markdown subset the long fields accept
 - [Theming](docs/configuration/theming.md): accent, light/dark toggle, custom.css variables
 - [Languages](docs/configuration/i18n.md): locale negotiation, translatable fields, UI strings
 - [Docker Compose](docs/deployment/docker-compose.md): hardened reference setup and image tags
+- [Podman](docs/deployment/podman.md): the same container as a rootless systemd quadlet
+- [Bare binary](docs/deployment/binary.md): no container, flags and a hardened systemd unit
 - [Kubernetes](docs/deployment/kubernetes.md): ConfigMap, Deployment, Service, why the two probes differ
 - [Helm](docs/deployment/helm.md): chart at oci://ghcr.io/morgankryze/charts/cairn, config in values, Ingress
 - [Air-gapped](docs/deployment/airgap.md): offline install with and without a registry, -emit-icons, -check with both mounts
@@ -27,14 +30,15 @@ https://cairn.libresoftware.cloud
 - [Status with Gatus](docs/recipes/gatus.md): -emit-gatus, polling, pill behavior
 - [Icons](docs/recipes/icons.md): slugs, URLs, self-hosted files
 - [Multiple files](docs/recipes/multiple-files.md): one YAML per category
+- [Migration](docs/recipes/migration.md): mapping a Homer or Homepage config over, field by field
 - [Reference](docs/reference.md): every key, flag and endpoint on one page
 - [FAQ](docs/faq.md): tracking, cookies, JavaScript, auth
 - [Comparison](docs/comparison.md): when Homer or Homepage fit better
 
 ## Source
 
-- [src/](src/): one Go package; config.go (parsing, validation), render.go
-  (views, templates), main.go (HTTP, negotiation), gatus.go (status);
-  templates/ and assets/ are embedded into the binary
+- [src/](src/): six packages under src/internal (config, render, status,
+  server, check, testutil) plus src/cmd/cairn for wiring; render/templates and
+  render/assets are embedded into the binary
 - [demo/](demo/README.md): compose stack with cairn, Gatus and sample services
 - [CONTRIBUTING.md](CONTRIBUTING.md): dev loop, scope rules, commit style

@@ -254,9 +254,16 @@ func (c *Config) CategoryName(cat Category, locale string) string {
 }
 
 var (
-	accentRe = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
+	// CSS hex colours are 3, 4, 6 or 8 digits. 5 and 7 used to pass, and an
+	// invalid custom property makes every var(--accent) declaration invalid at
+	// computed-value time: the accent, and every focus ring drawn with it,
+	// silently disappears.
+	accentRe = regexp.MustCompile(`^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$`)
 	localeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
 	idRe     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	// An icon slug: what dashboard-icons publishes, and the only shape that can
+	// safely become both a filename and a URL segment.
+	slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	// A manifest icon size: one or more "WxH", or "any" for a scalable one.
 	iconSizesRe = regexp.MustCompile(`^(any|[0-9]+x[0-9]+( [0-9]+x[0-9]+)*)$`)
 	// Any URI with a scheme, since security.txt takes mailto:, https:// and
@@ -524,6 +531,12 @@ func parseServices(file string, data []byte) ([]Service, error) {
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
+		// A slug becomes a path segment on the icon CDN and a filename in the
+		// script -emit-icons writes, which the docs tell you to pipe into sh.
+		// Anything outside this shape could never resolve upstream anyway, so
+		// refusing it costs nothing and closes the shell off entirely.
+		case s.Icon != "" && !IsURLOrAbs(s.Icon) && !slugRe.MatchString(s.Icon):
+			return nil, fmt.Errorf("config: %s line %d: service %q: icon %q is not a slug, a URL or an /assets path (a slug is lowercase letters, digits, dashes, e.g. hedgedoc)", file, item.Line, s.ID, s.Icon)
 		}
 		for _, img := range s.Images {
 			switch {

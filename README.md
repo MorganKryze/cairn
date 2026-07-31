@@ -10,7 +10,7 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%20under%2010%20MB-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
+[![Image](https://img.shields.io/badge/image-FROM%20scratch%20·%204.3%20MB%20pull-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-yes-ff69b4)](docs/deployment/docker-compose.md)
 
 </div>
@@ -63,7 +63,8 @@ account or a manual, and boring for you to operate.
 
 ## What you get as the operator
 
-- **One static binary, under 10 MB**, zero runtime dependencies, no database.
+- **One static binary, about 10 MB**, zero runtime dependencies, no database.
+  The image around it is 4.3 MB to pull, since that binary compresses well.
 - **YAML mounted read-only**; edits apply live within seconds, and a config
   error names the file, the line and the expected shape instead of taking the
   site down.
@@ -92,9 +93,10 @@ deliberately tight, from the image down to the wire.
   and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
   The [demo](demo/README.md) runs on a network with no route out and serves its
   own icons, so the page it shows you makes no third-party request at all.
-- **A watched supply chain**: every push and pull request runs `govulncheck`,
-  a Trivy image scan and CodeQL, Dependabot follows the dependencies, and every
-  CI action is pinned to a commit rather than a movable tag.
+- **A watched supply chain**: every pull request runs `govulncheck`, a Trivy
+  image scan and CodeQL, and they run again on the pushes that change code and
+  weekly on a schedule. Dependabot follows the dependencies, and every CI action
+  is pinned to a commit rather than a movable tag.
 - **Artifacts you can check**: the image is signed with cosign and ships SLSA
   provenance and an SBOM; the release binaries carry their own attestation.
   The [verification commands](SECURITY.md#verifying-what-you-pulled) are two

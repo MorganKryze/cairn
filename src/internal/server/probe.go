@@ -24,13 +24,23 @@ func readyz(w http.ResponseWriter, _ *http.Request) {
 	io.WriteString(w, "ready\n")
 }
 
+// Probe asks the running server whether it is alive, for a container
+// healthcheck that has no shell to do it with. It dials the address cairn was
+// told to listen on, not loopback: keeping only the port meant an instance
+// bound to one interface was probed somewhere else entirely, which either
+// restart-loops a healthy container or, worse, reports green because something
+// unrelated answers on that port.
 func Probe(addr string) int {
-	_, port, err := net.SplitHostPort(addr)
+	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
 		return 1
 	}
+	// An empty host is "every interface"; loopback is the one we can reach.
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
 	client := http.Client{Timeout: 3 * time.Second}
-	resp, err := client.Get("http://127.0.0.1:" + port + "/healthz")
+	resp, err := client.Get("http://" + net.JoinHostPort(host, port) + "/healthz")
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return 1
 	}

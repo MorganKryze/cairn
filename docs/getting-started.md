@@ -91,9 +91,11 @@ the same way (`…/cairn/v1.6.0/schema/services.json`), so the editor never
 suggests a key your binary does not know yet.
 
 And `cairn -check` validates a config directory without serving anything,
-then warns about the likely oversights (a translation missing in one
-locale, a `media/` file nothing references, an image heavy enough to hurt,
-icons that load from a CDN). It exits 0 or 1, so it slots into CI if you
+then warns about everything a serving site would hide: a translation missing
+in one locale, a `media/` file nothing references, an image heavy enough to
+hurt, a logo or a link written so it resolves nowhere, two categories
+differing only by case, a key that was accepted and then does nothing,
+icons that load from a CDN. It exits 0 or 1, so it slots into CI if you
 version your config:
 
 ```sh

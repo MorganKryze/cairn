@@ -5,10 +5,22 @@ database, no persistent volume, no write anywhere. The whole deployment is a
 ConfigMap holding your YAML, a Deployment reading it, a Service, and whatever
 you already use for ingress.
 
-This page is the manifest, kept complete on purpose: it is what the chart
-renders, and what you want if you template your cluster some other way. If you
-run Helm, the [chart](helm.md) installs the same four objects and takes the
-Ingress off your hands.
+This page is the manifest, kept complete on purpose, and it is what you want if
+you template your cluster some other way. If you run Helm, the [chart](helm.md)
+installs the same four kinds of object and takes the Ingress off your hands.
+
+The same kinds, not the same objects: the chart names its ConfigMap after the
+release, labels everything `app.kubernetes.io/*` where this page uses a plain
+`app: cairn`, and adds the labels Helm needs to track a release. So pick one and
+stay with it. Applying this manifest over a chart install is refused outright,
+since a Deployment's selector cannot be changed after the fact:
+
+```console
+$ kubectl apply -f cairn.yaml
+The Deployment "cairn" is invalid: spec.selector: Invalid value: …: field is immutable
+```
+
+Moving the other way has the same problem. Switching means uninstalling first.
 
 ## The whole thing
 
@@ -118,8 +130,12 @@ previous pages, staying ready: the site is up, just not on your newest edit.
 
 - **Preview images.** A ConfigMap is limited to about 1 MiB and holds text.
   Point `images:` at absolute URLs, or mount a volume at `/config/media`.
-- **Your own icons and logo.** Same answer: a second ConfigMap mounted at
-  `/assets` works for SVG, a volume for anything heavier. See
+- **Your own icons and logo.** Same answer, with one catch worth knowing before
+  you write it: a ConfigMap key cannot contain a slash, so a single object
+  cannot hold both `icons/nginx.svg` and `logo.png`. It takes one ConfigMap per
+  directory, mounted at its own depth, `/assets/icons` for the icons and
+  `/assets` for the logo. [Helm](helm.md#icons-images-anything-that-is-not-text)
+  spells the pair out; anything heavier than svg and a logo wants a volume. See
   [Icons](../recipes/icons.md).
 - **A very large catalogue.** Hundreds of services still fit comfortably in
   text, but if you split across many files, remember the limit applies to the

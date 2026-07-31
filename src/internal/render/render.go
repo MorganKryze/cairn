@@ -208,7 +208,14 @@ func statusOf(cfg *config.Config, statuses map[string]bool, id string) string {
 func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 	def := cfg.DefaultLocale()
 	media := func(src string) (string, int, int) {
-		d := cfg.MediaDims[src]
+		// MediaDims is keyed by the name under media/. The /media/… spelling
+		// reaches the same file and used to miss the lookup, so the width and
+		// height that exist to stop the page jumping were dropped for it.
+		key := src
+		if rel, ok := strings.CutPrefix(src, "/media/"); ok {
+			key = rel
+		}
+		d := cfg.MediaDims[key]
 		return AppURL(mediaURL(src)), d[0], d[1]
 	}
 	pages := map[string]Page{}
@@ -217,7 +224,7 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			Locale:    loc,
 			Prefix:    BasePath,
 			Dir:       config.LocaleDir(loc),
-			Base:      cfg.Site.URL + BasePath,
+			Base:      absBase(cfg),
 			Version:   Version,
 			Credit:    cfg.Site.Credit == nil || *cfg.Site.Credit,
 			ShowVer:   cfg.Site.ShowVer,
@@ -225,7 +232,10 @@ func BuildModel(cfg *config.Config, statuses map[string]bool) (*Model, error) {
 			Logo:      AppURL(cfg.Site.Logo),
 			Favicon:   AppURL(cfg.Site.Favicon),
 			TouchIcon: AppURL(TouchIcon(cfg)),
-			OGImage:   ogImage(cfg.Site.URL+BasePath, AppURL(cfg.Site.Logo)),
+			// AppURL has already added BasePath to a local logo, so the base
+			// passed here must not carry it again: it used to, and every
+			// og:image under -base-path pointed at /cairn/cairn/… and 404ed.
+			OGImage:   ogImage(cfg.Site.URL, AppURL(cfg.Site.Logo)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
 			Accent:    cfg.Site.Theme.Accent,
@@ -519,6 +529,18 @@ func IsRaster(path string) bool {
 		}
 	}
 	return false
+}
+
+// absBase is the public origin every self-referencing link is built from, and
+// it is empty unless the operator gave one. Adding BasePath to an empty url
+// left a bare "/cairn", which is truthy in the template and made cairn emit
+// relative canonical, og:url and hreflang links: worse than emitting none,
+// which is what the absence of a url is supposed to mean.
+func absBase(cfg *config.Config) string {
+	if cfg.Site.URL == "" {
+		return ""
+	}
+	return cfg.Site.URL + BasePath
 }
 
 func ogImage(base, logo string) string {

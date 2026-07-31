@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/fs"
@@ -147,8 +148,13 @@ func siteBase(r *http.Request) string {
 }
 
 func baseURL(r *http.Request) string {
+	// X-Forwarded-Proto is attacker-controlled until a proxy overwrites it, and
+	// what it builds here is published in robots.txt, the sitemap and
+	// security.txt. Only the two schemes cairn can be reached over are taken;
+	// anything else falls back to what this connection actually is. Host needs
+	// no such guard: net/http rejects a malformed one with 400 before we run.
 	scheme := r.Header.Get("X-Forwarded-Proto")
-	if scheme == "" {
+	if scheme != "http" && scheme != "https" {
 		if r.TLS != nil {
 			scheme = "https"
 		} else {
@@ -195,6 +201,15 @@ func securityTxt(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Canonical: %s/.well-known/security.txt\n", siteBase(r))
 }
 
+// xmlText escapes a value for an element body.
+func xmlText(s string) string {
+	var b strings.Builder
+	if err := xml.EscapeText(&b, []byte(s)); err != nil {
+		return ""
+	}
+	return b.String()
+}
+
 func sitemap(w http.ResponseWriter, r *http.Request) {
 	if noindex() {
 		http.NotFound(w, r)
@@ -209,7 +224,9 @@ func sitemap(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	io.WriteString(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
 	for _, k := range keys {
-		fmt.Fprintf(w, "  <url><loc>%s/%s/</loc></url>\n", siteBase(r), k)
+		// The host reaches this from the request, so it is text cairn did not
+		// write: escaped, or one odd Host makes the whole document unparseable.
+		fmt.Fprintf(w, "  <url><loc>%s</loc></url>\n", xmlText(siteBase(r)+"/"+k+"/"))
 	}
 	io.WriteString(w, "</urlset>\n")
 }

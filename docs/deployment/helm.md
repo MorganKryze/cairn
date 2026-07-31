@@ -104,9 +104,9 @@ ingress:
     enabled: true
 ```
 
-`tls.secretName` defaults to `<release>-tls`, which is what cert-manager
-creates when the annotation above asks it to. Set it yourself if the
-certificate already exists.
+`tls.secretName` defaults to the release's own resource name plus `-tls`, so
+`cairn-tls` for a release named `cairn` and `myrelease-cairn-tls` for one named
+`myrelease`. Set it yourself if the certificate already exists.
 
 One host and one path is all the chart renders. Serving one instance on several
 hostnames is rare enough to deserve its own Ingress object next to the release,
@@ -187,6 +187,7 @@ icons and a logo and too small for a gallery. Preview images under
 | `resources`                                                 | 10m/16Mi requested, 64Mi limit            | No CPU limit on purpose, so a burst of visitors is not throttled                                   |
 | `podSecurityContext` / `securityContext`                    | the hardened set below                    | Change only if your cluster forces it                                                              |
 | `extraVolumes` / `extraVolumeMounts`                        | `[]`                                      | Assets, media, anything else on disk                                                               |
+| `imagePullSecrets`                                          | `[]`                                      | Credentials for a private registry; the Secrets must already exist in the namespace                |
 | `podAnnotations`, `nodeSelector`, `tolerations`, `affinity` | empty                                     | The usual scheduling knobs                                                                         |
 
 ## The hardening

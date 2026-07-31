@@ -42,8 +42,9 @@ Headings derive from the `category` id unless you name them in
 `categories.yaml`; see the [reference](reference.md#categoriesyaml).
 
 **How big is this?**
-One sub-10 MB image, one process, a few MB of RAM. `FROM scratch`, non-root, no
-shell inside.
+One image: 4.3 MB to pull, about 10 MB unpacked, nearly all of that the static
+binary. One process, a few MB of RAM. `FROM scratch`, non-root, no shell
+inside.
 
 **Can visitors switch language permanently?**
 Yes: the header switcher sets a one-year cookie and `/` honors it from

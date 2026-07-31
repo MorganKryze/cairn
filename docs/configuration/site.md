@@ -137,7 +137,9 @@ If cairn is served under a sub-path, that prefix comes from `-base-path`, and
 cairn adds it to every link itself. Writing it in `url` as well makes it land
 twice: canonical links, hreflang alternates and every entry of the sitemap
 would point at `example.org/cairn/cairn/`, which nothing serves. Search engines
-act on those, so cairn refuses to start rather than emit them:
+act on those, so cairn treats it as a config error rather than emit them. It
+does not exit: a fresh start then serves the getting-started page with the
+reason in the log, and a reload keeps the previous pages serving.
 
 ```console
 config: site.yaml: url "https://example.org/cairn" must be the domain alone, with no path
@@ -166,17 +168,25 @@ compiled into the binary and served from it.
 Set `favicon` and it becomes the whole set. What cairn then tells browsers
 about it depends on what it can actually establish, and it never guesses:
 
-| What you set              | What the manifest says                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------------------- |
-| An **svg**, anywhere      | `sizes: any`. An svg is every size, so yours serves the home screen exactly the way cairn's does. |
-| A **raster in `/assets`** | Its real width and height, measured when the config loads.                                        |
-| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none.        |
+| What you set              | What the manifest says                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| An **svg**, anywhere      | `sizes: any`. An svg is every size, so Android takes it for a home screen the way it takes cairn's own. |
+| A **raster in `/assets`** | Its real width and height, measured when the config loads.                                              |
+| A **raster behind a URL** | The file, with no size. Measuring it would mean an outbound request, and cairn makes none.              |
 
 An entry without a size is still a valid manifest entry, and browsers still
 use the icon. What it costs is the install prompt: Chromium offers "install
 this site" only when it sees both a 192 and a 512.
 
-To get that with your own artwork, name the files yourself:
+iOS is the exception the table cannot cover, because an iPhone never reads the
+manifest: it takes the home-screen icon from the `apple-touch-icon` link alone,
+and cairn only points that at a `favicon` it can be sure is a png. So a png
+favicon reaches an iPhone home screen and an svg one does not, which is the one
+place a vector loses. The tab and Android take it happily; only iOS falls back
+to cairn's mark, quietly, on somebody else's phone.
+
+Naming your icons settles both platforms at once, and it is also how you get
+the install prompt with your own artwork:
 
 ```yaml
 icons:
@@ -185,9 +195,9 @@ icons:
 ```
 
 `icons` replaces everything derived from `favicon`, which keeps serving the
-browser tab. That includes iOS, which ignores the manifest and reads the
-`apple-touch-icon` link alone: cairn points it at the largest entry in your
-list, so an iPhone home screen shows your artwork and not cairn's.
+browser tab. iOS is served out of the same list: cairn points its
+`apple-touch-icon` at the largest entry, so an iPhone home screen shows your
+artwork and not cairn's, whatever the `favicon` happens to be.
 
 `sizes` is `WIDTHxHEIGHT`, or `any` for an svg. `purpose` is
 optional and accepts `any`, `maskable` and `monochrome`, combined if you like.
@@ -197,7 +207,9 @@ because Android crops away the rest.
 cairn does not resize images: doing it would mean shipping a scaler for one
 rarely used path, and a badly resampled logo is worse than the one you drew.
 Anything wrong in this list is a config error that names the entry, so a typo
-stops at startup rather than reaching a phone.
+stops at startup rather than reaching a phone. A list that is merely short of
+the 192 and 512 pair is not wrong, only quieter than you meant, so that one is
+a `cairn -check` warning instead.
 
 ## Telling researchers where to write
 

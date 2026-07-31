@@ -84,8 +84,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       # `helm lint` reads the chart; rendering proves the templates actually
-      # produce manifests. Twice, because the Ingress is the half of the chart
-      # the default values never reach.
+      # produce manifests. More than once, because the Ingress and the pull
+      # secrets are the parts of the chart the default values never reach.
+      # Same list as `just chart`.
       - name: lint and render the chart
         run: |
           helm lint charts/cairn
@@ -94,6 +95,8 @@ jobs:
             --set ingress.enabled=true \
             --set ingress.host=cairn.example.org \
             --set ingress.tls.enabled=true >/dev/null
+          helm template cairn charts/cairn \
+            --set 'imagePullSecrets[0].name=harbor' >/dev/null
 
   image:
     runs-on: ubuntu-latest
@@ -159,7 +162,9 @@ jobs:
       - name: the pills settle green and red
         run: |
           for _ in $(seq 1 12); do
-            page=$(curl -fsS http://localhost:8080/fr/)
+            # || true or bash -e kills the step on the first failed curl,
+            # which is exactly the hiccup these five tries exist to ride out.
+            page=$(curl -fsS http://localhost:8080/fr/ || true)
             if echo "$page" | grep -q status-up && echo "$page" | grep -q status-down; then
               echo "pills settled"; exit 0
             fi

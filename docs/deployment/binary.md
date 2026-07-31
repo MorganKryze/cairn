@@ -11,7 +11,7 @@ go build -o cairn ./src/cmd/cairn
 ```
 
 Run it against a config folder; every flag is in the
-[reference](../reference.md#endpoints):
+[reference](../reference.md#binary-flags):
 
 ```sh
 ./cairn -config ./config -assets ./assets -addr :8080

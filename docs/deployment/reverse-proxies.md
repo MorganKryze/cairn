@@ -72,7 +72,9 @@ services:
 One rule comes with it, and getting it wrong is silent: `site.yaml`'s `url` is
 the **domain alone**, `https://example.org`, not `https://example.org/cairn`.
 cairn appends the prefix itself, so writing it twice puts it twice in every
-canonical link and sitemap entry. It refuses to start rather than do that, and
+canonical link and sitemap entry. It is a config error rather than something
+cairn emits: on a fresh start the site is replaced by the getting-started page
+with the reason in the log, and on a reload the previous pages keep serving.
 [Site](../configuration/site.md#the-domain-and-nothing-else) has the details.
 
 Worth knowing too: four paths that tools only ever read at the root of a domain

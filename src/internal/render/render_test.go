@@ -1,6 +1,11 @@
 package render
 
 import (
+	"bytes"
+	"image"
+	"image/png"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -194,6 +199,44 @@ func TestUnknownServiceKeyIsAnError(t *testing.T) {
 	})
 	if _, err := config.Load(dir); err == nil || !strings.Contains(err.Error(), "nam") {
 		t.Errorf("error = %v, want a complaint naming the unknown key nam", err)
+	}
+}
+
+// The intrinsic sizes are measured once at load and keyed by the name under
+// media/, while an image may be written either as that name or as the /media/…
+// path it is served at. The absolute spelling used to miss the lookup and lose
+// its width and height, so the same file laid the page out one way and shifted
+// it the other, which is the layout shift those attributes exist to prevent.
+func TestAbsoluteMediaPathKeepsItsDimensions(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"services.yaml": "- {id: bare, url: https://a.example.org, name: A, images: [shot.png]}\n" +
+			"- {id: abs, url: https://b.example.org, name: B, images: [/media/shot.png]}\n",
+	})
+	if err := os.MkdirAll(filepath.Join(dir, "media"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// 2x1: the smallest image whose width and height differ, so the assertion
+	// cannot pass on a square by accident.
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 2, 1))); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "media", "shot.png"), buf.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := BuildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `<img src="/media/shot.png" alt="" loading="lazy" width="2" height="1">`
+	for _, page := range []string{"en/bare", "en/abs"} {
+		if h := string(m.Pages[page].HTML); !strings.Contains(h, want) {
+			t.Errorf("page %s does not carry %s:\n%s", page, want, h)
+		}
 	}
 }
 

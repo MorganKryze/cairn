@@ -21,7 +21,8 @@ page renders, and the icons are simply missing.
 | your values          | a few KB | one file per chart, and they are yours to keep                 |
 
 The 26 MB is measured on arm64; amd64 lands in the same range. Almost all of it
-is Gatus: cairn's own image is under 14 MB.
+is Gatus: `docker save` writes cairn as about 4 MB of compressed layers, which
+unpack to roughly 10 MB on the node, nearly all of it the one static binary.
 
 ## 1. On the connected side
 
@@ -145,6 +146,10 @@ Harbor, Zot or `registry:2` you already run. The chart wants one value.
 image:
   repository: harbor.internal/cairn
   tag: "1.12.0"
+# Only if the project is private. The Secrets have to exist in the namespace
+# already; the chart names them, it does not create them.
+imagePullSecrets:
+  - name: harbor
 ```
 
 The charts belong in there too, if your registry takes them. Both are ordinary

@@ -59,6 +59,7 @@ No raw HTML, no tables, no nested or numbered lists, no headings deeper
 than `##`, and no link schemes beyond `http(s)`, `mailto` and plain paths.
 Anything the subset does not recognize renders exactly as you typed it, so
 a stray asterisk cannot break a page. Text can never inject markup: what
-you write is escaped, and the [security headers](../faq.md) stay strict.
+you write is escaped, and the
+[security headers](../../SECURITY.md#scope-worth-knowing) stay strict.
 
 Next: [Theming](theming.md)

@@ -5,7 +5,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/MorganKryze/cairn/src/internal/render"
 )
@@ -67,6 +69,14 @@ func noListing(h http.Handler) http.Handler {
 	})
 }
 
+// gzipPool keeps the compressor's window and tables between requests. A fresh
+// gzip.NewWriter costs about 800 KB of heap, held for as long as the client
+// takes to read: measured, 200 slow readers took a process from 16 MB to 171
+// MB, which crosses the 64Mi the chart asks for by default and the 128M the
+// compose file sets. Pooled, that cost is paid once per concurrent response
+// rather than once per response.
+var gzipPool = sync.Pool{New: func() any { return gzip.NewWriter(io.Discard) }}
+
 // gzipWriter decides at WriteHeader time, once the handler has settled its
 // Content-Type. Deciding earlier would mean guessing from the path, which the
 // /assets tree makes unreliable.
@@ -101,13 +111,16 @@ func compressible(ct string) bool {
 func (w *gzipWriter) WriteHeader(code int) {
 	if !w.decided {
 		w.decided = true
-		// 2xx only: a 304 carries no body, and a compressed empty body is not
-		// empty.
-		if code/100 == 2 && compressible(w.Header().Get("Content-Type")) {
+		// 200 only, not any 2xx. A 206 carries a Content-Range describing the
+		// uncompressed representation, so gzipping it produces a response that
+		// contradicts itself and reassembles into garbage for anything that
+		// fetches in slices.
+		if code == http.StatusOK && compressible(w.Header().Get("Content-Type")) {
 			// The length is the uncompressed one, and Go would send it as is.
 			w.Header().Del("Content-Length")
 			w.Header().Set("Content-Encoding", "gzip")
-			w.gz = gzip.NewWriter(w.ResponseWriter)
+			w.gz = gzipPool.Get().(*gzip.Writer)
+			w.gz.Reset(w.ResponseWriter)
 		}
 	}
 	w.ResponseWriter.WriteHeader(code)
@@ -133,10 +146,35 @@ func (w *gzipWriter) ReadFrom(r io.Reader) (int64, error) {
 }
 
 func (w *gzipWriter) Close() error {
-	if w.gz != nil {
-		return w.gz.Close()
+	if w.gz == nil {
+		return nil
 	}
-	return nil
+	err := w.gz.Close()
+	// Reset before returning it: a writer put back still holding a reference to
+	// this response's ResponseWriter would keep the whole request alive.
+	w.gz.Reset(io.Discard)
+	gzipPool.Put(w.gz)
+	w.gz = nil
+	return err
+}
+
+// acceptsGzip reads the header rather than searching it for a substring.
+// "gzip;q=0" is how a client that cannot inflate says so, and it used to be
+// taken for a yes; "notgzipatall" is not an offer at all.
+func acceptsGzip(h string) bool {
+	for _, part := range strings.Split(h, ",") {
+		tok, params, _ := strings.Cut(strings.TrimSpace(part), ";")
+		if !strings.EqualFold(strings.TrimSpace(tok), "gzip") {
+			continue
+		}
+		if v, ok := strings.CutPrefix(strings.TrimSpace(params), "q="); ok {
+			if q, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil && q == 0 {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 // compress gzips the text responses for clients that asked. Vary rides on
@@ -146,7 +184,12 @@ func (w *gzipWriter) Close() error {
 func compress(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Accept-Encoding")
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		// A HEAD has to answer with the headers a GET would, and the only way
+		// to state a compressed length is to compress a body that is then
+		// thrown away. Answered in identity instead: the headers then describe
+		// the uncompressed representation, which is a true one, rather than
+		// advertising the 23 bytes of an empty gzip member.
+		if r.Method == http.MethodHead || !acceptsGzip(r.Header.Get("Accept-Encoding")) {
 			h.ServeHTTP(w, r)
 			return
 		}

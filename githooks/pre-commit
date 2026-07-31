@@ -33,15 +33,34 @@ if echo "$staged" | grep -q '^\.github/workflows/' && command -v actionlint >/de
   actionlint
 fi
 
-# Markdown formatting, when prettier is around. `|| true` because
-# --list-different exits non-zero on a hit, which set -e would otherwise turn
-# into a silent abort with no message.
+# The chart is a required check in CI, so let it fail here instead. `just
+# chart` is that same lint-and-render, rather than a third copy of the commands.
+if echo "$staged" | grep -q '^charts/' &&
+  command -v just >/dev/null 2>&1 && command -v helm >/dev/null 2>&1; then
+  just chart
+fi
+
+# Markdown formatting, when prettier is around.
+#
+# The file list is null-delimited from here to prettier. Fed through `xargs`
+# unquoted, a path containing a space became two nonexistent files; prettier's
+# complaint went to /dev/null, `|| true` turned its exit status into a pass,
+# and the check could not fail for exactly the filenames most likely to have a
+# space in them. Nothing is discarded now: an unreadable file has to be told
+# apart from a well-formatted one, since both leave the list empty.
 if echo "$staged" | grep -q '\.md$' && command -v prettier >/dev/null 2>&1; then
-  unformatted=$(echo "$staged" | grep '\.md$' | xargs prettier --list-different 2>/dev/null || true)
+  status=0
+  unformatted=$(git diff --cached --name-only --diff-filter=ACM -z -- '*.md' |
+    xargs -0 prettier --list-different) || status=$?
   if [ -n "$unformatted" ]; then
     echo "pre-commit: prettier would rewrite:" >&2
     echo "$unformatted" | sed 's/^/  /' >&2
-    echo "fix with: prettier --write $(echo "$unformatted" | tr '\n' ' ')" >&2
+    # A command instead of a list of paths: it cannot be broken by a filename,
+    # whatever is in it.
+    echo "fix with: git diff --cached --name-only -z -- '*.md' | xargs -0 prettier --write" >&2
+    exit 1
+  elif [ "$status" -ne 0 ]; then
+    echo "pre-commit: prettier could not read a staged markdown file (exit $status)" >&2
     exit 1
   fi
 fi
