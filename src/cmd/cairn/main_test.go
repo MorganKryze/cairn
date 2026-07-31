@@ -20,7 +20,7 @@ func TestOneShotOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gatus, err := oneShot(cfg, true)
+	gatus, err := oneShot(cfg, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestOneShotOutputs(t *testing.T) {
 		}
 	}
 
-	icons, err := oneShot(cfg, false)
+	icons, err := oneShot(cfg, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

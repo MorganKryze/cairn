@@ -19,13 +19,13 @@ func TestInsecureSkipsTheVerificationAndNothingElse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if _, err := status.Fetch(srv.URL, false); err == nil {
+	if _, err := status.Fetch(status.Source{URL: srv.URL}); err == nil {
 		t.Fatal("a self-signed gatus verified, so the default client is not checking anything")
 	} else if !strings.Contains(err.Error(), "certificate") {
 		t.Fatalf("failed for the wrong reason: %v", err)
 	}
 
-	st, err := status.Fetch(srv.URL, true)
+	st, err := status.Fetch(status.Source{URL: srv.URL, Insecure: true})
 	if err != nil {
 		t.Fatalf("insecure still refused a self-signed gatus: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestFetchReusesItsClients(t *testing.T) {
 	}))
 	defer srv.Close()
 	for range 3 {
-		if _, err := status.Fetch(srv.URL, true); err != nil {
+		if _, err := status.Fetch(status.Source{URL: srv.URL, Insecure: true}); err != nil {
 			t.Fatalf("poll refused: %v", err)
 		}
 	}

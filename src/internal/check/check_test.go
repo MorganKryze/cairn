@@ -182,6 +182,90 @@ func TestCheckKeepsSayingInsecureIsOn(t *testing.T) {
 	}
 }
 
+// A bundle fetched over http lands in the same place status.insecure does:
+// whatever is on the path to that address decides what cairn trusts. The key
+// is allowed, because an internal PKI often has nowhere better to serve it
+// from, so the warning is what pays for it. https and a mounted file are the
+// shapes that need no warning, and one of them has to stay quiet or the
+// message means nothing.
+func TestCheckNamesAnUnverifiedCABundle(t *testing.T) {
+	withoutAssets(t)
+	loud := checkFor(t, "status: {gatus: \"https://status.internal\", ca: \"http://pki.internal/ca.crt\"}")
+	for _, want := range []string{"status.ca", "http://pki.internal/ca.crt", "over http"} {
+		if !strings.Contains(loud, want) {
+			t.Errorf("warnings never mention %q:\n%s", want, loud)
+		}
+	}
+	quiet := checkFor(t, "status: {gatus: \"https://status.internal\", ca: \"https://pki.internal/ca.crt\"}")
+	if strings.Contains(quiet, "status.ca") {
+		t.Errorf("a bundle fetched over https was warned about anyway:\n%s", quiet)
+	}
+}
+
+// Both set is not a stricter site, it is the loose one: verification is off, so
+// the bundle is never consulted. An operator who wrote both meant the bundle.
+func TestCheckSaysTheBundleIsDeadUnderInsecure(t *testing.T) {
+	withoutAssets(t)
+	w := checkFor(t, "status: {gatus: \"https://status.internal\", insecure: true, ca: \"/assets/ca.crt\"}")
+	if !strings.Contains(w, "status.ca") || !strings.Contains(w, "status.insecure") {
+		t.Errorf("warnings do not say the bundle is dead under insecure:\n%s", w)
+	}
+}
+
+// Every companion key needs an address to act on, and this one is no different.
+func TestCheckReportsCAWithoutGatus(t *testing.T) {
+	withoutAssets(t)
+	w := checkFor(t, "status: {ca: \"https://pki.internal/ca.crt\"}")
+	if !strings.Contains(w, "status.ca") || !strings.Contains(w, "nothing polls") {
+		t.Errorf("status.ca without a gatus went unreported:\n%s", w)
+	}
+}
+
+// A bundle named but not mounted is the loudest failure of the three: cairn
+// has nothing to verify against, so every poll fails and the pills never come
+// back. Only -check can see it before the site is running.
+func TestCheckNamesAMissingCABundle(t *testing.T) {
+	assets := t.TempDir()
+	config.AssetsPath = assets
+	t.Cleanup(func() { config.AssetsPath = "/assets" })
+
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\nstatus: {gatus: \"https://status.internal\", ca: \"/assets/ca.crt\"}\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(checkWarnings(cfg, dir), "\n")
+	if !strings.Contains(w, "status.ca") || !strings.Contains(w, "grey") {
+		t.Errorf("a bundle that is not on disk went unreported:\n%s", w)
+	}
+
+	// And says nothing once the file is there.
+	if err := os.WriteFile(filepath.Join(assets, "ca.crt"), []byte("-----BEGIN CERTIFICATE-----\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if w := strings.Join(checkWarnings(cfg, dir), "\n"); strings.Contains(w, "not in the assets directory") {
+		t.Errorf("a mounted bundle was still reported missing:\n%s", w)
+	}
+}
+
+// checkFor runs the warnings over a one-service site carrying the given status
+// block, and joins them.
+func checkFor(t *testing.T, statusBlock string) string {
+	t.Helper()
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\n" + statusBlock + "\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Join(checkWarnings(cfg, dir), "\n")
+}
+
 // And stays quiet when it is off, which is the shape every other site has.
 func TestCheckSaysNothingWhenInsecureIsOff(t *testing.T) {
 	withoutAssets(t)

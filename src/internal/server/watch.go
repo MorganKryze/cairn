@@ -62,15 +62,29 @@ func reloadOnce(dir, last string) string {
 func Poll() {
 	if cfg := Current().Cfg; cfg.Site.Status.Gatus != "" {
 		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
-		if cfg.Site.Status.Insecure {
+		switch st := cfg.Site.Status; {
+		case st.Insecure:
 			log.Print("status: insecure is on, so the certificate gatus presents is not verified at all: anything answering on that address decides what the pills say")
+		case strings.HasPrefix(st.CA, "http://"):
+			log.Printf("status: ca is %s, fetched over http, so whatever sits on the path to that address decides what cairn trusts for the poll: serve it over https, or mount it as a file, to close that", st.CA)
+		case st.CA != "":
+			log.Printf("status: verifying gatus against %s on top of the system roots", st.CA)
 		}
 	}
 	var seen pollLog
 	for {
 		m := Current()
-		pollOnce(m.Cfg.Site.Status.Gatus, m.Cfg.Site.Status.Insecure, &seen)
+		pollOnce(source(m.Cfg), &seen)
 		time.Sleep(m.Cfg.StatusInterval())
+	}
+}
+
+// source is the status block as the poller needs it.
+func source(cfg *config.Config) status.Source {
+	return status.Source{
+		URL:      cfg.Site.Status.Gatus,
+		Insecure: cfg.Site.Status.Insecure,
+		CA:       cfg.Site.Status.CA,
 	}
 }
 
@@ -80,11 +94,11 @@ type pollLog struct{ err, missing string }
 
 // pollOnce runs one status poll and swaps the pages in when the dots changed.
 // An empty url is a no-op: a site without Gatus shows no pill at all.
-func pollOnce(url string, insecure bool, seen *pollLog) {
-	if url == "" {
+func pollOnce(src status.Source, seen *pollLog) {
+	if src.URL == "" {
 		return
 	}
-	st, err := status.Fetch(url, insecure)
+	st, err := status.Fetch(src)
 	if err != nil {
 		st = nil
 		if err.Error() != seen.err {

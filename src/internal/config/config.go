@@ -166,6 +166,17 @@ type Site struct {
 		// the operator opens deliberately, so cairn says so out loud rather
 		// than only obeying: once at startup, and on every -check.
 		Insecure bool `yaml:"insecure"`
+		// CA is a PEM bundle cairn adds to the system roots for that one
+		// connection: an http(s) URL, or an /assets/… path in the mounted
+		// directory. It is the answer to the same problem Insecure is, and the
+		// opposite answer: this one verifies rather than stops checking.
+		//
+		// A URL is fetched, which is why http is allowed here and why saying
+		// so matters. Over http, whatever is on the path to that address
+		// decides what cairn trusts for the poll, which lands in the same
+		// place Insecure does. cairn says which of the two it is at startup
+		// and on every -check.
+		CA string `yaml:"ca"`
 	} `yaml:"status"`
 }
 
@@ -444,6 +455,18 @@ func Load(dir string) (*Config, error) {
 	return cfg, nil
 }
 
+// AssetFile turns an /assets/… reference into the file it names in the mounted
+// directory, and returns "" for anything that is not one: a URL, a bare slug,
+// or a path that tries to climb out of the mount, which is the rule the file
+// server applies too. It touches no disk, so it answers the same either way.
+func AssetFile(ref string) string {
+	rel, ok := strings.CutPrefix(ref, "/assets/")
+	if !ok || rel == "" || strings.Contains(rel, "..") {
+		return ""
+	}
+	return filepath.Join(AssetsPath, filepath.FromSlash(rel))
+}
+
 // assetDims measures a raster the operator dropped in the mounted assets dir,
 // so the manifest can state its real size instead of guessing one.
 //
@@ -451,16 +474,11 @@ func Load(dir string) (*Config, error) {
 // an outbound request, which cairn does not make, and an svg has no intrinsic
 // size to report. Both cases are handled by saying nothing rather than wrong.
 func assetDims(ref string) [2]int {
-	const mount = "/assets/"
-	if !strings.HasPrefix(ref, mount) {
+	p := AssetFile(ref)
+	if p == "" {
 		return [2]int{}
 	}
-	rel := filepath.FromSlash(strings.TrimPrefix(ref, mount))
-	// Refuse to walk out of the mount, the same rule the file server applies.
-	if rel == "" || strings.Contains(rel, "..") {
-		return [2]int{}
-	}
-	f, err := os.Open(filepath.Join(AssetsPath, rel))
+	f, err := os.Open(p)
 	if err != nil {
 		return [2]int{}
 	}
