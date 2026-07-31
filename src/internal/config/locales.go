@@ -235,3 +235,24 @@ func LocaleDir(locale string) string {
 	}
 	return "ltr"
 }
+
+// IsLocale reports a well-formed locale tag.
+//
+// Every locale that reaches a page has already passed this pattern once:
+// site.locales is checked when site.yaml loads, and so is every key of a
+// per-locale mapping. It is exported so the one place that writes a locale
+// into markup without the template escaper can check it there too, at the
+// point where it matters, rather than trust an invariant established three
+// files away.
+func IsLocale(s string) bool { return localeRe.MatchString(s) }
+
+// SameLanguage reports whether two locale tags name the same language, a
+// regional variant counting as its base: pt-BR content on a pt page is
+// Portuguese either way, read aloud by the same voice. Only a real change of
+// language is worth marking, and a site that writes pt for pt-BR should not
+// collect a lang attribute on every field for it.
+func SameLanguage(a, b string) bool {
+	ab, _, _ := strings.Cut(a, "-")
+	bb, _, _ := strings.Cut(b, "-")
+	return strings.EqualFold(ab, bb)
+}

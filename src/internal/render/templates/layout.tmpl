@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{{/* Here is where a fallback cannot be marked, and nothing below pretends
+     otherwise. The meta descriptions are attribute values: text with no
+     element of its own to hang lang and dir on. <title> has an element, but it
+     is drawn in the browser chrome rather than in the page, and a detail
+     page's title is two fields glued with a separator, so a single attribute
+     could only ever be right about half of it. A title that fell back to
+     another language says so nowhere, of necessity; the visible headings that
+     repeat it lower down do carry the mark. */}}
 <title>{{.PageTitle}}</title>
 {{if .MetaDesc}}<meta name="description" content="{{.MetaDesc}}">
 {{end}}<meta property="og:type" content="website">
@@ -31,7 +39,7 @@
 <body>
 <a class="skip" href="#main">{{.S.Skip}}</a>
 <header><div class="wrap topbar">
-  <a class="brand" href="{{.Prefix}}/{{.Locale}}/">{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
+  <a class="brand" href="{{.Prefix}}/{{.Locale}}/"{{.SiteTitle.Attrs}}>{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
   <div class="topbar-tools">
     <button class="theme-toggle" id="theme-toggle" hidden aria-label="{{.S.Theme}}">
       <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -51,7 +59,7 @@
 <div class="wrap menu">
   {{if .Links}}<details class="nav">
     <summary class="nav-burger" aria-label="{{.S.LinksLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>{{.S.Menu}}</span></summary>
-    <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}">{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
+    <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}"{{.Label.Attrs}}>{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
     {{end}}</nav>
   </details>
   {{end}}{{if .Search}}<div class="search" id="search">
@@ -75,7 +83,7 @@
 
 {{define "bottom"}}</div></main>
 <footer><div class="wrap foot">
-  {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}">{{.Label}}</a>{{end}}</div>
+  {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}"{{.Label.Attrs}}>{{.Label}}</a>{{end}}</div>
   {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a>{{if .ShowVer}} {{if .VerHref}}<a class="foot-version" href="{{.VerHref}}">{{.VerLabel}}</a>{{else}}<span class="foot-version">{{.VerLabel}}</span>{{end}}{{end}}</span>
   {{end}}</div></footer>
 <a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
@@ -94,5 +102,14 @@
      nothing else: no target, no focus stop, and on a card the click falls
      through to the service the way the rest of the card behaves. */}}
 {{define "statuspill"}}{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</span>{{end}}{{end}}{{end}}
+
+{{/* A long text field, already rendered to markdown blocks. The wrapper exists
+     only to carry lang and dir, so it appears only when the text is not in the
+     page's language: a site translated for the locales it lists emits exactly
+     the markup it always did, and the div shows up on the pages that would
+     otherwise lie about what language they are reading. */}}
+{{define "prose"}}{{if .Attrs}}<div{{.Attrs}}>{{end}}{{range .Blocks}}{{.}}
+{{end}}{{if .Attrs}}</div>
+{{end}}{{end}}
 
 {{define "glyph"}}<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="3.2" y="23.6" width="25" height="5.4" rx="2.4"/><rect x="7.8" y="16.2" width="17.4" height="5.8" rx="2.6"/><rect x="9.4" y="9.4" width="13" height="5.4" rx="2.5"/><rect x="12.4" y="3" width="9.4" height="4.8" rx="2.2" transform="rotate(-9 17.1 5.4)"/></svg>{{end}}

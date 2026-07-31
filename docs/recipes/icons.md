@@ -46,6 +46,12 @@ icon: /assets/icons/intranet.svg
 The same mount serves the site `logo:` and anything else you need
 (`/assets/...` URLs map directly to the directory).
 
+Anything under a name starting with a dot is a 404, in `/assets/` and in
+`<config>/media/` alike. That is there for the mount people actually make:
+pointing `-assets` at a working copy used to publish `.git/config`, remote URL
+and all. The whole class goes rather than a list, which would always be one
+`.env` behind.
+
 `cairn -check` opens those paths for you. An `/assets/…` logo, favicon,
 home-screen icon or header-link icon that names no file is a warning, because a
 mistyped one boots perfectly and then paints a broken image on every page. It

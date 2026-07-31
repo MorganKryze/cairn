@@ -4,13 +4,12 @@
   <div class="detail-head">
     <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">
-      <h1>{{.Name}}</h1>
+      <h1{{.Name.Attrs}}>{{.Name}}</h1>
       {{template "statuspill" .}}
     </div>
   </div>
-  {{if .Desc}}<p class="lead">{{.Desc}}</p>
-  {{end}}{{range .Body}}{{.}}
-  {{end}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if .Caption}}<figcaption>{{.Caption}}</figcaption>{{end}}</figure>
+  {{if .Desc.Text}}<p class="lead"{{.Desc.Attrs}}>{{.Desc}}</p>
+  {{end}}{{template "prose" .Body}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}</figure>
   {{end}}<p><a class="btn" href="{{.URL}}">{{.S.Open}}</a></p>
 </article>
 {{template "bottom" .}}

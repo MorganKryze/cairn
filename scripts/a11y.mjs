@@ -74,7 +74,7 @@ await check('and it flips with the theme, in both directions', async () => {
 // actually paints one, since the header paints nothing on a wide viewport and
 // the colour behind the box is really the body's.
 const boundary = (p, sel) =>
-  p.$eval(sel, el => {
+  p.$eval(sel, async el => {
     const chan = s => {
       // Plain colours serialize as rgb()/rgba(). A color-mix() comes back as
       // oklab(), whose three numbers are not sRGB channels at all, and reading
@@ -96,7 +96,18 @@ const boundary = (p, sel) =>
       const bg = getComputedStyle(e).backgroundColor;
       if (opaque(bg)) { outside = bg; break; }
     }
+    // Read once, wait a frame, read again. A colour still on its way from one
+    // palette value to the other differs between the two, and that is the only
+    // way this measurement has ever been wrong: it reported a point between
+    // --border and --ui-border and called it the answer. Reduced motion should
+    // make that impossible; this is here for the day it stops working, and it
+    // fails on any machine rather than only on a slow one.
+    const before = getComputedStyle(el).borderTopColor;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const s = getComputedStyle(el);
+    if (s.borderTopColor !== before) {
+      throw new Error(`the border is still moving: ${before} then ${s.borderTopColor}, so neither is the resting colour`);
+    }
     return {
       border: s.borderTopColor,
       inside: s.backgroundColor,
@@ -113,11 +124,18 @@ const atLeast3 = (m, what) => {
   }
 };
 
-// A page of its own, not the one A1 just toggled twice: the box transitions
-// its border-color over .15s, so measuring it right after a theme flip catches
-// a colour that is on neither palette and reports whatever the fade was
-// passing through.
-const home = await desk.newPage();
+// Every contrast measurement runs with reduced motion asked for, because the
+// box transitions its border-color over .15s and search.js starts that fade by
+// enabling the input on load. Sampling mid-fade reads a colour that is on
+// neither palette: a CI runner reported rgb(149, 152, 146) at 2.55:1, which is
+// neither --border nor --ui-border but a point between them. A page of its own
+// is not enough, since the fade starts on every one of them, and a fast machine
+// hides the race entirely. The stylesheet turns every transition off under
+// prefers-reduced-motion, so asking for it measures the resting value by
+// construction rather than by winning a race, and that is also the colour a
+// visitor with that preference sees for the whole life of the page.
+const still = await browser.newContext({ reducedMotion: 'reduce' });
+const home = await still.newPage();
 await home.goto(SITE);
 
 await check('the live search box clears 3:1 against both of its neighbours', async () => {
@@ -128,7 +146,7 @@ await check('the live search box clears 3:1 against both of its neighbours', asy
 // component, and the bar renders disabled and decorative on every page but the
 // home page, purely for layout parity. So there is no ratio to assert for the
 // sleeping one, only that it was left alone.
-const detail = await desk.newPage();
+const detail = await still.newPage();
 await detail.goto(new URL('pdf/', SITE).href);
 await check('a disabled search box is left on the quiet border, being exempt', async () => {
   const live = (await boundary(home, '#search .search-box')).border;
@@ -144,8 +162,13 @@ const phone = await browser.newContext({ viewport: PHONE });
 const m = await phone.newPage();
 await m.goto(MANY);
 
+// Measured still as well, and at phone width, which is the only place this
+// control is painted at all.
+const stillPhone = await browser.newContext({ viewport: PHONE, reducedMotion: 'reduce' });
+const sm = await stillPhone.newPage();
+await sm.goto(MANY);
 await check('the mobile jump-to select clears 3:1 too', async () => {
-  atLeast3(await boundary(m, '.toc-select'), 'the jump-to select');
+  atLeast3(await boundary(sm, '.toc-select'), 'the jump-to select');
 });
 
 await check('a phone with JavaScript shows the jump-to select, not the chips', async () => {
@@ -206,11 +229,11 @@ await check('scrolling with focus inside the menu keeps it open, and keeps the f
   await link.focus();
   await scrollDown();
   eq(await nav.evaluate(el => el.open), true, 'the menu after a scroll');
-  const still = await m.evaluate(() => {
+  const holder = await m.evaluate(() => {
     const a = document.activeElement;
     return a && a.closest('.nav-links') ? a.textContent.trim() : `<${(a && a.tagName || '?').toLowerCase()}>`;
   });
-  eq(still, label, 'what holds focus after the scroll');
+  eq(holder, label, 'what holds focus after the scroll');
 });
 
 await check('and a scroll with focus on the burger itself still dismisses it', async () => {

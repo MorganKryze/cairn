@@ -63,6 +63,13 @@ phone gets, where nothing else says where to type or tap. That edge is held at
 [WCAG asks for a control's boundary](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html);
 if you override it, keep it there.
 
+`--border` sits near 2:1, and that number is a choice rather than a floor: 1.84
+against the page and 2.04 against a card in light, 2.02 and 1.84 in dark. No
+rule asks anything of it. It used to be a 1.2:1 hairline, which reads well on a
+good screen in a dim room and vanishes on a cheap one in daylight, and a card
+whose edge you cannot find is still a card you cannot scan. Take it wherever
+suits your palette.
+
 Anything beyond variables is regular CSS on stable class names (`.card`,
 `.cat`, `.way`, `.tile`, `.about`, `.menu`, `.toc`, `.detail`, `.btn`, …).
 Keep [WCAG AA

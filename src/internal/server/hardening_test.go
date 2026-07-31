@@ -3,8 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,6 +42,115 @@ func TestHSTSFollowsTheScheme(t *testing.T) {
 	for _, k := range []string{"X-Content-Type-Options", "Referrer-Policy", "X-Frame-Options", "Permissions-Policy", "Content-Security-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy"} {
 		if rec.Header().Get(k) == "" {
 			t.Errorf("missing %s", k)
+		}
+	}
+}
+
+// mount answers /healthz, /readyz and the 404 for everything outside the prefix
+// at the domain root itself, whatever -base-path says. With secureHeaders
+// wrapped inside mount those three came back bare: no COOP, no CORP and, on the
+// one visit where it counts, no HSTS. The bare host is exactly where a first
+// visit lands, and a header that never arrives there cannot pin the scheme
+// before anyone gets to downgrade it. Both deployments are walked because the
+// point is that they stop differing.
+func TestEveryAnswerCarriesTheHardeningHeaders(t *testing.T) {
+	for _, base := range []string{"", "/cairn"} {
+		name := "at the domain root"
+		if base != "" {
+			name = "under " + base
+		}
+		t.Run(name, func(t *testing.T) {
+			withBase(t, base)
+			cfgDir := testutil.WriteFiles(t, map[string]string{
+				"site.yaml":     "locales: [en]\n",
+				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+			})
+			Store(mustModel(t, cfgDir))
+			h := handler(cfgDir, t.TempDir())
+
+			// The three the outer mux owns, plus a page to show the site itself
+			// never lost them.
+			for _, path := range []string{"/healthz", "/readyz", "/nothing-is-here", base + "/en/"} {
+				r := httptest.NewRequest("GET", path, nil)
+				r.Header.Set("X-Forwarded-Proto", "https")
+				rec := httptest.NewRecorder()
+				h.ServeHTTP(rec, r)
+				for _, k := range []string{
+					"Strict-Transport-Security", "Cross-Origin-Opener-Policy",
+					"Cross-Origin-Resource-Policy", "Content-Security-Policy",
+					"X-Content-Type-Options", "X-Frame-Options",
+					"Referrer-Policy", "Permissions-Policy",
+				} {
+					if rec.Header().Get(k) == "" {
+						t.Errorf("GET %s came back with no %s", path, k)
+					}
+				}
+			}
+		})
+	}
+}
+
+// The same probe over a real connection, in both deployments, compared header
+// for header. Under -base-path the root /healthz answered from outside both
+// wrappers while the default deployment's answered from inside them, so the two
+// sent different headers for the same URL and nobody chose that. Recorders
+// cannot say this: it is the response as a client receives it that has to match.
+func TestProbesAnswerAlikeInBothDeployments(t *testing.T) {
+	seen := map[string]http.Header{}
+	for _, base := range []string{"", "/cairn"} {
+		func() {
+			withBase(t, base)
+			cfgDir := testutil.WriteFiles(t, map[string]string{
+				"site.yaml":     "locales: [en]\n",
+				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+			})
+			Store(mustModel(t, cfgDir))
+			srv := httptest.NewServer(handler(cfgDir, t.TempDir()))
+			defer srv.Close()
+
+			// DisableCompression, or Go asks and unwraps behind our back and the
+			// wire becomes the one thing this test cannot see.
+			c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+			req, err := http.NewRequest("GET", srv.URL+"/healthz", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Accept-Encoding", "gzip")
+			resp, err := c.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("base %q: /healthz = %d, want 200", base, resp.StatusCode)
+			}
+			// A probe asked for gzip and got three plain bytes, in both
+			// deployments and by construction rather than by luck: healthz sets
+			// no Content-Type, compress reads the one on the header before
+			// net/http sniffs one, and an empty type is not compressible. Moving
+			// compress outside mount therefore costs the probes nothing.
+			if got := resp.Header.Get("Content-Encoding"); got != "" {
+				t.Errorf("base %q: a three-byte probe came back Content-Encoding %q", base, got)
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(body) != "ok\n" {
+				t.Errorf("base %q: /healthz said %q", base, body)
+			}
+			resp.Header.Del("Date")
+			seen[base] = resp.Header
+		}()
+	}
+	for k, want := range seen[""] {
+		if got := seen["/cairn"][k]; !slices.Equal(got, want) {
+			t.Errorf("/healthz sent %s: %q at the domain root, %q under a base path", k, want, got)
+		}
+	}
+	for k := range seen["/cairn"] {
+		if _, ok := seen[""][k]; !ok {
+			t.Errorf("/healthz sent %s only under a base path", k)
 		}
 	}
 }

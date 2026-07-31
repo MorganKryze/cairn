@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -255,6 +256,146 @@ func TestCompressAnswersHeadInIdentity(t *testing.T) {
 	}
 	if got, want := resp.Header.Get("Content-Length"), strconv.Itoa(len(css)); got != want {
 		t.Errorf("HEAD said Content-Length %q, want the real %q", got, want)
+	}
+}
+
+// One validator cannot name two sets of bytes. The handler tags a page by its
+// html, then this middleware changes the representation underneath it, so the
+// tag has to carry the difference. Vary keeps a compliant cache honest; a cache
+// told to ignore it hands gzip bytes to a client that asked for none, and
+// nothing downstream can tell. Over a real server rather than a recorder,
+// because the mark has to agree with the Content-Encoding beside it on the
+// wire.
+func TestETagNamesTheEncodingItWasSentWith(t *testing.T) {
+	storeModel(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+	})
+	srv := httptest.NewServer(compress(http.HandlerFunc(home)))
+	defer srv.Close()
+	// DisableCompression stops Go asking and unwrapping behind our back, so the
+	// test sees exactly what a browser would.
+	c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+	get := func(t *testing.T, enc, inm string) *http.Response {
+		t.Helper()
+		req, err := http.NewRequest("GET", srv.URL+"/en/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Accept-Encoding", enc)
+		if inm != "" {
+			req.Header.Set("If-None-Match", inm)
+		}
+		resp, err := c.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { resp.Body.Close() })
+		return resp
+	}
+
+	plain, zipped := get(t, "identity", ""), get(t, "gzip", "")
+	if got := plain.Header.Get("Content-Encoding"); got != "" {
+		t.Fatalf("the identity answer carried Content-Encoding %q", got)
+	}
+	if got := zipped.Header.Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("Content-Encoding = %q, want gzip", got)
+	}
+	identityTag, gzipTag := plain.Header.Get("ETag"), zipped.Header.Get("ETag")
+	if identityTag == "" || gzipTag == "" {
+		t.Fatalf("tags = %q and %q, want one on each answer", identityTag, gzipTag)
+	}
+	if identityTag == gzipTag {
+		t.Fatalf("both representations answer to %s: a cache that ignores Vary can hand the gzip bytes to a client that cannot inflate them", gzipTag)
+	}
+	// The mark is a mark, not a new tag: the identity one still has to be
+	// readable inside it, or a proxy comparing the two learns nothing.
+	if !strings.HasPrefix(gzipTag, strings.TrimSuffix(identityTag, `"`)) {
+		t.Errorf("gzip tag %s is not the identity tag %s with a mark on it", gzipTag, identityTag)
+	}
+
+	// The trap: the handler compares If-None-Match before this layer would
+	// rewrite anything, so a marked tag has to be unmarked on the way in or the
+	// second visit to an unchanged page downloads it again.
+	back := get(t, "gzip", gzipTag)
+	if back.StatusCode != http.StatusNotModified {
+		t.Errorf("revalidating the compressed page = %d, want 304: the mark is not coming back off on the way in", back.StatusCode)
+	}
+	if got := back.Header.Get("ETag"); got != gzipTag {
+		t.Errorf("the 304 named %s, want the %s the client is still holding", got, gzipTag)
+	}
+
+	// And the other half of it: the same client after a browser update that
+	// dropped gzip is holding compressed bytes it can no longer read. Unmarking
+	// unconditionally would answer 304 and leave it stuck with them.
+	stale := get(t, "identity", gzipTag)
+	if stale.StatusCode != http.StatusOK {
+		t.Fatalf("a gzip tag presented without gzip = %d, want 200: the client needs the identity bytes", stale.StatusCode)
+	}
+	if got := stale.Header.Get("ETag"); got != identityTag {
+		t.Errorf("the identity answer named %s, want %s", got, identityTag)
+	}
+
+	// An identity cache revalidating is untouched by any of it.
+	if got := get(t, "identity", identityTag).StatusCode; got != http.StatusNotModified {
+		t.Errorf("revalidating the plain page = %d, want 304", got)
+	}
+
+	// Whatever the tag says, the bytes still have to be the page.
+	fresh := get(t, "gzip", "")
+	zr, err := gzip.NewReader(fresh.Body)
+	if err != nil {
+		t.Fatalf("body is not a gzip stream: %v", err)
+	}
+	body, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(body, current.Load().Pages["en"].HTML) {
+		t.Error("the decompressed page is not the page that was rendered")
+	}
+}
+
+// A weak tag is a tag, and plenty of caches hold one. Marking it must leave it
+// weak, and unmarking must not reach into an opaque value that happens to read
+// like a mark.
+func TestGzipMarkSurvivesEveryShapeOfTag(t *testing.T) {
+	for _, c := range []struct{ plain, marked string }{
+		{`"9f86d081884c7d65"`, `"9f86d081884c7d65-gzip"`},
+		{`W/"9f86d081884c7d65"`, `W/"9f86d081884c7d65-gzip"`},
+		{`""`, `"-gzip"`},
+	} {
+		if got := markGzip(c.plain); got != c.marked {
+			t.Errorf("markGzip(%s) = %s, want %s", c.plain, got, c.marked)
+		}
+		if got := unmarkGzip(c.marked); got != c.plain {
+			t.Errorf("unmarkGzip(%s) = %s, want %s", c.marked, got, c.plain)
+		}
+	}
+
+	for _, c := range []struct{ in, want string }{
+		// A list, marked or half marked, comes back tag for tag.
+		{`"a-gzip", W/"b-gzip"`, `"a", W/"b"`},
+		{`"a-gzip", "b"`, `"a", "b"`},
+		// Nothing to do, so nothing is done.
+		{`*`, `*`},
+		{`"a", W/"b"`, `"a", W/"b"`},
+		{``, ``},
+		// An entity-tag may hold a comma and may end in the word itself; only a
+		// mark meeting its own closing quote is one.
+		{`"a,b-gzip"`, `"a,b"`},
+		{`"gzip"`, `"gzip"`},
+		{`"a-gzip-still"`, `"a-gzip-still"`},
+	} {
+		if got := unmarkGzip(c.in); got != c.want {
+			t.Errorf("unmarkGzip(%s) = %s, want %s", c.in, got, c.want)
+		}
+	}
+
+	// Nothing that is not a quoted tag is touched, rather than being turned
+	// into something that parses as neither.
+	if got := markGzip("*"); got != "*" {
+		t.Errorf("markGzip(*) = %s, want it left alone", got)
 	}
 }
 

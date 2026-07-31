@@ -45,11 +45,43 @@ func (l *LString) UnmarshalYAML(n *yaml.Node) error {
 	return nil
 }
 
+// Get is the wording alone, for everything that only prints it. It is written
+// in terms of GetLocale so there is one lookup order rather than two that can
+// drift apart.
 func (l LString) Get(locale, fallback string) string {
-	for _, k := range []string{locale, "", fallback} {
-		if s := l[k]; s != "" {
-			return s
-		}
+	s, _ := l.GetLocale(locale, fallback)
+	return s
+}
+
+// GetLocale resolves a translated field and reports the locale the wording
+// actually came from.
+//
+// That second half is what lets a page be honest about a fallback. A field
+// with no translation for the page's locale still renders, in whichever
+// language the config does have, and nothing used to say so: the page then
+// asserts through <html lang> that the sentence is in a language it is not. A
+// screen reader reads it in the wrong voice, and an Arabic fallback inside a
+// left-to-right page is laid out the wrong way round, which moves its
+// punctuation to the wrong end of the line.
+//
+// The order is unchanged: the exact locale, the untranslated form, the site
+// default, then anything at all in key order so a half-written config still
+// renders something.
+//
+// The untranslated form is the plain YAML string, kept under "". It reports
+// the locale that was asked for rather than a language of its own: one string
+// written for every locale is the operator saying it serves them all, which is
+// what a brand name is, and calling that a fallback would mark most fields of
+// most sites.
+func (l LString) GetLocale(locale, fallback string) (text, from string) {
+	if s := l[locale]; s != "" {
+		return s, locale
+	}
+	if s := l[""]; s != "" {
+		return s, locale
+	}
+	if s := l[fallback]; s != "" {
+		return s, fallback
 	}
 	keys := make([]string, 0, len(l))
 	for k := range l {
@@ -58,10 +90,10 @@ func (l LString) Get(locale, fallback string) string {
 	sort.Strings(keys)
 	for _, k := range keys {
 		if l[k] != "" {
-			return l[k]
+			return l[k], k
 		}
 	}
-	return ""
+	return "", ""
 }
 
 type FooterLink struct {
