@@ -1,0 +1,1 @@
+default-src 'none'; img-src 'self' https: data:; style-src 'self' 'sha256-oS+1nVCdDv1KLfShDUYMSPLTLLZUgOkyKpL7hUUtrao='; script-src 'self' 'sha256-qabBnlwaeZnbksXMHOKCX32niaC/QZOGphPO3G7ri2Q='; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; connect-src 'self'
