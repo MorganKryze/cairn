@@ -6,7 +6,9 @@ name: cairn-demo
 # rate limit across the whole CI runner pool, which failed this stack twice in
 # one day. The three project images are their maintainers' own ghcr.io builds;
 # nginx and httpd exist only on Docker Hub, so they come through Google's
-# public mirror, which needs no account.
+# public mirror, which needs no account. The cairn service below is built from
+# docker/Dockerfile, whose base image reads through that same mirror, so this
+# whole stack now comes up without one anonymous Hub pull.
 networks:
   demo:
     internal: true

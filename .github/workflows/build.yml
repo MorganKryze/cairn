@@ -128,7 +128,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # buildx pulls its own builder image, and the default comes from Docker
+      # Hub, where an anonymous pull shares one rate limit with every other
+      # GitHub-hosted runner. It does not fail by saying so, it times out: this
+      # step is exactly where the image job of the build on main died after
+      # 1.13.2 shipped. Same mirror the base image and the demo already read
+      # through, and the same object behind it, checked rather than assumed.
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+        with:
+          driver-opts: image=mirror.gcr.io/moby/buildkit:buildx-stable-1
 
       # A pull request builds the image but never publishes it, so a fork PR
       # needs no registry credentials.
@@ -168,10 +176,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # Six images come from Docker Hub anonymously, sharing a rate limit
-      # across the whole runner pool, so a timed-out pull is routine rather
-      # than exceptional. Five tries with a flat 30s gap rides out the usual
-      # outage; the job is deliberately not a required check.
+      # The retry outlived its own reason and kept claiming it: nothing in this
+      # stack comes from Docker Hub any more, the compose file reads ghcr.io
+      # and Google's mirror, and the Dockerfile it builds now does too. It
+      # stays anyway. Six images and a build is a lot of registry to depend on,
+      # a mirror is still a network, and five tries with a flat 30s gap costs
+      # nothing on the runs where nothing goes wrong. The job is deliberately
+      # not a required check.
       - name: bring the demo up (retry past registry hiccups)
         run: |
           for i in 1 2 3 4 5; do
