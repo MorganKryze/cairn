@@ -266,12 +266,12 @@ Notes worth having before you write yours:
 - **The three token APIs** each name their own vocabulary, so their `unknown`
   lists are worth copying: UptimeRobot answers `PAUSED, STARTED, UP,
 LOOKS_DOWN, DOWN` (it says so itself if you ask for a status it does not
-  know), and paused and started both belong in `unknown`. Better Stack answers
+  know), and paused and started both belong in `unknown`. Better Stack documents
   `up, down, paused, pending, maintenance, validating`: `validating` is the
   amber one, `paused` and `pending` the quiet ones.
 - **StatusCake keeps paused in its own field**, a boolean beside `status`,
-  where no mapping can reach it: a paused test keeps whatever state it had. It
-  also pages at 25, hence `?limit=100`.
+  where no mapping can reach it, so a paused test keeps whatever `status` it
+  last had. It also pages at 25, hence `?limit=100`.
 - **A monitor's name has to be a valid cairn service id**: lowercase letters,
   digits and dashes. A monitor named after a domain, `libresoftware.cloud`,
   never matches, because a service id carries no dot. Rename the monitor, or
