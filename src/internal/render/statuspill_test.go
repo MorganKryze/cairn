@@ -28,6 +28,28 @@ func pages(t *testing.T, site string) (home, detail string) {
 
 const withGatus = "locales: [en]\nstatus:\n  gatus: https://status.example.org\n"
 
+// The same address written the generic way. Every page it produces has to be
+// the page status.gatus produces, byte for byte: the second spelling exists so
+// other monitors have a key to be named by, not so a Gatus site renders
+// differently depending on which line the operator typed.
+const withProvider = "locales: [en]\nstatus:\n  provider: gatus\n  url: https://status.example.org\n"
+
+func TestNamingGatusChangesNothingItRenders(t *testing.T) {
+	oldHome, oldDetail := pages(t, withGatus)
+	newHome, newDetail := pages(t, withProvider)
+	if oldHome != newHome {
+		t.Error("the home page differs between status.gatus and status.provider: gatus")
+	}
+	if oldDetail != newDetail {
+		t.Error("the detail page differs between status.gatus and status.provider: gatus")
+	}
+	// The pill is the part that would go missing, since everything about it
+	// keys off "is there an address", so it is worth naming on its own.
+	if !strings.Contains(newHome, `<a class="status-pill status-up" href="https://status.example.org/endpoints/_pad"`) {
+		t.Error("a site that names its provider draws no pill")
+	}
+}
+
 // By default a pill leads to its endpoint on the status page, on the card and
 // on the detail page alike.
 func TestStatusPillLinksByDefault(t *testing.T) {

@@ -60,8 +60,8 @@ func reloadOnce(dir, last string) string {
 // pollStatus feeds the status dots from the Gatus API, server-side only. On
 // any fetch problem the dots disappear rather than go stale.
 func Poll() {
-	if cfg := Current().Cfg; cfg.Site.Status.Gatus != "" {
-		log.Printf("status: polling gatus at %s every %s", cfg.Site.Status.Gatus, cfg.StatusInterval())
+	if cfg := Current().Cfg; cfg.Site.StatusAddress() != "" {
+		log.Printf("status: polling %s at %s every %s", cfg.Site.StatusProvider(), cfg.Site.StatusAddress(), cfg.StatusInterval())
 		switch st := cfg.Site.Status; {
 		case st.Insecure:
 			log.Print("status: insecure is on, so the certificate gatus presents is not verified at all: anything answering on that address decides what the pills say")
@@ -82,7 +82,8 @@ func Poll() {
 // source is the status block as the poller needs it.
 func source(cfg *config.Config) status.Source {
 	return status.Source{
-		URL:      cfg.Site.Status.Gatus,
+		URL:      cfg.Site.StatusAddress(),
+		Provider: cfg.Site.StatusProvider(),
 		Insecure: cfg.Site.Status.Insecure,
 		CA:       cfg.Site.Status.CA,
 	}

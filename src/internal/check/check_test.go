@@ -221,6 +221,22 @@ func TestCheckReportsCAWithoutGatus(t *testing.T) {
 	}
 }
 
+// A provider is a companion key like the others: it says what answers at the
+// address, and with no address it answers nothing. Naming a monitor and never
+// saying where it lives is a config that boots, validates and draws no pill.
+func TestCheckReportsAProviderWithNoAddress(t *testing.T) {
+	withoutAssets(t)
+	w := checkFor(t, "status: {provider: gatus}")
+	if !strings.Contains(w, "status.provider") || !strings.Contains(w, "nothing polls") {
+		t.Errorf("a provider with nothing to poll went unreported:\n%s", w)
+	}
+	// The message used to name one key because there was one; an operator who
+	// wrote status.url has to be told that is the other half of the answer.
+	if !strings.Contains(w, "status.url") {
+		t.Errorf("the message names only one of the two ways to give an address:\n%s", w)
+	}
+}
+
 // A bundle named but not mounted is the loudest failure of the three: cairn
 // has nothing to verify against, so every poll fails and the pills never come
 // back. Only -check can see it before the site is running.

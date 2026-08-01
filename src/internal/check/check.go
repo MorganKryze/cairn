@@ -70,8 +70,8 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	// status.insecure is not a mistake, it is a decision, and -check is where a
 	// decision that leaves no trace on the page gets its trace. Nothing else
 	// says it out loud after the startup line has scrolled away.
-	if st := cfg.Site.Status; st.Gatus != "" && st.Insecure {
-		out = append(out, fmt.Sprintf("status.insecure is on: the certificate %s presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)", st.Gatus))
+	if addr := cfg.Site.StatusAddress(); addr != "" && cfg.Site.Status.Insecure {
+		out = append(out, fmt.Sprintf("status.insecure is on: the certificate %s presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)", addr))
 	}
 	out = append(out, caWarnings(cfg)...)
 	out = append(out, missingAssets(cfg)...)
@@ -419,7 +419,7 @@ func assetPath(ref string) string { return config.AssetFile(ref) }
 // they got. That is exactly the shape -check exists for.
 func caWarnings(cfg *config.Config) []string {
 	st := cfg.Site.Status
-	if st.Gatus == "" || st.CA == "" {
+	if cfg.Site.StatusAddress() == "" || st.CA == "" {
 		return nil
 	}
 	var out []string
@@ -599,9 +599,10 @@ var uriRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 func inertSettings(cfg *config.Config) []string {
 	var out []string
 
-	// Every pill comes from Gatus. Without an address to poll, the companion
-	// keys have nothing to act on and no pill is drawn at all.
-	if st := cfg.Site.Status; st.Gatus == "" {
+	// Every pill comes from the monitor. Without an address to poll, named
+	// either way, the companion keys have nothing to act on and no pill is
+	// drawn at all.
+	if st := cfg.Site.Status; cfg.Site.StatusAddress() == "" {
 		var set []string
 		if st.Page != "" {
 			set = append(set, "status.page")
@@ -618,8 +619,11 @@ func inertSettings(cfg *config.Config) []string {
 		if st.CA != "" {
 			set = append(set, "status.ca")
 		}
+		if st.Provider != "" {
+			set = append(set, "status.provider")
+		}
 		if len(set) > 0 {
-			out = append(out, fmt.Sprintf("%s set without status.gatus: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))
+			out = append(out, fmt.Sprintf("%s set without status.gatus or status.url: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))
 		}
 	}
 
