@@ -42,11 +42,9 @@ account or a manual, and boring for you to operate.
   you. Dismissable, remembered for a year (a plain cookie, no tracking).
 - **Tools grouped by need**, one plain sentence each, with optional "Learn
   more" pages for the curious.
-- **Live status pills** fed by your own monitor,
-  [Gatus](https://github.com/TwiN/gatus),
-  [Uptime Kuma](https://github.com/louislam/uptime-kuma) or anything with a
-  status API, each linking to its status page. Your server does the polling,
-  never the visitor's browser.
+- **Live status pills** fed by the monitor you already run, whichever it is,
+  each linking to its status page. Your server does the polling, never the
+  visitor's browser.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
 - **Search from anywhere**: just start typing, or ⌘K. A name finds that one
@@ -82,6 +80,28 @@ account or a manual, and boring for you to operate.
   one you already use (`example.org/cairn/`, one flag). cairn handles the
   prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no
   rewriting rule.
+
+## Whatever already tells you it is up
+
+cairn does not ask you to change monitors. It reads the one you run, and the
+pills come from your server, never from the visitor's browser.
+
+|                 |                                                                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Self-hosted** | [Gatus](https://github.com/TwiN/gatus) · [Uptime Kuma](https://github.com/louislam/uptime-kuma) · Cachet · Statping-ng · Upptime |
+| **Hosted**      | Atlassian Statuspage · Instatus · UptimeRobot · Better Stack · StatusCake                                                        |
+
+Every one of those was read from a live instance rather than from a manual, and
+the mapping each needed is written down with the count that came back. Anything
+else publishing a list of names and states takes six lines of configuration:
+[which monitors cairn reads](docs/recipes/status.md#which-monitors-cairn-reads)
+also says what cannot be read, and why.
+
+Gatus gets the warmest handshake and has earned it. It is the only one cairn
+integrates with **both ways**, since `cairn -emit-gatus` writes its endpoint
+config out of your services, and the only one whose pills link to a page per
+service rather than to one page for everything. If you have no monitor yet,
+start there.
 
 ## Secure by subtraction
 

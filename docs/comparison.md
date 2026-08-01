@@ -48,7 +48,7 @@ same tab.
   trust question, and no dashboard answers it because operators already know.
 - **It can make no third-party request at all.** Icons are served from your
   own files if you want them to be, there is no CDN font, no analytics, no
-  outbound call except the one Gatus URL you configure. The
+  outbound call except the one status URL you configure. The
   [demo](../demo/README.md) runs on a network with no route out to prove it.
 - **The image holds two files.** `FROM scratch` is stricter than distroless:
   distroless removes the distribution but keeps a small userland, so a scanner
