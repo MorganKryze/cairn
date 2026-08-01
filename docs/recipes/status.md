@@ -1,85 +1,66 @@
 # Status page
 
 cairn tells visitors what exists; a monitor tells them what is up. cairn reads
-one, and never probes your services itself, nor asks the visitor's browser to.
+the monitor you already run, server-side. It never probes your services itself,
+and never asks a visitor's browser to.
 
-Three shapes are read:
+## Pick your monitor
 
-| monitor                                                | what cairn needs                                     | what it gets                                                      |
-| ------------------------------------------------------ | ---------------------------------------------------- | ----------------------------------------------------------------- |
-| [Gatus](https://github.com/TwiN/gatus)                 | `status.gatus`                                       | per-service pills, each linking to that service's own page        |
-| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | `status.url`, `status.provider: kuma`, `status.slug` | per-service pills, all linking to the published status page       |
-| [any other status API](#any-other-status-api)          | `status.url`, `status.provider: json`, `status.map`  | the same, from any document shaped like a list of `{name, state}` |
+| you run                                                | write this                                           | you get                                                       |
+| ------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------- |
+| [Gatus](https://github.com/TwiN/gatus)                 | `status.gatus`                                       | a pill per service, each linking to that service's own page   |
+| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | `status.url`, `status.provider: kuma`, `status.slug` | a pill per service, all linking to the published status page  |
+| anything else with a status API                        | `status.url`, `status.provider: json`, `status.map`  | the same, from any document shaped like a list of name, state |
 
-Gatus first, because it integrates both ways: cairn can write its config.
-[Uptime Kuma](#uptime-kuma) needs no agreement beyond naming each monitor after
-the service id. The [mapper](#any-other-status-api) covers Statuspage,
-Instatus, Upptime, Cachet, UptimeRobot, Better Stack and whatever is written
-next; each of those was read from a live instance, and the mapping it took is
-in the table.
+Whichever you pick, the agreement is the same: **the monitor's name for a
+service is the cairn service id**. Nothing else has to match.
 
-**Looking for your monitor?** [Which monitors cairn reads](#which-monitors-cairn-reads)
-lists what has been run against a live instance, what should work but has not
-been, and what cannot be read at all.
+Gatus first below, because it is the one cairn can write the config for.
+[Which monitors cairn reads](#which-monitors-cairn-reads) at the end of this
+page says what has been read from a live instance, what should work, and what
+cannot be read at all.
 
-## Which monitors cairn reads
+## Gatus
 
-### Read against a live instance
+```yaml
+# site.yaml
+status:
+  gatus: https://status.example.org # base URL of your Gatus
+  interval: 60s # optional; default 60s, minimum 5s
+```
 
-Every row here was read by cairn itself on 2026-08-01, and the count is what
-came back. The mapping each one took is in
-[the table further down](#mappings-that-were-run-against-the-real-thing).
+That is the whole integration. cairn polls
+`{gatus}/api/v1/endpoints/statuses`, matches **endpoint name to service id**,
+and links each pill to the endpoint page Gatus reports for it, so your
+endpoints can be grouped however you like or not grouped at all.
 
-| monitor                          | how              | what was read                                               |
-| -------------------------------- | ---------------- | ----------------------------------------------------------- |
-| Gatus                            | `status.gatus`   | 5 services on the demo stack, 4 up and 1 down               |
-| Uptime Kuma 1.23.17              | `provider: kuma` | 2 monitors on a local instance, one up and one down         |
-| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub   |
-| Instatus                         | `provider: json` | 1 component                                                 |
-| Upptime                          | `provider: json` | 4 sites                                                     |
-| Cachet                           | `provider: json` | 31 components on status.framasoft.org, 6 on the Cachet demo |
-| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                               |
-| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                           |
+### If your visitors cannot reach that address
 
-Anything answering in the Statuspage shape is read by the same mapping even
-when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
-read with the Statuspage row unchanged.
+An internal address such as `http://gatus:8080` resolves between containers and
+nowhere else. Say where the pill should point:
 
-### Should work, not run here
+```yaml
+status:
+  gatus: http://gatus:8080 # internal: cairn polls this, server-side
+  page: https://status.example.org # public: the pill links visitors here
+```
 
-The shape or the credential fits, but there was no instance to point cairn at.
-If you run one, the mapping is yours to write and
-[the errors say what was actually in the document](#any-other-status-api).
+Or say that there is no public one at all:
 
-| monitor                                 | why it should work                                                                                                                                                     | what is unverified                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| UptimeRobot API v3                      | `GET /v3/monitors` with `Authorization: Bearer`, which is exactly what `token_file` sends (probed: a fake token is refused as an invalid token, not as a wrong scheme) | the field names, which need a real key to see                    |
-| StatusCake API                          | `GET /v1/uptime` with a bearer token                                                                                                                                   | the same                                                         |
-| Better Stack API v2                     | the authenticated twin of the public page above                                                                                                                        | nothing much: the public page is read, and this is the same data |
-| Kener                                   | `GET /api/monitors` answers "missing or invalid authorization header", so the credential travels the way cairn sends it                                                | the shape                                                        |
-| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                                                                                                                      | everything: no public instance was found to read                 |
+```yaml
+status:
+  gatus: http://gatus:8080
+  linked: false # the pills state the status, nothing more
+```
 
-### Cannot be read, and why
+`linked: false` keeps the dot and its label and drops the link. The pills stop
+being controls: no target, no keyboard stop, and on a card a click goes where
+the rest of the card goes, to the service itself.
 
-| monitor                     | why not                                                                                                                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| HetrixTools                 | the token travels in the URL path (`/v1/<TOKEN>/uptime/monitors/…`, confirmed by probing). cairn logs a failed poll with the address it called, so the token would land in cairn's own log |
-| Site24x7                    | needs an OAuth refresh-token exchange, which would make cairn hold rotating state. That is an architectural line, not a configuration one                                                  |
-| UptimeRobot API v2          | the key goes in the body of a `POST`. cairn makes one `GET` and nothing else. Use v3 or the public status page above                                                                       |
-| Healthchecks.io             | the key travels in `X-Api-Key`; cairn sends `Authorization` and no other header                                                                                                            |
-| OpenStatus public status    | answers one value for the whole page (`{"status":"operational"}`), not a list, so there is nothing to draw per service                                                                     |
-| Prometheus, Zabbix, Netdata | a metrics format or a different model altogether. Reading one is its own piece of work, and none of it belongs on a directory card                                                         |
+### Let cairn write the endpoints
 
-Two more that are not a monitor's fault. A **Kuma status page that is not
-published** answers 404 exactly as a misspelled slug does, and a **status page
-that is only HTML** has nothing to read; several vendors serve one JSON
-endpoint for the page and none per component.
-
-## 1. Generate the Gatus config
-
-The binary emits Gatus endpoints from your services: one endpoint per
-service with an `http(s)` url (path-only urls are skipped), named after its
-id, grouped by category:
+One endpoint per service with an `http(s)` url (path-only urls are skipped),
+named after its id, grouped by category:
 
 ```sh
 docker run --rm -v ./config:/config:ro <your-cairn-image> -emit-gatus > gatus/endpoints.yaml
@@ -90,135 +71,29 @@ endpoints:
   - name: pdf
     group: documents
     url: https://pdf.example.org
-    interval: 5m          # how often Gatus probes the service
+    interval: 5m # how often Gatus probes the service
     conditions:
-      - '[STATUS] == 200'
+      - "[STATUS] == 200"
 ```
 
-Merge it into your Gatus config (alerting stays yours). Adjust conditions
-per service if 200 isn't the right health signal.
+Merge it into your Gatus config; alerting stays yours. Adjust the conditions
+per service if 200 is not the right health signal.
 
-## 2. Feed the dots
+### Keep the history across restarts
 
-Point cairn at the Gatus API:
-
-```yaml
-# site.yaml
-status:
-  gatus: https://status.example.org   # base URL of your Gatus instance
-  interval: 60s                       # optional; default 60s, minimum 5s
-```
-
-If cairn reaches Gatus over an internal network, for example
-`http://gatus:8080` between containers, that address will not resolve in your
-visitors' browsers. Set `status.page` to the public Gatus URL the pill should
-link to:
-
-```yaml
-status:
-  gatus: http://gatus:8080           # internal: cairn polls this, server-side
-  page: https://status.example.org   # public: the pill links visitors here
-```
-
-When `status.page` is omitted, the pill links to `status.gatus`. If you have
-no Gatus your visitors should reach at all, say so instead:
-
-```yaml
-status:
-  gatus: http://gatus:8080           # internal, and staying that way
-  linked: false                      # the pills state the status, nothing more
-```
-
-`linked: false` keeps the dot and its label and drops the link. The pills
-stop being controls: no target, no keyboard stop, and on a card a click goes
-where the rest of the card goes, to the service itself. Use it when your
-Gatus is internal, or when you would rather visitors saw the state than went
-looking at a monitoring dashboard.
-
-Each card gets a small status pill in its bottom-right corner (top of the
-page on detail pages), a dot plus a localized label ("Online" /
-"Offline"), and the pill links straight to that endpoint's page on your
-Gatus. The dot matches on endpoint **name == service id**, which is the one
-thing your Gatus config has to share with cairn; `-emit-gatus` writes it.
-
-The link needs no agreement at all. Gatus reports the key of its own endpoint
-page (`…/endpoints/{group}_{name}`) alongside each status, and cairn uses what
-it reports, so your endpoints can be grouped however you like, or not grouped
-at all. Until Gatus has answered, the pills fall back to the key `-emit-gatus`
-would have produced.
-
-How it behaves, by design:
-
-- **Online** breathes: the dot pulses slowly like a beacon. **Offline** is
-  static and outlined so it stands out. Both cues work without relying on
-  color alone, and the pulse stops under `prefers-reduced-motion`.
-- Two more pills exist and Gatus never lights them, because a Gatus result
-  carries a pass/fail and nothing else. **Degraded** (amber) means it works
-  but not well, and **Maintenance** (blue, and square rather than round)
-  means off on purpose. They are there for the monitors that report more than
-  a bool; each is a localized label in all seven languages, and both dots are
-  measured against the pill they sit in on both themes.
-- The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
-  talk only to cairn (and to your Gatus, if they click the pill).
-- Until Gatus has answered once (at boot, or while it is unreachable) every
-  pill reads "Unknown" (neutral) rather than stale or absent, and the log
-  says why. cairn keeps asking on every interval; it says so once and stays
-  quiet after that, rather than repeating itself until Gatus is back.
-- Once Gatus answers, a service it does not monitor simply shows no pill.
-- **An open page keeps up.** Start cairn before Gatus and every pill reads
-  Unknown, as it should; when Gatus comes up, the tab already open catches up
-  on its own, without a reload. It refetches the page it is on at
-  `status.interval` and replaces the pills, nothing else: no separate API, and
-  the request goes to cairn, never to Gatus. A tab in the background does not
-  poll, and a pill your keyboard is on is left alone until you move off it.
-  Pages of a site with no `status.gatus` do not ship the script at all.
-
-If your Gatus answers over `https://` with a certificate cairn does not know,
-which is the usual state of affairs on an internal network, every pill reads
-"Unknown" and the log names the `x509` failure. Give cairn the authority that
-signed it:
-
-```yaml
-status:
-  gatus: https://status.internal
-  ca: /assets/ca.crt                 # a file in the mounted assets directory
-  # ca: https://pki.internal/ca.crt  # or an address cairn fetches it from
-```
-
-The bundle is added to the roots cairn already trusts, not swapped for them, so
-a Gatus with a publicly signed certificate keeps working and adding a bundle
-narrows nothing else. It is read once and cached, so a rotated authority needs
-a restart, the same as a mounted one.
-
-An `http://` URL is allowed, because an internal PKI often has nowhere better to
-serve from and a bundle cannot be fetched over a certificate nobody trusts yet.
-It is not free: over http, whatever sits on the path to that address decides
-what cairn trusts for the poll, which is where `status.insecure` lands too.
-cairn says which of the two it is at startup and on every `-check`.
-
-There is also `status.insecure: true`, which turns the check off rather than
-satisfying it. Both sides of the connection, and the symmetric fix for the
-certificates Gatus itself has to trust, are in
-[Air-gapped](../deployment/airgap.md#6-self-signed-certificates).
-
-## 3. Keep the history across restarts
-
-Gatus stores results in memory by default, and loses them when it restarts.
-That shows up on cairn: with nothing stored, the API answers with endpoints and
-no results, so every pill reads "Unknown" until the first check of each endpoint
-lands. A file fixes it:
+Gatus stores results in memory by default and loses them when it restarts. That
+shows on cairn: with nothing stored, the API answers with endpoints and no
+results, so every pill reads Unknown until the first check of each lands.
 
 ```yaml
 storage:
   type: sqlite
-  path: /data/data.db   # on a volume, or the file goes with the container
+  path: /data/data.db # on a volume, or the file goes with the container
 ```
 
-`postgres` is the other option, with a connection URL in the same `path`. Either
-one survives a restart, so a Gatus that comes back up hands cairn the state it
-already knew and the pills never blink.
+`postgres` is the other option, with a connection URL in the same `path`.
 
-## 4. Hiding what Gatus probes
+### Hide what Gatus probes
 
 If you point Gatus at an address you would rather not publish, an internal IP
 or a URL carrying a token, its dashboard shows it by default. Three keys per
@@ -239,21 +114,47 @@ the same endpoint, with and without:
 | `hostname`     | `"127.0.0.1"`                                                                  | absent                                                                          |
 | a failed check | `Get "http://127.0.0.1:9/": dial tcp 127.0.0.1:9: connect: connection refused` | `Get "<redacted>": dial tcp <redacted>:<redacted>: connect: connection refused` |
 
-`hide-url` redacts the address inside the error text as well, which is the leak
-worth knowing about: it only appears when a check fails, so it is the one that
-survives a test on a healthy endpoint. The port outlives the other two keys,
-hence `hide-port`. Gatus also has `hide-errors`, which drops the message
-entirely rather than redacting it.
+`hide-url` redacts the address inside the error text too, which is the leak
+worth knowing about: it only shows when a check fails, so it survives a test on
+a healthy endpoint. The port outlives the other two keys, hence `hide-port`.
+Gatus also has `hide-errors`, which drops the message instead of redacting it.
 
-None of this reaches cairn: the pills come from `name`, `key` and whether the
-last check passed, and no `ui` setting hides any of those. `cairn -emit-gatus
--hide-targets` writes the block on every endpoint, so regenerating the file does
-not lose it.
+None of this reaches cairn: the pills come from the name, the key and whether
+the last check passed. `cairn -emit-gatus -hide-targets` writes the block on
+every endpoint, so regenerating the file does not lose it.
+
+### A certificate cairn does not know
+
+Usual on an internal network: every pill reads Unknown and the log names an
+`x509` failure. Give cairn the authority that signed it.
+
+```yaml
+status:
+  gatus: https://status.internal
+  ca: /assets/ca.crt # a file in the mounted assets directory
+  # ca: https://pki.internal/ca.crt  # or an address cairn fetches it from
+```
+
+The bundle is **added** to the roots cairn already trusts, not swapped for
+them, so a publicly signed Gatus keeps working and adding a bundle narrows
+nothing else. It is read once and cached, so a rotated authority needs a
+restart, like a mounted one.
+
+An `http://` URL is allowed, because an internal PKI often has nowhere better
+to serve from and a bundle cannot be fetched over a certificate nobody trusts
+yet. It is not free: over http, whatever sits on the path to that address
+decides what cairn trusts for the poll, which is where `status.insecure` lands
+too. cairn says which of the two it is at startup and on every `-check`.
+
+`status.insecure: true` turns the check off rather than satisfying it. Both
+sides of the connection, and the symmetric fix for the certificates Gatus
+itself has to trust, are in
+[Air-gapped](../deployment/airgap.md#6-self-signed-certificates).
 
 ## Uptime Kuma
 
-Kuma publishes a **status page**, and that page answers two endpoints without
-a login. cairn reads those:
+Kuma publishes a **status page**, and that page answers two endpoints with no
+login. cairn reads those.
 
 ```yaml
 # site.yaml
@@ -264,7 +165,7 @@ status:
   interval: 60s
 ```
 
-The slug is the last part of the status page's URL:
+The slug is the last part of the page's URL:
 `https://kuma.example.org/status/tools` is `tools`. Kuma serves statuses per
 status page rather than per instance, so the slug is half the address, and
 cairn refuses to start without it rather than polling an endpoint that cannot
@@ -272,16 +173,16 @@ exist.
 
 Three things have to be true, and only the first is work:
 
-1. **Each monitor is named after the cairn service id.** That is the one
-   agreement, the same one Gatus needs. Kuma has no config file and no setup
-   API, so there is no `cairn -emit-kuma` and there cannot be one: everything
-   in Kuma is created by clicking, which is exactly how the instance this was
-   tested against was set up, with a script driving a browser.
-2. **The monitors are attached to the status page**, in a group. A page with
-   none is a page that answers with no monitor, and cairn says so with the
-   slug in the message.
+1. **Each monitor is named after the cairn service id.** Kuma has no config
+   file and no setup API, so there is no `cairn -emit-kuma` and there cannot
+   be one: everything in Kuma is created by clicking, which is exactly how the
+   instance this was tested against was set up, with a script driving a
+   browser.
+2. **The monitors are attached to the status page**, inside a group. A page
+   with none answers with no monitor, and cairn says so with the slug in the
+   message.
 3. **The status page is published.** An unpublished one 404s exactly as a
-   misspelled slug does, which is why the error names both possibilities.
+   misspelled slug does, which is why the error names both.
 
 What differs from Gatus:
 
@@ -291,8 +192,8 @@ What differs from Gatus:
 - **Maintenance shows.** Kuma reports it, so a monitor under maintenance gets
   the blue square pill rather than a red dot. It reports no degraded, and cairn
   invents none.
-- **Pending reads as Unknown.** A monitor waiting for its first check has not
-  said anything yet, which is what the neutral pill already means.
+- **Pending reads as Unknown.** A monitor waiting for its first check has said
+  nothing yet, which is what the neutral pill already means.
 
 ## Any other status API
 
@@ -307,7 +208,7 @@ status:
   url: https://www.githubstatus.com/api/v2/components.json
   map:
     list: components # path to the array
-    key: name # field holding the service name
+    key: name # field of each element holding the service name
     state: status # field holding its state
     up: [operational]
     degraded: [degraded_performance, partial_outage]
@@ -315,9 +216,12 @@ status:
 ```
 
 A path is a dotted walk and nothing more: `attributes.status` reaches inside a
-nested object, and `list:` left out means the document is itself the array.
-There are no wildcards and no filters, because anything cleverer is a query
-language, and a query language in YAML is a second product.
+nested object, and leaving `list` out means the document is itself the array.
+No wildcards and no filters, because anything cleverer is a query language, and
+a query language in YAML is a second product.
+
+A state can be a word, a number or a boolean: monitors use all three, and
+`up: [1]` or `up: [true]` read as you would expect.
 
 The value lists are **allow-lists**: a state in none of them reads as down.
 That is deliberate in both directions. A vendor that adds a word next year
@@ -330,33 +234,34 @@ cairn's neutral state has always meant.
 
 ### Mappings that were run against the real thing
 
-Each row below was read by cairn itself on 2026-08-01, against that live
-service, and the count is what came back. Component names are the one
+Read by cairn itself on 2026-08-01, against that live service. Names are the
 agreement: a pill is drawn only where a name matches a cairn service id, so on
 your own status page, name the components after your service ids.
 
-| service                   | endpoint                                        | `list`         | `key`                    | `state`             | `up`                    | read                                           |
-| ------------------------- | ----------------------------------------------- | -------------- | ------------------------ | ------------------- | ----------------------- | ---------------------------------------------- |
-| Atlassian Statuspage      | `/api/v2/components.json`                       | `components`   | `name`                   | `status`            | `operational`           | 471 on Cloudflare, 33 on Discord, 12 on GitHub |
-| Instatus                  | `/v2/components.json`                           | `components`   | `name`                   | `status`            | `OPERATIONAL`           | 1                                              |
-| Upptime                   | `history/summary.json` in the repo              | (none)         | `slug`                   | `status`            | `up`                    | 4                                              |
-| Better Stack, public page | `/index.json`                                   | `included`     | `attributes.public_name` | `attributes.status` | `operational`           | 4                                              |
-| UptimeRobot, public page  | `stats.uptimerobot.com/api/getMonitorList/<id>` | `psp.monitors` | `name`                   | `statusClass`       | `success`               | 15, of which 5 paused                          |
-| Cachet                    | `/api/v1/components?per_page=100`               | `data`         | `name`                   | `status_name`       | your instance's wording | 31 on status.framasoft.org                     |
+| service                   | endpoint                                        | `list`         | `key`                    | `state`             | `up`          |
+| ------------------------- | ----------------------------------------------- | -------------- | ------------------------ | ------------------- | ------------- |
+| Atlassian Statuspage      | `/api/v2/components.json`                       | `components`   | `name`                   | `status`            | `operational` |
+| Instatus                  | `/v2/components.json`                           | `components`   | `name`                   | `status`            | `OPERATIONAL` |
+| Upptime                   | `history/summary.json` in the repo              | (none)         | `slug`                   | `status`            | `up`          |
+| Better Stack, public page | `/index.json`                                   | `included`     | `attributes.public_name` | `attributes.status` | `operational` |
+| UptimeRobot, public page  | `stats.uptimerobot.com/api/getMonitorList/<id>` | `psp.monitors` | `name`                   | `statusClass`       | `success`     |
+| Cachet                    | `/api/v1/components?per_page=100`               | `data`         | `name`                   | `status`            | `1`           |
+| Statping-ng               | `/api/services`                                 | (none)         | `name`                   | `online`            | `true`        |
 
-Notes worth having before you write yours:
+Four notes worth having before you write yours:
 
 - **Statuspage's other states** are `degraded_performance` and `partial_outage`
   for degraded, `under_maintenance` for maintenance. Cloudflare's page had 34
-  and 20 of them respectively while this was being written, so the two newer
-  pills are not theoretical.
+  and 20 of those while this was written, so the two newer pills are not
+  theoretical.
 - **UptimeRobot** calls a switched-off monitor `paused`. Put it in `unknown`,
-  or five paused monitors show as five outages.
-- **Cachet** answers `status` as a number, which no mapping reads; use
-  `status_name`, whose wording follows the language of that Cachet instance.
-  It also paginates at 20, hence `?per_page=100`.
+  or five paused monitors read as five outages.
+- **Cachet** paginates at 20, hence `?per_page=100`. Its `status` is a number
+  (1 operational, 2 performance issues, 3 partial outage, 4 major outage);
+  `status_name` is the readable twin, but its wording follows the language of
+  that instance, so the number travels better.
 - **Better Stack and StatusCake** also have token APIs, which work the same way
-  with `token_file`; the public status page needs no credential at all.
+  with `token_file`. The public status page needs no credential at all.
 
 ### The token, if the API needs one
 
@@ -367,14 +272,17 @@ status:
   provider: json
   url: https://uptime.betterstack.com/api/v2/monitors
   token_file: /run/secrets/status-token # a mounted file, not a value
-  token_scheme: Bearer # the default; Statuspage wants OAuth
+  token_scheme: Bearer # the default; OAuth for Statuspage, Basic for HTTP Basic
   map: { list: data, key: attributes.pronounceable_name, state: attributes.status, up: [up] }
 ```
 
 A Kubernetes Secret, a docker compose secret and a Vault agent all deliver
 exactly that: a file. cairn reads it on every poll, so a rotated token takes
 effect without a restart, and it travels in an `Authorization` header, never in
-the URL. A poll error names the key rather than printing the credential.
+the URL. A failed poll names the key rather than printing the credential.
+
+For an API that wants HTTP Basic, put `base64(user:password)` in the file and
+set `token_scheme: Basic`.
 
 The file may not live under `/assets`. That directory is served to every
 visitor, so a token there would be published rather than stored, and cairn
@@ -382,10 +290,95 @@ refuses to start. `status.ca` under `/assets` stays legal, and the asymmetry is
 the point: a CA certificate is the public half of an authority, and a token is
 not the public half of anything.
 
-The monitors this cannot reach, and the reason for each, are in
-[Which monitors cairn reads](#cannot-be-read-and-why).
+## What the pills say
 
-## 5. Link the status page
+Same on every monitor, since the states arrive translated into cairn's own
+four before anything is drawn.
+
+| pill            | look                       | meaning                           |
+| --------------- | -------------------------- | --------------------------------- |
+| **Online**      | green, breathing slowly    | it works                          |
+| **Degraded**    | amber                      | it works, but not well            |
+| **Maintenance** | blue, and square not round | off on purpose, and it comes back |
+| **Offline**     | red, static and outlined   | it does not work                  |
+| **Unknown**     | neutral, hollow            | nobody has said anything about it |
+
+Every label is localized in all seven built-in languages, and every dot was
+measured against the pill it sits in on both themes, because colour alone is
+never the only cue. The pulse stops under `prefers-reduced-motion`.
+
+Gatus lights two of them and no more: its result carries a pass or a fail and
+nothing else. The other monitors reach all five.
+
+How they behave:
+
+- Until the monitor has answered once, at boot or while it is unreachable,
+  every pill reads Unknown rather than stale or absent, and the log says why,
+  once, rather than repeating itself every interval.
+- Once it has answered, a service it says nothing about shows no pill at all.
+- **An open page keeps up.** Start cairn before the monitor and every pill
+  reads Unknown; when the monitor comes up, a tab already open catches up on
+  its own, with no reload. It refetches the page it is on at `status.interval`
+  and swaps only the pills: no separate API, and the request goes to cairn,
+  never to the monitor. A background tab does not poll, a pill your keyboard is
+  on is left alone until you move off it, and a site with no status ships no
+  script at all.
+
+## Which monitors cairn reads
+
+### Read against a live instance
+
+Read by cairn itself on 2026-08-01; the count is what came back.
+
+| monitor                          | how              | what was read                                               |
+| -------------------------------- | ---------------- | ----------------------------------------------------------- |
+| Gatus                            | `status.gatus`   | 5 services on the demo stack, 4 up and 1 down               |
+| Uptime Kuma 1.23.17              | `provider: kuma` | 2 monitors on a local instance, one up and one down         |
+| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub   |
+| Instatus                         | `provider: json` | 1 component                                                 |
+| Upptime                          | `provider: json` | 4 sites                                                     |
+| Cachet                           | `provider: json` | 31 components on status.framasoft.org, 6 on the Cachet demo |
+| Statping-ng                      | `provider: json` | 6 services on a local instance, 5 up and 1 down             |
+| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                               |
+| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                           |
+
+Anything answering in the Statuspage shape is read by the same mapping even
+when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
+read with that row unchanged.
+
+### Should work, not run here
+
+The shape or the credential fits, but there was no instance to point cairn at.
+
+| monitor                                 | why it should work                                                             | unverified                        |
+| --------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------- |
+| UptimeRobot API v3                      | `GET /v3/monitors` with a bearer token, which is what `token_file` sends       | the field names                   |
+| StatusCake API                          | `GET /v1/uptime` with a bearer token                                           | the field names                   |
+| Better Stack API v2                     | the authenticated twin of the public page, which is read                       | little: same data, same vendor    |
+| Kener                                   | `/api/monitors` refuses a missing authorization header, so the credential fits | the shape, and it needs a token   |
+| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                              | everything: no instance was found |
+
+Probed rather than assumed for the first three: a deliberately wrong token is
+refused as a wrong token, not as a wrong scheme.
+
+### Cannot be read, and why
+
+| monitor                    | why not                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| HetrixTools                | the token travels in the URL path, and cairn logs a failed poll with the address it called, so the log would publish it |
+| Site24x7                   | needs an OAuth refresh-token exchange, which would make cairn hold rotating state                                       |
+| UptimeRobot API v2         | the key goes in the body of a `POST`; cairn makes one `GET`. Use v3 or the public status page                           |
+| Healthchecks.io            | the key travels in `X-Api-Key`; cairn sends `Authorization` and no other header                                         |
+| OpenStatus public status   | answers one value for the whole page, not a list, so there is nothing to draw per service                               |
+| Netdata                    | answers alarms keyed by name rather than a list, and alarms are not services                                            |
+| Prometheus, Zabbix, Icinga | a metrics format or an RPC, and a different model altogether                                                            |
+
+Two more that are nobody's fault. A **Kuma status page that is not published**
+404s exactly as a misspelled slug does, and a **status page that is only HTML**
+has nothing to read: several vendors serve one JSON document for the page and
+none per component.
+
+## Link the status page
 
 ```yaml
 # site.yaml

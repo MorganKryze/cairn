@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -89,7 +90,7 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 		// which is what Gatus does with an endpoint that has no result and
 		// Kuma with a monitor that has no heartbeat. Nothing has been said
 		// about it, and the unknown pill is what says that.
-		state, ok := walk(row, m.State).(string)
+		state, ok := stateOf(walk(row, m.State))
 		if !ok {
 			continue
 		}
@@ -118,6 +119,27 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 			m.State, len(rows), src.URL, keysOf(rows[0]))
 	}
 	return out, nil
+}
+
+// stateOf reads the state field as text. JSON has three scalar types and
+// monitors use all three: Statping answers a bool, Cachet a number, most
+// vendors a word. Formatting the other two rather than refusing them is what
+// makes "any flat status API" true instead of nearly true. A whole number
+// keeps no decimal point, so a mapping lists 1 as "1" and not as "1.000000".
+//
+// Anything else, an object or an array where a state was expected, is not a
+// state; that row is skipped like any other the mapping cannot read.
+func stateOf(v any) (string, bool) {
+	switch t := v.(type) {
+	case string:
+		return t, true
+	case bool:
+		return strconv.FormatBool(t), true
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64), true
+	default:
+		return "", false
+	}
 }
 
 // walk descends a dotted path. An empty path is the document itself, which is
