@@ -9,3 +9,16 @@ theme:
 footer:
   - label: { fr: Statut des services, en: Service status }
     url: https://status.example.org
+pages:
+  - id: hosting
+    title: { fr: Comment nous hébergeons, en: How we host }
+    body:
+      fr: |
+        Ces outils tournent sur nos machines, chez nous. Rien n'est confié à
+        un tiers, et personne d'autre ne lit ce que vous y mettez.
+      en: |
+        These tools run on our own machines. Nothing is handed to a third
+        party, and nobody else reads what you put in them.
+# The flags on the cards lead here, in the language the visitor is reading.
+hosting_flag:
+  self: hosting

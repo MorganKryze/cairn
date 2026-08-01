@@ -176,6 +176,16 @@ type Site struct {
 		Policy     string `yaml:"policy"`     // where the disclosure policy lives
 		Encryption string `yaml:"encryption"` // where the public key lives
 	} `yaml:"security"`
+	// HostingFlag is where the self-hosted and external flags lead, when the
+	// operator wants them to lead anywhere. Each value is a page id cairn
+	// serves, an absolute path, or a URL; a page id resolves in the language
+	// the visitor is reading, the way the footer links to those pages already.
+	//
+	// Empty leaves the flags exactly as they were, plain text on the card.
+	HostingFlag struct {
+		Self     string `yaml:"self"`
+		External string `yaml:"external"`
+	} `yaml:"hosting_flag"`
 	Status struct {
 		Gatus string `yaml:"gatus"`
 		// Provider names the monitor behind the address, and URL is that

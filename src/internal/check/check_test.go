@@ -243,6 +243,24 @@ func TestCheckReportsAProviderWithNoAddress(t *testing.T) {
 	}
 }
 
+// A hosting flag can only lead somewhere from a card that carries one, and a
+// card carries one only when its service sets selfhosted. Pointing the flag at
+// a page nobody can reach is a line that looks like it works.
+func TestCheckReportsAHostingFlagNoServiceWears(t *testing.T) {
+	withoutAssets(t)
+	w := checkFor(t, "pages: [{id: hosting, title: How, body: Text.}]\nhosting_flag: {self: hosting}")
+	if !strings.Contains(w, "hosting_flag.self") || !strings.Contains(w, "selfhosted") {
+		t.Errorf("a flag no service wears went unreported:\n%s", w)
+	}
+	// And it stays quiet the moment one service wears it.
+	quiet := checkForServices(t,
+		"pages: [{id: hosting, title: How, body: Text.}]\nhosting_flag: {self: hosting}",
+		"- {id: a, url: https://a.example.org, name: A, selfhosted: true}\n")
+	if strings.Contains(quiet, "hosting_flag") {
+		t.Errorf("a flag a service does wear was reported anyway:\n%s", quiet)
+	}
+}
+
 // A bundle named but not mounted is the loudest failure of the three: cairn
 // has nothing to verify against, so every poll fails and the pills never come
 // back. Only -check can see it before the site is running.
@@ -275,6 +293,20 @@ func TestCheckNamesAMissingCABundle(t *testing.T) {
 
 // checkFor runs the warnings over a one-service site carrying the given status
 // block, and joins them.
+// checkForServices is checkFor when the services matter to what is warned.
+func checkForServices(t *testing.T, siteBlock, services string) string {
+	t.Helper()
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nindex: false\n" + siteBlock + "\n",
+		"services.yaml": services,
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Join(checkWarnings(cfg, dir), "\n")
+}
+
 func checkFor(t *testing.T, statusBlock string) string {
 	t.Helper()
 	dir := testutil.WriteFiles(t, map[string]string{

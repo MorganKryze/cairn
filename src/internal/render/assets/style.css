@@ -547,8 +547,12 @@ html { scrollbar-gutter: stable; }
 
 /* Host flag: an icon at rest that unfurls its label on hover or focus. The
    label stays in the DOM (clipped, not removed) for screen readers; on touch
-   and under reduced motion it simply shows expanded. Not raised above the
-   stretched-link overlay, so a click on it still opens the service. */
+   and under reduced motion it simply shows expanded.
+   As a span it is not raised above the stretched-link overlay, so a click on
+   it opens the service like the rest of the card. As a link, which it becomes
+   when hosting_flag names a target, it has to be raised, and that is a
+   deliberate reversal: a third target inside the card, entered knowingly, and
+   only on the sites that ask for it. */
 .flag {
   display: inline-flex;
   align-items: center;
@@ -570,6 +574,13 @@ html { scrollbar-gutter: stable; }
 .flag svg { width: .9rem; height: .9rem; flex: none; overflow: visible; }
 .flag-label { opacity: 0; padding-inline-end: .14rem; transition: opacity .18s; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
+a.flag { position: relative; z-index: 1; text-decoration: none; }
+a.flag:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+a.flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* A link has to be reachable at rest, so it does not hide behind its own
+   fold: an unfurled label is the hover state, the icon alone is what a thumb
+   arrives on. 2rem wide by the padding and the glyph is the floor. */
+a.flag { min-height: 1.5rem; }
 .card:hover .flag, .card:focus-within .flag { max-width: 14rem; }
 .card:hover .flag-label, .card:focus-within .flag-label { opacity: 1; }
 @media (hover: none) {

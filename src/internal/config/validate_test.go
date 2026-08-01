@@ -172,6 +172,18 @@ func TestValidateSiteRejections(t *testing.T) {
 		{"footer entry with no url", func(s *Site) {
 			s.Footer = []FooterLink{{Label: LString{"": "Legal"}}}
 		}, []string{"every footer entry needs label and url"}},
+		// A hosting flag that leads nowhere is worse than one that leads
+		// somewhere wrong: the visitor clicks and lands on a 404 of yours.
+		{"a hosting flag naming a page that does not exist", func(s *Site) {
+			s.Pages = []SitePage{{ID: "legal", Title: LString{"": "Legal"}, Body: LString{"": "text"}}}
+			s.HostingFlag.Self = "hosting"
+		}, []string{"hosting_flag.self", "hosting", "legal"}},
+		{"a hosting flag with no page at all to name", func(s *Site) {
+			s.HostingFlag.External = "why"
+		}, []string{"hosting_flag.external", "why", "no pages"}},
+		{"a hosting flag with an executable scheme", func(s *Site) {
+			s.HostingFlag.Self = "javascript:alert(1)"
+		}, []string{"hosting_flag.self", "javascript"}},
 		{"footer entry with no label", func(s *Site) {
 			s.Footer = []FooterLink{{URL: "/legal"}}
 		}, []string{"every footer entry needs label and url"}},

@@ -23,6 +23,7 @@ so is every key in it.
 | `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                                                            |
 | `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                                                                          |
 | `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                                                                                                     |
+| `hosting_flag` | none      | Where the self-hosted and external [flags](services.md#making-the-flag-lead-somewhere) lead: `self` and `external`, each a page id, a path or a URL. Omitted, the flags stay plain text.                                                                                         |
 | `status`       | none      | Live status pills fed by your monitor (`status.gatus`, or `status.url` with `status.provider` and, per monitor, `status.slug` or `status.map`; then `status.page`, `status.interval`, `status.linked`, `status.insecure`, `status.ca`); see [Status page](../recipes/status.md). |
 
 ## Full example

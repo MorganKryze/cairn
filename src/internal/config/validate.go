@@ -50,6 +50,34 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: status.ca %q is neither a URL nor a file under the mounted assets dir (expected e.g. https://pki.example.org/ca.crt or /assets/ca.crt)", ca)
 		}
 	}
+	// A hosting flag leads to a page cairn serves, to a path, or to a URL.
+	// The page id is the interesting case: it is what lets the link follow the
+	// visitor's language, and it is the one that can be a typo, so a name that
+	// matches no page stops the load and lists the ones that do.
+	for _, f := range []struct{ key, val string }{
+		{"hosting_flag.self", site.HostingFlag.Self},
+		{"hosting_flag.external", site.HostingFlag.External},
+	} {
+		if f.val == "" {
+			continue
+		}
+		if err := checkLinkScheme(f.key, f.val, linkSchemes, "a page id, an absolute path or https://…"); err != nil {
+			return err
+		}
+		if IsURLOrAbs(f.val) {
+			continue
+		}
+		if !slices.ContainsFunc(site.Pages, func(p SitePage) bool { return p.ID == f.val }) {
+			ids := make([]string, 0, len(site.Pages))
+			for _, p := range site.Pages {
+				ids = append(ids, p.ID)
+			}
+			if len(ids) == 0 {
+				return fmt.Errorf("config: site.yaml: %s %q names a page, and this site has no pages (write one under pages:, or give a path or a URL instead)", f.key, f.val)
+			}
+			return fmt.Errorf("config: site.yaml: %s %q is not a page id (this site has %s), a path or a URL", f.key, f.val, strings.Join(ids, ", "))
+		}
+	}
 	// logo and favicon are the two image fields nothing else validates: a value
 	// that is not a URL only earns a -check warning, since a missing file is a
 	// plausible typo. An executable scheme is not, so it stops the load. The

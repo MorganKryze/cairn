@@ -295,6 +295,24 @@ await check("the back link is a real target on a detail page", async () => {
   }
 });
 
+// A hosting flag that leads somewhere is a control, and the demo sets one, so
+// the resting size is worth holding: folded, before anyone hovers, is what a
+// thumb arrives on.
+await check(
+  "a linked hosting flag is a real target while still folded",
+  async () => {
+    const m = await home.$eval(".card-foot a.flag", (el) => {
+      const r = el.getBoundingClientRect();
+      return { w: r.width, h: r.height };
+    });
+    if (m.w < 24 || m.h < 24) {
+      throw new Error(
+        `${Math.round(m.w)} by ${Math.round(m.h)} at rest, WCAG 2.2 asks 24 by 24 of a target`,
+      );
+    }
+  },
+);
+
 // ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
 // The fixture's monitor is a port nothing listens on, so every pill on that
