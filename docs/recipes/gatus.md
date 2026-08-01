@@ -81,6 +81,12 @@ How it behaves, by design:
 - **Online** breathes: the dot pulses slowly like a beacon. **Offline** is
   static and outlined so it stands out. Both cues work without relying on
   color alone, and the pulse stops under `prefers-reduced-motion`.
+- Two more pills exist and Gatus never lights them, because a Gatus result
+  carries a pass/fail and nothing else. **Degraded** (amber) means it works
+  but not well, and **Maintenance** (blue, and square rather than round)
+  means off on purpose. They are there for the monitors that report more than
+  a bool; each is a localized label in all seven languages, and both dots are
+  measured against the pill they sit in on both themes.
 - The **server** polls `{gatus}/api/v1/endpoints/statuses`; visitors' browsers
   talk only to cairn (and to your Gatus, if they click the pill).
 - Until Gatus has answered once (at boot, or while it is unreachable) every

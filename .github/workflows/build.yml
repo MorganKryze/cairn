@@ -97,7 +97,7 @@ jobs:
             for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
           done
           node scripts/search.mjs http://127.0.0.1:8090/en/
-          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
+          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
 
   chart:

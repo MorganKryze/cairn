@@ -1,17 +1,19 @@
-// Drives four accessibility behaviours in a real browser against a running
+// Drives five accessibility behaviours in a real browser against a running
 // cairn, because not one of them survives a look at the markup: the theme
 // toggle's state is only known once theme.js has run, the mobile category
 // swap turns on whether JavaScript exists at all, a contrast ratio needs the
 // colours the browser actually resolved, and a scroll is a scroll.
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
-// config and scripts/fixtures/many-categories on scratch ports first.
+// config, scripts/fixtures/many-categories and scripts/fixtures/status on
+// scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-categories-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-categories-url] [status-url]
 import { chromium } from 'playwright';
 
 const SITE = process.argv[2] ?? process.env.CAIRN_URL ?? 'http://127.0.0.1:8090/en/';
 const MANY = process.argv[3] ?? process.env.CAIRN_MANY_URL ?? 'http://127.0.0.1:8091/en/';
+const STATUS = process.argv[4] ?? process.env.CAIRN_STATUS_URL ?? 'http://127.0.0.1:8092/en/';
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -153,6 +155,70 @@ await check('a disabled search box is left on the quiet border, being exempt', a
   const dead = (await boundary(detail, '.search .search-box')).border;
   if (dead === live) {
     throw new Error(`the disabled bar wears the live border ${live}: the strong colour is not scoped to an enabled input`);
+  }
+});
+
+// ---- A5: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
+
+// The colour math again, in node this time. boundary keeps its own copy inside
+// the page because it walks the ancestors there; here the two colours come out
+// and the ratio is computed on this side, which is the half that is easier to
+// read when a value moves.
+const luminance = (s) => {
+  if (!s.startsWith('rgb')) throw new Error(`cannot read ${s} as sRGB channels`);
+  return s
+    .match(/[\d.]+/g)
+    .slice(0, 3)
+    .map(Number)
+    .map((v) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4))
+    .reduce((acc, c, i) => acc + [0.2126, 0.7152, 0.0722][i] * c, 0);
+};
+const ratio = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+// The fixture's monitor is a port nothing listens on, so every pill on that
+// page renders unknown and neither of these two states can be reached by
+// waiting. Both come from monitors that report more than a bool, which a
+// fixture cannot stand up. What the stylesheet keys on is the class, so the
+// class is what is set: this measures the colours, which is all it claims to.
+const dot = (p, cls, theme) =>
+  p.$eval(
+    '.status-pill',
+    (el, [cls, theme]) => {
+      document.documentElement.dataset.theme = theme;
+      el.className = `status-pill ${cls}`;
+      const d = el.querySelector('.dot');
+      const s = getComputedStyle(d);
+      return { colour: s.backgroundColor, behind: getComputedStyle(el).backgroundColor, radius: s.borderTopLeftRadius };
+    },
+    [cls, theme],
+  );
+
+const pills = await still.newPage();
+await pills.goto(STATUS);
+
+for (const cls of ['status-degraded', 'status-maintenance']) {
+  await check(`the ${cls.slice(7)} dot clears 3:1 against its pill on both themes`, async () => {
+    for (const theme of ['light', 'dark']) {
+      const m = await dot(pills, cls, theme);
+      const r = ratio(m.colour, m.behind);
+      if (r < 3) {
+        throw new Error(`${theme}: ${m.colour} on ${m.behind} is ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`);
+      }
+    }
+  });
+}
+
+// Blue against green is the pairing most often indistinguishable, and this dot
+// is nine pixels across. The label carries the meaning without colour, which is
+// what 1.4.1 asks for; the shape is the redundancy for the glance.
+await check('the maintenance dot is square, so colour is not the only cue', async () => {
+  const round = await dot(pills, 'status-up', 'light');
+  const square = await dot(pills, 'status-maintenance', 'light');
+  if (square.radius === round.radius) {
+    throw new Error(`the maintenance dot wears the round radius ${round.radius}: only its colour tells it apart`);
   }
 });
 

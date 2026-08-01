@@ -65,6 +65,46 @@ func TestStatusPillLinksByDefault(t *testing.T) {
 	}
 }
 
+// Four monitors of the eight surveyed distinguish "works, but not well" from
+// "does not work", and as many distinguish "off on purpose" from "broken".
+// Folding either into down tells a visitor the opposite of what their monitor
+// went to the trouble of saying.
+func TestDegradedAndMaintenanceAreTheirOwnPills(t *testing.T) {
+	for _, c := range []struct{ level, class, label string }{
+		{status.LevelDegraded, "status-degraded", "Degraded"},
+		{status.LevelMaintenance, "status-maintenance", "Maintenance"},
+	} {
+		t.Run(c.level, func(t *testing.T) {
+			cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+				"site.yaml":     withGatus,
+				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			m, err := BuildModel(cfg, map[string]status.State{"pad": {Level: c.level}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			home := string(m.Pages["en"].HTML)
+			if !strings.Contains(home, `class="status-pill `+c.class+`"`) {
+				t.Errorf("%s has no pill of its own", c.level)
+			}
+			// The label is what carries the meaning for someone who cannot tell
+			// the colours apart, so a pill that painted itself but did not name
+			// itself would pass the class check and fail the visitor.
+			if !strings.Contains(home, `aria-label="Pad, `+c.label+`, view status"`) {
+				t.Errorf("%s has no label a visitor can read", c.level)
+			}
+			for _, other := range []string{"status-up", "status-down", "status-unknown"} {
+				if strings.Contains(home, other) {
+					t.Errorf("%s also rendered as %s", c.level, other)
+				}
+			}
+		})
+	}
+}
+
 // The pages are static, so a tab left open holds whatever Gatus said when it
 // was opened. status.js swaps the pills in place; for that it needs a slot per
 // service that is in the markup whether or not there is a pill in it, since

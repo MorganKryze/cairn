@@ -334,9 +334,12 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service, key str
 	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
 }
 
-// statusOf returns "", "unknown", "up" or "down". While Gatus has not
-// answered yet (boot, outage) every pill is unknown; once it has, services it
-// does not monitor show no pill at all.
+// statusOf returns "", "unknown", "up", "degraded", "maintenance" or "down".
+// While the monitor has not answered yet (boot, outage) every pill is unknown;
+// once it has, services it does not monitor show no pill at all.
+//
+// Only two of them are reachable from Gatus, whose results carry a success
+// bool and nothing else. The other two arrive from monitors that say more.
 func statusOf(cfg *config.Config, statuses map[string]status.State, id string) string {
 	if cfg.Site.StatusAddress() == "" {
 		return ""
@@ -348,6 +351,10 @@ func statusOf(cfg *config.Config, statuses map[string]status.State, id string) s
 	switch {
 	case !ok:
 		return ""
+	case st.Level == status.LevelMaintenance:
+		return "maintenance"
+	case st.Level == status.LevelDegraded:
+		return "degraded"
 	case st.Level == status.LevelUp:
 		return "up"
 	default:
