@@ -210,6 +210,33 @@ func TestValidateSiteRejections(t *testing.T) {
 			s.Status.Gatus = "https://g.example.org"
 			s.Status.Slug = "tools"
 		}, []string{"status.slug", "kuma"}},
+		// A mapping that silently does nothing is the class of bug -check
+		// exists to report; here it can be an error while someone is reading.
+		{"json without the mapping that is its whole configuration", func(s *Site) {
+			s.Status.URL = "https://s.example.org/api/v2/summary.json"
+			s.Status.Provider = "json"
+		}, []string{"status.map", "list", "key", "state"}},
+		{"json with half a mapping", func(s *Site) {
+			s.Status.URL = "https://s.example.org/api/v2/summary.json"
+			s.Status.Provider = "json"
+			s.Status.Map = StatusMap{List: "components", Key: "name"}
+		}, []string{"status.map.state"}},
+		{"a mapping on a monitor that has no use for one", func(s *Site) {
+			s.Status.Gatus = "https://g.example.org"
+			s.Status.Map = StatusMap{List: "components"}
+		}, []string{"status.map", "json"}},
+		// The one that publishes a secret rather than storing it. Verified:
+		// GET /assets/token.txt on a running cairn returns the file.
+		{"a token inside the served assets directory", func(s *Site) {
+			s.Status.URL = "https://s.example.org"
+			s.Status.Provider = "json"
+			s.Status.Map = StatusMap{List: "c", Key: "n", State: "s", Up: []string{"ok"}}
+			s.Status.TokenFile = "/assets/token.txt"
+		}, []string{"status.token_file", "/assets", "every visitor"}},
+		{"a token named by a relative path", func(s *Site) {
+			s.Status.Gatus = "https://g.example.org"
+			s.Status.TokenFile = "token.txt"
+		}, []string{"status.token_file", "absolute path"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -256,6 +283,18 @@ func TestTheAddressResolves(t *testing.T) {
 				s.Status.Provider = "kuma"
 				s.Status.Slug = "tools"
 			}, "kuma", "https://k.example.org", ""},
+		{"somebody else's status API, read through a mapping",
+			func(s *Site) {
+				s.Status.URL = "https://s.example.org/api/v2/summary.json"
+				s.Status.Provider = "json"
+				s.Status.Map = StatusMap{List: "components", Key: "name", State: "status",
+					Up: []string{"operational"}}
+				// A token named by the path of a file the platform mounts is
+				// the shape status.ca already accepts, and the one a
+				// kubernetes secret, a docker secret and a vault agent all
+				// deliver.
+				s.Status.TokenFile = "/run/secrets/status-token"
+			}, "json", "https://s.example.org/api/v2/summary.json", ""},
 		// A provider with nothing to poll is not an error: it is the same
 		// dead key as status.page without an address, and -check reports it.
 		{"a provider with no address at all",

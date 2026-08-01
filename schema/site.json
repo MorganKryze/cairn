@@ -177,7 +177,7 @@
         },
         "provider": {
           "type": "string",
-          "enum": ["gatus", "kuma"],
+          "enum": ["gatus", "json", "kuma"],
           "description": "Which monitor answers at status.url. status.gatus names its own, so a site polling Gatus needs neither key."
         },
         "url": {
@@ -187,6 +187,48 @@
         "slug": {
           "type": "string",
           "description": "Uptime Kuma only: the published status page cairn reads, named by the last part of its URL (https://kuma.example.org/status/tools -> tools). Kuma serves statuses per status page, so this is half the address."
+        },
+        "map": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "status.provider: json only: how to read somebody else's status document. A path is a dotted walk and nothing more.",
+          "properties": {
+            "list": {
+              "type": "string",
+              "description": "Path to the array of services. Empty when the document is itself the array."
+            },
+            "key": {
+              "type": "string",
+              "description": "Field of each element holding the service name, which has to match a cairn service id for a pill to be drawn."
+            },
+            "state": {
+              "type": "string",
+              "description": "Field of each element holding its state."
+            },
+            "up": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Values that mean up. An allow-list: a state in none of the three lists reads as down."
+            },
+            "degraded": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Values that mean it works, but not well."
+            },
+            "maintenance": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Values that mean off on purpose."
+            }
+          }
+        },
+        "token_file": {
+          "type": "string",
+          "description": "Absolute path of a file holding the bearer token for the status API, never the token itself. A kubernetes secret, a docker secret and a vault agent all deliver one. It may not be under /assets, which cairn serves to every visitor."
+        },
+        "token_scheme": {
+          "type": "string",
+          "description": "Authorization scheme sent with the token; Bearer by default, OAuth for Atlassian Statuspage."
         },
         "page": {
           "type": "string",
