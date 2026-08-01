@@ -313,6 +313,100 @@ await check(
   },
 );
 
+// A card is one big link, so the pointer is a hand everywhere on it and says
+// nothing extra when it reaches a control. The fill is what tells a visitor
+// they are on a button, so it is worth holding: 3:1 against the card for the
+// boundary, 4.5:1 for the words the pill and the flag carry on top of it.
+//
+// color-mix() serializes as oklab(), which the sRGB reader above refuses, so
+// the colours go through a canvas: it hands back what would be painted.
+const hoverColours = (p, sel, theme) =>
+  p.$eval(
+    sel,
+    (el, theme) => {
+      document.documentElement.dataset.theme = theme;
+      const toRGB = (c) => {
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 1;
+        const x = cv.getContext("2d");
+        x.fillStyle = c;
+        x.fillRect(0, 0, 1, 1);
+        const d = x.getImageData(0, 0, 1, 1).data;
+        return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+      };
+      const s = getComputedStyle(el);
+      return {
+        fill: toRGB(s.backgroundColor),
+        ink: toRGB(s.color),
+        card: toRGB(getComputedStyle(el.closest(".card")).backgroundColor),
+      };
+    },
+    theme,
+  );
+
+for (const theme of ["light", "dark"]) {
+  await check(
+    `hovering a card control fills it, visibly, in ${theme}`,
+    async () => {
+      // The example config has no monitor, so it has no pill: the controls
+      // checked are the ones this page actually carries, and none at all is a
+      // failure rather than a quiet pass.
+      const present = [];
+      for (const sel of [
+        ".card-more",
+        ".card-foot a.flag",
+        ".card-foot a.status-pill",
+      ]) {
+        if (await home.$(sel)) present.push(sel);
+      }
+      if (present.length === 0) {
+        throw new Error("no card control on this page to hover at all");
+      }
+      for (const sel of present) {
+        await home.hover(sel);
+        await home.waitForTimeout(250);
+        const m = await hoverColours(home, sel, theme);
+        const fill = ratio(m.fill, m.card);
+        if (fill < 3) {
+          throw new Error(
+            `${sel} fills to ${m.fill}, ${fill.toFixed(2)}:1 against the card, which reads as nothing`,
+          );
+        }
+        const ink = ratio(m.ink, m.fill);
+        if (ink < 4.5) {
+          throw new Error(
+            `${sel} puts ${m.ink} on ${m.fill}, ${ink.toFixed(2)}:1, and text asks 4.5:1`,
+          );
+        }
+      }
+      await home.mouse.move(2, 2);
+    },
+  );
+}
+
+// A card grid lands on fractional track widths, so every card sits at its own
+// subpixel phase. A ring painted on the box edges and a glyph centred inside it
+// then round to different sides, and the glyph reads off centre, differently on
+// each card. Whole numbers on both sides is what stops it, so that is what is
+// held here: the gap has to be an integer, or the drawing goes back to
+// disagreeing with its own outline.
+await check("the detail glyph and its ring round the same way", async () => {
+  const gap = await home.$eval(".card-more", (el) => {
+    const s = getComputedStyle(el);
+    const box =
+      parseFloat(s.width) -
+      parseFloat(s.borderLeftWidth) -
+      parseFloat(s.borderRightWidth);
+    const glyph = el.querySelector("svg").getBoundingClientRect().width;
+    return { box, glyph, gap: (box - glyph) / 2 };
+  });
+  if (!Number.isInteger(gap.gap)) {
+    throw new Error(
+      `a ${gap.glyph}px glyph in a ${gap.box}px box leaves ${gap.gap}px on each side, which rounds one way on one card and the other way on the next`,
+    );
+  }
+});
+
 // ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
 // The fixture's monitor is a port nothing listens on, so every pill on that
