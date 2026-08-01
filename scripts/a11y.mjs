@@ -269,6 +269,32 @@ for (const theme of ["light", "dark"]) {
   );
 }
 
+// The way back out of a detail page: the same two duties as the card glyph,
+// since it was the other control under 24 by 24.
+await check("the back link is a real target on a detail page", async () => {
+  const m = await detail.$eval(".back", (el) => {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return {
+      w: r.width,
+      h: r.height,
+      colour: s.color,
+      behind: s.backgroundColor,
+    };
+  });
+  if (m.w < 24 || m.h < 24) {
+    throw new Error(
+      `${Math.round(m.w)} by ${Math.round(m.h)}, WCAG 2.2 asks 24 by 24 of a target`,
+    );
+  }
+  const r = ratio(m.colour, m.behind);
+  if (r < 4.5) {
+    throw new Error(
+      `its words are ${r.toFixed(2)}:1 against the chip, and text asks 4.5:1`,
+    );
+  }
+});
+
 // ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
 // The fixture's monitor is a port nothing listens on, so every pill on that
