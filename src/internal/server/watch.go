@@ -85,6 +85,18 @@ func source(cfg *config.Config) status.Source {
 		URL:      cfg.Site.StatusAddress(),
 		Provider: cfg.Site.StatusProvider(),
 		Slug:     cfg.Site.Status.Slug,
+		// The two mapping types are deliberately separate, since config
+		// imports nothing of cairn's; this is where one becomes the other.
+		TokenFile:   cfg.Site.Status.TokenFile,
+		TokenScheme: cfg.Site.Status.TokenScheme,
+		Map: status.Mapping{
+			List:        cfg.Site.Status.Map.List,
+			Key:         cfg.Site.Status.Map.Key,
+			State:       cfg.Site.Status.Map.State,
+			Up:          cfg.Site.Status.Map.Up,
+			Degraded:    cfg.Site.Status.Map.Degraded,
+			Maintenance: cfg.Site.Status.Map.Maintenance,
+		},
 		Insecure: cfg.Site.Status.Insecure,
 		CA:       cfg.Site.Status.CA,
 	}

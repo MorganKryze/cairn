@@ -71,6 +71,11 @@ monitor after the cairn service id by hand. That is measured rather than
 assumed: standing up the instance this was tested against took a script
 driving a browser.
 
+Anything else with a status API is read too, through
+[`status.provider: json`](recipes/status.md#any-other-status-api) and a
+six-key mapping: Statuspage, Instatus, Upptime, StatusCake, Better Stack. Two
+are refused and the reasons are on that page.
+
 Gatus is still the one cairn writes the config for, and still the only monitor
 that can point a pill at a page of its own per service. A quiet bonus of
 either pairing: cairn shows the status labels in your visitors' language,

@@ -158,6 +158,12 @@ type Source struct {
 	Slug     string // status.slug: kuma only, the published status page to read
 	Insecure bool   // status.insecure: verify nothing
 	CA       string // status.ca: verify against this too, a URL or an /assets path
+	// TokenFile names a file holding a bearer token, never the token itself:
+	// a secret written in site.yaml is a secret in a config repository. Every
+	// platform that has secrets delivers them as a mounted file.
+	TokenFile   string
+	TokenScheme string  // default Bearer; Statuspage wants OAuth
+	Map         Mapping // json only: how to read somebody else's document
 }
 
 // trusted caches the client built from a bundle, because building one means
@@ -245,7 +251,7 @@ type fetcher func(*http.Client, Source) (map[string]State, error)
 
 // providers is the whole list, and the error below reads it, so a provider
 // registered here is one the message already names without being told.
-var providers = map[string]fetcher{"gatus": fetchGatus, "kuma": fetchKuma}
+var providers = map[string]fetcher{"gatus": fetchGatus, "json": fetchJSON, "kuma": fetchKuma}
 
 func providerNames() string {
 	return strings.Join(slices.Sorted(maps.Keys(providers)), ", ")
@@ -272,7 +278,7 @@ func Fetch(src Source) (map[string]State, error) {
 // fetchGatus reads the endpoint statuses of a Gatus instance, keyed by
 // endpoint name, which is the service id.
 func fetchGatus(client *http.Client, src Source) (map[string]State, error) {
-	resp, err := client.Get(strings.TrimSuffix(src.URL, "/") + "/api/v1/endpoints/statuses")
+	resp, err := get(client, src, strings.TrimSuffix(src.URL, "/")+"/api/v1/endpoints/statuses")
 	if err != nil {
 		return nil, err
 	}

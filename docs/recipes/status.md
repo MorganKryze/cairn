@@ -3,16 +3,18 @@
 cairn tells visitors what exists; a monitor tells them what is up. cairn reads
 one, and never probes your services itself, nor asks the visitor's browser to.
 
-Two monitors are read directly:
+Three shapes are read:
 
-| monitor                                                | what cairn needs                                     | what it gets                                                |
-| ------------------------------------------------------ | ---------------------------------------------------- | ----------------------------------------------------------- |
-| [Gatus](https://github.com/TwiN/gatus)                 | `status.gatus`                                       | per-service pills, each linking to that service's own page  |
-| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | `status.url`, `status.provider: kuma`, `status.slug` | per-service pills, all linking to the published status page |
+| monitor                                                | what cairn needs                                     | what it gets                                                      |
+| ------------------------------------------------------ | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| [Gatus](https://github.com/TwiN/gatus)                 | `status.gatus`                                       | per-service pills, each linking to that service's own page        |
+| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | `status.url`, `status.provider: kuma`, `status.slug` | per-service pills, all linking to the published status page       |
+| [any other status API](#any-other-status-api)          | `status.url`, `status.provider: json`, `status.map`  | the same, from any document shaped like a list of `{name, state}` |
 
 Gatus first, because it integrates both ways: cairn can write its config.
-[Uptime Kuma](#uptime-kuma) is further down, and needs no agreement beyond
-naming each monitor after the service id.
+[Uptime Kuma](#uptime-kuma) needs no agreement beyond naming each monitor after
+the service id. The [mapper](#any-other-status-api) covers Statuspage,
+Instatus, Upptime, StatusCake, Better Stack and whatever is written next.
 
 ## 1. Generate the Gatus config
 
@@ -232,6 +234,84 @@ What differs from Gatus:
   invents none.
 - **Pending reads as Unknown.** A monitor waiting for its first check has not
   said anything yet, which is what the neutral pill already means.
+
+## Any other status API
+
+Most status pages answer with the same shape: a list of objects, each carrying
+a name and a state. `status.provider: json` reads any of them, with a mapping
+that says where to look.
+
+```yaml
+# site.yaml, reading an Atlassian Statuspage
+status:
+  provider: json
+  url: https://www.githubstatus.com/api/v2/components.json
+  map:
+    list: components # path to the array
+    key: name # field holding the service name
+    state: status # field holding its state
+    up: [operational]
+    degraded: [degraded_performance, partial_outage]
+    maintenance: [under_maintenance]
+```
+
+A path is a dotted walk and nothing more: `attributes.status` reaches inside a
+nested object, and `list:` left out means the document is itself the array.
+There are no wildcards and no filters, because anything cleverer is a query
+language, and a query language in YAML is a second product.
+
+The three value lists are **allow-lists**: a state in none of them reads as
+down. That is deliberate in both directions. A vendor that adds a word next
+year cannot make a broken service look green, and an operator who forgot to
+list one sees a red pill rather than a wrong one.
+
+Mappings for the ones this was tested against:
+
+| service              | `list`       | `key`                           | `state`             | `up`          |
+| -------------------- | ------------ | ------------------------------- | ------------------- | ------------- |
+| Atlassian Statuspage | `components` | `name`                          | `status`            | `operational` |
+| Instatus             | `components` | `name`                          | `status`            | `OPERATIONAL` |
+| Upptime              | (none)       | `slug`                          | `status`            | `up`          |
+| Better Stack         | `data`       | `attributes.pronounceable_name` | `attributes.status` | `up`          |
+| StatusCake           | `data`       | `name`                          | `status`            | `up`          |
+
+Rows that do not match a cairn service id are ignored, so the marketing entries
+real status pages carry (GitHub's own has one named "Visit
+www.githubstatus.com for more information") cost nothing. A row the mapping
+cannot read at all is skipped rather than failing the poll.
+
+### The token, if the API needs one
+
+Never in `site.yaml`. cairn takes the **path of a file** holding it:
+
+```yaml
+status:
+  provider: json
+  url: https://uptime.betterstack.com/api/v2/monitors
+  token_file: /run/secrets/status-token # a mounted file, not a value
+  token_scheme: Bearer # the default; Statuspage wants OAuth
+  map: { list: data, key: attributes.pronounceable_name, state: attributes.status, up: [up] }
+```
+
+A Kubernetes Secret, a docker compose secret and a Vault agent all deliver
+exactly that: a file. cairn reads it on every poll, so a rotated token takes
+effect without a restart, and it travels in an `Authorization` header, never in
+the URL. A poll error names the key rather than printing the credential.
+
+The file may not live under `/assets`. That directory is served to every
+visitor, so a token there would be published rather than stored, and cairn
+refuses to start. `status.ca` under `/assets` stays legal, and the asymmetry is
+the point: a CA certificate is the public half of an authority, and a token is
+not the public half of anything.
+
+### Two that cairn does not read, and why
+
+**HetrixTools** puts the token in the URL path
+(`/v1/<TOKEN>/uptime/monitors/…`). cairn logs a failed poll with the address it
+called, so the token would end up in cairn's own log.
+
+**Site24x7** needs an OAuth refresh-token exchange, which would make cairn hold
+rotating state. That is an architectural line rather than a configuration one.
 
 ## 5. Link the status page
 

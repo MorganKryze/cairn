@@ -117,6 +117,24 @@ type PageSection struct {
 	Body  LString `yaml:"body"`
 }
 
+// StatusMap reads a flat array of objects out of any JSON status API: where
+// the array is, which field of each element holds the service name and which
+// holds its state, then the values that mean each level. A path is a dotted
+// walk and nothing more, because anything cleverer is a query language, and a
+// query language in YAML is a second product.
+//
+// The three value lists are allow-lists: a state in none of them reads as
+// down, so a vendor that adds a word next year cannot make a broken service
+// look green.
+type StatusMap struct {
+	List        string   `yaml:"list"`
+	Key         string   `yaml:"key"`
+	State       string   `yaml:"state"`
+	Up          []string `yaml:"up"`
+	Degraded    []string `yaml:"degraded"`
+	Maintenance []string `yaml:"maintenance"`
+}
+
 // SiteIcon is one home-screen icon an operator supplies themselves. cairn
 // cannot resize an image without pulling in a scaler, so an operator who wants
 // the full set names the files and their sizes; nothing here is guessed.
@@ -164,6 +182,18 @@ type Site struct {
 		// these three fields.
 		Provider string `yaml:"provider"`
 		URL      string `yaml:"url"`
+		// Map tells cairn how to read somebody else's status document, and
+		// TokenFile names the file holding the credential for it. Its twin in
+		// the status package is status.Mapping: this package knows about no
+		// other, so server/watch.go copies one into the other the way it
+		// already copies the address and the trust settings.
+		Map StatusMap `yaml:"map"`
+		// TokenFile is a path, never a token. A secret written in site.yaml is
+		// a secret in a config repository; every platform that has secrets
+		// delivers them as a mounted file, which is the shape status.ca takes
+		// already.
+		TokenFile   string `yaml:"token_file"`
+		TokenScheme string `yaml:"token_scheme"` // default Bearer; Statuspage wants OAuth
 		// Slug is the published status page a Kuma instance serves statuses
 		// for. Kuma has no endpoint listing every monitor, only one per status
 		// page, so the slug is the address as much as the URL is.
@@ -269,7 +299,7 @@ func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
 // is kept in step by a test over there, where both are in reach: a name in one
 // list and not the other is either a config error nobody can fix or a config
 // that loads clean and then fails every poll.
-func StatusProviders() []string { return []string{"gatus", "kuma"} }
+func StatusProviders() []string { return []string{"gatus", "json", "kuma"} }
 
 // StatusAddress is the monitor cairn polls, whichever key named it, and empty
 // when the site has no status at all. Everything that used to ask whether

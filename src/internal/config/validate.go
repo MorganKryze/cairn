@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -226,6 +227,37 @@ func validateStatusAddress(site *Site) error {
 		}
 	case st.Slug != "" && p != "":
 		return fmt.Errorf("config: site.yaml: status.slug %q means nothing to status.provider: %s (only kuma reads by status page)", st.Slug, p)
+	}
+	// A mapping is the whole configuration of the json provider and means
+	// nothing to any other. Both halves are refused here rather than left to
+	// -check, because a mapping that silently does nothing is the failure this
+	// file exists to catch while somebody is still reading it.
+	empty := st.Map.List == "" && st.Map.Key == "" && st.Map.State == "" &&
+		len(st.Map.Up) == 0 && len(st.Map.Degraded) == 0 && len(st.Map.Maintenance) == 0
+	switch p := site.StatusProvider(); {
+	case p == "json":
+		if empty && st.URL != "" {
+			return fmt.Errorf("config: site.yaml: status.map is needed with status.provider: json (it says how to read the document: list, the path to the array; key and state, the fields of each element; then up, degraded and maintenance, the values that mean each)")
+		}
+		for _, f := range []struct{ key, val string }{{"key", st.Map.Key}, {"state", st.Map.State}} {
+			if !empty && f.val == "" {
+				return fmt.Errorf("config: site.yaml: status.map.%s is needed (it names the field of each element holding the service %s; status.map.list is the only optional path, and empty means the document is the array)", f.key, f.key)
+			}
+		}
+	case !empty && p != "":
+		return fmt.Errorf("config: site.yaml: status.map means nothing to status.provider: %s (only json reads a document through a mapping)", p)
+	}
+	// The assets directory is served to every visitor: GET /assets/token.txt
+	// on a running cairn returns the file. status.ca under /assets stays legal
+	// and the asymmetry is deliberate: a CA certificate is the public half of
+	// an authority, and a token is not the public half of anything.
+	if tf := st.TokenFile; tf != "" {
+		if AssetFile(tf) != "" || strings.HasPrefix(tf, "/assets/") {
+			return fmt.Errorf("config: site.yaml: status.token_file %q is inside the assets directory, which cairn serves to every visitor: the token would be published rather than stored (mount it somewhere else, as /run/secrets/status-token)", tf)
+		}
+		if !filepath.IsAbs(tf) {
+			return fmt.Errorf("config: site.yaml: status.token_file %q is not an absolute path (cairn resolves it against nothing: name the file where the platform mounts it, as /run/secrets/status-token)", tf)
+		}
 	}
 	return nil
 }

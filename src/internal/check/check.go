@@ -625,6 +625,9 @@ func inertSettings(cfg *config.Config) []string {
 		if st.Slug != "" {
 			set = append(set, "status.slug")
 		}
+		if st.TokenFile != "" {
+			set = append(set, "status.token_file")
+		}
 		if len(set) > 0 {
 			out = append(out, fmt.Sprintf("%s set without status.gatus or status.url: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))
 		}

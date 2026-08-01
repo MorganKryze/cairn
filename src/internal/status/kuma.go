@@ -43,7 +43,7 @@ func fetchKuma(client *http.Client, src Source) (map[string]State, error) {
 			} `json:"monitorList"`
 		} `json:"publicGroupList"`
 	}
-	if err := kumaGet(client, base+slug, &page); err != nil {
+	if err := kumaGet(client, src, base+slug, &page); err != nil {
 		return nil, kumaErr(src, err)
 	}
 	var beats struct {
@@ -51,7 +51,7 @@ func fetchKuma(client *http.Client, src Source) (map[string]State, error) {
 			Status int `json:"status"`
 		} `json:"heartbeatList"`
 	}
-	if err := kumaGet(client, base+"heartbeat/"+slug, &beats); err != nil {
+	if err := kumaGet(client, src, base+"heartbeat/"+slug, &beats); err != nil {
 		return nil, kumaErr(src, err)
 	}
 
@@ -97,8 +97,8 @@ func kumaErr(src Source, err error) error {
 	return fmt.Errorf("status.url %s: kuma answered something cairn could not read: %w", src.URL, err)
 }
 
-func kumaGet(client *http.Client, addr string, v any) error {
-	resp, err := client.Get(addr)
+func kumaGet(client *http.Client, src Source, addr string, v any) error {
+	resp, err := get(client, src, addr)
 	if err != nil {
 		return err
 	}

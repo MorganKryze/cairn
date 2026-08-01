@@ -43,9 +43,10 @@ account or a manual, and boring for you to operate.
 - **Tools grouped by need**, one plain sentence each, with optional "Learn
   more" pages for the curious.
 - **Live status pills** fed by your own monitor,
-  [Gatus](https://github.com/TwiN/gatus) or
-  [Uptime Kuma](https://github.com/louislam/uptime-kuma), each linking to its
-  status page. Your server does the polling, never the visitor's browser.
+  [Gatus](https://github.com/TwiN/gatus),
+  [Uptime Kuma](https://github.com/louislam/uptime-kuma) or anything with a
+  status API, each linking to its status page. Your server does the polling,
+  never the visitor's browser.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
 - **Search from anywhere**: just start typing, or ⌘K. A name finds that one
