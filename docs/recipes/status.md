@@ -238,17 +238,20 @@ Read by cairn itself on 2026-08-01, against that live service. Names are the
 agreement: a pill is drawn only where a name matches a cairn service id, so on
 your own status page, name the components after your service ids.
 
-| service                   | endpoint                                        | `list`         | `key`                    | `state`             | `up`          |
-| ------------------------- | ----------------------------------------------- | -------------- | ------------------------ | ------------------- | ------------- |
-| Atlassian Statuspage      | `/api/v2/components.json`                       | `components`   | `name`                   | `status`            | `operational` |
-| Instatus                  | `/v2/components.json`                           | `components`   | `name`                   | `status`            | `OPERATIONAL` |
-| Upptime                   | `history/summary.json` in the repo              | (none)         | `slug`                   | `status`            | `up`          |
-| Better Stack, public page | `/index.json`                                   | `included`     | `attributes.public_name` | `attributes.status` | `operational` |
-| UptimeRobot, public page  | `stats.uptimerobot.com/api/getMonitorList/<id>` | `psp.monitors` | `name`                   | `statusClass`       | `success`     |
-| Cachet                    | `/api/v1/components?per_page=100`               | `data`         | `name`                   | `status`            | `1`           |
-| Statping-ng               | `/api/services`                                 | (none)         | `name`                   | `online`            | `true`        |
+| service                   | endpoint                                        | `list`         | `key`                           | `state`             | `up`          |
+| ------------------------- | ----------------------------------------------- | -------------- | ------------------------------- | ------------------- | ------------- |
+| Atlassian Statuspage      | `/api/v2/components.json`                       | `components`   | `name`                          | `status`            | `operational` |
+| Instatus                  | `/v2/components.json`                           | `components`   | `name`                          | `status`            | `OPERATIONAL` |
+| Upptime                   | `history/summary.json` in the repo              | (none)         | `slug`                          | `status`            | `up`          |
+| Better Stack, public page | `/index.json`                                   | `included`     | `attributes.public_name`        | `attributes.status` | `operational` |
+| UptimeRobot, public page  | `stats.uptimerobot.com/api/getMonitorList/<id>` | `psp.monitors` | `name`                          | `statusClass`       | `success`     |
+| Cachet                    | `/api/v1/components?per_page=100`               | `data`         | `name`                          | `status`            | `1`           |
+| Statping-ng               | `/api/services`                                 | (none)         | `name`                          | `online`            | `true`        |
+| UptimeRobot API v3        | `/v3/monitors`                                  | `data`         | `friendlyName`                  | `status`            | `UP`          |
+| Better Stack API v2       | `/api/v2/monitors`                              | `data`         | `attributes.pronounceable_name` | `attributes.status` | `up`          |
+| StatusCake API v1         | `/v1/uptime?limit=100`                          | `data`         | `name`                          | `status`            | `up`          |
 
-Four notes worth having before you write yours:
+Notes worth having before you write yours:
 
 - **Statuspage's other states** are `degraded_performance` and `partial_outage`
   for degraded, `under_maintenance` for maintenance. Cloudflare's page had 34
@@ -260,8 +263,19 @@ Four notes worth having before you write yours:
   (1 operational, 2 performance issues, 3 partial outage, 4 major outage);
   `status_name` is the readable twin, but its wording follows the language of
   that instance, so the number travels better.
-- **Better Stack and StatusCake** also have token APIs, which work the same way
-  with `token_file`. The public status page needs no credential at all.
+- **The three token APIs** each name their own vocabulary, so their `unknown`
+  lists are worth copying: UptimeRobot answers `PAUSED, STARTED, UP,
+LOOKS_DOWN, DOWN` (it says so itself if you ask for a status it does not
+  know), and paused and started both belong in `unknown`. Better Stack answers
+  `up, down, paused, pending, maintenance, validating`: `validating` is the
+  amber one, `paused` and `pending` the quiet ones.
+- **StatusCake keeps paused in its own field**, a boolean beside `status`,
+  where no mapping can reach it: a paused test keeps whatever state it had. It
+  also pages at 25, hence `?limit=100`.
+- **A monitor's name has to be a valid cairn service id**: lowercase letters,
+  digits and dashes. A monitor named after a domain, `libresoftware.cloud`,
+  never matches, because a service id carries no dot. Rename the monitor, or
+  the pill never appears.
 
 ### The token, if the API needs one
 
@@ -331,7 +345,9 @@ else hosts for you.
 
 ### Read against a live instance
 
-Read by cairn itself on 2026-08-01; the count is what came back.
+Read by cairn itself on 2026-08-01; the count is what came back. The three
+marked "+ token" were read from real accounts on their free tiers, with the
+credential in a `token_file`.
 
 **Open source, self-hosted**
 
@@ -345,12 +361,15 @@ Read by cairn itself on 2026-08-01; the count is what came back.
 
 **Hosted**
 
-| service                          | how              | what was read                                             |
-| -------------------------------- | ---------------- | --------------------------------------------------------- |
-| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub |
-| Instatus                         | `provider: json` | 1 component                                               |
-| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                             |
-| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                         |
+| service                          | how                      | what was read                                             |
+| -------------------------------- | ------------------------ | --------------------------------------------------------- |
+| Atlassian Statuspage             | `provider: json`         | 471 components on Cloudflare, 33 on Discord, 12 on GitHub |
+| Instatus                         | `provider: json`         | 1 component                                               |
+| UptimeRobot, public status page  | `provider: json`         | 15 monitors, 5 of them paused                             |
+| UptimeRobot API v3               | `provider: json` + token | 1 monitor on a real account                               |
+| Better Stack, public status page | `provider: json`         | 4 resources, no credential needed                         |
+| Better Stack API v2              | `provider: json` + token | 2 monitors on a real account                              |
+| StatusCake API v1                | `provider: json` + token | 1 test on a real account, reported down                   |
 
 Anything answering in the Statuspage shape is read by the same mapping even
 when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
@@ -368,15 +387,9 @@ The shape or the credential fits, but there was no instance to point cairn at.
 
 **Hosted**
 
-| service                                 | why it should work                                                       | unverified                     |
-| --------------------------------------- | ------------------------------------------------------------------------ | ------------------------------ |
-| UptimeRobot API v3                      | `GET /v3/monitors` with a bearer token, which is what `token_file` sends | the field names                |
-| StatusCake API                          | `GET /v1/uptime` with a bearer token                                     | the field names                |
-| Better Stack API v2                     | the authenticated twin of the public page, which is read                 | little: same data, same vendor |
-| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                        | everything: no instance found  |
-
-Probed rather than assumed for the first three hosted ones: a deliberately
-wrong token is refused as a wrong token, not as a wrong scheme.
+| service                                 | why it should work                                | unverified                    |
+| --------------------------------------- | ------------------------------------------------- | ----------------------------- |
+| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components | everything: no instance found |
 
 ### Cannot be read, and why
 
