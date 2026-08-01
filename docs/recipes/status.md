@@ -18,6 +18,63 @@ Instatus, Upptime, Cachet, UptimeRobot, Better Stack and whatever is written
 next; each of those was read from a live instance, and the mapping it took is
 in the table.
 
+**Looking for your monitor?** [Which monitors cairn reads](#which-monitors-cairn-reads)
+lists what has been run against a live instance, what should work but has not
+been, and what cannot be read at all.
+
+## Which monitors cairn reads
+
+### Read against a live instance
+
+Every row here was read by cairn itself on 2026-08-01, and the count is what
+came back. The mapping each one took is in
+[the table further down](#mappings-that-were-run-against-the-real-thing).
+
+| monitor                          | how              | what was read                                               |
+| -------------------------------- | ---------------- | ----------------------------------------------------------- |
+| Gatus                            | `status.gatus`   | 5 services on the demo stack, 4 up and 1 down               |
+| Uptime Kuma 1.23.17              | `provider: kuma` | 2 monitors on a local instance, one up and one down         |
+| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub   |
+| Instatus                         | `provider: json` | 1 component                                                 |
+| Upptime                          | `provider: json` | 4 sites                                                     |
+| Cachet                           | `provider: json` | 31 components on status.framasoft.org, 6 on the Cachet demo |
+| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                               |
+| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                           |
+
+Anything answering in the Statuspage shape is read by the same mapping even
+when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
+read with the Statuspage row unchanged.
+
+### Should work, not run here
+
+The shape or the credential fits, but there was no instance to point cairn at.
+If you run one, the mapping is yours to write and
+[the errors say what was actually in the document](#any-other-status-api).
+
+| monitor                                 | why it should work                                                                                                                                                     | what is unverified                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| UptimeRobot API v3                      | `GET /v3/monitors` with `Authorization: Bearer`, which is exactly what `token_file` sends (probed: a fake token is refused as an invalid token, not as a wrong scheme) | the field names, which need a real key to see                    |
+| StatusCake API                          | `GET /v1/uptime` with a bearer token                                                                                                                                   | the same                                                         |
+| Better Stack API v2                     | the authenticated twin of the public page above                                                                                                                        | nothing much: the public page is read, and this is the same data |
+| Kener                                   | `GET /api/monitors` answers "missing or invalid authorization header", so the credential travels the way cairn sends it                                                | the shape                                                        |
+| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                                                                                                                      | everything: no public instance was found to read                 |
+
+### Cannot be read, and why
+
+| monitor                     | why not                                                                                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HetrixTools                 | the token travels in the URL path (`/v1/<TOKEN>/uptime/monitors/…`, confirmed by probing). cairn logs a failed poll with the address it called, so the token would land in cairn's own log |
+| Site24x7                    | needs an OAuth refresh-token exchange, which would make cairn hold rotating state. That is an architectural line, not a configuration one                                                  |
+| UptimeRobot API v2          | the key goes in the body of a `POST`. cairn makes one `GET` and nothing else. Use v3 or the public status page above                                                                       |
+| Healthchecks.io             | the key travels in `X-Api-Key`; cairn sends `Authorization` and no other header                                                                                                            |
+| OpenStatus public status    | answers one value for the whole page (`{"status":"operational"}`), not a list, so there is nothing to draw per service                                                                     |
+| Prometheus, Zabbix, Netdata | a metrics format or a different model altogether. Reading one is its own piece of work, and none of it belongs on a directory card                                                         |
+
+Two more that are not a monitor's fault. A **Kuma status page that is not
+published** answers 404 exactly as a misspelled slug does, and a **status page
+that is only HTML** has nothing to read; several vendors serve one JSON
+endpoint for the page and none per component.
+
 ## 1. Generate the Gatus config
 
 The binary emits Gatus endpoints from your services: one endpoint per
@@ -325,14 +382,8 @@ refuses to start. `status.ca` under `/assets` stays legal, and the asymmetry is
 the point: a CA certificate is the public half of an authority, and a token is
 not the public half of anything.
 
-### Two that cairn does not read, and why
-
-**HetrixTools** puts the token in the URL path
-(`/v1/<TOKEN>/uptime/monitors/…`). cairn logs a failed poll with the address it
-called, so the token would end up in cairn's own log.
-
-**Site24x7** needs an OAuth refresh-token exchange, which would make cairn hold
-rotating state. That is an architectural line rather than a configuration one.
+The monitors this cannot reach, and the reason for each, are in
+[Which monitors cairn reads](#cannot-be-read-and-why).
 
 ## 5. Link the status page
 

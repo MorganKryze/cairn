@@ -73,8 +73,10 @@ driving a browser.
 
 Anything else with a status API is read too, through
 [`status.provider: json`](recipes/status.md#any-other-status-api) and a
-six-key mapping: Statuspage, Instatus, Upptime, StatusCake, Better Stack. Two
-are refused and the reasons are on that page.
+mapping. Statuspage, Instatus, Upptime, Cachet, UptimeRobot and Better Stack
+have each been read from a live instance;
+[the full list](recipes/status.md#which-monitors-cairn-reads) says which
+monitors were run, which should work, and which cannot be read at all.
 
 Gatus is still the one cairn writes the config for, and still the only monitor
 that can point a pill at a page of its own per service. A quiet bonus of
