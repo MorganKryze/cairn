@@ -1,0 +1,120 @@
+# A working cairn, in one file, for looking at rather than for running:
+#
+#   helm install cairn oci://ghcr.io/morgankryze/charts/cairn -f values-example.yaml
+#   kubectl port-forward svc/cairn 8080:80
+#
+# The default values install a cairn that serves its own getting-started page,
+# which is the right thing for a first install and shows you nothing about what
+# the page looks like with services on it. This file fills that gap: two
+# locales, three categories, six services, a welcome note and a legal page.
+#
+# Every service here points at a public site, so the page works from any
+# cluster with egress and none of the links are dead. Replace them with yours
+# and you have a real config; nothing in this file is example-only syntax.
+#
+# A test in the repository loads this exact block through cairn's own config
+# loader and runs its checks over it, so it cannot drift out of date quietly.
+
+config:
+  site.yaml: |
+    title: { fr: Nos outils, en: Our tools }
+    tagline:
+      fr: Les services que nous hébergeons, et à quoi ils servent.
+      en: The services we host, and what each one is for.
+    locales: [fr, en]
+    theme:
+      accent: "#247b7b"
+    about:
+      fr: |
+        Bienvenue. Cette page liste les outils disponibles ici. Chacun mène
+        directement au service; le petit glyphe ouvre une page qui explique à
+        quoi il sert.
+      en: |
+        Welcome. This page lists the tools available here. Each one goes
+        straight to the service; the small glyph opens a page explaining what
+        it is for.
+    links:
+      - label: { fr: Documentation, en: Documentation }
+        url: https://github.com/MorganKryze/cairn
+        icon: book
+    pages:
+      - id: legal
+        title: { fr: Mentions légales, en: Legal notice }
+        body:
+          fr: |
+            Éditeur : votre nom, contact@exemple.org
+
+            Hébergement : ce site est auto-hébergé par son éditeur.
+          en: |
+            Publisher: your name, contact@example.org
+
+            Hosting: this site is self-hosted by its publisher.
+
+  categories.yaml: |
+    # order decides the sections; without it, groups fall back to alphabetical
+    - id: write
+      name: { fr: Écrire, en: Write }
+      order: 1
+    - id: files
+      name: { fr: Fichiers, en: Files }
+      order: 2
+    - id: watch
+      name: { fr: Regarder, en: Watch }
+      order: 3
+
+  services.yaml: |
+    - id: pad
+      url: https://demo.hedgedoc.org
+      category: write
+      icon: hedgedoc
+      selfhosted: true
+      name: { fr: Bloc-notes, en: Notepad }
+      desc: { fr: "Écrire à plusieurs, en direct.", en: "Write together, live." }
+      details:
+        fr: |
+          Un bloc-notes partagé. Ouvrez une page, envoyez le lien, et vous
+          écrivez à plusieurs sur le même texte.
+        en: |
+          A shared notepad. Open a page, send the link, and several of you
+          write on the same text.
+    - id: wiki
+      url: https://www.dokuwiki.org
+      category: write
+      icon: dokuwiki
+      selfhosted: true
+      name: { fr: Wiki, en: Wiki }
+      desc: { fr: "La mémoire écrite du groupe.", en: "The group's written memory." }
+    - id: files
+      url: https://nextcloud.com
+      category: files
+      icon: nextcloud
+      selfhosted: true
+      name: { fr: Fichiers, en: Files }
+      desc: { fr: "Vos documents, partagés et synchronisés.", en: "Your documents, shared and synced." }
+      details:
+        fr: |
+          Déposez un fichier, partagez un lien, retrouvez vos documents sur
+          votre téléphone.
+        en: |
+          Drop a file, share a link, find your documents again on your phone.
+    - id: photos
+      url: https://immich.app
+      category: files
+      icon: immich
+      selfhosted: true
+      name: { fr: Photos, en: Photos }
+      desc: { fr: "Vos photos, sauvegardées ici.", en: "Your photos, backed up here." }
+    - id: music
+      url: https://demo.navidrome.org
+      category: watch
+      icon: navidrome
+      selfhosted: true
+      name: { fr: Musique, en: Music }
+      desc: { fr: "Votre bibliothèque, où que vous soyez.", en: "Your library, wherever you are." }
+    - id: maps
+      url: https://www.openstreetmap.org
+      category: watch
+      icon: openstreetmap
+      selfhosted: false
+      name: { fr: Cartes, en: Maps }
+      desc: { fr: "Une carte du monde, faite par ses habitants.", en: "A map of the world, made by the people on it." }

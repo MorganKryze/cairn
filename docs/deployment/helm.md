@@ -30,6 +30,24 @@ and cairn version are the same number, always: chart `1.15.0` installs cairn
 `1.15.0`, so there is only ever one version to talk about, and `image.tag` is
 there if you ever want to break the pair apart.
 
+## Seeing it filled first
+
+The defaults install a cairn that serves its own getting-started page, which is
+right for a first install and tells you nothing about what the page looks like
+with services on it. The chart ships a values file that fills it:
+
+```sh
+curl -O https://raw.githubusercontent.com/MorganKryze/cairn/main/charts/cairn/values-example.yaml
+helm install cairn oci://ghcr.io/morgankryze/charts/cairn -f values-example.yaml
+kubectl port-forward svc/cairn 8080:80
+```
+
+Two locales, three groups, six services, a welcome note and a legal page, all
+pointing at public sites so nothing is dead on arrival. Replace the services
+with yours and it is a real config: nothing in that file is example-only
+syntax, and a test in the repository loads it through cairn's own loader and
+runs `-check` over it, so it cannot rot quietly.
+
 ## Feeding it your config
 
 Your YAML goes under `config:`, one entry per file, exactly the files you would
