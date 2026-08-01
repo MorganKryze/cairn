@@ -326,21 +326,31 @@ How they behave:
 
 ## Which monitors cairn reads
 
+Split by how you get them: something you run yourself, or something somebody
+else hosts for you.
+
 ### Read against a live instance
 
 Read by cairn itself on 2026-08-01; the count is what came back.
 
-| monitor                          | how              | what was read                                               |
-| -------------------------------- | ---------------- | ----------------------------------------------------------- |
-| Gatus                            | `status.gatus`   | 5 services on the demo stack, 4 up and 1 down               |
-| Uptime Kuma 1.23.17              | `provider: kuma` | 2 monitors on a local instance, one up and one down         |
-| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub   |
-| Instatus                         | `provider: json` | 1 component                                                 |
-| Upptime                          | `provider: json` | 4 sites                                                     |
-| Cachet                           | `provider: json` | 31 components on status.framasoft.org, 6 on the Cachet demo |
-| Statping-ng                      | `provider: json` | 6 services on a local instance, 5 up and 1 down             |
-| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                               |
-| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                           |
+**Open source, self-hosted**
+
+| monitor             | how              | what was read                                               |
+| ------------------- | ---------------- | ----------------------------------------------------------- |
+| Gatus               | `status.gatus`   | 5 services on the demo stack, 4 up and 1 down               |
+| Uptime Kuma 1.23.17 | `provider: kuma` | 2 monitors on a local instance, one up and one down         |
+| Cachet              | `provider: json` | 31 components on status.framasoft.org, 6 on the Cachet demo |
+| Statping-ng         | `provider: json` | 6 services on a local instance, 5 up and 1 down             |
+| Upptime             | `provider: json` | 4 sites (it runs on GitHub Actions, so there is no server)  |
+
+**Hosted**
+
+| service                          | how              | what was read                                             |
+| -------------------------------- | ---------------- | --------------------------------------------------------- |
+| Atlassian Statuspage             | `provider: json` | 471 components on Cloudflare, 33 on Discord, 12 on GitHub |
+| Instatus                         | `provider: json` | 1 component                                               |
+| UptimeRobot, public status page  | `provider: json` | 15 monitors, 5 of them paused                             |
+| Better Stack, public status page | `provider: json` | 4 resources, no credential needed                         |
 
 Anything answering in the Statuspage shape is read by the same mapping even
 when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
@@ -350,28 +360,44 @@ read with that row unchanged.
 
 The shape or the credential fits, but there was no instance to point cairn at.
 
-| monitor                                 | why it should work                                                             | unverified                        |
-| --------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------- |
-| UptimeRobot API v3                      | `GET /v3/monitors` with a bearer token, which is what `token_file` sends       | the field names                   |
-| StatusCake API                          | `GET /v1/uptime` with a bearer token                                           | the field names                   |
-| Better Stack API v2                     | the authenticated twin of the public page, which is read                       | little: same data, same vendor    |
-| Kener                                   | `/api/monitors` refuses a missing authorization header, so the credential fits | the shape, and it needs a token   |
-| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                              | everything: no instance was found |
+**Open source, self-hosted**
 
-Probed rather than assumed for the first three: a deliberately wrong token is
-refused as a wrong token, not as a wrong scheme.
+| monitor | why it should work                                                             | unverified                      |
+| ------- | ------------------------------------------------------------------------------ | ------------------------------- |
+| Kener   | `/api/monitors` refuses a missing authorization header, so the credential fits | the shape, and it needs a token |
+
+**Hosted**
+
+| service                                 | why it should work                                                       | unverified                     |
+| --------------------------------------- | ------------------------------------------------------------------------ | ------------------------------ |
+| UptimeRobot API v3                      | `GET /v3/monitors` with a bearer token, which is what `token_file` sends | the field names                |
+| StatusCake API                          | `GET /v1/uptime` with a bearer token                                     | the field names                |
+| Better Stack API v2                     | the authenticated twin of the public page, which is read                 | little: same data, same vendor |
+| Freshstatus, Statuspal, Hund, Status.io | each documents a JSON endpoint listing components                        | everything: no instance found  |
+
+Probed rather than assumed for the first three hosted ones: a deliberately
+wrong token is refused as a wrong token, not as a wrong scheme.
 
 ### Cannot be read, and why
 
-| monitor                    | why not                                                                                                                 |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| HetrixTools                | the token travels in the URL path, and cairn logs a failed poll with the address it called, so the log would publish it |
-| Site24x7                   | needs an OAuth refresh-token exchange, which would make cairn hold rotating state                                       |
-| UptimeRobot API v2         | the key goes in the body of a `POST`; cairn makes one `GET`. Use v3 or the public status page                           |
-| Healthchecks.io            | the key travels in `X-Api-Key`; cairn sends `Authorization` and no other header                                         |
-| OpenStatus public status   | answers one value for the whole page, not a list, so there is nothing to draw per service                               |
-| Netdata                    | answers alarms keyed by name rather than a list, and alarms are not services                                            |
-| Prometheus, Zabbix, Icinga | a metrics format or an RPC, and a different model altogether                                                            |
+**Open source, self-hosted**
+
+| monitor                    | why not                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| OpenStatus                 | the key travels in `x-openstatus-key`; cairn sends `Authorization` and no other header               |
+| Healthchecks               | the same, in `X-Api-Key`                                                                             |
+| Vigil                      | answers one word for the whole page (`healthy`), not a list, so there is nothing to draw per service |
+| Netdata                    | answers alarms keyed by name rather than a list, and an alarm is not a service                       |
+| Prometheus, Zabbix, Icinga | a metrics format or an RPC, and a different model altogether                                         |
+| cState, tinystatus         | static generators: they build a page, not an API                                                     |
+
+**Hosted**
+
+| service            | why not                                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| HetrixTools        | the token travels in the URL path, and cairn logs a failed poll with the address it called, so the log would publish it |
+| Site24x7           | needs an OAuth refresh-token exchange, which would make cairn hold rotating state                                       |
+| UptimeRobot API v2 | the key goes in the body of a `POST`; cairn makes one `GET`. Use v3 or the public status page                           |
 
 Two more that are nobody's fault. A **Kuma status page that is not published**
 404s exactly as a misspelled slug does, and a **status page that is only HTML**
