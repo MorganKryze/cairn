@@ -62,6 +62,38 @@ carries no flag.
 It is a data-location cue for your guests: which tools keep their data on your
 server, and which send them to a third party.
 
+### Making the flag lead somewhere
+
+By default the flag is text: a click on it opens the service, like the rest of
+the card. Give it a target in `site.yaml` and it becomes a link of its own,
+which is the place to explain what "self-hosted" means to a visitor who has
+never met the word.
+
+```yaml
+# site.yaml
+hosting_flag:
+  self: hosting # a page cairn serves, by its id
+  external: https://example.org/why # or any URL
+```
+
+Each key is optional and they are independent: set one and only that flag
+becomes a link.
+
+**The value is a page id, not a path.** cairn builds the link in the language
+the visitor is reading, so a French visitor lands on the French page, the same
+way the footer already links these pages. Writing `/en/hosting/` yourself would
+pin one language for everybody. A path (`/why`) or a URL passes through as
+written, and a URL opens in a new tab.
+
+A name that matches no page stops the load and lists the pages that do exist.
+`cairn -check` also says so when a target is set and no service carries that
+flag, since the flag it points from is then never drawn.
+
+One thing worth knowing before you set it: the card is one big link to the
+service, and a linked flag is a second target inside it, next to the pill. On a
+touch screen the flag is unfurled, so it is a wide one. That is the trade, and
+it is why the flag stays plain text unless you ask.
+
 The labels are translated in every built-in language and, like all UI text,
 can be reworded per locale from `site.yaml`:
 

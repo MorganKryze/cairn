@@ -237,6 +237,11 @@ type cardView struct {
 	StatusA11y          string // set only when the pill is a link
 	StatusID            string // names the pill's slot, empty without a Gatus
 	HostKind, HostLabel string // "self"/"external"/"" and its localized label
+	// HostHref is where the flag leads, empty when it leads nowhere and the
+	// flag stays the plain text it has always been. HostBlank is set for a
+	// target that is not this site.
+	HostHref  string
+	HostBlank bool
 }
 
 type catView struct {
@@ -295,6 +300,22 @@ type staticView struct {
 type sectionView struct {
 	Title locText
 	Body  prose
+}
+
+// hostTarget resolves where a hosting flag leads, and whether that is off this
+// site. A page id becomes the path to that page in the language being read,
+// which is why the key takes an id rather than a path: writing /en/hosting/
+// would pin one language for every visitor. Anything else is used as written.
+func hostTarget(cfg *config.Config, loc, ref string) (href string, blank bool) {
+	if ref == "" {
+		return "", false
+	}
+	for _, p := range cfg.Site.Pages {
+		if p.ID == ref {
+			return BasePath + "/" + loc + "/" + p.ID + "/", false
+		}
+	}
+	return ref, !config.IsLocalPath(ref)
 }
 
 // statusBase is the page a pill points into, without a trailing slash.
@@ -508,8 +529,10 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				if s.Selfhosted != nil {
 					if *s.Selfhosted {
 						card.HostKind, card.HostLabel = "self", cfg.Str(loc, "host.self")
+						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.Self)
 					} else {
 						card.HostKind, card.HostLabel = "external", cfg.Str(loc, "host.external")
+						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
 				cv.Cards = append(cv.Cards, card)

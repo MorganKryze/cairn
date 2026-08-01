@@ -633,6 +633,30 @@ func inertSettings(cfg *config.Config) []string {
 		}
 	}
 
+	// A hosting flag leads somewhere only from a card that wears one, and a
+	// card wears one only when its service says selfhosted. Set the target and
+	// flag nothing with it and the line reads as working from the file.
+	var wears [2]bool
+	for _, c := range cfg.Categories {
+		for _, s := range c.Services {
+			if s.Selfhosted != nil {
+				if *s.Selfhosted {
+					wears[0] = true
+				} else {
+					wears[1] = true
+				}
+			}
+		}
+	}
+	for i, f := range []struct{ key, val, kind string }{
+		{"hosting_flag.self", cfg.Site.HostingFlag.Self, "selfhosted: true"},
+		{"hosting_flag.external", cfg.Site.HostingFlag.External, "selfhosted: false"},
+	} {
+		if f.val != "" && !wears[i] {
+			out = append(out, fmt.Sprintf("%s is set and no service says %s, so the flag it points from is never drawn", f.key, f.kind))
+		}
+	}
+
 	// Str falls through to the built-in table on a miss, so a misspelled key
 	// is indistinguishable from no override.
 	valid := map[string]bool{}

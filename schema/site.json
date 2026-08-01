@@ -167,6 +167,21 @@
         }
       }
     },
+    "hosting_flag": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where the self-hosted and external flags on a card lead. Each value is the id of a page cairn serves, an absolute path, or a URL; a page id resolves in the language the visitor is reading. Leave one out and that flag stays plain text.",
+      "properties": {
+        "self": {
+          "type": "string",
+          "description": "Where the Self-hosted flag leads: a page id, an absolute path, or a URL."
+        },
+        "external": {
+          "type": "string",
+          "description": "Where the External flag leads: a page id, an absolute path, or a URL."
+        }
+      }
+    },
     "status": {
       "type": "object",
       "additionalProperties": false,

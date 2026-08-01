@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/MorganKryze/cairn/main/schema/services.json
 - id: pdf
+  selfhosted: true
   url: https://pdf.example.org
   category: documents
   icon: stirling-pdf
@@ -21,6 +22,7 @@
   tags: [pdf, convertir, convert]
 
 - id: pad
+  selfhosted: true
   url: https://pad.example.org
   category: documents
   icon: hedgedoc
