@@ -263,15 +263,20 @@ Notes worth having before you write yours:
   (1 operational, 2 performance issues, 3 partial outage, 4 major outage);
   `status_name` is the readable twin, but its wording follows the language of
   that instance, so the number travels better.
-- **The three token APIs** each name their own vocabulary, so their `unknown`
-  lists are worth copying: UptimeRobot answers `PAUSED, STARTED, UP,
-LOOKS_DOWN, DOWN` (it says so itself if you ask for a status it does not
-  know), and paused and started both belong in `unknown`. Better Stack documents
-  `up, down, paused, pending, maintenance, validating`: `validating` is the
-  amber one, `paused` and `pending` the quiet ones.
-- **StatusCake keeps paused in its own field**, a boolean beside `status`,
-  where no mapping can reach it, so a paused test keeps whatever `status` it
-  last had. It also pages at 25, hence `?limit=100`.
+- **The three token APIs** each have a vocabulary worth copying into
+  `unknown`. UptimeRobot names its own if you ask it for a status it does not
+  know: `PAUSED, STARTED, UP, LOOKS_DOWN, DOWN`, in capitals, and `PAUSED` and
+  `STARTED` belong in `unknown`. Better Stack documents `up, down, paused,
+pending, maintenance, validating`, in lower case: `validating` is the amber
+  one, `paused` and `pending` the quiet ones. Both spellings were read from a
+  real account with a monitor paused, so they are measured rather than copied
+  from a manual.
+- **StatusCake cannot say that a test is paused**, and that one bites.
+  Measured: a paused test answers `status: up`, with the pause in a separate
+  `paused` boolean that a mapping cannot reach, since a mapping reads one
+  field. So a test you switched off draws a **green** pill on your directory.
+  Delete the tests you stop using rather than pausing them. StatusCake also
+  pages at 25, hence `?limit=100`.
 - **A monitor's name has to be a valid cairn service id**: lowercase letters,
   digits and dashes. A monitor named after a domain, `libresoftware.cloud`,
   never matches, because a service id carries no dot. Rename the monitor, or
@@ -366,10 +371,10 @@ credential in a `token_file`.
 | Atlassian Statuspage             | `provider: json`         | 471 components on Cloudflare, 33 on Discord, 12 on GitHub |
 | Instatus                         | `provider: json`         | 1 component                                               |
 | UptimeRobot, public status page  | `provider: json`         | 15 monitors, 5 of them paused                             |
-| UptimeRobot API v3               | `provider: json` + token | 1 monitor on a real account                               |
+| UptimeRobot API v3               | `provider: json` + token | 2 monitors on a real account, one paused and left undrawn |
 | Better Stack, public status page | `provider: json`         | 4 resources, no credential needed                         |
-| Better Stack API v2              | `provider: json` + token | 2 monitors on a real account                              |
-| StatusCake API v1                | `provider: json` + token | 1 test on a real account, reported down                   |
+| Better Stack API v2              | `provider: json` + token | 3 monitors on a real account, one paused and left undrawn |
+| StatusCake API v1                | `provider: json` + token | 2 tests on a real account; the paused one still reads up  |
 
 Anything answering in the Statuspage shape is read by the same mapping even
 when Atlassian is nowhere near it: Tailscale's own page, 11 components, was
