@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -68,13 +70,30 @@ func Emit(cfg *config.Config, hide bool) ([]byte, error) {
 	return yaml.Marshal(map[string]any{"endpoints": eps})
 }
 
-// State is what Gatus says about one endpoint: whether its last check passed,
-// and the key it uses for its own endpoint page. The key is reported rather
+// Level is what a source says about one service. Four values, counted from
+// what the sources actually declare rather than chosen: up and down are
+// universal, degraded and maintenance are each drawn by four monitors of the
+// eight surveyed. Anything else a source says reads as down, which is the safe
+// direction: a word added to a vendor's API next year cannot make a broken
+// service look green.
+//
+// Gatus reaches only two of them. Its results carry a success bool and nothing
+// else, which is why giving the other sources more states cannot move what a
+// Gatus site renders.
+const (
+	LevelUp          = "up"
+	LevelDegraded    = "degraded"
+	LevelMaintenance = "maintenance"
+	LevelDown        = "down"
+)
+
+// State is what a source says about one service: the level, and the key of the
+// source's own page for it, empty when it has none. The key is reported rather
 // than derived because only the operator's Gatus config decides how endpoints
 // are grouped, and cairn's categories are not that config.
 type State struct {
-	Up  bool
-	Key string
+	Level string
+	Key   string
 }
 
 // Key builds the key Gatus uses in its endpoint page URLs
@@ -129,12 +148,13 @@ var (
 	}
 )
 
-// Source is where the pills come from: the Gatus API cairn polls, and how much
+// Source is where the pills come from: the monitor cairn polls, and how much
 // it is willing to trust on the way there. It mirrors the status block in
-// site.yaml, and exists so the two trust settings travel together with the
-// address they apply to rather than as loose parameters.
+// site.yaml, and exists so the trust settings travel together with the address
+// they apply to rather than as loose parameters.
 type Source struct {
 	URL      string
+	Provider string // status.provider: empty means gatus, which is what every config written before providers existed says
 	Insecure bool   // status.insecure: verify nothing
 	CA       string // status.ca: verify against this too, a URL or an /assets path
 }
@@ -217,13 +237,40 @@ func bundle(ref string) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 }
 
-// Fetch asks a Gatus instance for its endpoint statuses and returns
-// service-id -> up, keyed by endpoint name.
+// fetcher is one way of asking a monitor what it knows. The client is chosen
+// once, by Fetch, so every provider inherits the same timeout and the same
+// answer to status.insecure and status.ca.
+type fetcher func(*http.Client, Source) (map[string]State, error)
+
+// providers is the whole list, and the error below reads it, so a provider
+// registered here is one the message already names without being told.
+var providers = map[string]fetcher{"gatus": fetchGatus}
+
+func providerNames() string {
+	return strings.Join(slices.Sorted(maps.Keys(providers)), ", ")
+}
+
+// Fetch asks the source's monitor what it knows and returns service-id ->
+// state.
 func Fetch(src Source) (map[string]State, error) {
+	name := src.Provider
+	if name == "" {
+		name = "gatus"
+	}
+	f, ok := providers[name]
+	if !ok {
+		return nil, fmt.Errorf("status.provider %q is not one cairn reads (expected one of %s)", name, providerNames())
+	}
 	client, err := clientFor(src)
 	if err != nil {
 		return nil, err
 	}
+	return f(client, src)
+}
+
+// fetchGatus reads the endpoint statuses of a Gatus instance, keyed by
+// endpoint name, which is the service id.
+func fetchGatus(client *http.Client, src Source) (map[string]State, error) {
 	resp, err := client.Get(strings.TrimSuffix(src.URL, "/") + "/api/v1/endpoints/statuses")
 	if err != nil {
 		return nil, err
@@ -248,7 +295,11 @@ func Fetch(src Source) (map[string]State, error) {
 	out := make(map[string]State, len(list))
 	for _, e := range list {
 		if len(e.Results) > 0 {
-			out[e.Name] = State{Up: e.Results[len(e.Results)-1].Success, Key: e.Key}
+			level := LevelDown
+			if e.Results[len(e.Results)-1].Success {
+				level = LevelUp
+			}
+			out[e.Name] = State{Level: level, Key: e.Key}
 		}
 	}
 	return out, nil

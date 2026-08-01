@@ -81,10 +81,10 @@ func TestFetchStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if up, ok := st["pdf"]; !ok || !up.Up {
+	if up, ok := st["pdf"]; !ok || up.Level != status.LevelUp {
 		t.Errorf("pdf = %v,%v, want up (last result wins)", up, ok)
 	}
-	if up, ok := st["pad"]; !ok || up.Up {
+	if up, ok := st["pad"]; !ok || up.Level == status.LevelUp {
 		t.Errorf("pad = %v,%v, want down", up, ok)
 	}
 	if _, ok := st["empty"]; ok {
@@ -131,7 +131,7 @@ func TestPillLinksToTheKeyGatusReports(t *testing.T) {
 // service that could be anything answering on that address.
 func TestReportedKeyCannotEscapeItsPathSegment(t *testing.T) {
 	m, err := render.BuildModel(sample(t), map[string]status.State{
-		"pdf": {Up: true, Key: "../../../admin"},
+		"pdf": {Level: status.LevelUp, Key: "../../../admin"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func TestReportedKeyCannotEscapeItsPathSegment(t *testing.T) {
 
 func TestStatusDots(t *testing.T) {
 	cfg := sample(t)
-	m, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Up: true}, "pad": {}})
+	m, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Level: status.LevelUp}, "pad": {}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestStatusDots(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pm, err := render.BuildModel(pub, map[string]status.State{"a": {Up: true}})
+	pm, err := render.BuildModel(pub, map[string]status.State{"a": {Level: status.LevelUp}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestStatusDots(t *testing.T) {
 		t.Error("gatus configured but silent: every pill should be unknown")
 	}
 
-	partial, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Up: true}})
+	partial, err := render.BuildModel(cfg, map[string]status.State{"pdf": {Level: status.LevelUp}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,10 +230,10 @@ func TestStatusConfigValidation(t *testing.T) {
 
 func TestUnmonitored(t *testing.T) {
 	cfg := &config.Config{Categories: []config.Category{{ID: "t", Services: []config.Service{{ID: "seen"}, {ID: "ghost"}}}}}
-	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Up: true}}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
+	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Level: status.LevelUp}}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
 		t.Errorf("Unmonitored = %q, want it to name only ghost", got)
 	}
-	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Up: true}, "ghost": {}}); got != "" {
+	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Level: status.LevelUp}, "ghost": {}}); got != "" {
 		t.Errorf("Unmonitored = %q, want empty when all endpoints exist", got)
 	}
 }
