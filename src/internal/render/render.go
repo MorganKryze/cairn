@@ -229,10 +229,14 @@ type pageView struct {
 
 type cardView struct {
 	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
-	Name, Desc                                                 locText
-	StatusA11y                                                 string // set only when the pill is a link
-	StatusID                                                   string // names the pill's slot, empty without a Gatus
-	HostKind, HostLabel                                        string // "self"/"external"/"" and its localized label
+	// MoreA11y names the detail link for a screen reader. The link is a glyph,
+	// which says nothing on its own, and a page of identical "Learn more"
+	// links is a link list nobody can navigate: it names the service too.
+	MoreA11y            string
+	Name, Desc          locText
+	StatusA11y          string // set only when the pill is a link
+	StatusID            string // names the pill's slot, empty without a Gatus
+	HostKind, HostLabel string // "self"/"external"/"" and its localized label
 }
 
 type catView struct {
@@ -499,6 +503,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
+					card.MoreA11y = s.Name.Get(loc, def) + ", " + cfg.Str(loc, "card.more")
 				}
 				if s.Selfhosted != nil {
 					if *s.Selfhosted {

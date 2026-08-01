@@ -594,19 +594,34 @@ html { scrollbar-gutter: stable; }
 .card:has(.card-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card-desc { color: var(--muted); font-size: .95rem; }
 
+/* The detail link: a glyph in the card's corner, raised above the stretched
+   link like the status pill. It sits there rather than at the end of the
+   description for two reasons. Inline, it was 90 by 16, under the 24 by 24
+   WCAG 2.2 asks of a target, and no padding would fix that without pushing the
+   prose around. In the card foot, which was the other candidate, it squeezed
+   the host flag: on a 320px phone the flag is unfurled and "Self-hosted" came
+   out as "Self-". The corner is the one place on a card that belongs to
+   nothing else. */
 .card-more {
-  position: relative;
+  position: absolute;
+  inset-block-start: .85rem;
+  inset-inline-end: .9rem;
   z-index: 1;
-  white-space: nowrap;
-  margin-inline-start: .5rem;
-  font-size: .85rem;
-  font-weight: 500;
-  color: var(--accent-ink);
-  text-decoration: none;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  transition: color .16s, border-color .16s;
 }
-.card-more::after { content: "→"; display: inline-block; margin-inline-start: .3rem; transition: transform .16s; }
-.card:hover .card-more::after { transform: translateX(3px); }
-.card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.card-more:hover { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more-glyph { width: .95rem; height: .95rem; }
+/* Room for it, so a long name does not run underneath. */
+.card:has(.card-more) .card-name { padding-inline-end: 2.2rem; }
 
 /* ---- status dots ---- */
 
@@ -1189,5 +1204,4 @@ footer {
 
 /* Right-to-left: the layout follows from the logical properties above, only
    the two literal arrows have to be turned around by hand. */
-[dir="rtl"] .card-more::after { content: "\2190"; }
 [dir="rtl"] .back::before { content: "\2192"; }

@@ -23,7 +23,7 @@ green or red within ~20 seconds, as the bundled Gatus reports in.
   each linking to its own endpoint page on the bundled Gatus (dashboard at
   <http://localhost:8081>), polled server-side every 10 s.
 - **Detail pages**: "Who am I?", "Podinfo" and "Ghost service" have a
-  "Learn more" link; the first two show preview images served from
+  detail-page glyph; the first two show preview images served from
   `config/media/`.
 - **Search**: type `apa`, `réqu`, `echo`… accent-insensitive, no JS needed
   for the rest of the page.

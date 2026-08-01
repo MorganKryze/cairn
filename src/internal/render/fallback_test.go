@@ -27,7 +27,11 @@ func TestFallbackTextCarriesTheLanguageItIsWrittenIn(t *testing.T) {
 	for _, want := range []string{
 		`<p class="tagline" lang="en">Everything in one place</p>`,
 		`<div lang="ar" dir="rtl">`,
-		`<span lang="ar" dir="rtl">محرر نصوص تعاوني</span>`,
+		// The mark sits on the description itself. It used to be on an inner
+		// span, because the "Learn more" words shared that element and were
+		// written in the page's language; the link is a glyph in the corner
+		// now, so the whole element is the description and carries the mark.
+		`<span class="card-desc" lang="ar" dir="rtl">محرر نصوص تعاوني</span>`,
 	} {
 		if !strings.Contains(home, want) {
 			t.Errorf("the French home page does not carry %s", want)
@@ -123,10 +127,14 @@ func TestEmptyFieldsStillRenderNothing(t *testing.T) {
 			t.Errorf("home rendered %s for a field the config never set", unwanted)
 		}
 	}
-	// pad has neither a description nor a detail page, so it has no card-desc
-	// at all; shot has a more-link, which is the other reason for one.
-	if strings.Count(home, `class="card-desc"`) != 1 {
+	// Neither service has a description, so neither has a card-desc. shot has
+	// images and therefore a detail link, which used to be the second reason
+	// for that element and is now a glyph of its own in the corner.
+	if strings.Contains(home, `class="card-desc"`) {
 		t.Error("a service with no desc should render no card-desc")
+	}
+	if strings.Count(home, `class="card-more"`) != 1 {
+		t.Error("shot has a detail page to link to, pad has none: exactly one glyph")
 	}
 	detail := string(m.Pages["en/shot"].HTML)
 	for _, unwanted := range []string{"<figcaption", `class="lead"`} {
