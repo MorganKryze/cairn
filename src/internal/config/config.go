@@ -155,7 +155,15 @@ type Site struct {
 		Encryption string `yaml:"encryption"` // where the public key lives
 	} `yaml:"security"`
 	Status struct {
-		Gatus    string `yaml:"gatus"`
+		Gatus string `yaml:"gatus"`
+		// Provider names the monitor behind the address, and URL is that
+		// address for a monitor that is not Gatus. Gatus keeps its own key
+		// because it had one first: every site running today says gatus: and
+		// has to keep meaning exactly what it meant. The two spellings resolve
+		// through StatusProvider and StatusAddress, and nothing else reads
+		// these three fields.
+		Provider string `yaml:"provider"`
+		URL      string `yaml:"url"`
 		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
 		// Linked nil means true: the pills link to the status page. false
@@ -249,6 +257,38 @@ type Config struct {
 }
 
 func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
+
+// StatusProviders lists the monitors status.provider accepts, sorted.
+//
+// This package imports nothing of cairn's, which is the rule the dependency
+// graph is built on, so the list cannot come from the poller that owns it. It
+// is kept in step by a test over there, where both are in reach: a name in one
+// list and not the other is either a config error nobody can fix or a config
+// that loads clean and then fails every poll.
+func StatusProviders() []string { return []string{"gatus"} }
+
+// StatusAddress is the monitor cairn polls, whichever key named it, and empty
+// when the site has no status at all. Everything that used to ask whether
+// status.gatus was set asks this instead.
+func (s *Site) StatusAddress() string {
+	if s.Status.Gatus != "" {
+		return s.Status.Gatus
+	}
+	return s.Status.URL
+}
+
+// StatusProvider is which monitor that address is. status.gatus implies it, so
+// a config written before providers existed resolves to gatus without saying
+// so, and empty means the site polls nothing.
+func (s *Site) StatusProvider() string {
+	if s.StatusAddress() == "" && s.Status.Provider == "" {
+		return ""
+	}
+	if s.Status.Provider != "" {
+		return s.Status.Provider
+	}
+	return "gatus"
+}
 
 func (c *Config) StatusInterval() time.Duration {
 	if d, err := time.ParseDuration(c.Site.Status.Interval); err == nil && d >= 5*time.Second {

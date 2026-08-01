@@ -26,6 +26,9 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	if g := site.Status.Gatus; g != "" && !isHTTPURL(g) {
 		return fmt.Errorf("config: site.yaml: status.gatus %q is not a URL (expected e.g. https://status.example.org)", g)
 	}
+	if err := validateStatusAddress(site); err != nil {
+		return err
+	}
 	if p := site.Status.Page; p != "" && !isHTTPURL(p) {
 		return fmt.Errorf("config: site.yaml: status.page %q is not a URL (expected e.g. https://status.example.org)", p)
 	}
@@ -180,6 +183,33 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			if len(s.Title) == 0 || len(s.Body) == 0 {
 				return fmt.Errorf("config: site.yaml: page %q: every section needs title and body", p.ID)
 			}
+		}
+	}
+	return nil
+}
+
+// validateStatusAddress settles which monitor cairn polls and where.
+//
+// There are two ways to name it and they must not both be taken: status.gatus,
+// which every site running today uses and which implies its own provider, and
+// status.url with status.provider for a monitor that is not Gatus. Each
+// ambiguity below is refused with the key to fix rather than resolved by
+// guessing, because guessing wrong means pills drawn from an address the
+// operator did not mean.
+func validateStatusAddress(site *Site) error {
+	st := &site.Status
+	if st.Provider != "" && !slices.Contains(StatusProviders(), st.Provider) {
+		return fmt.Errorf("config: site.yaml: status.provider %q is not a monitor cairn reads (expected one of %s)", st.Provider, strings.Join(StatusProviders(), ", "))
+	}
+	if st.Gatus != "" && st.URL != "" {
+		return fmt.Errorf("config: site.yaml: set one of status.gatus and status.url, not both (they are two ways of naming the one monitor cairn polls; status.gatus is the Gatus spelling and needs no status.provider)")
+	}
+	if st.URL != "" {
+		if st.Provider == "" {
+			return fmt.Errorf("config: site.yaml: status.url needs status.provider to say what answers there (expected one of %s)", strings.Join(StatusProviders(), ", "))
+		}
+		if !isHTTPURL(st.URL) {
+			return fmt.Errorf("config: site.yaml: status.url %q is not a URL (expected e.g. https://status.example.org)", st.URL)
 		}
 	}
 	return nil

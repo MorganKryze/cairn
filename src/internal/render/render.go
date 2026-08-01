@@ -90,7 +90,7 @@ func BuildCSP(cfg *config.Config) string {
 	// The one request a cairn page ever makes from the browser: status.js
 	// refetching the page it is on. Sites with no Gatus do not ship the script
 	// and do not get the permission.
-	if cfg.Site.Status.Gatus != "" {
+	if cfg.Site.StatusAddress() != "" {
 		csp += "; connect-src 'self'"
 	}
 	return csp
@@ -309,7 +309,7 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service, key str
 	// status.page URL; status.gatus may be an internal poll-only address.
 	base := cfg.Site.Status.Page
 	if base == "" {
-		base = cfg.Site.Status.Gatus
+		base = cfg.Site.StatusAddress()
 	}
 	// Gatus names its own endpoint pages. Deriving that name from cairn's
 	// categories only ever matched an operator who ran -emit-gatus and kept its
@@ -338,7 +338,7 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service, key str
 // answered yet (boot, outage) every pill is unknown; once it has, services it
 // does not monitor show no pill at all.
 func statusOf(cfg *config.Config, statuses map[string]status.State, id string) string {
-	if cfg.Site.Status.Gatus == "" {
+	if cfg.Site.StatusAddress() == "" {
 		return ""
 	}
 	if len(statuses) == 0 {
@@ -363,7 +363,7 @@ func statusOf(cfg *config.Config, statuses map[string]status.State, id string) s
 // and one of the states it has to be able to reach is "nothing": a service the
 // status page stops monitoring loses its pill rather than keeping a stale one.
 func statusSlot(cfg *config.Config, id string) string {
-	if cfg.Site.Status.Gatus == "" {
+	if cfg.Site.StatusAddress() == "" {
 		return ""
 	}
 	return id
@@ -373,7 +373,7 @@ func statusSlot(cfg *config.Config, id string) string {
 // interval cairn polls Gatus on: asking cairn more often than cairn can learn
 // anything new would only cost requests.
 func statusPoll(cfg *config.Config) int {
-	if cfg.Site.Status.Gatus == "" {
+	if cfg.Site.StatusAddress() == "" {
 		return 0
 	}
 	return int(cfg.StatusInterval().Seconds())

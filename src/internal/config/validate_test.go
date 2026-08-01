@@ -175,6 +175,25 @@ func TestValidateSiteRejections(t *testing.T) {
 		{"footer entry with no label", func(s *Site) {
 			s.Footer = []FooterLink{{URL: "/legal"}}
 		}, []string{"every footer entry needs label and url"}},
+		// The address resolution table. Every ambiguous way of naming the
+		// monitor is answered with the key to fix and the shape expected,
+		// because the alternative is cairn guessing which of two addresses the
+		// operator meant and drawing pills from the wrong one.
+		{"a provider nobody wrote", func(s *Site) {
+			s.Status.URL = "https://x.example.org"
+			s.Status.Provider = "nagios"
+		}, []string{"status.provider", "nagios", "gatus"}},
+		{"an address with no provider to read it", func(s *Site) {
+			s.Status.URL = "https://k.example.org"
+		}, []string{"status.url", "status.provider", "gatus"}},
+		{"both addresses at once", func(s *Site) {
+			s.Status.Gatus = "https://g.example.org"
+			s.Status.URL = "https://k.example.org"
+		}, []string{"status.gatus", "status.url", "not both"}},
+		{"an address that is not a URL", func(s *Site) {
+			s.Status.URL = "k.example.org"
+			s.Status.Provider = "gatus"
+		}, []string{"status.url", "is not a URL"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -187,6 +206,53 @@ func TestValidateSiteRejections(t *testing.T) {
 				if !strings.Contains(err.Error(), want) {
 					t.Errorf("message %q does not mention %q", err, want)
 				}
+			}
+		})
+	}
+}
+
+// The accepted half of the address resolution table, read through the two
+// methods everything else asks rather than through the fields. A config
+// written before providers existed has to come out of it saying gatus, since
+// that is the shape every running site has.
+func TestTheAddressResolves(t *testing.T) {
+	for _, c := range []struct {
+		name             string
+		mut              func(*Site)
+		provider, addr   string
+		wantErrSubstring string
+	}{
+		{"gatus alone, which is every site running today",
+			func(s *Site) { s.Status.Gatus = "https://g.example.org" }, "gatus", "https://g.example.org", ""},
+		{"gatus named as well, which changes nothing",
+			func(s *Site) {
+				s.Status.Gatus = "https://g.example.org"
+				s.Status.Provider = "gatus"
+			}, "gatus", "https://g.example.org", ""},
+		{"the generic address with its provider",
+			func(s *Site) {
+				s.Status.URL = "https://g.example.org"
+				s.Status.Provider = "gatus"
+			}, "gatus", "https://g.example.org", ""},
+		// A provider with nothing to poll is not an error: it is the same
+		// dead key as status.page without an address, and -check reports it.
+		{"a provider with no address at all",
+			func(s *Site) { s.Status.Provider = "gatus" }, "gatus", "", ""},
+		{"no status block at all",
+			func(s *Site) {}, "", "", ""},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = "#247b7b"
+			c.mut(s)
+			if err := validateSite(s, map[string]string{}); err != nil {
+				t.Fatalf("refused a legal config: %v", err)
+			}
+			if got := s.StatusProvider(); got != c.provider {
+				t.Errorf("provider = %q, want %q", got, c.provider)
+			}
+			if got := s.StatusAddress(); got != c.addr {
+				t.Errorf("address = %q, want %q", got, c.addr)
 			}
 		})
 	}

@@ -173,7 +173,16 @@
       "properties": {
         "gatus": {
           "type": "string",
-          "description": "Gatus base URL cairn polls for the status pills."
+          "description": "Gatus base URL cairn polls for the status pills. The same address can be written as status.url with status.provider: gatus."
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["gatus"],
+          "description": "Which monitor answers at status.url. status.gatus names its own, so a site polling Gatus needs neither key."
+        },
+        "url": {
+          "type": "string",
+          "description": "Address of the monitor named by status.provider. The generic spelling of status.gatus: set one or the other, never both."
         },
         "page": {
           "type": "string",
