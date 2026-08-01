@@ -575,7 +575,7 @@ html { scrollbar-gutter: stable; }
 .flag-label { opacity: 0; padding-inline-end: .14rem; transition: opacity .18s; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
 a.flag { position: relative; z-index: 1; text-decoration: none; }
-a.flag:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+a.flag:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 a.flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* A link has to be reachable at rest, so it does not hide behind its own
    fold: an unfurled label is the hover state, the icon alone is what a thumb
@@ -628,7 +628,16 @@ a.flag { min-height: 1.5rem; }
   color: var(--muted);
   transition: color .16s, border-color .16s;
 }
-.card-more:hover { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+/* Hover fills rather than tints. The card is one big link, so the pointer is
+   already a hand everywhere on it: a cursor says nothing extra when it reaches
+   a control, and the old treatment only moved the border from 2.04:1 to
+   2.82:1 against the card, which is invisible next to the card lifting at the
+   same moment. A fill is the one signal the card does not already give.
+   --accent-ink rather than --accent: it is the accent already adjusted per
+   theme to read against the card, so the fill measures 6.82:1 in light and
+   5.47:1 in dark, and the card-coloured mark on it measures the same, whatever
+   accent the operator chose. */
+.card-more:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .more-glyph { width: .95rem; height: .95rem; }
 /* Room for it, so a long name does not run underneath. */
@@ -654,6 +663,7 @@ a.flag { min-height: 1.5rem; }
 }
 /* Only a pill that leads somewhere answers to a pointer. A display-only one
    (status.linked: false) is not a control, so it does not pretend to be. */
+.card-foot a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 a.status-pill:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
 a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card .status-pill { flex: none; }
