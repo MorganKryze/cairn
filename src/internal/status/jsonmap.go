@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -25,6 +26,11 @@ type Mapping struct {
 	Up          []string // values that mean up
 	Degraded    []string // values that mean up but not well
 	Maintenance []string // values that mean off on purpose
+	// Unknown are the values that mean nobody is checking: a monitor paused,
+	// or one waiting for its first verdict. Those services get no pill at all
+	// rather than a red one, which is what cairn's neutral state has always
+	// meant and what the kuma provider does with its own pending.
+	Unknown []string
 }
 
 // level reads one state through the three allow-lists, checked maintenance,
@@ -69,7 +75,7 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	}
 
 	out := make(map[string]State, len(rows))
-	named := 0
+	named, stated := 0, 0
 	for _, row := range rows {
 		// A row the mapping cannot read is skipped rather than fatal. Real
 		// status pages carry group headers and marketing rows, and cairn only
@@ -84,8 +90,14 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 		// which is what Gatus does with an endpoint that has no result and
 		// Kuma with a monitor that has no heartbeat. Nothing has been said
 		// about it, and the unknown pill is what says that.
-		state, ok := walk(row, m.State).(string)
+		state, ok := stateOf(walk(row, m.State))
 		if !ok {
+			continue
+		}
+		stated++
+		// Checked before the levels, so a value listed twice by mistake gets
+		// the quiet answer rather than whichever list is read first.
+		if slices.Contains(m.Unknown, state) {
 			continue
 		}
 		out[name] = State{Level: m.level(state)}
@@ -93,16 +105,41 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	// Nothing read at all is a mapping that is wrong rather than a status page
 	// that is empty, and the two possible typos get separate messages: the
 	// operator is reading one log line and has to know which key to open.
+	//
+	// The counters are what was found, not what was drawn: a page whose every
+	// monitor is paused reads fine and simply produces no pill, so it must not
+	// look like a mapping that missed.
 	switch {
 	case len(rows) == 0:
 	case named == 0:
 		return nil, fmt.Errorf("status.map.key %q found nothing in any of the %d rows at %s (a row there has %s)",
 			m.Key, len(rows), src.URL, keysOf(rows[0]))
-	case len(out) == 0:
+	case stated == 0:
 		return nil, fmt.Errorf("status.map.state %q found nothing in any of the %d rows at %s (a row there has %s)",
 			m.State, len(rows), src.URL, keysOf(rows[0]))
 	}
 	return out, nil
+}
+
+// stateOf reads the state field as text. JSON has three scalar types and
+// monitors use all three: Statping answers a bool, Cachet a number, most
+// vendors a word. Formatting the other two rather than refusing them is what
+// makes "any flat status API" true instead of nearly true. A whole number
+// keeps no decimal point, so a mapping lists 1 as "1" and not as "1.000000".
+//
+// Anything else, an object or an array where a state was expected, is not a
+// state; that row is skipped like any other the mapping cannot read.
+func stateOf(v any) (string, bool) {
+	switch t := v.(type) {
+	case string:
+		return t, true
+	case bool:
+		return strconv.FormatBool(t), true
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64), true
+	default:
+		return "", false
+	}
 }
 
 // walk descends a dotted path. An empty path is the document itself, which is

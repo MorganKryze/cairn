@@ -219,6 +219,11 @@
               "type": "array",
               "items": { "type": "string" },
               "description": "Values that mean off on purpose."
+            },
+            "unknown": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Values that mean nobody is checking, such as a paused monitor. Those services get no pill at all rather than a red one."
             }
           }
         },

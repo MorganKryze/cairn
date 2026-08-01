@@ -28,6 +28,10 @@ func TestTheTokenTravelsInTheAuthorizationHeader(t *testing.T) {
 	for _, c := range []struct{ scheme, want string }{
 		{"", "Bearer s3cr3t"},
 		{"OAuth", "OAuth s3cr3t"},
+		// Basic is the scheme that costs nothing to support and opens the
+		// monitors that predate bearer tokens: the file holds base64(user:pass)
+		// and this builds the header HTTP Basic is.
+		{"Basic", "Basic s3cr3t"},
 	} {
 		var seen string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

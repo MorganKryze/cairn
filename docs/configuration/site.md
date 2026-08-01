@@ -363,7 +363,7 @@ CommonMark with raw HTML left as text. Every page is linked automatically at
 the end of the footer, after your `footer` entries, in declaration order.
 
 The `title` is the page's `<h1>`, so start any heading you write in the body at
-`##`; [Writing text](text.md#start-your-headings-one-level-down) says why.
+`##`; [Writing text](text.md#a-single--comes-out-as-) says why.
 
 For structured pages, add `sections`: titled blocks rendered after the
 body. With sections present, the body becomes an optional intro; without

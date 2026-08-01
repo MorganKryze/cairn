@@ -105,6 +105,75 @@ func TestAnUnknownStateReadsAsDown(t *testing.T) {
 	}
 }
 
+// A monitor whose checking is switched off has said nothing about the service,
+// so it gets no pill rather than a red one. Found live: on a real UptimeRobot
+// status page, of 15 monitors several read statusClass "paused", and every one
+// of them was drawn as down, which tells a visitor a working service is broken.
+// Kuma's own pending is skipped for the same reason, and this is the mapper's
+// way of saying it for a vocabulary cairn cannot know in advance.
+func TestAStateInTheUnknownListDrawsNoPill(t *testing.T) {
+	body := `[{"n":"live","s":"success"},{"n":"asleep","s":"paused"},{"n":"broken","s":"danger"}]`
+	m := status.Mapping{Key: "n", State: "s", Up: []string{"success"}, Unknown: []string{"paused"}}
+	st, err := status.Fetch(status.Source{Provider: "json", URL: serving(t, body), Map: m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := st["asleep"]; ok {
+		t.Errorf("a paused monitor was given a pill: %q", st["asleep"].Level)
+	}
+	if st["live"].Level != status.LevelUp || st["broken"].Level != status.LevelDown {
+		t.Errorf("levels = %v, want live up and broken down", levels(st))
+	}
+	// Unknown is checked before the rest, so a value listed twice by mistake
+	// resolves to the quiet answer rather than to whichever list came first.
+	both := status.Mapping{Key: "n", State: "s", Up: []string{"paused"}, Unknown: []string{"paused"}}
+	st, err = status.Fetch(status.Source{Provider: "json", URL: serving(t, body), Map: both})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := st["asleep"]; ok {
+		t.Error("a value in both lists was painted rather than left quiet")
+	}
+}
+
+// JSON has three scalar types and monitors use all three. Statping answers a
+// bool, Cachet a number, most vendors a word; refusing the first two would
+// make "any flat status API" nearly true, which is the worst kind. Both were
+// found by pointing cairn at a running instance of each.
+func TestAStateThatIsNotAWordIsStillRead(t *testing.T) {
+	for _, c := range []struct {
+		name, body string
+		m          status.Mapping
+		want       map[string]string
+	}{
+		{"statping answers a bool",
+			`[{"name":"a","online":true},{"name":"b","online":false}]`,
+			status.Mapping{Key: "name", State: "online", Up: []string{"true"}},
+			map[string]string{"a": "up", "b": "down"}},
+		{"cachet answers a number",
+			`{"data":[{"name":"a","status":1},{"name":"b","status":2},{"name":"c","status":4}]}`,
+			status.Mapping{List: "data", Key: "name", State: "status",
+				Up: []string{"1"}, Degraded: []string{"2", "3"}},
+			map[string]string{"a": "up", "b": "degraded", "c": "down"}},
+		{"a number that is not whole keeps its point and loses nothing else",
+			`[{"name":"a","level":1.5}]`,
+			status.Mapping{Key: "name", State: "level", Up: []string{"1.5"}},
+			map[string]string{"a": "up"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			st, err := status.Fetch(status.Source{Provider: "json", URL: serving(t, c.body), Map: c.m})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for k, want := range c.want {
+				if st[k].Level != want {
+					t.Errorf("%s = %q, want %q", k, st[k].Level, want)
+				}
+			}
+		})
+	}
+}
+
 // The document belongs to somebody else and will not always be the shape the
 // mapping claims. Each message says what was looked for and what was actually
 // there, because -check makes no network request and cannot say it first.
@@ -172,5 +241,21 @@ func TestAnEmptyListIsNotAFailure(t *testing.T) {
 	}
 	if len(st) != 0 {
 		t.Errorf("an empty list produced %v", levels(st))
+	}
+}
+
+// A page whose every monitor is paused read fine: the mapping found names and
+// states, it is just that none of them says anything. Counting what was drawn
+// rather than what was found would report that as a broken mapping and log an
+// error at every poll.
+func TestAPageThatIsEntirelyQuietIsNotAFailure(t *testing.T) {
+	body := `[{"n":"a","s":"paused"},{"n":"b","s":"paused"}]`
+	m := status.Mapping{Key: "n", State: "s", Up: []string{"success"}, Unknown: []string{"paused"}}
+	st, err := status.Fetch(status.Source{Provider: "json", URL: serving(t, body), Map: m})
+	if err != nil {
+		t.Fatalf("a page where nothing is being checked was reported as a broken mapping: %v", err)
+	}
+	if len(st) != 0 {
+		t.Errorf("levels = %v, want nothing at all", levels(st))
 	}
 }

@@ -96,6 +96,7 @@ func source(cfg *config.Config) status.Source {
 			Up:          cfg.Site.Status.Map.Up,
 			Degraded:    cfg.Site.Status.Map.Degraded,
 			Maintenance: cfg.Site.Status.Map.Maintenance,
+			Unknown:     cfg.Site.Status.Map.Unknown,
 		},
 		Insecure: cfg.Site.Status.Insecure,
 		CA:       cfg.Site.Status.CA,

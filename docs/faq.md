@@ -1,8 +1,9 @@
 # FAQ
 
 **Does cairn phone home, track visitors, or call any API?**
-No. The container makes zero outbound requests, unless you explicitly
-configure `status.gatus`, in which case it polls that one URL of yours. It
+No. The container makes zero outbound requests, unless you point it at a
+[status monitor](recipes/status.md), in which case it polls that one URL of
+yours and nothing else. It
 sets at most two first-party cookies, both functional: the language choice
 (only when a visitor uses the switcher) and the dismissed welcome note (only
 if you configure `about`). Strictly functional cookies like these are what
@@ -73,8 +74,10 @@ driving a browser.
 
 Anything else with a status API is read too, through
 [`status.provider: json`](recipes/status.md#any-other-status-api) and a
-six-key mapping: Statuspage, Instatus, Upptime, StatusCake, Better Stack. Two
-are refused and the reasons are on that page.
+mapping. Statuspage, Instatus, Upptime, Cachet, UptimeRobot and Better Stack
+have each been read from a live instance;
+[the full list](recipes/status.md#which-monitors-cairn-reads) says which
+monitors were run, which should work, and which cannot be read at all.
 
 Gatus is still the one cairn writes the config for, and still the only monitor
 that can point a pill at a page of its own per service. A quiet bonus of
