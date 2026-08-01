@@ -111,7 +111,7 @@ test-browser:
         [ -n "$ready" ] || { echo "test-browser: cairn never came up on $port" >&2; exit 1; }
     done
     node scripts/search.mjs http://127.0.0.1:8090/en/
-    node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
+    node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/
     node scripts/status.mjs http://127.0.0.1:8092/en/
 
 # regenerate every icon from the one drawing in the script; checks the

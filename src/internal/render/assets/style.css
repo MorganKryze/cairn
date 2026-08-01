@@ -53,6 +53,13 @@
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
   --up: light-dark(#2e8b57, #4cb47c);
   --down: light-dark(#c0392b, #e0685b);
+  /* Two more states, for the monitors that report more than a bool. Measured
+     against the pill's own fill on both themes, which is the only neighbour a
+     dot has: degraded 4.29:1 light and 5.95:1 dark, maintenance 4.99:1 and
+     5.85:1. WCAG 1.4.11 asks 3:1 of a graphic that carries meaning, and the
+     browser test holds all four. */
+  --degraded: light-dark(#a86a00, #cf9020);
+  --maintenance: light-dark(#2f6fb5, #5aa0e0);
 
   --shadow: 0 1px 2px light-dark(rgba(20, 30, 28, .04), rgba(0, 0, 0, .2)), 0 10px 26px -14px light-dark(rgba(20, 30, 28, .14), rgba(0, 0, 0, .5));
   --shadow-lift: 0 2px 4px light-dark(rgba(20, 30, 28, .05), rgba(0, 0, 0, .25)), 0 18px 42px -16px light-dark(rgba(20, 30, 28, .24), rgba(0, 0, 0, .62));
@@ -633,6 +640,12 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .status-up .dot { background: var(--up); }
 .status-down .dot { background: var(--down); }
 .status-down { border-color: color-mix(in oklab, var(--down) 35%, var(--border)); }
+.status-degraded .dot { background: var(--degraded); }
+/* Blue against green is the pairing hardest to tell apart, and the dot is nine
+   pixels across. The label already carries the meaning without colour, which is
+   what 1.4.1 asks; the square is the redundancy for the glance rather than the
+   read. */
+.status-maintenance .dot { background: var(--maintenance); border-radius: 1px; }
 .status-unknown .dot { background: transparent; box-shadow: inset 0 0 0 1.6px var(--muted); }
 
 @media (prefers-reduced-motion: no-preference) {
