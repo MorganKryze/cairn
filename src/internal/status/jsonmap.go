@@ -25,6 +25,11 @@ type Mapping struct {
 	Up          []string // values that mean up
 	Degraded    []string // values that mean up but not well
 	Maintenance []string // values that mean off on purpose
+	// Unknown are the values that mean nobody is checking: a monitor paused,
+	// or one waiting for its first verdict. Those services get no pill at all
+	// rather than a red one, which is what cairn's neutral state has always
+	// meant and what the kuma provider does with its own pending.
+	Unknown []string
 }
 
 // level reads one state through the three allow-lists, checked maintenance,
@@ -69,7 +74,7 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	}
 
 	out := make(map[string]State, len(rows))
-	named := 0
+	named, stated := 0, 0
 	for _, row := range rows {
 		// A row the mapping cannot read is skipped rather than fatal. Real
 		// status pages carry group headers and marketing rows, and cairn only
@@ -88,17 +93,27 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 		if !ok {
 			continue
 		}
+		stated++
+		// Checked before the levels, so a value listed twice by mistake gets
+		// the quiet answer rather than whichever list is read first.
+		if slices.Contains(m.Unknown, state) {
+			continue
+		}
 		out[name] = State{Level: m.level(state)}
 	}
 	// Nothing read at all is a mapping that is wrong rather than a status page
 	// that is empty, and the two possible typos get separate messages: the
 	// operator is reading one log line and has to know which key to open.
+	//
+	// The counters are what was found, not what was drawn: a page whose every
+	// monitor is paused reads fine and simply produces no pill, so it must not
+	// look like a mapping that missed.
 	switch {
 	case len(rows) == 0:
 	case named == 0:
 		return nil, fmt.Errorf("status.map.key %q found nothing in any of the %d rows at %s (a row there has %s)",
 			m.Key, len(rows), src.URL, keysOf(rows[0]))
-	case len(out) == 0:
+	case stated == 0:
 		return nil, fmt.Errorf("status.map.state %q found nothing in any of the %d rows at %s (a row there has %s)",
 			m.State, len(rows), src.URL, keysOf(rows[0]))
 	}

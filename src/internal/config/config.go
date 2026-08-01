@@ -123,9 +123,10 @@ type PageSection struct {
 // walk and nothing more, because anything cleverer is a query language, and a
 // query language in YAML is a second product.
 //
-// The three value lists are allow-lists: a state in none of them reads as
-// down, so a vendor that adds a word next year cannot make a broken service
-// look green.
+// The value lists are allow-lists: a state in none of them reads as down, so a
+// vendor that adds a word next year cannot make a broken service look green.
+// The exception is unknown, which is read first and means the monitor said
+// nothing at all about that service.
 type StatusMap struct {
 	List        string   `yaml:"list"`
 	Key         string   `yaml:"key"`
@@ -133,6 +134,9 @@ type StatusMap struct {
 	Up          []string `yaml:"up"`
 	Degraded    []string `yaml:"degraded"`
 	Maintenance []string `yaml:"maintenance"`
+	// Unknown are the values that mean nobody is checking, a monitor paused or
+	// waiting for its first verdict. Those get no pill rather than a red one.
+	Unknown []string `yaml:"unknown"`
 }
 
 // SiteIcon is one home-screen icon an operator supplies themselves. cairn

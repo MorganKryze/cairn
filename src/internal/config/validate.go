@@ -233,7 +233,8 @@ func validateStatusAddress(site *Site) error {
 	// -check, because a mapping that silently does nothing is the failure this
 	// file exists to catch while somebody is still reading it.
 	empty := st.Map.List == "" && st.Map.Key == "" && st.Map.State == "" &&
-		len(st.Map.Up) == 0 && len(st.Map.Degraded) == 0 && len(st.Map.Maintenance) == 0
+		len(st.Map.Up) == 0 && len(st.Map.Degraded) == 0 && len(st.Map.Maintenance) == 0 &&
+		len(st.Map.Unknown) == 0
 	switch p := site.StatusProvider(); {
 	case p == "json":
 		if empty && st.URL != "" {

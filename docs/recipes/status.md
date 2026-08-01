@@ -14,7 +14,9 @@ Three shapes are read:
 Gatus first, because it integrates both ways: cairn can write its config.
 [Uptime Kuma](#uptime-kuma) needs no agreement beyond naming each monitor after
 the service id. The [mapper](#any-other-status-api) covers Statuspage,
-Instatus, Upptime, StatusCake, Better Stack and whatever is written next.
+Instatus, Upptime, Cachet, UptimeRobot, Better Stack and whatever is written
+next; each of those was read from a live instance, and the mapping it took is
+in the table.
 
 ## 1. Generate the Gatus config
 
@@ -260,25 +262,44 @@ nested object, and `list:` left out means the document is itself the array.
 There are no wildcards and no filters, because anything cleverer is a query
 language, and a query language in YAML is a second product.
 
-The three value lists are **allow-lists**: a state in none of them reads as
-down. That is deliberate in both directions. A vendor that adds a word next
-year cannot make a broken service look green, and an operator who forgot to
-list one sees a red pill rather than a wrong one.
+The value lists are **allow-lists**: a state in none of them reads as down.
+That is deliberate in both directions. A vendor that adds a word next year
+cannot make a broken service look green, and an operator who forgot to list one
+sees a red pill rather than a wrong one.
 
-Mappings for the ones this was tested against:
+`unknown` is the exception, read before the rest. Put a monitor's paused state
+there and the service gets no pill at all instead of a red one, which is what
+cairn's neutral state has always meant.
 
-| service              | `list`       | `key`                           | `state`             | `up`          |
-| -------------------- | ------------ | ------------------------------- | ------------------- | ------------- |
-| Atlassian Statuspage | `components` | `name`                          | `status`            | `operational` |
-| Instatus             | `components` | `name`                          | `status`            | `OPERATIONAL` |
-| Upptime              | (none)       | `slug`                          | `status`            | `up`          |
-| Better Stack         | `data`       | `attributes.pronounceable_name` | `attributes.status` | `up`          |
-| StatusCake           | `data`       | `name`                          | `status`            | `up`          |
+### Mappings that were run against the real thing
 
-Rows that do not match a cairn service id are ignored, so the marketing entries
-real status pages carry (GitHub's own has one named "Visit
-www.githubstatus.com for more information") cost nothing. A row the mapping
-cannot read at all is skipped rather than failing the poll.
+Each row below was read by cairn itself on 2026-08-01, against that live
+service, and the count is what came back. Component names are the one
+agreement: a pill is drawn only where a name matches a cairn service id, so on
+your own status page, name the components after your service ids.
+
+| service                   | endpoint                                        | `list`         | `key`                    | `state`             | `up`                    | read                                           |
+| ------------------------- | ----------------------------------------------- | -------------- | ------------------------ | ------------------- | ----------------------- | ---------------------------------------------- |
+| Atlassian Statuspage      | `/api/v2/components.json`                       | `components`   | `name`                   | `status`            | `operational`           | 471 on Cloudflare, 33 on Discord, 12 on GitHub |
+| Instatus                  | `/v2/components.json`                           | `components`   | `name`                   | `status`            | `OPERATIONAL`           | 1                                              |
+| Upptime                   | `history/summary.json` in the repo              | (none)         | `slug`                   | `status`            | `up`                    | 4                                              |
+| Better Stack, public page | `/index.json`                                   | `included`     | `attributes.public_name` | `attributes.status` | `operational`           | 4                                              |
+| UptimeRobot, public page  | `stats.uptimerobot.com/api/getMonitorList/<id>` | `psp.monitors` | `name`                   | `statusClass`       | `success`               | 15, of which 5 paused                          |
+| Cachet                    | `/api/v1/components?per_page=100`               | `data`         | `name`                   | `status_name`       | your instance's wording | 31 on status.framasoft.org                     |
+
+Notes worth having before you write yours:
+
+- **Statuspage's other states** are `degraded_performance` and `partial_outage`
+  for degraded, `under_maintenance` for maintenance. Cloudflare's page had 34
+  and 20 of them respectively while this was being written, so the two newer
+  pills are not theoretical.
+- **UptimeRobot** calls a switched-off monitor `paused`. Put it in `unknown`,
+  or five paused monitors show as five outages.
+- **Cachet** answers `status` as a number, which no mapping reads; use
+  `status_name`, whose wording follows the language of that Cachet instance.
+  It also paginates at 20, hence `?per_page=100`.
+- **Better Stack and StatusCake** also have token APIs, which work the same way
+  with `token_file`; the public status page needs no credential at all.
 
 ### The token, if the API needs one
 

@@ -122,7 +122,8 @@ func Unmonitored(cfg *config.Config, statuses map[string]State) string {
 	if len(ids) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d services have no gatus endpoint, their cards show no pill: %s", len(ids), strings.Join(ids, ", "))
+	return fmt.Sprintf("%d services the %s at %s says nothing about, their cards show no pill: %s",
+		len(ids), cfg.Site.StatusProvider(), cfg.Site.StatusAddress(), strings.Join(ids, ", "))
 }
 
 // verifying and skipping are built once and reused. A client per poll would

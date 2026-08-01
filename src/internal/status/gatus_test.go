@@ -228,6 +228,24 @@ func TestStatusConfigValidation(t *testing.T) {
 	}
 }
 
+// The message names the monitor an operator actually runs. It said "gatus"
+// whatever was polled, which sends a Kuma user looking for a Gatus they do not
+// have; found by pointing a real cairn at a real Kuma and reading its log.
+func TestUnmonitoredNamesTheMonitorInUse(t *testing.T) {
+	cfg := sample(t)
+	cfg.Site.Status.Gatus = ""
+	cfg.Site.Status.Provider = "kuma"
+	cfg.Site.Status.URL = "http://kuma.internal"
+	cfg.Site.Status.Slug = "tools"
+	got := status.Unmonitored(cfg, map[string]status.State{"pdf": {Level: status.LevelUp}})
+	if strings.Contains(got, "gatus") {
+		t.Errorf("a kuma site is told about gatus: %q", got)
+	}
+	if !strings.Contains(got, "kuma") {
+		t.Errorf("the message does not name the monitor being polled: %q", got)
+	}
+}
+
 func TestUnmonitored(t *testing.T) {
 	cfg := &config.Config{Categories: []config.Category{{ID: "t", Services: []config.Service{{ID: "seen"}, {ID: "ghost"}}}}}
 	if got := status.Unmonitored(cfg, map[string]status.State{"seen": {Level: status.LevelUp}}); !strings.Contains(got, "ghost") || strings.Contains(got, "seen,") {
