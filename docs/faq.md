@@ -55,18 +55,26 @@ follow their browser language.
 
 **Where are the widgets / weather / graphs?**
 Not here, on purpose; see the [comparison](comparison.md). The one
-exception is [status dots fed by your Gatus](recipes/gatus.md), polled
+exception is [status dots fed by your monitor](recipes/status.md), polled
 server-side, because "is it up?" is a guest question too.
 
-**Why Gatus and not Uptime Kuma?**
-Because Gatus matches cairn's own shape: one YAML file, stateless, no
-login, and [`cairn -emit-gatus`](recipes/gatus.md) writes its config for
-you. Uptime Kuma is a fine monitor, but it is heavier, keeps a database,
-sits behind authentication and is configured by clicking; supporting it
-would import all of that. This is a decision, not a backlog item, and it
-holds for other monitoring stacks too. A quiet bonus of the pairing: cairn
-shows the status labels in your visitors' language, which the Gatus UI
-itself does not do.
+**Does it work with Uptime Kuma?**
+Yes: [`status.provider: kuma`](recipes/status.md#uptime-kuma).
+This page used to say no, on the grounds that Kuma keeps a database, sits
+behind authentication and is configured by clicking, and that supporting it
+would import all of that. Reading a **published status page** imports none of
+it: two unauthenticated GETs, no login, no database of cairn's own.
+
+What has not changed is that there is no `cairn -emit-kuma` and there cannot
+be one. Kuma has no config file and no setup API, so a Kuma user names each
+monitor after the cairn service id by hand. That is measured rather than
+assumed: standing up the instance this was tested against took a script
+driving a browser.
+
+Gatus is still the one cairn writes the config for, and still the only monitor
+that can point a pill at a page of its own per service. A quiet bonus of
+either pairing: cairn shows the status labels in your visitors' language,
+which neither monitor's own UI does.
 
 **Can each guest get their own view of the page?**
 No. Per-guest views need accounts, and accounts are the dashboard road

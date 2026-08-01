@@ -622,6 +622,9 @@ func inertSettings(cfg *config.Config) []string {
 		if st.Provider != "" {
 			set = append(set, "status.provider")
 		}
+		if st.Slug != "" {
+			set = append(set, "status.slug")
+		}
 		if len(set) > 0 {
 			out = append(out, fmt.Sprintf("%s set without status.gatus or status.url: nothing polls, so no pill is drawn at all", strings.Join(set, " and ")))
 		}

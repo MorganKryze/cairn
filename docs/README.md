@@ -30,7 +30,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 
 - [Icons](recipes/icons.md): dashboard-icons slugs, selfh.st, your own files.
 - [Multiple files](recipes/multiple-files.md): one YAML per category.
-- [Status page](recipes/gatus.md): pairing cairn with Gatus.
+- [Status page](recipes/status.md): pairing cairn with Gatus or Uptime Kuma.
 - [Coming from Homer or Homepage](recipes/migration.md): your config maps over.
 
 ## Reference

@@ -204,6 +204,9 @@ func validateStatusAddress(site *Site) error {
 	if st.Gatus != "" && st.URL != "" {
 		return fmt.Errorf("config: site.yaml: set one of status.gatus and status.url, not both (they are two ways of naming the one monitor cairn polls; status.gatus is the Gatus spelling and needs no status.provider)")
 	}
+	if st.Gatus != "" && st.Provider != "" && st.Provider != "gatus" {
+		return fmt.Errorf("config: site.yaml: status.gatus names a Gatus instance, so status.provider: %s contradicts it (use status.url with status.provider: %s)", st.Provider, st.Provider)
+	}
 	if st.URL != "" {
 		if st.Provider == "" {
 			return fmt.Errorf("config: site.yaml: status.url needs status.provider to say what answers there (expected one of %s)", strings.Join(StatusProviders(), ", "))
@@ -211,6 +214,18 @@ func validateStatusAddress(site *Site) error {
 		if !isHTTPURL(st.URL) {
 			return fmt.Errorf("config: site.yaml: status.url %q is not a URL (expected e.g. https://status.example.org)", st.URL)
 		}
+	}
+	// Kuma reads by status page and has no endpoint listing every monitor, so
+	// the slug is half the address rather than an extra. Anywhere else it is a
+	// key that would silently do nothing, which is worth an error while there
+	// is still someone reading the file.
+	switch p := site.StatusProvider(); {
+	case p == "kuma":
+		if st.Slug == "" && st.URL != "" {
+			return fmt.Errorf("config: site.yaml: status.slug is needed with status.provider: kuma (kuma serves statuses per published status page; the slug is the last part of its URL, as in https://kuma.example.org/status/tools)")
+		}
+	case st.Slug != "" && p != "":
+		return fmt.Errorf("config: site.yaml: status.slug %q means nothing to status.provider: %s (only kuma reads by status page)", st.Slug, p)
 	}
 	return nil
 }

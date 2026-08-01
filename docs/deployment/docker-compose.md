@@ -47,7 +47,7 @@ Why each line holds:
   any UID:GID (it defaults to `nobody`, 65534). Just make sure that user can
   read your mounted `/config`.
 - **no network egress needed**: cairn makes zero outbound requests, except
-  to a [`status.gatus` URL](../recipes/gatus.md) if you configure one. An
+  to a [`status.gatus` URL](../recipes/status.md) if you configure one. An
   internal-only egress policy is fine; note that icon _slugs_ load in the
   visitor's browser from jsdelivr, not from the container
   ([avoid that if you want](../recipes/icons.md#your-own-files)).

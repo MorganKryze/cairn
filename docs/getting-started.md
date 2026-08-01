@@ -127,5 +127,5 @@ jobs:
 - Welcome your visitors and link your world: `about`, `links` and hosted
   legal pages in [Site](configuration/site.md)
 - Name and order your groups: the `categories.yaml` section of the [reference](reference.md#categoriesyaml)
-- Show live status on the cards: [Status page with Gatus](recipes/gatus.md)
+- Show live status on the cards: [Status page](recipes/status.md)
 - Put it behind your domain: [Reverse proxies](deployment/reverse-proxies.md)

@@ -38,4 +38,4 @@ The rules:
 - A service `id` must be unique across all files. A duplicate is a config
   error naming both files, not a silent override.
 
-Next: [Status page](gatus.md)
+Next: [Status page](status.md)
