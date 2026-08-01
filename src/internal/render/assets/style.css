@@ -674,17 +674,28 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 /* ---- detail page ---- */
 
 .detail { max-width: 44rem; margin-inline: auto; padding-block: 1.4rem 1rem; }
-.back::before { content: "\2190"; }
+/* The way back out of a detail page. It was a bare text link 51 by 23, under
+   the 24 by 24 WCAG 2.2 asks of a target, and its arrow was a CSS ::before,
+   which some screen readers read out and a stylesheet that fails to load takes
+   with it. It is a chip now, the same rounded outline the pills and the flag
+   already wear, with the arrow inline in the markup as decoration. */
 .back {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  font-size: .9rem;
+  padding: .3rem .7rem .3rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: .82rem;
+  font-weight: 500;
   color: var(--muted);
   text-decoration: none;
+  transition: color .16s, border-color .16s;
 }
-.back:hover { color: var(--fg); }
-.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.back-glyph { width: .85rem; height: .85rem; flex: none; }
+.back:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .detail-head { display: flex; align-items: center; gap: 1rem; margin-top: 1.6rem; }
 .detail-head .tile { width: 3.6rem; height: 3.6rem; }
@@ -1204,4 +1215,5 @@ footer {
 
 /* Right-to-left: the layout follows from the logical properties above, only
    the two literal arrows have to be turned around by hand. */
-[dir="rtl"] .back::before { content: "\2192"; }
+/* One glyph, mirrored, rather than a second character to keep in step. */
+[dir="rtl"] .back-glyph { transform: scaleX(-1); }
