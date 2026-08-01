@@ -84,6 +84,7 @@ func source(cfg *config.Config) status.Source {
 	return status.Source{
 		URL:      cfg.Site.StatusAddress(),
 		Provider: cfg.Site.StatusProvider(),
+		Slug:     cfg.Site.Status.Slug,
 		Insecure: cfg.Site.Status.Insecure,
 		CA:       cfg.Site.Status.CA,
 	}

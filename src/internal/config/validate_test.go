@@ -194,6 +194,22 @@ func TestValidateSiteRejections(t *testing.T) {
 			s.Status.URL = "k.example.org"
 			s.Status.Provider = "gatus"
 		}, []string{"status.url", "is not a URL"}},
+		// status.gatus is the Gatus spelling and says so by existing. Naming
+		// another monitor beside it is two answers to one question.
+		{"the gatus key with another monitor named", func(s *Site) {
+			s.Status.Gatus = "https://g.example.org"
+			s.Status.Provider = "kuma"
+		}, []string{"status.gatus", "status.url", "kuma"}},
+		// Kuma serves statuses per published status page and has no endpoint
+		// that lists them all, so without the slug there is nothing to ask for.
+		{"kuma without the slug it reads by", func(s *Site) {
+			s.Status.URL = "https://k.example.org"
+			s.Status.Provider = "kuma"
+		}, []string{"status.slug", "published status page"}},
+		{"a slug on a monitor that has no use for one", func(s *Site) {
+			s.Status.Gatus = "https://g.example.org"
+			s.Status.Slug = "tools"
+		}, []string{"status.slug", "kuma"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := base()
@@ -234,6 +250,12 @@ func TestTheAddressResolves(t *testing.T) {
 				s.Status.URL = "https://g.example.org"
 				s.Status.Provider = "gatus"
 			}, "gatus", "https://g.example.org", ""},
+		{"a monitor that is not gatus",
+			func(s *Site) {
+				s.Status.URL = "https://k.example.org"
+				s.Status.Provider = "kuma"
+				s.Status.Slug = "tools"
+			}, "kuma", "https://k.example.org", ""},
 		// A provider with nothing to poll is not an error: it is the same
 		// dead key as status.page without an address, and -check reports it.
 		{"a provider with no address at all",

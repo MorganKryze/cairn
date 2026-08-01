@@ -37,7 +37,7 @@ the same three keys become `url`, `desc`, `icon`, the entry name becomes
 
 What has no equivalent, by design: widgets, API keys and Docker discovery
 stay behind with the admin dashboard (keep it for yourself, they coexist
-happily). `ping:`/`siteMonitor:` become a [Gatus](gatus.md) your server
+happily). `ping:`/`siteMonitor:` become a [Gatus](status.md) your server
 polls; `cairn -emit-gatus` writes that config from your services.
 
 While rewriting descriptions, switch voices: your old dashboard described

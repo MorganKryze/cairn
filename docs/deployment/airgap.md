@@ -105,7 +105,7 @@ docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:1.14.0 -emit-gatus
 ```
 
 One endpoint per service, named after its id, which is how each pill finds its
-service. More in [Status page](../recipes/gatus.md).
+service. More in [Status page](../recipes/status.md).
 
 ## 2. The check that says whether you are actually ready
 

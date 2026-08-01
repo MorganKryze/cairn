@@ -164,6 +164,10 @@ type Site struct {
 		// these three fields.
 		Provider string `yaml:"provider"`
 		URL      string `yaml:"url"`
+		// Slug is the published status page a Kuma instance serves statuses
+		// for. Kuma has no endpoint listing every monitor, only one per status
+		// page, so the slug is the address as much as the URL is.
+		Slug     string `yaml:"slug"`
 		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
 		// Linked nil means true: the pills link to the status page. false
@@ -265,7 +269,7 @@ func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
 // is kept in step by a test over there, where both are in reach: a name in one
 // list and not the other is either a config error nobody can fix or a config
 // that loads clean and then fails every poll.
-func StatusProviders() []string { return []string{"gatus"} }
+func StatusProviders() []string { return []string{"gatus", "kuma"} }
 
 // StatusAddress is the monitor cairn polls, whichever key named it, and empty
 // when the site has no status at all. Everything that used to ask whether

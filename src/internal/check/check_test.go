@@ -235,6 +235,12 @@ func TestCheckReportsAProviderWithNoAddress(t *testing.T) {
 	if !strings.Contains(w, "status.url") {
 		t.Errorf("the message names only one of the two ways to give an address:\n%s", w)
 	}
+	// A slug with no monitor to read it by is the same dead key. It cannot be
+	// refused at load, since nothing there is contradictory: it is simply a
+	// line that does nothing, which is what this check exists to say.
+	if w := checkFor(t, "status: {slug: tools}"); !strings.Contains(w, "status.slug") || !strings.Contains(w, "nothing polls") {
+		t.Errorf("a slug with nothing to poll went unreported:\n%s", w)
+	}
 }
 
 // A bundle named but not mounted is the loudest failure of the three: cairn

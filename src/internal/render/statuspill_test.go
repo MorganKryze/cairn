@@ -65,6 +65,31 @@ func TestStatusPillLinksByDefault(t *testing.T) {
 	}
 }
 
+// Kuma publishes one status page for a whole set of monitors and has no page
+// per monitor, so there is no endpoint path to build and no key to build it
+// from. A pill that kept the Gatus shape would point at a page that does not
+// exist, which is the bug v1.13.2 fixed for Gatus itself.
+func TestAKumaPillLinksToTheStatusPage(t *testing.T) {
+	const site = "locales: [en]\nstatus:\n  provider: kuma\n  url: https://kuma.example.org\n  slug: tools\n"
+	home, detail := pages(t, site)
+	for _, page := range []struct{ name, html string }{{"home", home}, {"detail", detail}} {
+		// The slug is what Kuma itself puts in the URL of a published page, so
+		// the address and the slug are enough: no second key to keep in step.
+		if !strings.Contains(page.html, `href="https://kuma.example.org/status/tools"`) {
+			t.Errorf("%s: the pill does not link to the published status page", page.name)
+		}
+		if strings.Contains(page.html, "/endpoints/") {
+			t.Errorf("%s: the pill kept the gatus endpoint path, which kuma does not serve", page.name)
+		}
+	}
+	// status.page still wins, the way it does for Gatus: only the operator
+	// knows whether the address cairn polls is one a visitor can reach.
+	public, _ := pages(t, site+"  page: https://status.example.org/x\n")
+	if !strings.Contains(public, `href="https://status.example.org/x"`) {
+		t.Error("status.page did not override the derived one")
+	}
+}
+
 // Four monitors of the eight surveyed distinguish "works, but not well" from
 // "does not work", and as many distinguish "off on purpose" from "broken".
 // Folding either into down tells a visitor the opposite of what their monitor

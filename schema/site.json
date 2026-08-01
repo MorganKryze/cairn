@@ -177,12 +177,16 @@
         },
         "provider": {
           "type": "string",
-          "enum": ["gatus"],
+          "enum": ["gatus", "kuma"],
           "description": "Which monitor answers at status.url. status.gatus names its own, so a site polling Gatus needs neither key."
         },
         "url": {
           "type": "string",
           "description": "Address of the monitor named by status.provider. The generic spelling of status.gatus: set one or the other, never both."
+        },
+        "slug": {
+          "type": "string",
+          "description": "Uptime Kuma only: the published status page cairn reads, named by the last part of its URL (https://kuma.example.org/status/tools -> tools). Kuma serves statuses per status page, so this is half the address."
         },
         "page": {
           "type": "string",

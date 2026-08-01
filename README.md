@@ -42,9 +42,10 @@ account or a manual, and boring for you to operate.
   you. Dismissable, remembered for a year (a plain cookie, no tracking).
 - **Tools grouped by need**, one plain sentence each, with optional "Learn
   more" pages for the curious.
-- **Live status pills** fed by your [Gatus](https://github.com/TwiN/gatus),
-  each linking to its own endpoint page. Your server does the polling,
-  never the visitor's browser.
+- **Live status pills** fed by your own monitor,
+  [Gatus](https://github.com/TwiN/gatus) or
+  [Uptime Kuma](https://github.com/louislam/uptime-kuma), each linking to its
+  status page. Your server does the polling, never the visitor's browser.
 - **Their language**: the server picks it from the browser, a switcher pins
   it. One config file, translations inline.
 - **Search from anywhere**: just start typing, or ⌘K. A name finds that one
@@ -95,7 +96,7 @@ deliberately tight, from the image down to the wire.
   pinned by hash) and the hardening headers, with no third-party script or
   font to trust.
 - **No outbound requests of its own**: air-gap friendly, its only companions
-  optional and yours, a self-hosted [Gatus](docs/recipes/gatus.md) for status
+  optional and yours, a self-hosted [monitor](docs/recipes/status.md) for status
   and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
   The [demo](demo/README.md) runs on a network with no route out and serves its
   own icons, so the page it shows you makes no third-party request at all.
@@ -172,7 +173,7 @@ understanding how a thing works, start anywhere below.
 | **Start**     | [Getting started](docs/getting-started.md), the five-minute path · [Upgrading](docs/upgrading.md), what a new version can refuse and how to fix it                                                                                                                                                                     |
 | **Configure** | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Text](docs/configuration/text.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md)                                                                                                              |
 | **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Podman](docs/deployment/podman.md) · [Bare binary](docs/deployment/binary.md) · [Kubernetes](docs/deployment/kubernetes.md) · [Helm](docs/deployment/helm.md) · [Air-gapped](docs/deployment/airgap.md) · [Reverse proxies](docs/deployment/reverse-proxies.md) |
-| **Recipes**   | [Status page with Gatus](docs/recipes/gatus.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) · [Migration](docs/recipes/migration.md)                                                                                                                                           |
+| **Recipes**   | [Status page](docs/recipes/status.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) · [Migration](docs/recipes/migration.md)                                                                                                                                                     |
 | **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                                                                                                                                                                                 |
 
 ## Not a dashboard, on purpose

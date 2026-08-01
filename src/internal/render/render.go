@@ -293,6 +293,24 @@ type sectionView struct {
 	Body  prose
 }
 
+// statusBase is the page a pill points into, without a trailing slash.
+//
+// The link is for the visitor's browser, so status.page wins: the address
+// cairn polls may be internal and poll-only, and only the operator knows.
+// Failing that, Kuma's published status page is derivable, since /status/{slug}
+// is the URL Kuma itself serves it at, and landing on a status page beats
+// landing on an API root that redirects to a login.
+func statusBase(cfg *config.Config) string {
+	if p := cfg.Site.Status.Page; p != "" {
+		return strings.TrimSuffix(p, "/")
+	}
+	addr := strings.TrimSuffix(cfg.Site.StatusAddress(), "/")
+	if cfg.Site.StatusProvider() == "kuma" && cfg.Site.Status.Slug != "" {
+		return addr + "/status/" + url.PathEscape(cfg.Site.Status.Slug)
+	}
+	return addr
+}
+
 // statusMeta fills a pill: its label, where it links, and the label a screen
 // reader reads instead. An empty href makes it display-only, which is what
 // status.linked: false asks for and the only shape the templates need to
@@ -305,24 +323,25 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service, key str
 	if !cfg.StatusLinked() {
 		return label, "", ""
 	}
-	// The pill link is for the visitor's browser, so it uses the public
-	// status.page URL; status.gatus may be an internal poll-only address.
-	base := cfg.Site.Status.Page
-	if base == "" {
-		base = cfg.Site.StatusAddress()
+	base := statusBase(cfg)
+	// Only Gatus names a page per endpoint. Every other monitor publishes one
+	// page for the whole set, and pointing at a per-service path it does not
+	// serve is the bug v1.13.2 fixed for Gatus, made again from the other end.
+	if cfg.Site.StatusProvider() == "gatus" {
+		// Gatus names its own endpoint pages. Deriving that name from cairn's
+		// categories only ever matched an operator who ran -emit-gatus and kept its
+		// grouping; everyone else got a link to a page their Gatus does not serve.
+		// The derived key stays as the fallback for the pills that render before
+		// Gatus has answered, and for a Gatus too old to report one.
+		if key == "" {
+			key = status.Key(s.Category, s.ID)
+		}
+		// The key comes off the network, from whatever answers on the poll address.
+		// PathEscape leaves every key Gatus can produce alone and keeps a hostile
+		// one inside the path segment it was written into.
+		base += "/endpoints/" + url.PathEscape(key)
 	}
-	// Gatus names its own endpoint pages. Deriving that name from cairn's
-	// categories only ever matched an operator who ran -emit-gatus and kept its
-	// grouping; everyone else got a link to a page their Gatus does not serve.
-	// The derived key stays as the fallback for the pills that render before
-	// Gatus has answered, and for a Gatus too old to report one.
-	if key == "" {
-		key = status.Key(s.Category, s.ID)
-	}
-	// The key comes off the network, from whatever answers on the poll address.
-	// PathEscape leaves every key Gatus can produce alone and keeps a hostile
-	// one inside the path segment it was written into.
-	href = strings.TrimSuffix(base, "/") + "/endpoints/" + url.PathEscape(key)
+	href = base
 	// A link has to name its target on its own: read out of the card, "Online"
 	// alone says nothing about which service, nor that it leads anywhere.
 	//

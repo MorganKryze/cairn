@@ -155,6 +155,7 @@ var (
 type Source struct {
 	URL      string
 	Provider string // status.provider: empty means gatus, which is what every config written before providers existed says
+	Slug     string // status.slug: kuma only, the published status page to read
 	Insecure bool   // status.insecure: verify nothing
 	CA       string // status.ca: verify against this too, a URL or an /assets path
 }
@@ -244,7 +245,7 @@ type fetcher func(*http.Client, Source) (map[string]State, error)
 
 // providers is the whole list, and the error below reads it, so a provider
 // registered here is one the message already names without being told.
-var providers = map[string]fetcher{"gatus": fetchGatus}
+var providers = map[string]fetcher{"gatus": fetchGatus, "kuma": fetchKuma}
 
 func providerNames() string {
 	return strings.Join(slices.Sorted(maps.Keys(providers)), ", ")

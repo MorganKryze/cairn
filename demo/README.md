@@ -79,7 +79,7 @@ produces for any site; refresh them with
 One difference with a real deployment: here Gatus probes the services by
 container name (`http://welcome:80`) while cairn's cards use the published
 ports; with public HTTPS URLs both sides are identical and
-[`cairn -emit-gatus`](../docs/recipes/gatus.md) writes the Gatus config for
+[`cairn -emit-gatus`](../docs/recipes/status.md) writes the Gatus config for
 you. Endpoint names match cairn service ids: that's the whole wiring.
 
 ## Clean up
