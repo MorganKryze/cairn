@@ -384,6 +384,29 @@ for (const theme of ["light", "dark"]) {
   );
 }
 
+// A card grid lands on fractional track widths, so every card sits at its own
+// subpixel phase. A ring painted on the box edges and a glyph centred inside it
+// then round to different sides, and the glyph reads off centre, differently on
+// each card. Whole numbers on both sides is what stops it, so that is what is
+// held here: the gap has to be an integer, or the drawing goes back to
+// disagreeing with its own outline.
+await check("the detail glyph and its ring round the same way", async () => {
+  const gap = await home.$eval(".card-more", (el) => {
+    const s = getComputedStyle(el);
+    const box =
+      parseFloat(s.width) -
+      parseFloat(s.borderLeftWidth) -
+      parseFloat(s.borderRightWidth);
+    const glyph = el.querySelector("svg").getBoundingClientRect().width;
+    return { box, glyph, gap: (box - glyph) / 2 };
+  });
+  if (!Number.isInteger(gap.gap)) {
+    throw new Error(
+      `a ${gap.glyph}px glyph in a ${gap.box}px box leaves ${gap.gap}px on each side, which rounds one way on one card and the other way on the next`,
+    );
+  }
+});
+
 // ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
 // The fixture's monitor is a port nothing listens on, so every pill on that

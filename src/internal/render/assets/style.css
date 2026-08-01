@@ -620,8 +620,17 @@ a.flag { min-height: 1.5rem; }
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  /* Whole pixels, both of them, and that is the whole point. A card grid lands
+     on fractional track widths (325.33px on the demo), so each card sits at a
+     different subpixel phase: .438 for one, .766 for the next. The ring is
+     painted on the box edges and the glyph is centred inside it, and when the
+     gap between them is fractional the two round to different sides, so the
+     glyph reads half a pixel off centre, left on one card and right on the
+     next. Measured: 1 device pixel of disagreement at .95rem, and 0 at 16px,
+     on every card and every phase. 28 minus 16 is 12, so the gap is 6 on each
+     side and there is nothing left to round. */
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--card);
@@ -639,7 +648,7 @@ a.flag { min-height: 1.5rem; }
    accent the operator chose. */
 .card-more:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.more-glyph { width: .95rem; height: .95rem; }
+.more-glyph { width: 16px; height: 16px; }
 /* Room for it, so a long name does not run underneath. */
 .card:has(.card-more) .card-name { padding-inline-end: 2.2rem; }
 
