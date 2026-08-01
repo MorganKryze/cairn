@@ -36,24 +36,25 @@ want to know what this place is, what each tool does, and whether it works
 right now. cairn is that page. Written in their language, readable without an
 account or a manual, and boring for you to operate.
 
-## What your visitors get
+## 🧭 What your visitors get
 
-- **A welcome note in your words**: who hosts this, for whom, how to reach
-  you. Dismissable, remembered for a year (a plain cookie, no tracking).
-- **Tools grouped by need**, one plain sentence each, with optional "Learn
-  more" pages for the curious.
-- **Live status pills** fed by the monitor you already run, whichever it is,
-  each linking to its status page. Your server does the polling, never the
-  visitor's browser.
-- **Their language**: the server picks it from the browser, a switcher pins
-  it. One config file, translations inline.
-- **Search from anywhere**: just start typing, or ⌘K. A name finds that one
-  service, not everything that mentions it; keyword search still reaches
+- 👋 **A welcome note in your words**: who hosts this, for whom, how to
+  reach you. Dismissable, remembered for a year (a plain cookie, no
+  tracking).
+- 🗂️ **Tools grouped by need**, one plain sentence each, with optional
+  "Learn more" pages for the curious.
+- 🚦 **Live status pills** fed by the monitor you already run, whichever it
+  is, each linking to its status page. Your server does the polling, never
+  the visitor's browser.
+- 🌍 **Their language**: the server picks it from the browser, a switcher
+  pins it. One config file, translations inline.
+- 🔍 **Search from anywhere**: just start typing, or ⌘K. A name finds that
+  one service, not everything that mentions it; keyword search still reaches
   descriptions and hidden tags, accent-insensitive.
-- **At home on a phone**: the layout reflows to one hand, the header steps
+- 📱 **At home on a phone**: the layout reflows to one hand, the header steps
   aside as you scroll and returns the moment you head back up, and a burger
   keeps search within thumb's reach.
-- **Built to stay readable**: text contrast measured against WCAG AA in both
+- ♿ **Built to stay readable**: text contrast measured against WCAG AA in both
   themes, a skip link, named landmarks, search results announced through a
   live region, a theme toggle that says which way it is set, and
   right-to-left languages laid out the right way round. The controls a
@@ -62,26 +63,27 @@ account or a manual, and boring for you to operate.
   request. Tested with a browser, never audited as a whole, and not yet with a
   real screen reader: if you use one,
   [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
-- **Calm typography, light and dark, keyboard-friendly**, and every feature
-  degrades gracefully without JavaScript.
+- 🌗 **Calm typography, light and dark, keyboard-friendly**, and every
+  feature degrades gracefully without JavaScript.
 
-## What you get as the operator
+## 🛠️ What you get as the operator
 
-- **One static binary, about 10 MB**, zero runtime dependencies, no database.
-  The image around it is 4.3 MB to pull, since that binary compresses well.
-- **YAML mounted read-only**; edits apply live within seconds, and a config
+- 📦 **One static binary, about 10 MB**, zero runtime dependencies, no
+  database. The image around it is 4.3 MB to pull, since that binary
+  compresses well.
+- 📝 **YAML mounted read-only**; edits apply live within seconds, and a config
   error names the file, the line and the expected shape instead of taking the
   site down.
-- **Legal pages served by cairn itself** (legal notice, privacy…): the pages
-  self-hosters never have anywhere to put. Written in ordinary
+- 📜 **Legal pages served by cairn itself** (legal notice, privacy…): the
+  pages self-hosters never have anywhere to put. Written in ordinary
   [markdown](docs/configuration/text.md), headings and lists and tables, with
   raw HTML left as text so a config file can never reach the page as markup.
-- **Wherever your domain has room**: a domain, a subdomain, or a sub-path of
+- 🌐 **Wherever your domain has room**: a domain, a subdomain, or a sub-path of
   one you already use (`example.org/cairn/`, one flag). cairn handles the
   prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no
   rewriting rule.
 
-## Whatever already tells you it is up
+## 🟢 Whatever already tells you it is up
 
 cairn does not ask you to change monitors. It reads the one you run, and the
 pills come from your server, never from the visitor's browser.
@@ -103,34 +105,34 @@ config out of your services, and the only one whose pills link to a page per
 service rather than to one page for everything. If you have no monitor yet,
 start there.
 
-## Secure by subtraction
+## 🔒 Secure by subtraction
 
 The safest surface is the one that isn't there: cairn stores nothing, signs no
 one in, and takes no input it has to trust. What little runs is kept
 deliberately tight, from the image down to the wire.
 
-- **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
-  image, so a compromised process has nothing to pivot into.
-- **Runs locked down**: `read_only`, `cap_drop: ALL` and a self-probing
+- 🪨 **`FROM scratch`, non-root**: no shell, no package manager, no libc in
+  the image, so a compromised process has nothing to pivot into.
+- 🛡️ **Runs locked down**: `read_only`, `cap_drop: ALL` and a self-probing
   healthcheck all work out of the box. See the [hardened compose](docs/deployment/docker-compose.md).
-- **A strict Content-Security-Policy** (`default-src 'none'`, inline fragments
-  pinned by hash) and the hardening headers, with no third-party script or
-  font to trust.
-- **No outbound requests of its own**: air-gap friendly, its only companions
+- 🧱 **A strict Content-Security-Policy** (`default-src 'none'`, inline
+  fragments pinned by hash) and the hardening headers, with no third-party
+  script or font to trust.
+- 🔌 **No outbound requests of its own**: air-gap friendly, its only companions
   optional and yours, a self-hosted [monitor](docs/recipes/status.md) for status
   and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
   The [demo](demo/README.md) runs on a network with no route out and serves its
   own icons, so the page it shows you makes no third-party request at all.
-- **A watched supply chain**: every pull request runs `govulncheck`, a Trivy
+- 🔬 **A watched supply chain**: every pull request runs `govulncheck`, a Trivy
   image scan and CodeQL, and they run again on the pushes that change code and
   weekly on a schedule. Dependabot follows the dependencies, and every CI action
   is pinned to a commit rather than a movable tag.
-- **Artifacts you can check**: the image is signed with cosign and ships SLSA
+- ✍️ **Artifacts you can check**: the image is signed with cosign and ships SLSA
   provenance and an SBOM; the release binaries carry their own attestation.
   The [verification commands](SECURITY.md#verifying-what-you-pulled) are two
   lines.
 
-## Quickstart
+## ⚡ Quickstart
 
 Nothing to write, nothing to mount, just look at it:
 
@@ -182,7 +184,7 @@ git clone https://github.com/MorganKryze/cairn.git && cd cairn/demo
 docker compose up -d --build
 ```
 
-## Documentation
+## 📚 Documentation
 
 Everything lives in [docs/](docs/README.md), and it is written to be read, not
 just grepped: each page teaches the why before the how, in plain prose a
@@ -197,7 +199,7 @@ understanding how a thing works, start anywhere below.
 | **Recipes**   | [Status page](docs/recipes/status.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) · [Migration](docs/recipes/migration.md)                                                                                                                                                     |
 | **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                                                                                                                                                                                 |
 
-## Not a dashboard, on purpose
+## 🎯 Not a dashboard, on purpose
 
 cairn is a directory, not a control panel: no auth, no widgets, no Docker
 socket, no admin UI. If the audience is _you_, the admin,
@@ -205,7 +207,7 @@ socket, no admin UI. If the audience is _you_, the admin,
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
 
-## Ideas, contributions, support
+## 🤝 Ideas, contributions, support
 
 cairn is young and opinionated, and other people's eyes make it better.
 Ideas and bug reports are welcome in the
@@ -214,7 +216,7 @@ Ideas and bug reports are welcome in the
 serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps its
 maintainer walking the trail.
 
-## Colophon
+## 🪶 Colophon
 
 A colophon tells how the book was made, so here is mine: Go, plain YAML,
 [Fraunces](https://github.com/undercasetype/Fraunces) for the headings, and
@@ -222,7 +224,7 @@ A colophon tells how the book was made, so here is mine: Go, plain YAML,
 autopilot. The taste, the reviews and the final word stay mine; the tests,
 the CI and the public history keep me honest.
 
-## License
+## ⚖️ License
 
 Free software under [GPL-3.0](LICENSE): use it, modify it, share it. What
 you redistribute stays under the same license, source included. Hosting your
