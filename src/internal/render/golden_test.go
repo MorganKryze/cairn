@@ -91,8 +91,8 @@ func TestAGatusSiteRendersWhatItAlwaysDid(t *testing.T) {
 	// Gatus has answered: pdf up, pad down, and it says nothing about wiki,
 	// which is the third of the three states a card can be in.
 	m, err := BuildModel(cfg, map[string]status.State{
-		"pdf": {Up: true, Key: "documents_pdf"},
-		"pad": {Up: false, Key: "documents_pad"},
+		"pdf": {Level: status.LevelUp, Key: "documents_pdf"},
+		"pad": {Level: status.LevelDown, Key: "documents_pad"},
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -92,7 +92,7 @@ func TestPollOnce(t *testing.T) {
 	}
 
 	pollOnce(status.Source{URL: srv.URL}, &seen)
-	if got := current.Load().Statuses["pad"]; !got.Up {
+	if got := current.Load().Statuses["pad"]; got.Level != status.LevelUp {
 		t.Fatalf("statuses = %v, want pad up", current.Load().Statuses)
 	}
 	if !strings.Contains(string(current.Load().Pages["en"].HTML), "status-up") {

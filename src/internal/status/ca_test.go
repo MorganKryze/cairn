@@ -82,7 +82,7 @@ func TestCABundleVerifiesWhatTheSystemRootsCannot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a bundle holding the server's own authority still failed: %v", err)
 	}
-	if !st["pad"].Up {
+	if st["pad"].Level != status.LevelUp {
 		t.Errorf("statuses = %v, want pad up: the body is read the same either side of the bundle", st)
 	}
 }
@@ -100,7 +100,7 @@ func TestCABundleCanBeFetched(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a fetched bundle failed: %v", err)
 	}
-	if !st["pad"].Up {
+	if st["pad"].Level != status.LevelUp {
 		t.Errorf("statuses = %v, want pad up", st)
 	}
 }

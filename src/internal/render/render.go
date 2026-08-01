@@ -348,9 +348,12 @@ func statusOf(cfg *config.Config, statuses map[string]status.State, id string) s
 	switch {
 	case !ok:
 		return ""
-	case st.Up:
+	case st.Level == status.LevelUp:
 		return "up"
 	default:
+		// Every other level, including one no version of cairn has heard of,
+		// reads as down. That is the safe direction: a source that grows a word
+		// must not be able to paint a broken service green.
 		return "down"
 	}
 }

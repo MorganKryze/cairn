@@ -19,7 +19,7 @@ func pages(t *testing.T, site string) (home, detail string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := BuildModel(cfg, map[string]status.State{"pad": {Up: true}})
+	m, err := BuildModel(cfg, map[string]status.State{"pad": {Level: status.LevelUp}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestEveryServiceHasAPillSlot(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Gatus has answered and monitors pad only: wiki ends up with no pill.
-	m, err := BuildModel(cfg, map[string]status.State{"pad": {Up: true}})
+	m, err := BuildModel(cfg, map[string]status.State{"pad": {Level: status.LevelUp}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestStatusLinkedFalseChangesNothingElse(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Gatus has answered, and knows nothing about this service.
-	m, err := BuildModel(cfg, map[string]status.State{"elsewhere": {Up: true}})
+	m, err := BuildModel(cfg, map[string]status.State{"elsewhere": {Level: status.LevelUp}})
 	if err != nil {
 		t.Fatal(err)
 	}
