@@ -278,7 +278,7 @@ pending, maintenance, validating`, in lower case: `validating` is the amber
   Delete the tests you stop using rather than pausing them. StatusCake also
   pages at 25, hence `?limit=100`.
 - **A monitor's name has to be a valid cairn service id**: lowercase letters,
-  digits and dashes. A monitor named after a domain, `libresoftware.cloud`,
+  digits and dashes. A monitor named after a domain, `pdf.example.org`,
   never matches, because a service id carries no dot. Rename the monitor, or
   the pill never appears.
 
