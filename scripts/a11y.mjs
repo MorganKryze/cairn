@@ -9,11 +9,16 @@
 // scratch ports first.
 //
 // Usage: node scripts/a11y.mjs [example-url] [many-categories-url] [status-url]
-import { chromium } from 'playwright';
+import { chromium } from "playwright";
 
-const SITE = process.argv[2] ?? process.env.CAIRN_URL ?? 'http://127.0.0.1:8090/en/';
-const MANY = process.argv[3] ?? process.env.CAIRN_MANY_URL ?? 'http://127.0.0.1:8091/en/';
-const STATUS = process.argv[4] ?? process.env.CAIRN_STATUS_URL ?? 'http://127.0.0.1:8092/en/';
+const SITE =
+  process.argv[2] ?? process.env.CAIRN_URL ?? "http://127.0.0.1:8090/en/";
+const MANY =
+  process.argv[3] ?? process.env.CAIRN_MANY_URL ?? "http://127.0.0.1:8091/en/";
+const STATUS =
+  process.argv[4] ??
+  process.env.CAIRN_STATUS_URL ??
+  "http://127.0.0.1:8092/en/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -34,8 +39,10 @@ const eq = (got, want, label) => {
 // display rule is invisible to any test that asks the DOM what it contains:
 // the element is there either way. getClientRects asks what the layout did.
 const painted = (page, sel) =>
-  page.$$eval(sel, els =>
-    els.filter(e => e.getClientRects().length > 0).map(e => e.textContent.trim()),
+  page.$$eval(sel, (els) =>
+    els
+      .filter((e) => e.getClientRects().length > 0)
+      .map((e) => e.textContent.trim()),
   );
 
 const browser = await chromium.launch();
@@ -45,28 +52,40 @@ const browser = await chromium.launch();
 const desk = await browser.newContext();
 const page = await desk.newPage();
 await page.goto(SITE);
-const toggle = page.locator('#theme-toggle');
+const toggle = page.locator("#theme-toggle");
 
-await check('the theme toggle states whether it is pressed', async () => {
+await check("the theme toggle states whether it is pressed", async () => {
   const [pressed, dark] = await page.evaluate(() => [
-    document.getElementById('theme-toggle').getAttribute('aria-pressed'),
+    document.getElementById("theme-toggle").getAttribute("aria-pressed"),
     document.documentElement.dataset.theme
-      ? document.documentElement.dataset.theme === 'dark'
-      : matchMedia('(prefers-color-scheme: dark)').matches,
+      ? document.documentElement.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches,
   ]);
-  if (pressed === null) throw new Error('no aria-pressed at all: a screen reader hears a button and no state');
-  eq(pressed, String(dark), 'aria-pressed against the theme actually in force');
+  if (pressed === null)
+    throw new Error(
+      "no aria-pressed at all: a screen reader hears a button and no state",
+    );
+  eq(pressed, String(dark), "aria-pressed against the theme actually in force");
 });
 
-await check('and it flips with the theme, in both directions', async () => {
+await check("and it flips with the theme, in both directions", async () => {
   const seen = [];
   for (const _ of [0, 1]) {
     await toggle.click();
-    const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+    const theme = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
     seen.push(theme);
-    eq(await toggle.getAttribute('aria-pressed'), String(theme === 'dark'), `with data-theme=${theme}, aria-pressed`);
+    eq(
+      await toggle.getAttribute("aria-pressed"),
+      String(theme === "dark"),
+      `with data-theme=${theme}, aria-pressed`,
+    );
   }
-  if (seen[0] === seen[1]) throw new Error(`two clicks both landed on ${seen[0]}, so only one direction was tested`);
+  if (seen[0] === seen[1])
+    throw new Error(
+      `two clicks both landed on ${seen[0]}, so only one direction was tested`,
+    );
 });
 
 // ---- A3: 3:1 for the boundary of a control someone can operate (1.4.11) ----
@@ -76,27 +95,38 @@ await check('and it flips with the theme, in both directions', async () => {
 // actually paints one, since the header paints nothing on a wide viewport and
 // the colour behind the box is really the body's.
 const boundary = (p, sel) =>
-  p.$eval(sel, async el => {
-    const chan = s => {
+  p.$eval(sel, async (el) => {
+    const chan = (s) => {
       // Plain colours serialize as rgb()/rgba(). A color-mix() comes back as
       // oklab(), whose three numbers are not sRGB channels at all, and reading
       // them as channels reports near-black for every mix without complaining.
-      if (!s.startsWith('rgb')) throw new Error(`cannot read ${s} as sRGB channels`);
-      return s.match(/[\d.]+/g).slice(0, 3).map(Number);
+      if (!s.startsWith("rgb"))
+        throw new Error(`cannot read ${s} as sRGB channels`);
+      return s
+        .match(/[\d.]+/g)
+        .slice(0, 3)
+        .map(Number);
     };
-    const lum = s =>
+    const lum = (s) =>
       chan(s)
-        .map(v => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4))
+        .map((v) =>
+          v / 255 <= 0.03928
+            ? v / 255 / 12.92
+            : ((v / 255 + 0.055) / 1.055) ** 2.4,
+        )
         .reduce((acc, c, i) => acc + [0.2126, 0.7152, 0.0722][i] * c, 0);
     const wcag = (a, b) => {
       const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
       return (hi + 0.05) / (lo + 0.05);
     };
-    const opaque = s => !/,\s*0\)$/.test(s) && s !== 'transparent';
+    const opaque = (s) => !/,\s*0\)$/.test(s) && s !== "transparent";
     let outside = getComputedStyle(document.documentElement).backgroundColor;
     for (let e = el.parentElement; e; e = e.parentElement) {
       const bg = getComputedStyle(e).backgroundColor;
-      if (opaque(bg)) { outside = bg; break; }
+      if (opaque(bg)) {
+        outside = bg;
+        break;
+      }
     }
     // Read once, wait a frame, read again. A colour still on its way from one
     // palette value to the other differs between the two, and that is the only
@@ -105,10 +135,14 @@ const boundary = (p, sel) =>
     // make that impossible; this is here for the day it stops working, and it
     // fails on any machine rather than only on a slow one.
     const before = getComputedStyle(el).borderTopColor;
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(r)),
+    );
     const s = getComputedStyle(el);
     if (s.borderTopColor !== before) {
-      throw new Error(`the border is still moving: ${before} then ${s.borderTopColor}, so neither is the resting colour`);
+      throw new Error(
+        `the border is still moving: ${before} then ${s.borderTopColor}, so neither is the resting colour`,
+      );
     }
     return {
       border: s.borderTopColor,
@@ -119,9 +153,14 @@ const boundary = (p, sel) =>
   });
 
 const atLeast3 = (m, what) => {
-  for (const [where, r] of [['the page behind it', m.vsOutside], ['its own fill', m.vsInside]]) {
+  for (const [where, r] of [
+    ["the page behind it", m.vsOutside],
+    ["its own fill", m.vsInside],
+  ]) {
     if (r < 3) {
-      throw new Error(`${what} border ${m.border} against ${where}: ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`);
+      throw new Error(
+        `${what} border ${m.border} against ${where}: ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`,
+      );
     }
   }
 };
@@ -136,47 +175,101 @@ const atLeast3 = (m, what) => {
 // prefers-reduced-motion, so asking for it measures the resting value by
 // construction rather than by winning a race, and that is also the colour a
 // visitor with that preference sees for the whole life of the page.
-const still = await browser.newContext({ reducedMotion: 'reduce' });
+const still = await browser.newContext({ reducedMotion: "reduce" });
 const home = await still.newPage();
 await home.goto(SITE);
 
-await check('the live search box clears 3:1 against both of its neighbours', async () => {
-  atLeast3(await boundary(home, '#search .search-box'), 'the search box');
-});
+await check(
+  "the live search box clears 3:1 against both of its neighbours",
+  async () => {
+    atLeast3(await boundary(home, "#search .search-box"), "the search box");
+  },
+);
 
 // The rule is scoped rather than global on purpose: 1.4.11 exempts an inactive
 // component, and the bar renders disabled and decorative on every page but the
 // home page, purely for layout parity. So there is no ratio to assert for the
 // sleeping one, only that it was left alone.
 const detail = await still.newPage();
-await detail.goto(new URL('pdf/', SITE).href);
-await check('a disabled search box is left on the quiet border, being exempt', async () => {
-  const live = (await boundary(home, '#search .search-box')).border;
-  const dead = (await boundary(detail, '.search .search-box')).border;
-  if (dead === live) {
-    throw new Error(`the disabled bar wears the live border ${live}: the strong colour is not scoped to an enabled input`);
-  }
-});
+await detail.goto(new URL("pdf/", SITE).href);
+await check(
+  "a disabled search box is left on the quiet border, being exempt",
+  async () => {
+    const live = (await boundary(home, "#search .search-box")).border;
+    const dead = (await boundary(detail, ".search .search-box")).border;
+    if (dead === live) {
+      throw new Error(
+        `the disabled bar wears the live border ${live}: the strong colour is not scoped to an enabled input`,
+      );
+    }
+  },
+);
 
-// ---- A5: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
-
-// The colour math again, in node this time. boundary keeps its own copy inside
-// the page because it walks the ancestors there; here the two colours come out
-// and the ratio is computed on this side, which is the half that is easier to
-// read when a value moves.
+// The colour math in node, for the checks below. boundary keeps its own copy
+// inside the page because it walks the ancestors there; here the two colours
+// come out and the ratio is computed on this side, which is the half that is
+// easier to read when a value moves.
 const luminance = (s) => {
-  if (!s.startsWith('rgb')) throw new Error(`cannot read ${s} as sRGB channels`);
+  if (!s.startsWith("rgb"))
+    throw new Error(`cannot read ${s} as sRGB channels`);
   return s
     .match(/[\d.]+/g)
     .slice(0, 3)
     .map(Number)
-    .map((v) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4))
+    .map((v) =>
+      v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4,
+    )
     .reduce((acc, c, i) => acc + [0.2126, 0.7152, 0.0722][i] * c, 0);
 };
 const ratio = (a, b) => {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 };
+
+// ---- A5: the card's detail glyph, which is both a target and a graphic ----
+
+// It replaced words at the end of the description, so it has two duties the
+// words did not: it has to be big enough to hit (2.5.8 asks 24 by 24) and its
+// glyph has to be visible, since the glyph is now the whole message (1.4.11
+// asks 3:1 of a graphic that carries meaning).
+const glyph = (p, theme) =>
+  p.$eval(
+    ".card-more",
+    (el, theme) => {
+      document.documentElement.dataset.theme = theme;
+      const r = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      return {
+        w: r.width,
+        h: r.height,
+        colour: s.color,
+        behind: s.backgroundColor,
+      };
+    },
+    theme,
+  );
+
+for (const theme of ["light", "dark"]) {
+  await check(
+    `the detail glyph is a real target and stays visible in ${theme}`,
+    async () => {
+      const m = await glyph(home, theme);
+      if (m.w < 24 || m.h < 24) {
+        throw new Error(
+          `${Math.round(m.w)} by ${Math.round(m.h)}, WCAG 2.2 asks 24 by 24 of a target`,
+        );
+      }
+      const r = ratio(m.colour, m.behind);
+      if (r < 3) {
+        throw new Error(
+          `${m.colour} on ${m.behind} is ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`,
+        );
+      }
+    },
+  );
+}
+
+// ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
 // The fixture's monitor is a port nothing listens on, so every pill on that
 // page renders unknown and neither of these two states can be reached by
@@ -185,13 +278,17 @@ const ratio = (a, b) => {
 // class is what is set: this measures the colours, which is all it claims to.
 const dot = (p, cls, theme) =>
   p.$eval(
-    '.status-pill',
+    ".status-pill",
     (el, [cls, theme]) => {
       document.documentElement.dataset.theme = theme;
       el.className = `status-pill ${cls}`;
-      const d = el.querySelector('.dot');
+      const d = el.querySelector(".dot");
       const s = getComputedStyle(d);
-      return { colour: s.backgroundColor, behind: getComputedStyle(el).backgroundColor, radius: s.borderTopLeftRadius };
+      return {
+        colour: s.backgroundColor,
+        behind: getComputedStyle(el).backgroundColor,
+        radius: s.borderTopLeftRadius,
+      };
     },
     [cls, theme],
   );
@@ -199,28 +296,38 @@ const dot = (p, cls, theme) =>
 const pills = await still.newPage();
 await pills.goto(STATUS);
 
-for (const cls of ['status-degraded', 'status-maintenance']) {
-  await check(`the ${cls.slice(7)} dot clears 3:1 against its pill on both themes`, async () => {
-    for (const theme of ['light', 'dark']) {
-      const m = await dot(pills, cls, theme);
-      const r = ratio(m.colour, m.behind);
-      if (r < 3) {
-        throw new Error(`${theme}: ${m.colour} on ${m.behind} is ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`);
+for (const cls of ["status-degraded", "status-maintenance"]) {
+  await check(
+    `the ${cls.slice(7)} dot clears 3:1 against its pill on both themes`,
+    async () => {
+      for (const theme of ["light", "dark"]) {
+        const m = await dot(pills, cls, theme);
+        const r = ratio(m.colour, m.behind);
+        if (r < 3) {
+          throw new Error(
+            `${theme}: ${m.colour} on ${m.behind} is ${r.toFixed(2)}:1, WCAG 1.4.11 asks 3:1`,
+          );
+        }
       }
-    }
-  });
+    },
+  );
 }
 
 // Blue against green is the pairing most often indistinguishable, and this dot
 // is nine pixels across. The label carries the meaning without colour, which is
 // what 1.4.1 asks for; the shape is the redundancy for the glance.
-await check('the maintenance dot is square, so colour is not the only cue', async () => {
-  const round = await dot(pills, 'status-up', 'light');
-  const square = await dot(pills, 'status-maintenance', 'light');
-  if (square.radius === round.radius) {
-    throw new Error(`the maintenance dot wears the round radius ${round.radius}: only its colour tells it apart`);
-  }
-});
+await check(
+  "the maintenance dot is square, so colour is not the only cue",
+  async () => {
+    const round = await dot(pills, "status-up", "light");
+    const square = await dot(pills, "status-maintenance", "light");
+    if (square.radius === round.radius) {
+      throw new Error(
+        `the maintenance dot wears the round radius ${round.radius}: only its colour tells it apart`,
+      );
+    }
+  },
+);
 
 // ---- A2 and A4, both of which only exist at phone width ----
 
@@ -230,47 +337,64 @@ await m.goto(MANY);
 
 // Measured still as well, and at phone width, which is the only place this
 // control is painted at all.
-const stillPhone = await browser.newContext({ viewport: PHONE, reducedMotion: 'reduce' });
+const stillPhone = await browser.newContext({
+  viewport: PHONE,
+  reducedMotion: "reduce",
+});
 const sm = await stillPhone.newPage();
 await sm.goto(MANY);
-await check('the mobile jump-to select clears 3:1 too', async () => {
-  atLeast3(await boundary(sm, '.toc-select'), 'the jump-to select');
+await check("the mobile jump-to select clears 3:1 too", async () => {
+  atLeast3(await boundary(sm, ".toc-select"), "the jump-to select");
 });
 
-await check('a phone with JavaScript shows the jump-to select, not the chips', async () => {
-  eq((await painted(m, '.toc-select')).length, 1, 'painted jump selects');
-  eq((await painted(m, '.toc.many a')).length, 0, 'painted trail chips');
-});
+await check(
+  "a phone with JavaScript shows the jump-to select, not the chips",
+  async () => {
+    eq((await painted(m, ".toc-select")).length, 1, "painted jump selects");
+    eq((await painted(m, ".toc.many a")).length, 0, "painted trail chips");
+  },
+);
 
 // The regression: the swap to a select is gated on JavaScript because nav.js
 // is the select's entire behaviour. Ungated, a phone with scripting off got no
 // category navigation at all, on the viewport where a nine-category list is
 // least scrollable.
-const dumb = await browser.newContext({ viewport: PHONE, javaScriptEnabled: false });
+const dumb = await browser.newContext({
+  viewport: PHONE,
+  javaScriptEnabled: false,
+});
 const nojs = await dumb.newPage();
 await nojs.goto(MANY);
 
-await check('a phone without JavaScript still paints category navigation', async () => {
-  const chips = await painted(nojs, '.toc.many a');
-  if (chips.length === 0) {
-    const inert = (await painted(nojs, '.toc-select')).length;
-    throw new Error(`no category link is painted, and ${inert} jump select(s) are, which nothing can drive`);
-  }
-});
+await check(
+  "a phone without JavaScript still paints category navigation",
+  async () => {
+    const chips = await painted(nojs, ".toc.many a");
+    if (chips.length === 0) {
+      const inert = (await painted(nojs, ".toc-select")).length;
+      throw new Error(
+        `no category link is painted, and ${inert} jump select(s) are, which nothing can drive`,
+      );
+    }
+  },
+);
 
 // A4: a scroll dismisses the open menu, unless the keyboard is inside it.
-const nav = m.locator('details.nav');
+const nav = m.locator("details.nav");
 const openMenu = async () => {
   await m.evaluate(() => {
-    scrollTo({ top: 0, behavior: 'instant' });
-    document.querySelector('details.nav').open = false;
+    scrollTo({ top: 0, behavior: "instant" });
+    document.querySelector("details.nav").open = false;
   });
-  await m.locator('.nav-burger').click();
-  eq(await nav.evaluate(el => el.open), true, 'the menu opened');
+  await m.locator(".nav-burger").click();
+  eq(await nav.evaluate((el) => el.open), true, "the menu opened");
   // The dropdown fades in over .16s from visibility:hidden, and focus() on a
   // hidden element is a no-op that leaves focus on the burger, which is the
   // other case entirely and would pass for the wrong reason.
-  await m.locator('.nav-links .menu-link').first().waitFor({ state: 'visible' });
+  await m
+    .locator(".nav-links .menu-link")
+    .first()
+    .waitFor({ state: "visible" });
 };
 // behavior:'instant' because the stylesheet sets scroll-behavior:smooth, so a
 // plain scrollBy animates and scrollY has barely moved a frame later. And a
@@ -279,36 +403,47 @@ const openMenu = async () => {
 const scrollDown = async () => {
   const moved = await m.evaluate(async () => {
     const before = scrollY;
-    scrollTo({ top: before + 400, behavior: 'instant' });
+    scrollTo({ top: before + 400, behavior: "instant" });
     // nav.js batches its work into a requestAnimationFrame, so the assertion
     // has to wait for the frame the scroll event scheduled.
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(r)),
+    );
     return scrollY !== before;
   });
-  if (!moved) throw new Error('the page never scrolled, so nothing was under test');
+  if (!moved)
+    throw new Error("the page never scrolled, so nothing was under test");
 };
 
-await check('scrolling with focus inside the menu keeps it open, and keeps the focus', async () => {
-  await openMenu();
-  const link = m.locator('.nav-links .menu-link').first();
-  const label = (await link.textContent()).trim();
-  await link.focus();
-  await scrollDown();
-  eq(await nav.evaluate(el => el.open), true, 'the menu after a scroll');
-  const holder = await m.evaluate(() => {
-    const a = document.activeElement;
-    return a && a.closest('.nav-links') ? a.textContent.trim() : `<${(a && a.tagName || '?').toLowerCase()}>`;
-  });
-  eq(holder, label, 'what holds focus after the scroll');
-});
+await check(
+  "scrolling with focus inside the menu keeps it open, and keeps the focus",
+  async () => {
+    await openMenu();
+    const link = m.locator(".nav-links .menu-link").first();
+    const label = (await link.textContent()).trim();
+    await link.focus();
+    await scrollDown();
+    eq(await nav.evaluate((el) => el.open), true, "the menu after a scroll");
+    const holder = await m.evaluate(() => {
+      const a = document.activeElement;
+      return a && a.closest(".nav-links")
+        ? a.textContent.trim()
+        : `<${((a && a.tagName) || "?").toLowerCase()}>`;
+    });
+    eq(holder, label, "what holds focus after the scroll");
+  },
+);
 
-await check('and a scroll with focus on the burger itself still dismisses it', async () => {
-  await openMenu();
-  await m.locator('.nav-burger').focus();
-  await scrollDown();
-  eq(await nav.evaluate(el => el.open), false, 'the menu after a scroll');
-});
+await check(
+  "and a scroll with focus on the burger itself still dismisses it",
+  async () => {
+    await openMenu();
+    await m.locator(".nav-burger").focus();
+    await scrollDown();
+    eq(await nav.evaluate((el) => el.open), false, "the menu after a scroll");
+  },
+);
 
 await browser.close();
-console.log(failures ? `\n${failures} failed` : '\nall passed');
+console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

@@ -45,7 +45,7 @@ Any text field accepts a plain string or a per-locale map; see
 
 Every service gets a page at `/{locale}/{id}/` with its name, description,
 `details` text and an "Open the tool" button. The card shows a discreet
-"Learn more" link only when `details` or `images` is set; the card itself
+detail-page glyph only when `details` or `images` is set; the card itself
 always goes straight to the tool.
 
 Write `details` for the visitor who wonders _"when would I use this?"_:
