@@ -159,6 +159,10 @@ type Site struct {
 	Locales []string   `yaml:"locales"`
 	Theme   struct {
 		Accent string `yaml:"accent"`
+		Font   struct {
+			Family string `yaml:"family"`
+			File   string `yaml:"file"`
+		} `yaml:"font"`
 	} `yaml:"theme"`
 	About   LString            `yaml:"about"`
 	Links   []FooterLink       `yaml:"links"`
@@ -395,8 +399,14 @@ var (
 	// computed-value time: the accent, and every focus ring drawn with it,
 	// silently disappears.
 	accentRe = regexp.MustCompile(`^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$`)
-	localeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
-	idRe     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	// A CSS font-family list goes verbatim into the page's inline <style>,
+	// so it is kept to the characters a family stack is made of: letters,
+	// digits, spaces, quotes and the punctuation between family names. A
+	// semicolon, a brace or a newline could break out of the declaration, and
+	// refusing them is what lets the value be inlined without escaping.
+	fontFamilyRe = regexp.MustCompile(`^[a-zA-Z0-9 '",._@+-]+$`)
+	localeRe     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
+	idRe         = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	// An icon slug: what dashboard-icons publishes, and the only shape that can
 	// safely become both a filename and a URL segment.
 	slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
@@ -460,6 +470,83 @@ func mediaRef(src string) (rel string, ours bool) {
 		return src, true
 	}
 	return strings.CutPrefix(src, "/media/")
+}
+
+// FontRef maps theme.font.file to the file under the config directory's
+// fonts/ folder, and reports whether the value names one at all. The served
+// URL is "/fonts/" + rel, which is why the two spellings that are already a
+// path mean the file it leads to.
+//
+// A font file has three documented spellings that have to mean the same
+// thing: the bare name "custom-font.woff2", the config-relative
+// "fonts/custom-font.woff2", and the "/fonts/custom-font.woff2" path it is
+// served at. Everything else -- a URL, an absolute path outside fonts/ , a
+// "../" climb -- comes back not-ok, and the caller answers with its own
+// message. The backslash form counts as a climb because a browser normalises
+// it to the same thing, the rule IsLocalPath already draws.
+func FontRef(file string) (rel string, ok bool) {
+	if file == "" {
+		return "", false
+	}
+	file = strings.TrimPrefix(file, "/fonts/")
+	file = strings.TrimPrefix(file, "fonts/")
+	if file == "" || strings.Contains(file, "..") || strings.ContainsAny(file, `\`) ||
+		strings.HasPrefix(file, "/") || uriRe.MatchString(file) {
+		return "", false
+	}
+	return file, true
+}
+
+// FirstFontFamily is the first entry of a CSS font-family list, the name an
+// @font-face can declare. A list like "Inter, system-ui, sans-serif" names
+// the custom file first, and the @font-face has to use exactly that name for
+// the browser to connect the two; splitting on a comma a quote belongs to
+// would cut a name like "My, Font" in half.
+func FirstFontFamily(family string) string {
+	var b strings.Builder
+	quote := rune(0)
+	for _, r := range family {
+		switch {
+		case quote != 0:
+			b.WriteRune(r)
+			if r == quote {
+				quote = 0
+			}
+		case r == '"' || r == '\'':
+			b.WriteRune(r)
+			quote = r
+		case r == ',':
+			return strings.TrimSpace(b.String())
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return strings.TrimSpace(b.String())
+}
+
+// FontFormat maps a font file's extension to the format hint its @font-face
+// src carries. Empty for a file cairn has no label for, which validation
+// refuses before it ever reaches a page.
+func FontFormat(rel string) string {
+	switch strings.ToLower(filepath.Ext(rel)) {
+	case ".woff2":
+		return "woff2"
+	case ".woff":
+		return "woff"
+	case ".ttf":
+		return "truetype"
+	case ".otf":
+		return "opentype"
+	}
+	return ""
+}
+
+// FontFaceName is the name the @font-face for theme.font.file declares: the
+// first family of theme.font.family, quoted if it is not already. The
+// @font-face and the --font-body override have to name the same font, so both
+// come from the one value.
+func FontFaceName(family string) string {
+	return quotedFontName(FirstFontFamily(family))
 }
 
 func Load(dir string) (*Config, error) {

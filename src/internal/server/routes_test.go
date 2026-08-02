@@ -36,6 +36,12 @@ func TestRouteTable(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(cfgDir, "media", "shot.txt"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(cfgDir, "fonts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cfgDir, "fonts", "custom.woff2"), []byte("wOF2"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	Store(mustModel(t, cfgDir))
 	h := routes(cfgDir, assetsDir)
@@ -60,8 +66,10 @@ func TestRouteTable(t *testing.T) {
 		{"/static/style.css", http.StatusOK},         // embedded
 		{"/assets/icons/pad.svg", http.StatusOK},     // mounted
 		{"/media/shot.txt", http.StatusOK},           // next to the yaml
+		{"/fonts/custom.woff2", http.StatusOK},       // the self-hosted font
 		{"/assets/", http.StatusNotFound},            // never a directory index
 		{"/media/", http.StatusNotFound},             //
+		{"/fonts/", http.StatusNotFound},             //
 		{"/static/does-not-exist", http.StatusNotFound},
 	} {
 		rec := httptest.NewRecorder()
@@ -101,6 +109,7 @@ func TestDotPrefixedPathsAreNotServed(t *testing.T) {
 	write(assetsDir, "icons/pad.svg", "<svg/>")
 	write(cfgDir, "media/.DS_Store", "\x00\x00\x00\x01")
 	write(cfgDir, "media/shot.png", "x")
+	write(cfgDir, "fonts/.fontconfig", "x")
 
 	Store(mustModel(t, cfgDir))
 	h := routes(cfgDir, assetsDir)
@@ -113,6 +122,7 @@ func TestDotPrefixedPathsAreNotServed(t *testing.T) {
 		{"/assets/.env", http.StatusNotFound},               // a dot at the root of the tree
 		{"/assets/icons/.svn/entries", http.StatusNotFound}, // and one further down it
 		{"/media/.DS_Store", http.StatusNotFound},           // the same rule, the other tree
+		{"/fonts/.fontconfig", http.StatusNotFound},         // and the font tree
 		{"/assets/icons/pad.svg", http.StatusOK},            // ordinary files are untouched
 		{"/media/shot.png", http.StatusOK},                  //
 		{"/.well-known/security.txt", http.StatusOK},        // its own handler, not a tree

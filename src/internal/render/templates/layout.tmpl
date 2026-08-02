@@ -32,7 +32,7 @@
 
 <link rel="preload" href="{{.Prefix}}/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{.Prefix}}/static/style.css">
-<style>:root{--accent:{{.Accent}}}</style>
+<style>{{.Style}}</style>
 <script>document.documentElement.setAttribute('data-js','');var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 {{if .CustomCSS}}<link rel="stylesheet" href="{{.Prefix}}/custom.css">
 {{end}}</head>

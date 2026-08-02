@@ -6,6 +6,12 @@ tagline:
 locales: [fr, en]
 theme:
   accent: "#247b7b"
+  # Typography: a CSS font stack for body text, or the first name of a font
+  # file in the config directory's fonts/ folder (served by cairn, no external
+  # request). See docs/configuration/theming.md#2-typography.
+  # font:
+  #   family: "Inter, system-ui, sans-serif"
+  #   file: "fonts/custom-font.woff2"
 footer:
   - label: { fr: Statut des services, en: Service status }
     url: https://status.example.org

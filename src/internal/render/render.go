@@ -73,18 +73,43 @@ func aboutHash(about config.LString) string {
 	return hex.EncodeToString(h.Sum(nil))[:8]
 }
 
-func accentStyle(accent string) string { return ":root{--accent:" + accent + "}" }
+// themeStyle is the inline <style> every page carries. It sets the accent on
+// :root -- the stylesheet's own value is a placeholder, this is the real one --
+// overrides the body font when theme.font.family names one, and declares the
+// self-hosted @font-face when theme.font.file does. Its hash is what the CSP
+// allows, so this string and the <style> layout.tmpl renders have to stay
+// identical; csp_test.go guards the match.
+func themeStyle(cfg *config.Config) string {
+	var b strings.Builder
+	if f := cfg.Site.Theme.Font.File; f != "" {
+		if rel, ok := config.FontRef(f); ok {
+			fmt.Fprintf(&b, "@font-face{font-family:%s;src:url(%q) format(%q);font-weight:100 900;font-style:normal;font-display:swap}",
+				config.FontFaceName(cfg.Site.Theme.Font.Family),
+				AppURL("/fonts/"+rel),
+				config.FontFormat(rel))
+		}
+	}
+	b.WriteString(":root{--accent:")
+	b.WriteString(cfg.Site.Theme.Accent)
+	if fam := cfg.Site.Theme.Font.Family; fam != "" {
+		b.WriteString(";--font-body:")
+		b.WriteString(fam)
+	}
+	b.WriteString("}")
+	return b.String()
+}
 
 func cspHash(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
 }
 
-// BuildCSP allows exactly what the pages use: self assets, the two known
-// inline fragments by hash, and images from anywhere https (icon slugs).
+// BuildCSP allows exactly what the pages use: self assets, the inline style
+// (accent, and the @font-face and body font when theme.font is set), the
+// known inline script by hash, and images from anywhere https (icon slugs).
 func BuildCSP(cfg *config.Config) string {
 	csp := "default-src 'none'; img-src 'self' https: data:; " +
-		"style-src 'self' " + cspHash(accentStyle(cfg.Site.Theme.Accent)) + "; " +
+		"style-src 'self' " + cspHash(themeStyle(cfg)) + "; " +
 		"script-src 'self' " + cspHash(prePaintScript) + "; " +
 		"font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 	// The one request a cairn page ever makes from the browser: status.js
@@ -204,14 +229,20 @@ type uiStrings struct {
 }
 
 type pageView struct {
-	Locale, Logo, Favicon, TouchIcon, OGImage, Accent, SwitchPath, Base, Version, AboutHash string
+	Locale, Logo, Favicon, TouchIcon, OGImage, SwitchPath, Base, Version, AboutHash string
 	// PageTitle and MetaDesc are the <title> and the meta/og description. Both
 	// are text inside markup rather than markup, so neither can carry a lang
 	// attribute, and neither can be split into a marked part and an unmarked
 	// one: a title is one string. A fallback shows there unannounced, and the
 	// only honest thing to do about it is not pretend otherwise. Same for the
 	// og:title and the aria-label statusMeta builds.
-	PageTitle, MetaDesc                         string
+	PageTitle, MetaDesc string
+	// Style is the inline <style> of every page, pre-built so its CSP hash
+	// can be computed over the same string the template renders. template.CSS
+	// is what tells html/template this block needs no CSS-escaping: it is
+	// trusted markup, the accent validated to a hex color and the font family
+	// to the characters a CSS font stack is made of.
+	Style                                       template.CSS
 	SiteTitle                                   locText
 	Prefix                                      string // "" or "/cairn", see BasePath
 	Dir                                         string // "ltr" or "rtl", from the locale
@@ -464,7 +495,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			OGImage:   ogImage(cfg.Site.URL, AppURL(cfg.Site.Logo)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
-			Accent:    cfg.Site.Theme.Accent,
+			Style:     template.CSS(themeStyle(cfg)),
 			CustomCSS: cfg.CustomCSS,
 			Locales:   cfg.Site.Locales,
 			S: uiStrings{

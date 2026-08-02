@@ -32,6 +32,10 @@ config: {}
 #   site.yaml: |
 #     title: Our tools
 #     locales: [fr, en]
+#     theme:
+#       accent: "#247b7b"
+#       font:
+#         family: "Inter, system-ui, sans-serif"
 #     about:
 #       fr: Bienvenue. Voici les services que nous hébergeons.
 #       en: Welcome. Here are the services we host.
@@ -41,6 +45,10 @@ config: {}
 #       icon: hedgedoc
 #       name: { fr: Bloc-notes, en: Notepad }
 #       desc: { fr: Écrire à plusieurs., en: Write together. }
+#
+# theme.font.file names a font file, and a ConfigMap holds text, so that file
+# has to arrive by volume instead: mount it at /config/fonts (see
+# extraVolumes and extraVolumeMounts below).
 
 # Keep the ConfigMap out of the release and manage it yourself (kustomize,
 # sops, a git-ops repo of its own). The `config` block above is then ignored
