@@ -34,7 +34,11 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze
+    # Spelled out rather than left to GitHub, which names a matrix job after
+    # every key in the entry: the build mode rode along, and the checks came
+    # out as "Analyze (go, autobuild)". These names are what the ruleset
+    # requires, so they are decided here rather than derived.
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
