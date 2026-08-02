@@ -5,10 +5,10 @@
 // colours the browser actually resolved, and a scroll is a scroll.
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
-// config, scripts/fixtures/many-categories and scripts/fixtures/status on
-// scratch ports first.
+// config, scripts/fixtures/many-categories, scripts/fixtures/status and
+// scripts/fixtures/themed on scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-categories-url] [status-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url]
 import { chromium } from "playwright";
 
 const SITE =
@@ -19,6 +19,8 @@ const STATUS =
   process.argv[4] ??
   process.env.CAIRN_STATUS_URL ??
   "http://127.0.0.1:8092/en/";
+const THEMED =
+  process.argv[5] ?? process.env.CAIRN_THEMED_URL ?? "http://127.0.0.1:8093/en/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -581,6 +583,78 @@ await check(
     eq(await nav.evaluate((el) => el.open), false, "the menu after a scroll");
   },
 );
+
+// Artwork that cannot serve both themes. The whole feature is a CSS rule
+// keyed on data-theme, so the markup says nothing about it: what matters is
+// which url() the browser has resolved on each element, and that pressing the
+// theme button moves it. A <picture> would pass a markup test and fail this
+// one, because it answers to the operating system and not to the button.
+{
+  const t = await browser.newPage();
+  await t.goto(THEMED, { waitUntil: "networkidle" });
+  const painted = () =>
+    t.evaluate(() => {
+      const file = (el) =>
+        getComputedStyle(el).content.split("/").pop().replace(/["')]/g, "");
+      const tiles = [...document.querySelectorAll(".tile img")];
+      return {
+        logo: file(document.querySelector(".brand img")),
+        first: file(tiles[0]),
+        second: file(tiles[1]),
+        plain: file(tiles[2]),
+        classes: tiles.slice(0, 2).map((i) => i.className),
+      };
+    });
+
+  await check("themed artwork starts on the light image", async () => {
+    const p = await painted();
+    eq(p.logo, "normal", "the logo before any switch");
+    eq(p.first, "normal", "a themed icon before any switch");
+  });
+
+  await check("pressing the theme button swaps the artwork", async () => {
+    await t.locator("#theme-toggle").click();
+    const p = await painted();
+    eq(p.logo, "logo-pale.svg", "the logo in dark");
+    eq(p.first, "mark-pale.svg", "a themed icon in dark");
+  });
+
+  // A negative control: it passes whether or not the feature exists, and is
+  // here to catch a rule written loosely enough to repaint every icon.
+  await check("an icon that themes nothing is left alone", async () => {
+    eq((await painted()).plain, "normal", "the untouched icon in dark");
+  });
+
+  await check("cards sharing a pair share one rule", async () => {
+    const p = await painted();
+    // Non-empty first: two cards with no class at all would otherwise agree
+    // with each other and let a missing feature pass for a working one.
+    eq(p.classes[0] !== "", true, "the first card carries a class");
+    eq(p.classes[1], p.classes[0], "the second card's class");
+    eq(p.second, "mark-pale.svg", "the second card's icon in dark");
+  });
+
+  // The other direction, and the other negative control: a rule that applied
+  // in both themes would fail here and nowhere else.
+  await check("pressing it again puts the light artwork back", async () => {
+    await t.locator("#theme-toggle").click();
+    const p = await painted();
+    eq(p.logo, "normal", "the logo after switching back");
+    eq(p.first, "normal", "a themed icon after switching back");
+  });
+
+  // The favicon is the one themed surface CSS cannot reach: it ships as a
+  // second <link> whose media query the button rewrites by hand.
+  const media = () =>
+    t.evaluate(() => document.querySelector('link[rel="icon"][media]').media);
+  await check("the themed favicon follows the button too", async () => {
+    await t.locator("#theme-toggle").click();
+    eq(await media(), "all", "the dark favicon's media in dark");
+    await t.locator("#theme-toggle").click();
+    eq(await media(), "not all", "the dark favicon's media in light");
+  });
+  await t.close();
+}
 
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
