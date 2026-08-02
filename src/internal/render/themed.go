@@ -60,7 +60,11 @@ func (s *themedSet) add(darkURL string) string {
 // ones who pressed the button. That is the pair style.css already uses for the
 // theme toggle's own glyphs, and it is what makes the button work at all.
 func (s *themedSet) rules(logoDark string) string {
-	sel := make([]string, 0, len(s.order)+1)
+	// No capacity hint: the list is one entry per distinct dark image on the
+	// whole site, and len()+1 inside an allocation is what CodeQL reads as a
+	// possible overflow. It is right that the shape is worth avoiding, and the
+	// hint was buying nothing here.
+	var sel []string
 	if logoDark != "" {
 		sel = append(sel, fmt.Sprintf(".brand img{content:url(%q)}", logoDark))
 	}

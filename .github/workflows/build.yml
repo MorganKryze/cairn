@@ -83,8 +83,11 @@ jobs:
       # or leaves a tab open. Deliberately not the demo stack, so this pulls
       # nothing from a registry and can be a required check. Same three
       # instances as `just test-browser`: example/, the fixture with more than
-      # seven categories and a header burger, and the one with a status page,
-      # none of which example/ has.
+      # seven categories and a header burger, the one with a status page, and
+      # the one whose artwork differs between the two themes, none of which
+      # example/ has. The two lists are written twice and have to be kept in
+      # step: a fixture added to the justfile alone leaves this job connecting
+      # to a port nothing answers on.
       - name: drive search, accessibility and the status pills in a browser
         run: |
           npm --silent install --no-save --no-package-lock playwright
@@ -93,11 +96,12 @@ jobs:
           /tmp/cairn -config example -addr 127.0.0.1:8090 &
           /tmp/cairn -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
           /tmp/cairn -config scripts/fixtures/status -addr 127.0.0.1:8092 &
-          for port in 8090 8091 8092; do
+          /tmp/cairn -config scripts/fixtures/themed -addr 127.0.0.1:8093 &
+          for port in 8090 8091 8092 8093; do
             for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
           done
           node scripts/search.mjs http://127.0.0.1:8090/en/
-          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/
+          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
 
   chart:
