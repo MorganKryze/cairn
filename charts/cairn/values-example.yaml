@@ -25,7 +25,7 @@ config:
     theme:
       accent: "#247b7b"
       # Body text font, a CSS stack; add file: to load a font from the
-      # config's fonts/ folder (which arrives by volume, not by ConfigMap).
+      # config's fonts/ folder.
       font:
         family: "ui-sans-serif, system-ui, sans-serif"
     about:
