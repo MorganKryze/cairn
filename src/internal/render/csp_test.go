@@ -61,4 +61,19 @@ func TestCSPHashesMatchAFontThemedPage(t *testing.T) {
 	if !strings.Contains(m.CSP, "font-src 'self'") {
 		t.Errorf("csp %q has no font-src 'self', so the self-hosted font would be blocked", m.CSP)
 	}
+	// The face declares no weight range, and that absence is the feature.
+	//
+	// cairn's own Fraunces is variable, so declaring 100 900 for it is right.
+	// A font someone drops in fonts/ is usually one static weight, and a face
+	// claiming to cover 100 to 900 is a face the browser matches at every
+	// weight: it stops synthesizing bold, because nothing looks missing.
+	// Measured on a static ttf, ink at weight 700 against the same text at
+	// 400: +0.0% with the range in Chromium and in WebKit, +17.2% and +41.8%
+	// without it. The page sets 470 through 650 on names, headings and the
+	// current entry of a table of contents, so the range flattens all of it.
+	// A variable font measured identically with the range and without, on
+	// both engines, which is what makes leaving it out the safe default.
+	if strings.Contains(style[1], "font-weight:") {
+		t.Errorf("the @font-face declares a weight range, which costs a static font its bold:\n%s", style[1])
+	}
 }

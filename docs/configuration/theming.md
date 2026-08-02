@@ -37,7 +37,7 @@ The first family in the list is the one the page asks for, so a font that is
 already installed is enough: `family: "Atkinson Hyperlegible, system-ui,
 sans-serif"` works with nothing else.
 
-`file` names a font file in the config directory's `fonts/` folder — a
+`file` names a font file in the config directory's `fonts/` folder, a
 `woff2`, `woff`, `ttf` or `otf`:
 
 ```text
@@ -51,6 +51,10 @@ request: nothing to leak, nothing to block, no CDN. The first family in
 `family` is declared as that font, which is how the two keys go together:
 `file` supplies the file, `family` names it. Without `file`, the stack simply
 uses whatever is installed.
+
+One file is all cairn asks for, and a single-weight one is fine: the page uses
+a few weights for names and headings, and the browser thickens the file it has
+for the bold ones. A variable font covers them itself.
 
 A font file that is not there is a `cairn -check` warning, not a broken page:
 the browser falls back through the rest of the family list.

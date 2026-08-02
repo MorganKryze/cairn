@@ -83,7 +83,16 @@ func themeStyle(cfg *config.Config) string {
 	var b strings.Builder
 	if f := cfg.Site.Theme.Font.File; f != "" {
 		if rel, ok := config.FontRef(f); ok {
-			fmt.Fprintf(&b, "@font-face{font-family:%s;src:url(%q) format(%q);font-weight:100 900;font-style:normal;font-display:swap}",
+			// No font-weight descriptor, deliberately. cairn's own Fraunces
+			// declares 100 900 because Fraunces is variable; a file someone
+			// drops in fonts/ is usually one static weight, and a face that
+			// claims to cover 100 to 900 is matched at every weight, so the
+			// browser stops synthesizing bold. The page sets 470 through 650
+			// on names, headings and the current entry of a table of contents,
+			// and all of it would come out flat. A variable font measures the
+			// same with the descriptor and without, on Chromium and WebKit
+			// alike, so leaving it out costs that case nothing.
+			fmt.Fprintf(&b, "@font-face{font-family:%s;src:url(%q) format(%q);font-style:normal;font-display:swap}",
 				config.FontFaceName(cfg.Site.Theme.Font.Family),
 				AppURL("/fonts/"+rel),
 				config.FontFormat(rel))
