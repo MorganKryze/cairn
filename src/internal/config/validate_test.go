@@ -60,6 +60,23 @@ func TestValidateSiteRejections(t *testing.T) {
 			s.Theme.Font.Family = "Inter"
 			s.Theme.Font.File = "fonts/readme.txt"
 		}, []string{"theme.font.file", ".woff2"}},
+		// theme.font.file lands in the same inline stylesheet the family does,
+		// as the url() of the @font-face, so it needs the same kind of guard.
+		// A path is not a climb, does not name another origin and ends in a
+		// font extension, and still carries the one sequence that ends a style
+		// element: the markup after it is markup on the page.
+		{"font file carrying markup", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = "a</style><script>alert(1)</script>b.woff2"
+		}, []string{"theme.font.file", "letters, digits"}},
+		// A quote is contained today, since %q escapes it and CSS reads the
+		// escape as a quote inside the string rather than the end of it. It is
+		// refused all the same: the containment is a property of how the url()
+		// happens to be written, and the guard is a property of the value.
+		{"font file carrying a quote", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = `fonts/a") format("woff2"),url("evil.woff2`
+		}, []string{"theme.font.file", "letters, digits"}},
 		{"gatus that is not a URL", func(s *Site) { s.Status.Gatus = "status.example.org" },
 			[]string{"status.gatus", "is not a URL"}},
 		{"status page that is not a URL", func(s *Site) { s.Status.Page = "nope" },
@@ -486,6 +503,14 @@ func TestValidateSiteAcceptsLegalFontBlocks(t *testing.T) {
 			s.Theme.Font.Family = `Inter`
 			s.Theme.Font.File = "/fonts/custom-font.woff2"
 		}},
+		// A font family is a name, and names are not ASCII. Refusing these
+		// refuses the whole config rather than the key, so a site whose font
+		// is called Époque loses every page to the getting-started one. The
+		// rule is about the characters that could end a declaration, and a
+		// letter is a letter in every script.
+		{"a family named in French", func(s *Site) { s.Theme.Font.Family = `"Époque Sans", sans-serif` }},
+		{"a family named in Chinese", func(s *Site) { s.Theme.Font.Family = `"思源黑体", sans-serif` }},
+		{"a family named in Arabic", func(s *Site) { s.Theme.Font.Family = `"الجزيرة", sans-serif` }},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := &Site{Locales: []string{"en"}}

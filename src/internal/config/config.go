@@ -404,9 +404,20 @@ var (
 	// digits, spaces, quotes and the punctuation between family names. A
 	// semicolon, a brace or a newline could break out of the declaration, and
 	// refusing them is what lets the value be inlined without escaping.
-	fontFamilyRe = regexp.MustCompile(`^[a-zA-Z0-9 '",._@+-]+$`)
-	localeRe     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
-	idRe         = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	//
+	// Letter means letter in any script. A font family is a name, and a name
+	// is written in the language it belongs to: Époque, 思源黑体, الجزيرة. An
+	// ASCII-only rule refuses those, and refusing a family refuses the config
+	// it is in, so a site would lose every page to the getting-started one
+	// over a font. None of that widens what can end a declaration.
+	fontFamilyRe = regexp.MustCompile(`^[\p{L}\p{N} '",._@+-]+$`)
+	// theme.font.file lands in the same inline stylesheet, as the url() of the
+	// @font-face, and needs the same kind of guard for the same reason: a path
+	// can pass every check about where it points and still carry the sequence
+	// that ends a style element. This is the shape of a filename.
+	fontFileRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9/._-]*$`)
+	localeRe   = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
+	idRe       = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	// An icon slug: what dashboard-icons publishes, and the only shape that can
 	// safely become both a filename and a URL segment.
 	slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)

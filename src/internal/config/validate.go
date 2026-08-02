@@ -40,6 +40,9 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if !ok || rel == "" {
 			return fmt.Errorf("config: site.yaml: theme.font.file %q is not a file in the config directory's fonts/ folder (expected e.g. fonts/custom-font.woff2, served by cairn itself with no external request)", f)
 		}
+		if !fontFileRe.MatchString(rel) {
+			return fmt.Errorf("config: site.yaml: theme.font.file %q carries characters a filename cannot, and the path is inlined into the page's stylesheet as the font's url(): keep it to letters, digits, dots, dashes and slashes (expected e.g. fonts/custom-font.woff2)", f)
+		}
 		if FontFormat(rel) == "" {
 			return fmt.Errorf("config: site.yaml: theme.font.file %q does not end in a font extension cairn can serve (expected .woff2, .woff, .ttf or .otf)", f)
 		}
