@@ -1,0 +1,69 @@
+# CodeQL, run from the repository rather than from GitHub's default setup.
+#
+# Default setup does not analyse a pull request raised from a fork. Nothing
+# fails when that happens: no analysis is queued at all, so the three Analyze
+# checks the ruleset requires never report, and the pull request sits blocked
+# with every other check green and no way to get the missing ones. The first
+# fork contribution cairn ever received landed in exactly that state.
+#
+# A workflow in the repository does run for a fork, with a read-only token and
+# no secrets, which is all the analysis needs. Same queries, same languages,
+# same alerts.
+#
+# The job is named so the check contexts stay exactly what they were, Analyze
+# (go) and its two siblings: the ruleset keeps requiring the names it already
+# requires, and nothing about branch protection has to be edited to match.
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  # No paths filter, deliberately: these are required checks, and a required
+  # check that never runs leaves a docs-only pull request waiting forever.
+  # security.yml carries the same note for the same reason.
+  pull_request:
+    branches: [main]
+  # Default setup analysed on a schedule too. A weekly run is what catches a
+  # query that learns about code nobody has touched since.
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # init reads the run it belongs to; analyze uploads the results.
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The three default setup reported, and the three the ruleset requires.
+        # javascript-typescript covers both what the pages load and the scripts
+        # that drive the browser suite.
+        include:
+          - language: actions
+            build-mode: none
+          - language: go
+            build-mode: autobuild
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: stable
+      - uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          category: "/language:${{ matrix.language }}"
