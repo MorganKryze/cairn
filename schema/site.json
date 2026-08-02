@@ -19,12 +19,52 @@
       "description": "Public base URL (https://…). Enables canonical links, hreflang and an absolute sitemap."
     },
     "logo": {
-      "type": "string",
-      "description": "Image shown before the title: URL or /assets path. A raster logo also becomes the social preview image when url is set."
+      "description": "Image shown before the title: URL or /assets path, or the pair {light, dark} when one image cannot serve both themes. A raster logo also becomes the social preview image when url is set; that preview has no theme, so it is always the light one.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["light", "dark"],
+          "description": "Two images, keyed by the theme each one appears in. Both are required: half a pair paints nothing in one theme. e.g. {light: /assets/logo.svg, dark: /assets/logo-white.svg}",
+          "properties": {
+            "light": {
+              "type": "string",
+              "description": "Shown in the light theme."
+            },
+            "dark": {
+              "type": "string",
+              "description": "Shown in the dark theme. A monochrome mark needs this: on cairn's tile a black one reads 1.40:1 against the dark theme, where the rules ask 3:1."
+            }
+          }
+        }
+      ]
     },
     "favicon": {
-      "type": "string",
-      "description": "Tab icon: URL or /assets path. Defaults to cairn's own."
+      "description": "Tab icon: URL or /assets path, or the pair {light, dark}. Defaults to cairn's own, which is drawn to read on both. The dark one follows the visitor's system and the theme button; the web app manifest has no theme, so it always takes the light one.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["light", "dark"],
+          "description": "Two images, keyed by the theme each one appears in. Both are required: half a pair paints nothing in one theme. e.g. {light: /assets/fav.svg, dark: /assets/fav-white.svg}",
+          "properties": {
+            "light": {
+              "type": "string",
+              "description": "Shown in the light theme."
+            },
+            "dark": {
+              "type": "string",
+              "description": "Shown in the dark theme. A monochrome mark needs this: on cairn's tile a black one reads 1.40:1 against the dark theme, where the rules ask 3:1."
+            }
+          }
+        }
+      ]
     },
     "icons": {
       "type": "array",

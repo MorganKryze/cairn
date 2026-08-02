@@ -41,8 +41,14 @@
               "required": ["src"],
               "additionalProperties": false,
               "properties": {
-                "src": { "type": "string", "description": "File in media/, URL, or absolute path." },
-                "caption": { "$ref": "#/definitions/lstring", "description": "Shown under the image, translatable." }
+                "src": {
+                  "type": "string",
+                  "description": "File in media/, URL, or absolute path."
+                },
+                "caption": {
+                  "$ref": "#/definitions/lstring",
+                  "description": "Shown under the image, translatable."
+                }
               }
             }
           ]
@@ -53,8 +59,28 @@
         "description": "Group id; name and order come from categories.yaml. Defaults to \"other\"."
       },
       "icon": {
-        "type": "string",
-        "description": "dashboard-icons slug (e.g. jellyfin), URL, or /assets path."
+        "description": "dashboard-icons slug (e.g. jellyfin), URL, or /assets path, or the pair {light, dark} for a monochrome mark. dashboard-icons suffixes the ink rather than the theme, so its github-light.svg is the pale one and belongs under dark.",
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["light", "dark"],
+            "description": "Two images, keyed by the theme each one appears in. Both are required: half a pair paints nothing in one theme. e.g. {light: github, dark: github-light}",
+            "properties": {
+              "light": {
+                "type": "string",
+                "description": "Shown in the light theme."
+              },
+              "dark": {
+                "type": "string",
+                "description": "Shown in the dark theme. A monochrome mark needs this: on cairn's tile a black one reads 1.40:1 against the dark theme, where the rules ask 3:1."
+              }
+            }
+          }
+        ]
       },
       "tags": {
         "type": "array",

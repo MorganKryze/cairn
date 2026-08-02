@@ -18,6 +18,30 @@ These icons load in the _visitor's_ browser from jsdelivr's CDN. The cairn
 container itself never phones anywhere. If you want zero third-party
 requests for your visitors too, use the `/assets` form below.
 
+### Monochrome marks, and the two suffixes
+
+Some marks are drawn in one colour and vanish in the theme they were not drawn
+for: on cairn's tile, a black one reads 1.40:1 against the dark theme. Those
+slugs usually ship a second file, and you name both:
+
+```yaml
+icon:
+  light: github
+  dark: github-light
+```
+
+Read the suffix carefully, because it means the opposite of what it looks like.
+dashboard-icons suffixes the **ink**, so `github-light.svg` is the pale mark,
+and a pale mark belongs on a dark background. cairn's keys name the **theme**
+instead, so the pale file goes under `dark:`. Not every slug has a variant:
+`github-light` exists, `github-dark` does not, because the plain file is
+already the dark ink. Check the catalog before writing a name.
+
+`-emit-icons` lists both halves, so a site self-hosting its icons downloads the
+variant too rather than quietly leaving half its cards on the CDN. There is
+more on themed artwork, including the logo and the favicon, under
+[Theming](../configuration/theming.md#artwork-that-cannot-serve-both-themes).
+
 ## URLs
 
 ```yaml
