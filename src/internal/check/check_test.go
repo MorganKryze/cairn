@@ -161,6 +161,53 @@ func TestCheckStaysQuietAboutMarkdownImagesItCannotStat(t *testing.T) {
 	}
 }
 
+// A missing font file paints nothing broken -- the page falls back through
+// the rest of the family list -- so Load accepts it and -check is the only
+// place it shows. It has to say where the file was looked for, since the
+// operator is staring at a correct-looking fonts/ path and the config
+// directory is the one cairn was pointed at.
+func TestCheckWarnsAboutAFontFileThatIsNotThere(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\ntheme:\n  font:\n    family: '\"Inter\", system-ui, sans-serif'\n    file: fonts/custom-font.woff2\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(checkWarnings(cfg, dir), "\n")
+	for _, want := range []string{"theme.font.file", "custom-font.woff2", "fonts"} {
+		if !strings.Contains(w, want) {
+			t.Errorf("warnings missing %q:\n%s", want, w)
+		}
+	}
+}
+
+// The mirror of the test above: the file is there, so the warning has to
+// stay away. One file, not several, and named by its plain config-relative
+// path rather than the fonts/ spelling, to exercise the normalization too.
+func TestCheckStaysQuietWhenTheFontFileIsThere(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\ntheme:\n  font:\n    family: Inter\n    file: custom-font.woff2\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	if err := os.MkdirAll(filepath.Join(dir, "fonts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "fonts", "custom-font.woff2"), []byte("wOF2"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range checkWarnings(cfg, dir) {
+		if strings.Contains(w, "theme.font.file") {
+			t.Errorf("a present font file earned a warning: %s", w)
+		}
+	}
+}
+
 // status.insecure is a decision rather than a mistake, and this warning is the
 // only trace it leaves once the startup log has scrolled away. It has to fire
 // every run, and only when there is actually a gatus to not-verify.

@@ -30,6 +30,53 @@ func TestValidateSiteRejections(t *testing.T) {
 			[]string{"invalid locale"}},
 		{"accent that is not hex", func(s *Site) { s.Theme.Accent = "teal" },
 			[]string{"theme.accent", "hex color", "#247b7b"}},
+		// theme.font.family is inlined verbatim into the page's stylesheet,
+		// so the refusal is about characters, not about looks: a semicolon or
+		// a brace could break out of the declaration the value sits in.
+		{"font family carrying a semicolon", func(s *Site) {
+			s.Theme.Font.Family = "Inter; } body{display:none"
+		}, []string{"theme.font.family", "Inter, system-ui"}},
+		{"font family carrying a brace", func(s *Site) {
+			s.Theme.Font.Family = "Inter {"
+		}, []string{"theme.font.family", "Inter, system-ui"}},
+		// The @font-face declares the first family of the list, and an
+		// unquoted name with a space reads as two families, so the custom font
+		// would be declared and never used. The message teaches the quote.
+		{"font family whose first name has a space unquoted", func(s *Site) {
+			s.Theme.Font.Family = "My Font, sans-serif"
+		}, []string{"theme.font.family", "quoted", `"My Font"`}},
+		{"font file without a family to name it", func(s *Site) {
+			s.Theme.Font.File = "fonts/custom-font.woff2"
+		}, []string{"theme.font.file", "theme.font.family"}},
+		{"font file that is a URL", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = "https://cdn.example.org/font.woff2"
+		}, []string{"theme.font.file", "fonts/ folder"}},
+		{"font file climbing out of the config", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = "fonts/../../etc/passwd"
+		}, []string{"theme.font.file", "fonts/ folder"}},
+		{"font file with no servable extension", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = "fonts/readme.txt"
+		}, []string{"theme.font.file", ".woff2"}},
+		// theme.font.file lands in the same inline stylesheet the family does,
+		// as the url() of the @font-face, so it needs the same kind of guard.
+		// A path is not a climb, does not name another origin and ends in a
+		// font extension, and still carries the one sequence that ends a style
+		// element: the markup after it is markup on the page.
+		{"font file carrying markup", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = "a</style><script>alert(1)</script>b.woff2"
+		}, []string{"theme.font.file", "letters, digits"}},
+		// A quote is contained today, since %q escapes it and CSS reads the
+		// escape as a quote inside the string rather than the end of it. It is
+		// refused all the same: the containment is a property of how the url()
+		// happens to be written, and the guard is a property of the value.
+		{"font file carrying a quote", func(s *Site) {
+			s.Theme.Font.Family = "Inter"
+			s.Theme.Font.File = `fonts/a") format("woff2"),url("evil.woff2`
+		}, []string{"theme.font.file", "letters, digits"}},
 		{"gatus that is not a URL", func(s *Site) { s.Status.Gatus = "status.example.org" },
 			[]string{"status.gatus", "is not a URL"}},
 		{"status page that is not a URL", func(s *Site) { s.Status.Page = "nope" },
@@ -385,6 +432,94 @@ func TestValidateSiteRejectsPageServiceCollision(t *testing.T) {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("message %q does not mention %q", err, want)
 		}
+	}
+}
+
+// The three documented spellings of a font file mean the same file and the
+// same URL. They are the media/ dual spelling with a third shape: the served
+// URL, which is what an operator copying it out of the page would write.
+func TestFontRefAcceptsEverySpellingOfTheSameFile(t *testing.T) {
+	for _, c := range []struct {
+		file string
+		rel  string
+		ok   bool
+	}{
+		{"fonts/custom-font.woff2", "custom-font.woff2", true},  // the documented form
+		{"custom-font.woff2", "custom-font.woff2", true},        // relative to fonts/
+		{"/fonts/custom-font.woff2", "custom-font.woff2", true}, // the served URL
+		{"sub/font.woff2", "sub/font.woff2", true},
+		{"", "", false},
+		{"https://cdn.example.org/font.woff2", "", false},
+		{"data:font/woff2;base64,d09", "", false},
+		{"/etc/font.woff2", "", false},
+		{"fonts/../media/x.woff2", "", false},
+		{"fonts/", "", false},
+	} {
+		rel, ok := FontRef(c.file)
+		if rel != c.rel || ok != c.ok {
+			t.Errorf("FontRef(%q) = (%q, %v), want (%q, %v)", c.file, rel, ok, c.rel, c.ok)
+		}
+	}
+}
+
+// The family name the @font-face declares is the first of the list, quoted
+// when it has to be, and a comma inside a quoted name is one name rather than
+// two. FirstFontFamily is the split that respects the quote.
+func TestFirstFontFamilyAndFaceName(t *testing.T) {
+	for _, c := range []struct {
+		family string
+		first  string
+		face   string
+	}{
+		{`Inter, system-ui, sans-serif`, "Inter", `"Inter"`},
+		{`"Inter", system-ui, sans-serif`, `"Inter"`, `"Inter"`},
+		{`'My Font', sans-serif`, `'My Font'`, `'My Font'`},
+		{`"My, Font", sans-serif`, `"My, Font"`, `"My, Font"`},
+		{`ui-serif, Georgia, serif`, "ui-serif", `"ui-serif"`},
+		{"", "", `""`},
+	} {
+		if got := FirstFontFamily(c.family); got != c.first {
+			t.Errorf("FirstFontFamily(%q) = %q, want %q", c.family, got, c.first)
+		}
+		if got := FontFaceName(c.family); got != c.face {
+			t.Errorf("FontFaceName(%q) = %q, want %q", c.family, got, c.face)
+		}
+	}
+}
+
+// A legal font block loads: a system stack alone, and a custom file with the
+// family that names it, in either of the accepted spellings.
+func TestValidateSiteAcceptsLegalFontBlocks(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		mut  func(*Site)
+	}{
+		{"a system stack", func(s *Site) { s.Theme.Font.Family = "ui-sans-serif, system-ui, sans-serif" }},
+		{"a custom file", func(s *Site) {
+			s.Theme.Font.Family = `"Inter", system-ui, sans-serif`
+			s.Theme.Font.File = "fonts/custom-font.woff2"
+		}},
+		{"a custom file in the served-URL spelling", func(s *Site) {
+			s.Theme.Font.Family = `Inter`
+			s.Theme.Font.File = "/fonts/custom-font.woff2"
+		}},
+		// A font family is a name, and names are not ASCII. Refusing these
+		// refuses the whole config rather than the key, so a site whose font
+		// is called Époque loses every page to the getting-started one. The
+		// rule is about the characters that could end a declaration, and a
+		// letter is a letter in every script.
+		{"a family named in French", func(s *Site) { s.Theme.Font.Family = `"Époque Sans", sans-serif` }},
+		{"a family named in Chinese", func(s *Site) { s.Theme.Font.Family = `"思源黑体", sans-serif` }},
+		{"a family named in Arabic", func(s *Site) { s.Theme.Font.Family = `"الجزيرة", sans-serif` }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s := &Site{Locales: []string{"en"}}
+			s.Theme.Accent = "#247b7b"
+			c.mut(s)
+			if err := validateSite(s, map[string]string{}); err != nil {
+				t.Fatalf("refused a legal config: %v", err)
+			}
+		})
 	}
 }
 

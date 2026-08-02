@@ -67,6 +67,7 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 		}
 	}
 	out = append(out, unresolvableRefs(cfg)...)
+	out = append(out, fontWarnings(cfg, dir)...)
 	// status.insecure is not a mistake, it is a decision, and -check is where a
 	// decision that leaves no trace on the page gets its trace. Nothing else
 	// says it out loud after the startup line has scrolled away.
@@ -391,6 +392,29 @@ func unresolvableRefs(cfg *config.Config) []string {
 		}
 	}
 	return out
+}
+
+// fontWarnings says when a configured font file is not where the page will
+// fetch it from.
+//
+// A missing font renders nothing broken: the browser falls back through the
+// rest of the family list, and every page looks exactly as it did. That is
+// the shape -check exists for, a config that reads as working and whose one
+// effect silently never happens.
+func fontWarnings(cfg *config.Config, dir string) []string {
+	f := cfg.Site.Theme.Font.File
+	if f == "" {
+		return nil
+	}
+	rel, ok := config.FontRef(f)
+	if !ok {
+		return nil
+	}
+	p := filepath.Join(dir, "fonts", filepath.FromSlash(rel))
+	if st, err := os.Stat(p); err == nil && !st.IsDir() {
+		return nil
+	}
+	return []string{fmt.Sprintf("site.yaml theme.font.file %q is not in the config directory: the page falls back through the rest of the family list (expected a file at %s)", f, p)}
 }
 
 // assetsMounted reports whether the -assets directory is there to look in.

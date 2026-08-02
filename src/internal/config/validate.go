@@ -24,6 +24,29 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	if !accentRe.MatchString(site.Theme.Accent) {
 		return fmt.Errorf("config: site.yaml: theme.accent %q is not a hex color (expected e.g. \"#247b7b\")", site.Theme.Accent)
 	}
+	if fam := site.Theme.Font.Family; fam != "" {
+		if !fontFamilyRe.MatchString(fam) {
+			return fmt.Errorf("config: site.yaml: theme.font.family %q contains characters a CSS font family cannot, and the value is inlined into the page's stylesheet: keep it to letters, digits, spaces, quotes, commas and hyphens (expected e.g. \"Inter, system-ui, sans-serif\")", fam)
+		}
+		if first := FirstFontFamily(fam); !isQuotedFontName(first) && strings.ContainsAny(first, " \t") {
+			return fmt.Errorf("config: site.yaml: theme.font.family %q names its first family with a space unquoted, so the browser would read two families and never load the custom font (write it quoted, e.g. \"%s\")", fam, quotedFontName(first))
+		}
+	}
+	if f := site.Theme.Font.File; f != "" {
+		if site.Theme.Font.Family == "" {
+			return fmt.Errorf("config: site.yaml: theme.font.file needs theme.font.family to name the font (the first family in the list is the one the file provides, which is how the page uses it)")
+		}
+		rel, ok := FontRef(f)
+		if !ok || rel == "" {
+			return fmt.Errorf("config: site.yaml: theme.font.file %q is not a file in the config directory's fonts/ folder (expected e.g. fonts/custom-font.woff2, served by cairn itself with no external request)", f)
+		}
+		if !fontFileRe.MatchString(rel) {
+			return fmt.Errorf("config: site.yaml: theme.font.file %q carries characters a filename cannot, and the path is inlined into the page's stylesheet as the font's url(): keep it to letters, digits, dots, dashes and slashes (expected e.g. fonts/custom-font.woff2)", f)
+		}
+		if FontFormat(rel) == "" {
+			return fmt.Errorf("config: site.yaml: theme.font.file %q does not end in a font extension cairn can serve (expected .woff2, .woff, .ttf or .otf)", f)
+		}
+	}
 	if g := site.Status.Gatus; g != "" && !isHTTPURL(g) {
 		return fmt.Errorf("config: site.yaml: status.gatus %q is not a URL (expected e.g. https://status.example.org)", g)
 	}
@@ -359,4 +382,22 @@ func checkContactScheme(field, val string) error {
 		return fmt.Errorf("config: site.yaml: %s %q uses the %s: scheme, which no researcher can act on (expected e.g. mailto:security@example.org, https://example.org/security or tel:+33…)", field, val, sc)
 	}
 	return nil
+}
+
+// isQuotedFontName reports whether a CSS family name carries its own quotes,
+// which is what a name with spaces needs before it can stand on its own in an
+// @font-face.
+func isQuotedFontName(name string) bool {
+	return len(name) >= 2 &&
+		(name[0] == '"' && name[len(name)-1] == '"' ||
+			name[0] == '\'' && name[len(name)-1] == '\'')
+}
+
+// quotedFontName is isQuotedFontName's inverse: it returns the name wrapped
+// in double quotes unless it already is.
+func quotedFontName(name string) string {
+	if isQuotedFontName(name) {
+		return name
+	}
+	return `"` + name + `"`
 }

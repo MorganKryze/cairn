@@ -77,6 +77,8 @@ func routes(cfgDir, assetsDir string) *http.ServeMux {
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(assetsDir)))))
 	// Service preview images live next to the yaml, in <config>/media/.
 	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(cfgDir, "media"))))))
+	// And the self-hosted font theme.font.file names, in <config>/fonts/.
+	mux.Handle("GET /fonts/", http.StripPrefix("/fonts/", noListing(http.FileServer(http.Dir(filepath.Join(cfgDir, "fonts"))))))
 	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /readyz", readyz)
 	mux.HandleFunc("GET /custom.css", func(w http.ResponseWriter, r *http.Request) {

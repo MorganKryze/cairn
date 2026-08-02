@@ -21,7 +21,48 @@ sets white text on the accent, so pick a mid-to-dark accent (the default
 `#247b7b` gives 5:1). A very light accent would weaken that button's
 contrast.
 
-## 2. custom.css
+## 2. Typography
+
+```yaml
+# site.yaml
+theme:
+  font:
+    family: "Inter, system-ui, sans-serif"
+    file: "fonts/custom-font.woff2"
+```
+
+Body text uses the system UI font by default. `theme.font.family` replaces it
+with a font stack of your own, written exactly as it goes in the stylesheet.
+The first family in the list is the one the page asks for, so a font that is
+already installed is enough: `family: "Atkinson Hyperlegible, system-ui,
+sans-serif"` works with nothing else.
+
+`file` names a font file in the config directory's `fonts/` folder, a
+`woff2`, `woff`, `ttf` or `otf`:
+
+```text
+/config/site.yaml
+/config/services.yaml
+/config/fonts/custom-font.woff2
+```
+
+cairn serves it itself at `/fonts/`, so the page makes no external font
+request: nothing to leak, nothing to block, no CDN. The first family in
+`family` is declared as that font, which is how the two keys go together:
+`file` supplies the file, `family` names it. Without `file`, the stack simply
+uses whatever is installed.
+
+One file is all cairn asks for, and a single-weight one is fine: the page uses
+a few weights for names and headings, and the browser thickens the file it has
+for the bold ones. A variable font covers them itself.
+
+A font file that is not there is a `cairn -check` warning, not a broken page:
+the browser falls back through the rest of the family list.
+
+Headings keep the embedded display font, Fraunces; they are a `--font-display`
+rule in [custom.css](#3-customcss), so leave that font alone and they stay.
+
+## 3. custom.css
 
 Drop a `custom.css` next to your YAML files; cairn serves it and loads it
 after its own stylesheet, so your rules win. Live reload applies here too.
@@ -80,10 +121,12 @@ in mind for text; the defaults pass it.
 
 Headings are set in [Fraunces](https://fonts.google.com/specimen/Fraunces), a
 variable serif embedded in the binary and served locally, no external font
-request. Body text uses the system UI font. Override `--font-display` or
-`--font-body` in `custom.css` to change either.
+request. Body text uses the system UI font, or the stack you set with
+[`theme.font`](#2-typography). Override `--font-display` or `--font-body` in
+`custom.css` to change either; `theme.font` sets `--font-body` and nothing
+else.
 
-## 3. Logo and favicon
+## 4. Logo and favicon
 
 ```yaml
 # site.yaml

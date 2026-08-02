@@ -4,13 +4,14 @@ Everything on one page. The per-topic pages explain; this one enumerates.
 
 ## Files in `/config`
 
-| File                       | Role                                                  |
-| -------------------------- | ----------------------------------------------------- |
-| `site.yaml`                | site chrome; optional                                 |
-| `categories.yaml`          | category names and order; optional                    |
-| `custom.css`               | loaded after cairn's stylesheet; optional             |
-| `media/`                   | service preview images, served at `/media/`; optional |
-| any other `*.yaml`/`*.yml` | a list of services; at least one required             |
+| File                       | Role                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `site.yaml`                | site chrome; optional                                                         |
+| `categories.yaml`          | category names and order; optional                                            |
+| `custom.css`               | loaded after cairn's stylesheet; optional                                     |
+| `media/`                   | service preview images, served at `/media/`; optional                         |
+| `fonts/`                   | self-hosted font files `theme.font.file` names, served at `/fonts/`; optional |
+| any other `*.yaml`/`*.yml` | a list of services; at least one required                                     |
 
 Changes to any of them apply within ~2 seconds. A bad or missing config at
 boot serves a built-in getting-started page while the log names the file,
@@ -46,6 +47,8 @@ logs the same error.
 | `index`                 | `true`      | `false` = robots.txt disallow, noindex meta, no sitemap                                                                                                                                                                   |
 | `locales`               | `[en]`      | list; first = default                                                                                                                                                                                                     |
 | `theme.accent`          | `#247b7b`   | hex color                                                                                                                                                                                                                 |
+| `theme.font.family`     | none        | CSS font stack for body text, e.g. `"Inter, system-ui, sans-serif"` ([Theming](configuration/theming.md#2-typography))                                                                                                    |
+| `theme.font.file`       | none        | a `woff2`/`woff`/`ttf`/`otf` in the config directory's `fonts/` folder (e.g. `fonts/custom-font.woff2`), served by cairn at `/fonts/`; needs `theme.font.family` to name it                                               |
 | `about`                 | empty       | dismissable welcome note under the hero, long text ([CommonMark, minus raw HTML](configuration/text.md))                                                                                                                  |
 | `links`                 | `[]`        | header nav links, list of `{label: text, url: string, icon: [glyph](configuration/site.md#header-links)/URL/path}`                                                                                                        |
 | `footer`                | `[]`        | list of `{label: text, url: string}`; both required, as in `links`                                                                                                                                                        |
@@ -117,6 +120,7 @@ ids, alphabetically.
 | `/static/…`                 | embedded assets, cached one day                                                                           |
 | `/assets/…`                 | your mounted files, if the mount exists                                                                   |
 | `/media/…`                  | images from `<config>/media/`, the ones services and long text name                                       |
+| `/fonts/…`                  | the self-hosted font `theme.font.file` names, from `<config>/fonts/`                                      |
 | `/custom.css`               | your stylesheet, if present                                                                               |
 | `/manifest.webmanifest`     | the web app manifest: site name, theme color, the [icon set](configuration/site.md#the-icon-set)          |
 | `/favicon.ico`              | cairn's own, or a redirect to your `favicon`, for the tools that skip the html                            |
@@ -137,19 +141,19 @@ it.
 
 ## Binary flags
 
-| Flag            | Default   | Role                                                                                                                                                                                                                                                                                                 |
-| --------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-addr`         | `:8080`   | listen address                                                                                                                                                                                                                                                                                       |
-| `-config`       | `/config` | config directory                                                                                                                                                                                                                                                                                     |
-| `-assets`       | `/assets` | directory served at `/assets/`, if it exists                                                                                                                                                                                                                                                         |
-| `-base-path`    | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                                                                                                                                                                                                |
-| `-healthcheck`  | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                                                                                                                                                                                          |
-| `-init`         | off       | print a commented starter `services.yaml`, then exit                                                                                                                                                                                                                                                 |
-| `-emit-gatus`   | off       | print a [Gatus endpoints config](recipes/status.md) derived from the services, then exit                                                                                                                                                                                                             |
-| `-hide-targets` | off       | with `-emit-gatus`: add the `ui` block that keeps each endpoint's [address off the Gatus dashboard](recipes/status.md#hide-what-gatus-probes)                                                                                                                                                        |
-| `-emit-icons`   | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                                                                                                                          |
-| `-check`        | off       | validate the config directory, print warnings (partial translations, `strings` or `locales` covering part of the site, orphan or heavy media, references that resolve nowhere or name no file, icon sizes the file contradicts, ids that collide, keys that do nothing, CDN icons), then exit 0 or 1 |
-| `-version`      | off       | print the version, then exit                                                                                                                                                                                                                                                                         |
+| Flag            | Default   | Role                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-addr`         | `:8080`   | listen address                                                                                                                                                                                                                                                                                                                        |
+| `-config`       | `/config` | config directory                                                                                                                                                                                                                                                                                                                      |
+| `-assets`       | `/assets` | directory served at `/assets/`, if it exists                                                                                                                                                                                                                                                                                          |
+| `-base-path`    | none      | serve under a [sub-path](deployment/reverse-proxies.md#under-a-sub-path) of the domain, e.g. `/cairn`                                                                                                                                                                                                                                 |
+| `-healthcheck`  | off       | probe `127.0.0.1:{port}/healthz`, exit 0/1, for `FROM scratch` healthchecks                                                                                                                                                                                                                                                           |
+| `-init`         | off       | print a commented starter `services.yaml`, then exit                                                                                                                                                                                                                                                                                  |
+| `-emit-gatus`   | off       | print a [Gatus endpoints config](recipes/status.md) derived from the services, then exit                                                                                                                                                                                                                                              |
+| `-hide-targets` | off       | with `-emit-gatus`: add the `ui` block that keeps each endpoint's [address off the Gatus dashboard](recipes/status.md#hide-what-gatus-probes)                                                                                                                                                                                         |
+| `-emit-icons`   | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                                                                                                                                                           |
+| `-check`        | off       | validate the config directory, print warnings (partial translations, `strings` or `locales` covering part of the site, orphan or heavy media, references that resolve nowhere or name no file, icon sizes the file contradicts, ids that collide, keys that do nothing, a custom font that is not there, CDN icons), then exit 0 or 1 |
+| `-version`      | off       | print the version, then exit                                                                                                                                                                                                                                                                                                          |
 
 With `-base-path`, every path above moves under the prefix (`/cairn/en/`,
 `/cairn/static/…`) and cairn strips it back off itself, so the proxy in front

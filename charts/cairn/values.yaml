@@ -32,6 +32,10 @@ config: {}
 #   site.yaml: |
 #     title: Our tools
 #     locales: [fr, en]
+#     theme:
+#       accent: "#247b7b"
+#       font:
+#         family: "Inter, system-ui, sans-serif"
 #     about:
 #       fr: Bienvenue. Voici les services que nous hébergeons.
 #       en: Welcome. Here are the services we host.
