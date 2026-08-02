@@ -28,31 +28,31 @@ func TestAppIconsNeverInventASize(t *testing.T) {
 		},
 		{
 			name: "an svg favicon is scalable, so it serves every size the way ours does",
-			cfg:  &config.Config{Site: config.Site{Favicon: "/assets/brand.svg"}},
+			cfg:  &config.Config{Site: config.Site{Favicon: config.ThemedRef{Light: "/assets/brand.svg"}}},
 			want: []AppIcon{{Src: "/assets/brand.svg", Sizes: "any", Type: "image/svg+xml"}},
 		},
 		{
 			name: "a raster we measured is declared at its real size",
 			cfg: &config.Config{
-				Site:        config.Site{Favicon: "/assets/brand.png"},
+				Site:        config.Site{Favicon: config.ThemedRef{Light: "/assets/brand.png"}},
 				FaviconDims: [2]int{512, 512},
 			},
 			want: []AppIcon{{Src: "/assets/brand.png", Sizes: "512x512", Type: "image/png"}},
 		},
 		{
 			name: "a raster behind a URL carries no size: measuring it means a request we do not make",
-			cfg:  &config.Config{Site: config.Site{Favicon: "https://cdn.example.org/brand.png"}},
+			cfg:  &config.Config{Site: config.Site{Favicon: config.ThemedRef{Light: "https://cdn.example.org/brand.png"}}},
 			want: []AppIcon{{Src: "https://cdn.example.org/brand.png", Type: "image/png"}},
 		},
 		{
 			name: "an unknown extension asserts neither size nor type",
-			cfg:  &config.Config{Site: config.Site{Favicon: "https://cdn.example.org/brand"}},
+			cfg:  &config.Config{Site: config.Site{Favicon: config.ThemedRef{Light: "https://cdn.example.org/brand"}}},
 			want: []AppIcon{{Src: "https://cdn.example.org/brand"}},
 		},
 		{
 			name: "an explicit list wins outright: only the operator can know these",
 			cfg: &config.Config{Site: config.Site{
-				Favicon: "/assets/brand.png",
+				Favicon: config.ThemedRef{Light: "/assets/brand.png"},
 				Icons: []config.SiteIcon{
 					{Src: "/assets/b-192.png", Sizes: "192x192"},
 					{Src: "/assets/b-512.png", Sizes: "512x512", Purpose: "any maskable"},
@@ -82,7 +82,7 @@ func TestAppIconsNeverInventASize(t *testing.T) {
 // `"sizes": ""` is a malformed manifest entry, not a silent one.
 func TestUnknownFieldsAreOmittedFromTheJSON(t *testing.T) {
 	b, err := json.Marshal(AppIcons(&config.Config{
-		Site: config.Site{Favicon: "https://cdn.example.org/brand"},
+		Site: config.Site{Favicon: config.ThemedRef{Light: "https://cdn.example.org/brand"}},
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +110,7 @@ func TestAppIconsFollowTheBasePath(t *testing.T) {
 		{"a remote one is left alone", "https://cdn.example.org/b.png", "https://cdn.example.org/b.png"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			got := AppIcons(&config.Config{Site: config.Site{Favicon: c.favicon}})
+			got := AppIcons(&config.Config{Site: config.Site{Favicon: config.ThemedRef{Light: c.favicon}}})
 			if got[0].Src != c.want {
 				t.Errorf("src = %q, want %q", got[0].Src, c.want)
 			}
@@ -168,11 +168,11 @@ func TestTouchIconHonoursTheOperatorsList(t *testing.T) {
 		want string
 	}{
 		{"nothing set: cairn's own", config.Site{}, "/static/touch-icon.png"},
-		{"an svg favicon cannot serve as one", config.Site{Favicon: "/assets/b.svg"}, "/static/touch-icon.png"},
-		{"a png favicon can", config.Site{Favicon: "/assets/b.png"}, "/assets/b.png"},
+		{"an svg favicon cannot serve as one", config.Site{Favicon: config.ThemedRef{Light: "/assets/b.svg"}}, "/static/touch-icon.png"},
+		{"a png favicon can", config.Site{Favicon: config.ThemedRef{Light: "/assets/b.png"}}, "/assets/b.png"},
 		{
 			"a list wins, largest first",
-			config.Site{Favicon: "/assets/b.svg", Icons: []config.SiteIcon{
+			config.Site{Favicon: config.ThemedRef{Light: "/assets/b.svg"}, Icons: []config.SiteIcon{
 				{Src: "/assets/b-192.png", Sizes: "192x192"},
 				{Src: "/assets/b-512.png", Sizes: "512x512"},
 				{Src: "/assets/b-64.png", Sizes: "64x64"},

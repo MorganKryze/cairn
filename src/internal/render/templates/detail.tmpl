@@ -2,7 +2,7 @@
 <article class="detail">
   <p><a class="back" href="{{.Prefix}}/{{.Locale}}/"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>{{.S.Back}}</a></p>
   <div class="detail-head">
-    <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
+    <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">
       <h1{{.Name.Attrs}}>{{.Name}}</h1>
       {{template "statuspill" .}}

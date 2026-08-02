@@ -103,7 +103,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 // stones to a link previewer would put our mark on their site's card.
 func faviconICO(static fs.FS) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if own := Current().Cfg.Site.Favicon; own != "" {
+		if own := Current().Cfg.Site.Favicon.Light; own != "" {
 			http.Redirect(w, r, render.AppURL(own), http.StatusFound)
 			return
 		}
