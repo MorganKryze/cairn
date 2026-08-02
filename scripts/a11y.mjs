@@ -643,11 +643,36 @@ await check(
     eq(p.first, "normal", "a themed icon after switching back");
   });
 
+  // The detail page draws the tile from its own template, so it is a second
+  // place the class has to reach.
+  await check("a detail page swaps its tile too", async () => {
+    await t.goto(new URL("themed-one/", THEMED).href, { waitUntil: "networkidle" });
+    const file = () =>
+      t.evaluate(() =>
+        getComputedStyle(document.querySelector(".tile img"))
+          .content.split("/")
+          .pop()
+          .replace(/["')]/g, ""),
+      );
+    eq(await file(), "normal", "the detail tile in light");
+    await t.locator("#theme-toggle").click();
+    eq(await file(), "mark-pale.svg", "the detail tile in dark");
+    // Put the theme back: the choice lives in localStorage and outlives the
+    // navigation, so a check that left it on dark would decide what the next
+    // one starts from.
+    await t.locator("#theme-toggle").click();
+    await t.goto(THEMED, { waitUntil: "networkidle" });
+  });
+
   // The favicon is the one themed surface CSS cannot reach: it ships as a
   // second <link> whose media query the button rewrites by hand.
   const media = () =>
     t.evaluate(() => document.querySelector('link[rel="icon"][media]').media);
   await check("the themed favicon follows the button too", async () => {
+    // From a stated starting point rather than whatever the last check left.
+    await t.evaluate(() => localStorage.removeItem("theme"));
+    await t.reload({ waitUntil: "networkidle" });
+    eq(await media(), "(prefers-color-scheme: dark)", "the media before any choice");
     await t.locator("#theme-toggle").click();
     eq(await media(), "all", "the dark favicon's media in dark");
     await t.locator("#theme-toggle").click();
