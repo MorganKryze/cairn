@@ -169,4 +169,30 @@ for (const [name, url, viewport] of [
   await context.close();
 }
 
+// Rounded corners, baked in. GitHub strips the style attribute from a README,
+// so a border-radius in the markup does nothing: the only place the corner can
+// live is the file. Transparent outside the radius, so the page shows through
+// and the same file sits right on a light canvas and a dark one.
+//
+// Last, after the social card is composed, so that one keeps the square source
+// it draws inside its own frame.
+for (const [file, radius] of [
+  ['home-light.png', 26],
+  ['home-dark.png', 26],
+  ['two-views.png', 26],
+]) {
+  const context = await browser.newContext({ deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const src = `data:image/png;base64,${readFileSync(join(OUT, file)).toString('base64')}`;
+  await page.setContent(
+    `<style>html,body{margin:0;background:none}` +
+      `img{display:block;border-radius:${radius}px}</style><img src="${src}">`,
+  );
+  const img = page.locator('img');
+  await img.waitFor();
+  await img.screenshot({ path: join(OUT, file), omitBackground: true });
+  console.log(`  round  -> docs/assets/${file}`);
+  await context.close();
+}
+
 await browser.close();
