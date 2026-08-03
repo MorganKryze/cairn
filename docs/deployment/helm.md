@@ -34,11 +34,13 @@ there if you ever want to break the pair apart.
 
 The defaults install a cairn that serves its own getting-started page, which is
 right for a first install and tells you nothing about what the page looks like
-with services on it. The chart ships a values file that fills it:
+with services on it. The chart ships a values file that fills it, inside the
+package, so pulling the chart is enough and nothing has to be fetched from
+GitHub:
 
 ```sh
-curl -O https://raw.githubusercontent.com/MorganKryze/cairn/main/charts/cairn/values-example.yaml
-helm install cairn oci://ghcr.io/morgankryze/charts/cairn -f values-example.yaml
+helm pull oci://ghcr.io/morgankryze/charts/cairn --untar
+helm install cairn oci://ghcr.io/morgankryze/charts/cairn -f cairn/values-example.yaml
 kubectl port-forward svc/cairn 8080:80
 ```
 
