@@ -21,9 +21,9 @@ func TestAppIconsNeverInventASize(t *testing.T) {
 			name: "no favicon at all: cairn's own set, including the two Chromium insists on",
 			cfg:  &config.Config{},
 			want: []AppIcon{
-				{Src: "/static/touch-icon.png", Sizes: "180x180", Type: "image/png"},
-				{Src: "/static/icon-192.png", Sizes: "192x192", Type: "image/png", Purpose: "any maskable"},
-				{Src: "/static/icon-512.png", Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
+				{Src: AssetURL("touch-icon.png"), Sizes: "180x180", Type: "image/png"},
+				{Src: AssetURL("icon-192.png"), Sizes: "192x192", Type: "image/png", Purpose: "any maskable"},
+				{Src: AssetURL("icon-512.png"), Sizes: "512x512", Type: "image/png", Purpose: "any maskable"},
 			},
 		},
 		{
@@ -105,7 +105,10 @@ func TestAppIconsFollowTheBasePath(t *testing.T) {
 	defer func() { BasePath = old }()
 
 	for _, c := range []struct{ name, favicon, want string }{
-		{"cairn's own", "", "/cairn/static/touch-icon.png"},
+		// AssetURL reads BasePath, which this test has set, so the want
+		// carries the prefix without spelling out a digest that moves with
+		// the file.
+		{"cairn's own", "", AssetURL("touch-icon.png")},
 		{"the operator's", "/assets/brand.svg", "/cairn/assets/brand.svg"},
 		{"a remote one is left alone", "https://cdn.example.org/b.png", "https://cdn.example.org/b.png"},
 	} {

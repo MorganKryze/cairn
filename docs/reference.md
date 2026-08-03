@@ -161,7 +161,10 @@ gets a 404 rather than a file.
 
 The display font is the one exception: `style.css` reaches it with a relative
 `url()` of its own, which nothing out here can rewrite, so it keeps its plain
-name and the shorter cache.
+name and the shorter cache. Everything else cairn ships is stamped, including
+the apple-touch-icon and the manifest's icons, which are built in Go rather
+than written in a template. Your own files, under `/assets/` and `/media/`,
+are never stamped: cairn has not read their bytes and has no digest to offer.
 
 ## Binary flags
 

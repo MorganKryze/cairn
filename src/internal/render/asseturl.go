@@ -86,3 +86,24 @@ func AssetPath(stamped string) (string, bool) {
 	real, ok := assetReal[stamped]
 	return real, ok
 }
+
+// stampStatic rewrites a root-absolute path naming one of cairn's own assets
+// into the stamped form, and leaves everything else exactly as it was.
+//
+// It exists because the touch icon and the manifest's icons are built in Go
+// rather than written in a template, so they never met the asset function and
+// went out unstamped: an operator who changed cairn's icon set had every
+// visitor keep the old one for a day, for no reason the font's had. An
+// operator's own icon is not touched, because cairn does not ship those bytes
+// and has no digest of them to offer.
+func stampStatic(p string) string {
+	name, ok := strings.CutPrefix(p, "/static/")
+	if !ok {
+		return p
+	}
+	stamped, ok := assetURL[name]
+	if !ok {
+		return p
+	}
+	return "/static/" + stamped
+}
