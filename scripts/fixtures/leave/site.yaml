@@ -1,0 +1,12 @@
+# The leaving dialog, for the browser suite. Nothing about it survives a look
+# at the markup: the server writes one <dialog> and marks the links it guards,
+# and everything after that is the browser's own modal behaviour plus a short
+# script. What is under test is what a visitor actually meets.
+#
+# confirm: external on purpose, so the same page carries a guarded link and an
+# unguarded one and the scope is exercised rather than asserted.
+title: Leave
+locales: [en]
+service_links:
+  new_tab: true
+  confirm: external

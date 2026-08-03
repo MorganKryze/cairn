@@ -98,7 +98,8 @@ jobs:
       # instances as `just test-browser`: example/, the fixture with more than
       # seven categories and a header burger, the one with a status page, and
       # the one whose artwork differs between the two themes, none of which
-      # example/ has. The two lists are written twice and have to be kept in
+      # example/ has, and the one that guards its external links with a dialog.
+      # The two lists are written twice and have to be kept in
       # step: a fixture added to the justfile alone leaves this job connecting
       # to a port nothing answers on.
       - name: drive search, accessibility and the status pills in a browser
@@ -110,11 +111,12 @@ jobs:
           /tmp/cairn -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
           /tmp/cairn -config scripts/fixtures/status -addr 127.0.0.1:8092 &
           /tmp/cairn -config scripts/fixtures/themed -addr 127.0.0.1:8093 &
-          for port in 8090 8091 8092 8093; do
+          /tmp/cairn -config scripts/fixtures/leave -addr 127.0.0.1:8094 &
+          for port in 8090 8091 8092 8093 8094; do
             for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
           done
           node scripts/search.mjs http://127.0.0.1:8090/en/
-          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/
+          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
 
   chart:

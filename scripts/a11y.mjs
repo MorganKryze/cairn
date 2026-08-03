@@ -5,10 +5,10 @@
 // colours the browser actually resolved, and a scroll is a scroll.
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
-// config, scripts/fixtures/many-categories, scripts/fixtures/status and
-// scripts/fixtures/themed on scratch ports first.
+// config, scripts/fixtures/many-categories, scripts/fixtures/status,
+// scripts/fixtures/themed and scripts/fixtures/leave on scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url]
 import { chromium } from "playwright";
 
 const SITE =
@@ -20,7 +20,11 @@ const STATUS =
   process.env.CAIRN_STATUS_URL ??
   "http://127.0.0.1:8092/en/";
 const THEMED =
-  process.argv[5] ?? process.env.CAIRN_THEMED_URL ?? "http://127.0.0.1:8093/en/";
+  process.argv[5] ??
+  process.env.CAIRN_THEMED_URL ??
+  "http://127.0.0.1:8093/en/";
+const LEAVE =
+  process.argv[6] ?? process.env.CAIRN_LEAVE_URL ?? "http://127.0.0.1:8094/en/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -646,7 +650,9 @@ await check(
   // The detail page draws the tile from its own template, so it is a second
   // place the class has to reach.
   await check("a detail page swaps its tile too", async () => {
-    await t.goto(new URL("themed-one/", THEMED).href, { waitUntil: "networkidle" });
+    await t.goto(new URL("themed-one/", THEMED).href, {
+      waitUntil: "networkidle",
+    });
     const file = () =>
       t.evaluate(() =>
         getComputedStyle(document.querySelector(".tile img"))
@@ -672,13 +678,171 @@ await check(
     // From a stated starting point rather than whatever the last check left.
     await t.evaluate(() => localStorage.removeItem("theme"));
     await t.reload({ waitUntil: "networkidle" });
-    eq(await media(), "(prefers-color-scheme: dark)", "the media before any choice");
+    eq(
+      await media(),
+      "(prefers-color-scheme: dark)",
+      "the media before any choice",
+    );
     await t.locator("#theme-toggle").click();
     eq(await media(), "all", "the dark favicon's media in dark");
     await t.locator("#theme-toggle").click();
     eq(await media(), "not all", "the dark favicon's media in light");
   });
   await t.close();
+}
+
+// ---- the leaving dialog ----
+//
+// The server decides which links are guarded, and Go tests hold that. What
+// only a browser can say is whether the dialog a visitor meets behaves like a
+// dialog: modal, escapable, and returning them where they were. All of it
+// comes from <dialog>.showModal(), which is exactly why it is worth checking
+// that the script really calls it rather than rolling its own div.
+{
+  const l = await browser.newPage();
+  await l.goto(LEAVE, { waitUntil: "networkidle" });
+  console.log("\nleaving dialog");
+
+  const guarded = l.locator('a[data-leave][href^="https://mail"]').first();
+  const dialog = l.locator("#leave");
+
+  await check("an unguarded link carries no data-leave", async () => {
+    eq(
+      await l.locator('a[data-leave][href^="https://pad"]').count(),
+      0,
+      "the self-hosted card",
+    );
+    eq(
+      await l.locator('a[data-leave][href^="https://quiet"]').count(),
+      0,
+      "the unflagged card",
+    );
+  });
+
+  await check(
+    "clicking a guarded link opens the dialog instead of leaving",
+    async () => {
+      const before = l.url();
+      await guarded.click();
+      eq(await dialog.evaluate((d) => d.open), true, "dialog.open");
+      eq(l.url(), before, "the page navigated anyway");
+    },
+  );
+
+  await check(
+    "it is modal, so the page behind it cannot be reached",
+    async () => {
+      // A real showModal() puts everything else in the inert subtree, which is
+      // what makes the focus trap and the backdrop work. A div pretending to be
+      // a dialog passes every markup check and fails this one.
+      eq(
+        await l.evaluate(
+          () =>
+            document.querySelector(".card-name").matches(":not(dialog *)") &&
+            document.querySelector("#leave").matches(":modal"),
+        ),
+        true,
+        "#leave is :modal",
+      );
+    },
+  );
+
+  await check(
+    "it names the origin apart from the rest of the address",
+    async () => {
+      eq(
+        await l.locator(".leave-host").textContent(),
+        "https://mail.example.org",
+        "the origin",
+      );
+      eq(
+        await l.locator(".leave-rest").textContent(),
+        "/inbox?tab=1",
+        "the path and query",
+      );
+    },
+  );
+
+  await check("continue is a real link to the destination", async () => {
+    const go = l.locator(".leave-go");
+    eq(
+      await go.getAttribute("href"),
+      "https://mail.example.org/inbox?tab=1",
+      "the continue href",
+    );
+    eq(
+      await go.getAttribute("target"),
+      "_blank",
+      "new_tab is on in this fixture",
+    );
+    eq(await go.getAttribute("rel"), "noopener noreferrer", "the rel");
+  });
+
+  await check("Escape closes it and the focus comes back", async () => {
+    // Asserted open first, and not for tidiness: with no script at all this
+    // check passed on its own, because a dialog that never opened is already
+    // closed and the focus never left the link that was clicked.
+    eq(await dialog.evaluate((d) => d.open), true, "dialog.open before Escape");
+    await l.keyboard.press("Escape");
+    eq(await dialog.evaluate((d) => d.open), false, "dialog.open after Escape");
+    // <dialog> returns focus to whatever opened it, which is the guarded link.
+    eq(
+      await l.evaluate(() => document.activeElement?.getAttribute("href")),
+      "https://mail.example.org/inbox?tab=1",
+      "where the focus landed",
+    );
+  });
+
+  await check("the stay button closes it too", async () => {
+    await guarded.click();
+    await l.locator(".leave-stay").click();
+    eq(await dialog.evaluate((d) => d.open), false, "dialog.open after stay");
+  });
+
+  await check("the detail page carries the same guard", async () => {
+    await l.goto(new URL("mail/", LEAVE).href, { waitUntil: "networkidle" });
+    await l.locator("a.btn[data-leave]").click();
+    eq(
+      await l.locator("#leave").evaluate((d) => d.open),
+      true,
+      "the detail dialog",
+    );
+  });
+
+  // The two buttons are controls whose boundary is the only thing saying so,
+  // which is the case 1.4.11 asks 3:1 for. This one opens the dialog itself
+  // rather than through the script: what is under test is the paint, and
+  // making it depend on leave.js would only give it a second way to fail.
+  // Read from the browser rather than
+  // from the stylesheet: --ui-border is a light-dark(), and a computed style
+  // hands back the unresolved function until something actually paints it.
+  await check("the dialog's own buttons clear 3:1 in both themes", async () => {
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
+    for (const theme of ["light", "dark"]) {
+      const m = await l.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+        document.getElementById("leave").showModal();
+        const out = {};
+        for (const sel of [".leave-copy", ".leave-stay"]) {
+          const s = getComputedStyle(document.querySelector(sel));
+          out[sel] = [
+            s.borderTopColor,
+            getComputedStyle(document.getElementById("leave")).backgroundColor,
+          ];
+        }
+        document.getElementById("leave").close();
+        return out;
+      }, theme);
+      for (const [sel, [edge, behind]] of Object.entries(m)) {
+        const r = ratio(edge, behind);
+        if (r < 3)
+          throw new Error(
+            `${sel} in ${theme} is ${r.toFixed(2)}:1 on the dialog, want 3`,
+          );
+      }
+    }
+  });
+  await l.close();
 }
 
 await browser.close();

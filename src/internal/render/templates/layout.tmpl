@@ -88,7 +88,26 @@
   {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a>{{if .ShowVer}} {{if .VerHref}}<a class="foot-version" href="{{.VerHref}}">{{.VerLabel}}</a>{{else}}<span class="foot-version">{{.VerLabel}}</span>{{end}}{{end}}</span>
   {{end}}</div></footer>
 <a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
-<script src="{{.Prefix}}/static/search.js" defer></script>
+{{if .Leave}}<!-- A native <dialog>, so the focus trap, Escape and aria-modal
+     come from the browser rather than from a script that has to remember all
+     three. leave.js fills the two blanks and calls showModal(); with no
+     script the guarded links are ordinary links and this never opens.
+
+     The continue button is a real anchor rather than a scripted navigation:
+     a window.open() after a dialog is what a popup blocker is for, and an
+     href needs no permission from anybody. -->
+<dialog id="leave" class="leave" aria-labelledby="leave-title">
+  <h2 id="leave-title">{{.S.LeaveTitle}}</h2>
+  <p class="leave-body">{{.S.LeaveBody}}</p>
+  <p class="leave-url"><span class="leave-host"></span><span class="leave-rest"></span></p>
+  <div class="leave-acts">
+    <button type="button" class="leave-copy" data-done="{{.S.LeaveCopied}}">{{.S.LeaveCopy}}</button>
+    <button type="button" class="leave-stay">{{.S.LeaveStay}}</button>
+    <a class="btn leave-go" href=""{{if .LeaveBlank}} target="_blank" rel="noopener noreferrer"{{end}}>{{.S.LeaveGo}}</a>
+  </div>
+</dialog>
+<script src="{{.Prefix}}/static/leave.js" defer></script>
+{{end}}<script src="{{.Prefix}}/static/search.js" defer></script>
 <script src="{{.Prefix}}/static/toc.js" defer></script>
 <script src="{{.Prefix}}/static/nav.js" defer></script>
 <script src="{{.Prefix}}/static/about.js" defer></script>

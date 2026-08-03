@@ -62,6 +62,10 @@ carries no flag.
 It is a data-location cue for your guests: which tools keep their data on your
 server, and which send them to a third party.
 
+The flag is also what [`service_links.confirm: external`](site.md#leaving-the-site)
+reads, if you want the ones you do not run to say so before a visitor follows
+them. A service with no flag at all never counts as external there.
+
 ### Making the flag lead somewhere
 
 By default the flag is text: a click on it opens the service, like the rest of
