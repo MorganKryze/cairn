@@ -54,6 +54,22 @@ jobs:
           username: morgankryze
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # crane rather than `buildx imagetools`, which is what release.yml and
+      # build.yml use, and the difference is the whole reason this job needs
+      # its own tool. imagetools only ever writes an index. Given an index it
+      # copies it and the digest survives, which is all a release ever hands
+      # it; given a single manifest it wraps it in a new index, and the digest
+      # cannot survive that. cairn 1.0.0, 1.1.0 and 1.2.0 predate the arm64
+      # build and are single manifests, so the first run of this job failed on
+      # 1.0.0 with exactly that: the assertion below caught it before anything
+      # was believed. crane copies the manifest bytes as they are, whichever
+      # shape they are, measured on both against a throwaway registry.
+      #
+      # Installed with the Go the runner already has rather than through a
+      # third-party action, so there is no extra thing to pin and trust.
+      - name: install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@v0.21.8
+
       - name: work out which tags to copy
         id: pick
         env:
@@ -103,13 +119,15 @@ jobs:
           TAGS: ${{ steps.pick.outputs.tags }}
         run: |
           set -euo pipefail
+          gopath=$(go env GOPATH)
+          export PATH="$PATH:$gopath/bin"
           src=ghcr.io/morgankryze/cairn
           dst=docker.io/morgankryze/cairn
           copied=0
           for tag in $TAGS; do
-            digest=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "${src}:${tag}")
-            docker buildx imagetools create --tag "${dst}:${tag}" "${src}@${digest}"
-            landed=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "${dst}:${tag}")
+            digest=$(crane digest "${src}:${tag}")
+            crane copy "${src}:${tag}" "${dst}:${tag}"
+            landed=$(crane digest "${dst}:${tag}")
             [ "$landed" = "$digest" ] || {
               echo "::error::${dst}:${tag} points at ${landed}, not the ${digest} ghcr holds"
               exit 1
