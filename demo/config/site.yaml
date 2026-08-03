@@ -19,8 +19,8 @@ security:
 # Both flags lead to the same page, because the answer is one explanation
 # with two halves: what I run myself, and what I only point at.
 hosting_flag:
-  self: hebergement
-  external: hebergement
+  self: hosting
+  external: hosting
 
 status:
   gatus: http://gatus:8080 # cairn polls this over the compose network
@@ -61,7 +61,7 @@ footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
     url: http://localhost:8081
 pages:
-  - id: hebergement
+  - id: hosting
     title: { fr: Où tournent ces services, en: Where these services run }
     body:
       fr: >
