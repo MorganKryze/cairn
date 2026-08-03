@@ -286,9 +286,28 @@ jobs:
           # same digest, so SECURITY.md's command works unchanged on either
           # name, which is what the verify below is checking.
           cosign sign --yes "${dst}@${DIGEST}"
-          cosign verify "${dst}@${DIGEST}" \
-            --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+
+          # Given a moment. Docker Hub stores a signature as an OCI referrer
+          # and indexes it asynchronously, so 1.17.2 signed cleanly, failed
+          # this check four seconds later, and verified from a laptop shortly
+          # after with nothing having changed. ghcr answers immediately, which
+          # is why the same two lines never needed this above.
+          #
+          # Waiting rather than dropping the check: a signature that cannot be
+          # read is exactly what this exists to catch, and the last attempt is
+          # loud so a real failure says why instead of timing out in silence.
+          verify() {
+            cosign verify "${dst}@${DIGEST}" \
+              --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          }
+          for _ in 1 2 3 4 5 6; do
+            verify >/dev/null 2>&1 && exit 0
+            sleep 10
+          done
+          echo "::error::the signature pushed to ${dst} was not readable within a minute"
+          verify
+          exit 1
 
   chart:
     runs-on: ubuntu-latest
