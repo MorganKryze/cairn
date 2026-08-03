@@ -275,6 +275,31 @@ for (const theme of ["light", "dark"]) {
   );
 }
 
+// The button that opens the service, keyboard-first. Added after a rewrite of
+// the stylesheet silently dropped .btn:focus-visible, which no check here
+// noticed because every other one is about size or colour at rest.
+//
+// It asserts the designed ring rather than merely that focus is visible, and
+// the difference is the whole point: with the rule gone the button still gets
+// a ring, Chromium's own, which reports outline-style "auto" at 1px in its
+// blue. The rule paints solid 2px in --fg. A check that only asked "is there
+// an outline" passed with the rule deleted, measured.
+await check(
+  "the detail page's open button wears cairn's focus ring",
+  async () => {
+    const m = await detail.$eval("a.btn", (el) => {
+      el.focus();
+      const s = getComputedStyle(el);
+      return { style: s.outlineStyle, width: parseFloat(s.outlineWidth) };
+    });
+    if (m.style !== "solid" || m.width < 2) {
+      throw new Error(
+        `the open button fell back to the browser's ring: ${m.style} ${m.width}px, want solid 2px`,
+      );
+    }
+  },
+);
+
 // The way back out of a detail page: the same two duties as the card glyph,
 // since it was the other control under 24 by 24.
 await check("the back link is a real target on a detail page", async () => {

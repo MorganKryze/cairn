@@ -774,6 +774,8 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 [dir="rtl"] .btn-glyph { transform: scaleX(-1); }
 
 .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
 /* ---- leaving the site ----
    A native <dialog>, so ::backdrop, the focus trap and Escape are the
    browser's job. Nothing here positions it: a modal dialog is centred by the
