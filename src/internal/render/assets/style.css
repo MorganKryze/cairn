@@ -827,6 +827,28 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 /* The continue link borrows .btn, which carries a 1.4rem top margin for the
    detail page it was drawn for; in a row of buttons that margin is a step. */
 .leave-acts .btn { margin-top: 0; margin-inline-start: auto; }
+/* Narrow: stack them, each filling the row.
+
+   The row above is a wide-screen idea and it does not degrade, it breaks. The
+   auto margin parks the primary at the far end, which reads well until the row
+   wraps: at 390px Continue landed alone on a second line shoved right, with
+   dead space beside it, and at 320px all three sat at three different widths
+   with the last still offset. Measured, both.
+
+   44rem rather than the width where three buttons stop fitting, because that
+   width is a property of the words in them: "Copy the address" and "Adresse
+   kopieren" wrap at different viewports, and a breakpoint tuned to English
+   would be wrong in six other languages. This is the breakpoint the rest of
+   the site already turns on, and above it the row always fits.
+
+   Order is left alone on purpose. A column-reverse would put the primary on
+   top while the keyboard still tabs copy, stay, continue, which trades 2.4.3
+   for a layout. Stacked in reading order the primary lands at the bottom,
+   nearest the thumb, which is where a phone wants it anyway. */
+@media (max-width: 44rem) {
+  .leave-acts { flex-direction: column; align-items: stretch; }
+  .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
+}
 
 /* ---- hosted pages ---- */
 

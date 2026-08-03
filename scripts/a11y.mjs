@@ -834,6 +834,127 @@ await check(
     );
   });
 
+  // ---- the same dialog on a phone ----
+  //
+  // Measured because it was wrong: the actions are a wrapping row with the
+  // primary pushed to the far end by an auto margin, which reads well on a
+  // wide screen and falls apart the moment it wraps. At 390px Continue landed
+  // alone on a second line, shoved right, with dead space beside it; at 320px
+  // all three stacked at three different widths, the last one still offset.
+  {
+    const ph = await browser.newPage({ viewport: { width: 390, height: 780 } });
+    await ph.goto(LEAVE, { waitUntil: "networkidle" });
+    await ph.locator("a[data-leave]").first().click();
+
+    const boxes = () =>
+      ph.evaluate(() => {
+        const d = document.getElementById("leave");
+        const one = (s) => {
+          const b = d.querySelector(s).getBoundingClientRect();
+          return {
+            x: +b.x.toFixed(1),
+            y: +b.y.toFixed(1),
+            w: +b.width.toFixed(1),
+            h: +b.height.toFixed(1),
+          };
+        };
+        const acts = d.querySelector(".leave-acts").getBoundingClientRect();
+        return {
+          row: +acts.width.toFixed(1),
+          copy: one(".leave-copy"),
+          stay: one(".leave-stay"),
+          go: one(".leave-go"),
+        };
+      });
+
+    await check(
+      "on a phone the actions stack, each filling the width",
+      async () => {
+        const b = await boxes();
+        for (const k of ["copy", "stay", "go"]) {
+          if (Math.abs(b[k].w - b.row) > 1) {
+            throw new Error(
+              `${k} is ${b[k].w}px inside a ${b.row}px row, so it does not fill it`,
+            );
+          }
+        }
+        // Three rows, not one and a half: every top differs from the others.
+        const tops = new Set([b.copy.y, b.stay.y, b.go.y]);
+        if (tops.size !== 3)
+          throw new Error(
+            `the three actions share ${3 - tops.size + 1} rows, want one each`,
+          );
+      },
+    );
+
+    await check(
+      "and they are painted in the order they are read in",
+      async () => {
+        // Not cosmetic: a column-reverse here would put the primary on top
+        // while a keyboard still tabs copy, stay, continue, which is 2.4.3
+        // broken for the sake of a layout.
+        const b = await boxes();
+        if (!(b.copy.y < b.stay.y && b.stay.y < b.go.y)) {
+          throw new Error(
+            `painted order ${JSON.stringify([b.copy.y, b.stay.y, b.go.y])} does not follow the markup`,
+          );
+        }
+        if (!(b.copy.x === b.stay.x && b.stay.x === b.go.x)) {
+          throw new Error(
+            "the three do not share a left edge, so one is still offset",
+          );
+        }
+      },
+    );
+
+    await check("each action is a 44px target on a phone", async () => {
+      const b = await boxes();
+      for (const k of ["copy", "stay", "go"]) {
+        if (b[k].h < 44) throw new Error(`${k} is ${b[k].h}px tall, want 44`);
+      }
+    });
+
+    await ph.close();
+  }
+
+  // Wide screens keep the row they had: the utility on the left, the primary
+  // at the far end, which is what the phone layout is a departure from.
+  await check("on a wide screen the actions stay on one row", async () => {
+    await l.setViewportSize({ width: 1100, height: 900 });
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
+    await l.locator("a[data-leave]").first().click();
+    const b = await l.evaluate(() => {
+      const d = document.getElementById("leave");
+      const one = (s) => d.querySelector(s).getBoundingClientRect();
+      const go = one(".leave-go");
+      return {
+        // The row's own height, against the tallest thing in it. Comparing
+        // the tops instead looks right and is not: align-items centres them,
+        // and the three are not the same height, so their tops differ by a
+        // few pixels while sharing a row. That comparison is what failed
+        // here on a layout that was correct.
+        rowH: d.querySelector(".leave-acts").getBoundingClientRect().height,
+        tallest: Math.max(
+          one(".leave-copy").height,
+          one(".leave-stay").height,
+          go.height,
+        ),
+        goRight: go.right,
+        edge: d.getBoundingClientRect().right,
+      };
+    });
+    if (b.rowH > b.tallest + 2) {
+      throw new Error(
+        `the actions occupy ${b.rowH.toFixed(0)}px for a ${b.tallest.toFixed(0)}px control, so they wrapped`,
+      );
+    }
+    if (b.edge - b.goRight > 40) {
+      throw new Error(
+        `the primary sits ${(b.edge - b.goRight).toFixed(0)}px from the edge, so it is no longer at the end`,
+      );
+    }
+  });
+
   // The two buttons are controls whose boundary is the only thing saying so,
   // which is the case 1.4.11 asks 3:1 for. This one opens the dialog itself
   // rather than through the script: what is under test is the paint, and
