@@ -140,7 +140,16 @@ jobs:
       # through, and the same object behind it, checked rather than assumed.
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
         with:
-          driver-opts: image=mirror.gcr.io/moby/buildkit:buildx-stable-1
+          # Pinned like every action above. This one executes during the
+          # build with the context in reach, and it was the last moving
+          # tag in the chain. The digest is the same on Docker Hub and on
+          # the mirror, so it does not tie us to either.
+          #
+          # Dependabot cannot watch an image named inside a workflow
+          # (dependabot-core#5541), so a pin here would rot in silence.
+          # The buildkit-pin job in security.yml is what stops that: it
+          # runs weekly and says when buildx-stable-1 has moved past it.
+          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec # buildx-stable-1
 
       # A pull request builds the image but never publishes it, so a fork PR
       # needs no registry credentials.
