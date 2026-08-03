@@ -320,7 +320,7 @@ it, and a translation are all work.
 <td align="center" width="150">
 <a href="https://github.com/rbourgeat"><img src="https://github.com/rbourgeat.png?size=100" width="80" alt=""><br><sub><b>rbourgeat</b></sub></a><br>
 <a href="https://github.com/MorganKryze/cairn/pull/51" title="Code">💻</a>
-<a href="https://github.com/MorganKryze/cairn/issues/50" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/issues?q=author%3Arbourgeat" title="Ideas and planning">🤔</a>
 </td>
 </tr>
 </table>
