@@ -23,6 +23,10 @@ var Embedded embed.FS
 
 var tmpls = template.Must(template.New("").Funcs(template.FuncMap{
 	"upper": strings.ToUpper,
+	// asset resolves one of cairn's own files to the stamped name it is
+	// served under, base path included, so a template never writes /static/
+	// by hand and never has to remember .Prefix for one. See asseturl.go.
+	"asset": AssetURL,
 }).ParseFS(Embedded, "templates/*.tmpl"))
 
 type Page struct {

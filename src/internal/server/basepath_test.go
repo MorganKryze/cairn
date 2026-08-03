@@ -159,7 +159,10 @@ func TestNoBasePathIsUnchanged(t *testing.T) {
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 	})
 	html := string(current.Load().Pages["en"].HTML)
-	if !strings.Contains(html, `href="/static/style.css"`) {
+	// Bare meaning no base path in front of it. The name itself carries a
+	// content digest, which is a different thing and is asserted elsewhere.
+	if !strings.Contains(html, `href="`+render.AssetURL("style.css")+`"`) ||
+		!strings.HasPrefix(render.AssetURL("style.css"), "/static/") {
 		t.Error("root deployment should keep bare /static/ URLs")
 	}
 	rec := httptest.NewRecorder()

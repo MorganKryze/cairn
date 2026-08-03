@@ -26,13 +26,13 @@
 {{end}}
 {{if .Favicon}}{{if .FaviconDark}}<link rel="icon" href="{{.FaviconDark}}" media="(prefers-color-scheme: dark)">
 {{end}}<link rel="icon" href="{{.Favicon}}">
-{{else}}<link rel="icon" href="{{.Prefix}}/static/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="{{.Prefix}}/static/favicon.ico" sizes="32x32">
+{{else}}<link rel="icon" href="{{asset "favicon.svg"}}" type="image/svg+xml">
+<link rel="icon" href="{{asset "favicon.ico"}}" sizes="32x32">
 {{end}}<link rel="apple-touch-icon" href="{{.TouchIcon}}">
 <link rel="manifest" href="{{.Prefix}}/manifest.webmanifest">
 
-<link rel="preload" href="{{.Prefix}}/static/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{.Prefix}}/static/style.css">
+<link rel="preload" href="{{asset "fonts/fraunces.woff2"}}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{asset "style.css"}}">
 <style>{{.Style}}</style>
 <script>document.documentElement.setAttribute('data-js','');var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 {{if .CustomCSS}}<link rel="stylesheet" href="{{.Prefix}}/custom.css">
@@ -106,13 +106,13 @@
     <a class="btn leave-go" href=""{{if .LeaveBlank}} target="_blank" rel="noopener noreferrer"{{end}}>{{.S.LeaveGo}}</a>
   </div>
 </dialog>
-<script src="{{.Prefix}}/static/leave.js" defer></script>
-{{end}}<script src="{{.Prefix}}/static/search.js" defer></script>
-<script src="{{.Prefix}}/static/toc.js" defer></script>
-<script src="{{.Prefix}}/static/nav.js" defer></script>
-<script src="{{.Prefix}}/static/about.js" defer></script>
-<script src="{{.Prefix}}/static/theme.js" defer></script>
-{{if .StatusPoll}}<script src="{{.Prefix}}/static/status.js" defer data-poll="{{.StatusPoll}}"></script>
+<script src="{{asset "leave.js"}}" defer></script>
+{{end}}<script src="{{asset "search.js"}}" defer></script>
+<script src="{{asset "toc.js"}}" defer></script>
+<script src="{{asset "nav.js"}}" defer></script>
+<script src="{{asset "about.js"}}" defer></script>
+<script src="{{asset "theme.js"}}" defer></script>
+{{if .StatusPoll}}<script src="{{asset "status.js"}}" defer data-poll="{{.StatusPoll}}"></script>
 {{end}}</body>
 </html>
 {{end}}

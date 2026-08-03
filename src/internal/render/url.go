@@ -31,5 +31,9 @@ func AppURL(p string) string {
 	if !config.IsLocalPath(p) {
 		return p
 	}
-	return BasePath + p
+	// One of cairn's own assets goes out under its stamped name, wherever it
+	// was built: the touch icon and the manifest's icons come from here and
+	// not from a template, and they were the only surfaces left unstamped.
+	// Anything the operator supplied passes through untouched.
+	return BasePath + stampStatic(p)
 }
