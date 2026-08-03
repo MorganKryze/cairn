@@ -62,7 +62,7 @@ footer:
     url: http://localhost:8081
 pages:
   - id: hebergement
-    title: { fr: Qui héberge quoi, en: Who hosts what }
+    title: { fr: Où tournent ces services, en: Where these services run }
     body:
       fr: >
         Chaque carte porte une petite étiquette : « Auto-hébergé » ou
@@ -75,18 +75,19 @@ pages:
       - title: { fr: Auto-hébergé, en: Self-hosted }
         body:
           fr: >
-            Le service tourne sur une machine qui est la mienne, que
-            j'administre moi-même, en France, chez OVH. Vos données restent
-            dessus : elles ne traversent aucun intermédiaire, ne sont revendues
-            à personne et ne servent à aucune publicité. La machine est
-            sauvegardée régulièrement. Si quelque chose casse, c'est moi qu'il
-            faut prévenir, et c'est moi qui répare.
+            Le service tourne sur ma propre flotte : des machines louées en
+            France, chez OVH, et mes machines à moi, hors de tout cloud. Vos
+            données restent dessus : elles ne traversent aucun intermédiaire, ne
+            sont revendues à personne et ne servent à aucune publicité.
+            L'ensemble est sauvegardé régulièrement. Si quelque chose casse,
+            c'est moi qu'il faut prévenir, et c'est moi qui répare.
           en: >
-            The service runs on a machine that is mine, that I administer
-            myself, in France, at OVH. Your data stays on it: it crosses no
-            middleman, is sold to nobody and feeds no advertising. The machine
-            is backed up regularly. If something breaks, I am the one to tell,
-            and I am the one who fixes it.
+            The service runs on a fleet of my own: machines rented in
+            France, at OVH, and machines that are mine outright, outside any
+            cloud. Your data stays on them: it crosses no middleman, is sold to
+            nobody and feeds no advertising. The whole lot is backed up
+            regularly. If something breaks, I am the one to tell, and I am the
+            one who fixes it.
       - title: { fr: Externe, en: External }
         body:
           fr: >
