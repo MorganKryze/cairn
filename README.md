@@ -312,10 +312,14 @@ it, and a translation are all work.
 <span title="Maintenance">🚧</span>
 </td>
 <td align="center" width="150">
+<a href="https://github.com/AntonPalmqvist"><img src="https://github.com/AntonPalmqvist.png?size=100" width="80" alt=""><br><sub><b>AntonPalmqvist</b></sub></a><br>
+<a href="https://github.com/MorganKryze/cairn/issues/33" title="Bug reports">🐛</a>
+<a href="https://github.com/MorganKryze/cairn/issues/33" title="Ideas and planning">🤔</a>
+</td>
+<td align="center" width="150">
 <a href="https://github.com/rbourgeat"><img src="https://github.com/rbourgeat.png?size=100" width="80" alt=""><br><sub><b>rbourgeat</b></sub></a><br>
 <a href="https://github.com/MorganKryze/cairn/pull/51" title="Code">💻</a>
-<a href="https://github.com/MorganKryze/cairn/issues/33" title="Bug reports">🐛</a>
-<span title="Ideas and planning">🤔</span>
+<a href="https://github.com/MorganKryze/cairn/issues/50" title="Ideas and planning">🤔</a>
 </td>
 </tr>
 </table>
