@@ -15,7 +15,7 @@ theme:
   accent: "#8a4f7d"
 ```
 
-The accent colors links, focus rings, card hovers and the "Open the tool"
+The accent colors links, focus rings, card hovers and the "Open"
 button. Body text stays neutral, so most accents are safe, but the button
 sets white text on the accent, so pick a mid-to-dark accent (the default
 `#247b7b` gives 5:1). A very light accent would weaken that button's

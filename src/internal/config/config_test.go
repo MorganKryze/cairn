@@ -114,7 +114,7 @@ func TestDetailPages(t *testing.T) {
 	if !strings.Contains(html, "<p>Un.</p>") || !strings.Contains(html, "<p>Deux.</p>") {
 		t.Errorf("details not split into paragraphs:\n%s", html)
 	}
-	if !strings.Contains(html, "Ouvrir l’outil") {
+	if !strings.Contains(html, "Ouvrir") {
 		t.Error("detail page missing localized open button")
 	}
 	if !strings.Contains(string(m.Pages["fr"].HTML), `href="/fr/pdf/"`) {

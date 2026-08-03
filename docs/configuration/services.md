@@ -44,7 +44,7 @@ Any text field accepts a plain string or a per-locale map; see
 ## Detail pages
 
 Every service gets a page at `/{locale}/{id}/` with its name, description,
-`details` text and an "Open the tool" button. The card shows a discreet
+`details` text and an "Open" button. The card shows a discreet
 detail-page glyph only when `details` or `images` is set; the card itself
 always goes straight to the tool.
 

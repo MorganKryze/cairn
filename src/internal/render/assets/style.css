@@ -754,7 +754,9 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 }
 .shot figcaption { margin-top: .55rem; font-size: .85rem; color: var(--muted); }
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
   margin-top: 1.4rem;
   padding: .8rem 1.7rem;
   background: var(--accent);
@@ -765,6 +767,12 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   box-shadow: var(--shadow);
   transition: transform .15s, box-shadow .15s;
 }
+/* Sized in em so it follows the label rather than a fixed pixel value, and
+   mirrored right-to-left the way the back arrow is: an arrow leaving its
+   frame points the other way when the text does. */
+.btn-glyph { width: 1.05em; height: 1.05em; flex: none; }
+[dir="rtl"] .btn-glyph { transform: scaleX(-1); }
+
 .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
 .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
