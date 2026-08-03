@@ -1,5 +1,8 @@
 # Contributing
 
+Not every contribution is code. Opening an issue is one, and there are two
+templates waiting to guide you through it, [Bug report](https://github.com/MorganKryze/cairn/issues/new?template=bug_report.md) and [Feature idea](https://github.com/MorganKryze/cairn/issues/new?template=feature_idea.md): each asks the few things that turn a report into something actionable.
+
 ## Dev loop
 
 ```sh
