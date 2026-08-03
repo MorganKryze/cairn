@@ -112,9 +112,12 @@ func Key(group, name string) string {
 // mismatch is one log line instead of a silent missing pill.
 func Unmonitored(cfg *config.Config, statuses map[string]State) string {
 	var ids []string
+	claimed := make(map[string]bool, len(statuses))
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
-			if _, ok := statuses[s.ID]; !ok {
+			if _, ok := statuses[s.ID]; ok {
+				claimed[s.ID] = true
+			} else {
 				ids = append(ids, s.ID)
 			}
 		}
@@ -122,8 +125,37 @@ func Unmonitored(cfg *config.Config, statuses map[string]State) string {
 	if len(ids) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d services the %s at %s says nothing about, their cards show no pill: %s",
-		len(ids), cfg.Site.StatusProvider(), cfg.Site.StatusAddress(), strings.Join(ids, ", "))
+	subject, cards := "services", "their cards show"
+	if len(ids) == 1 {
+		subject, cards = "service", "its card shows"
+	}
+	line := fmt.Sprintf("%d %s the %s at %s says nothing about, %s no pill: %s",
+		len(ids), subject, cfg.Site.StatusProvider(), cfg.Site.StatusAddress(), cards, strings.Join(ids, ", "))
+	// The other half of the answer. Listing what is missing tells an operator
+	// nothing they did not already see on the page; listing the names the
+	// monitor actually offered puts the two side by side, and a mismatch that
+	// case-folding cannot reach, a domain name or a name with a space in it,
+	// is obvious at a glance. It is only the leftovers: names no service
+	// claimed, which is exactly the set worth renaming.
+	//
+	// Nothing is printed when every name was claimed, since a second list that
+	// is always there is a second list nobody reads.
+	var spare []string
+	for k := range statuses {
+		if !claimed[k] {
+			spare = append(spare, k)
+		}
+	}
+	if len(spare) == 0 {
+		return line
+	}
+	slices.Sort(spare)
+	names := "names"
+	if len(spare) == 1 {
+		names = "name"
+	}
+	return fmt.Sprintf("%s. It reports %d %s no service id matches: %s",
+		line, len(spare), names, strings.Join(spare, ", "))
 }
 
 // verifying and skipping are built once and reused. A client per poll would
@@ -273,7 +305,35 @@ func Fetch(src Source) (map[string]State, error) {
 	if err != nil {
 		return nil, err
 	}
-	return f(client, src)
+	got, err := f(client, src)
+	if err != nil {
+		return nil, err
+	}
+	return folded(got), nil
+}
+
+// folded lowercases what a monitor reported, because that is the difference
+// between a pill and no pill for the most ordinary mistake there is.
+//
+// A cairn service id can only be lowercase, idRe sees to that. A monitor name
+// is typed into a form by a person, who writes "Immich". Reported on issue
+// #33 by somebody whose setup was otherwise entirely correct: published page,
+// right slug, monitor green, and no pill on the card.
+//
+// Folding can add a match and cannot invent a wrong one, since the thing on
+// the other side is lowercase by construction. It is done here rather than in
+// each provider so a provider added later cannot forget it; Gatus is
+// unaffected either way, since it reports a key it has already normalised.
+//
+// Two monitors whose names differ only in case would collapse into one. That
+// is a directory nobody could read anyway, and the alternative is the silence
+// this exists to end.
+func folded(in map[string]State) map[string]State {
+	out := make(map[string]State, len(in))
+	for k, v := range in {
+		out[strings.ToLower(k)] = v
+	}
+	return out
 }
 
 // fetchGatus reads the endpoint statuses of a Gatus instance, keyed by

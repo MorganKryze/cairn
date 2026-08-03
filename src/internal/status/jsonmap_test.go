@@ -49,8 +49,12 @@ func TestOneMappingShapeReadsEveryFlatAPI(t *testing.T) {
 				Up:          []string{"operational"},
 				Degraded:    []string{"degraded_performance", "partial_outage"},
 				Maintenance: []string{"under_maintenance"}},
-			map[string]string{"Packages": "up", "Actions": "maintenance",
-				"Pages": "degraded", "API": "degraded", "Git": "down"}},
+			// Lowercase on this side, because Fetch folds what a monitor
+			// reports: a service id cannot carry a capital, so "API" as a key
+			// could never have matched anything an operator is allowed to
+			// write. See TestAMonitorNameMatchesWhateverItsCase.
+			map[string]string{"packages": "up", "actions": "maintenance",
+				"pages": "degraded", "api": "degraded", "git": "down"}},
 		{"upptime, a bare array with its three states",
 			`[{"slug":"google","status":"up"},{"slug":"slow","status":"degraded"},
 			  {"slug":"gone","status":"down"}]`,

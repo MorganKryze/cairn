@@ -13,7 +13,14 @@ and never asks a visitor's browser to.
 | anything else with a status API                        | `status.url`, `status.provider: json`, `status.map`  | the same, from any document shaped like a list of name, state |
 
 Whichever you pick, the agreement is the same: **the monitor's name for a
-service is the cairn service id**. Nothing else has to match.
+service is the cairn service id**. Nothing else has to match, and the case
+does not either: a service id is always lowercase, so a monitor called
+`Immich` finds the service `immich`. A name with a space or a dot in it will
+not, since neither can appear in an id.
+
+When something goes unmatched, the log says so at every poll, and it names
+both sides: the services with no pill, and the names the monitor offered that
+no id claims. Those two lists beside each other are usually the whole answer.
 
 Gatus first below, because it is the one cairn can write the config for.
 [Which monitors cairn reads](#which-monitors-cairn-reads) at the end of this
