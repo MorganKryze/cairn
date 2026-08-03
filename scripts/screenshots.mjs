@@ -82,6 +82,35 @@ for (const [name, url, viewport] of [
   await context.close();
 }
 
+// The two views, composed into one picture rather than left to a two-cell
+// table. Their aspects are 1.22 and 0.46, and a table equalises neither the
+// heights nor the captions: the phone ran on far past the detail page and left
+// a hole beside it. Matching the heights here means the layout cannot break,
+// whatever the reader's width.
+{
+  const context = await browser.newContext({
+    viewport: { width: 1400, height: 830 },
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const png = (p) =>
+    `data:image/png;base64,${readFileSync(join(root, p)).toString('base64')}`;
+  await page.setContent(`<!doctype html><meta charset="utf-8"><style>
+    * { margin: 0; box-sizing: border-box; }
+    body { width: 1400px; height: 830px; background: #eef0ea;
+           display: flex; align-items: center; justify-content: center; gap: 34px; }
+    img { height: 760px; width: auto; border-radius: 12px;
+          border: 1px solid #d7dad2; box-shadow: 0 18px 44px rgba(20,24,26,.16); }
+  </style>
+  <img src="${png('docs/assets/detail.png')}" alt="">
+  <img src="${png('docs/assets/phone.png')}" alt="">`);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: join(OUT, 'two-views.png') });
+  console.log('  views  -> docs/assets/two-views.png');
+  await context.close();
+}
+
 // The social card. GitHub renders it at 1280x640 on a shared link, and a page
 // screenshot cropped to that ratio loses either its header or its cards, so
 // this one is composed: the mark, the sentence, and the page itself held at

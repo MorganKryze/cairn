@@ -11,13 +11,13 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-[![Stars](https://img.shields.io/github/stars/MorganKryze/cairn?color=247b7b)](https://github.com/MorganKryze/cairn/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/MorganKryze/cairn/total?color=247b7b&label=binaries)](https://github.com/MorganKryze/cairn/releases)
 [![Image](https://img.shields.io/badge/image-4.4%20MB%20pull-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Helm](https://img.shields.io/badge/Helm-chart-0F1689?logo=helm&logoColor=white)](docs/deployment/helm.md)
+[![Docker Compose](https://img.shields.io/badge/Compose-ready-2496ED?logo=docker&logoColor=white)](docs/deployment/docker-compose.md)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)](docs/deployment/kubernetes.md)
-[![Context7](https://img.shields.io/badge/Context7-ask%20your%20assistant-000000?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2ZmZiI+PHBhdGggZD0iTTEyIDJhMTAgMTAgMCAxIDAgMCAyMCAxMCAxMCAwIDAgMCAwLTIwem0wIDNhNyA3IDAgMSAxIDAgMTQgNyA3IDAgMCAxIDAtMTR6Ii8+PC9zdmc+)](https://context7.com/morgankryze/cairn)
+[![Context7](https://img.shields.io/badge/Context7-ask%20your%20assistant-247b7b?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2ZmZiI+PHBhdGggZD0iTTEyIDJhMTAgMTAgMCAxIDAgMCAyMCAxMCAxMCAwIDAgMCAwLTIwem0wIDNhNyA3IDAgMSAxIDAgMTQgNyA3IDAgMCAxIDAtMTR6Ii8+PC9zdmc+)](https://context7.com/morgankryze/cairn)
 
 </div>
 
@@ -80,18 +80,11 @@ real screen reader: if you use one,
 feature degrades gracefully without JavaScript.
 
 <div align="center">
-<table>
-<tr>
-<td width="62%" valign="top">
-<a href="https://cairn.libresoftware.cloud/en/whoami/" title="Open a detail page on the live demo"><img src="docs/assets/detail.png" alt="A service detail page: the name, a live status pill, a paragraph explaining what the tool is for, a screenshot with its caption, and a button opening the tool" width="100%"></a>
-<p align="center"><em>Behind a card, when a visitor wants more than one sentence.</em></p>
-</td>
-<td width="38%" valign="top">
-<a href="https://cairn.libresoftware.cloud" title="Open the live demo"><img src="docs/assets/phone.png" alt="The same directory on a phone: category chips, then cards each showing an icon, a sentence, a self-hosted flag and a live status pill" width="100%"></a>
-<p align="center"><em>And in a hand.</em></p>
-</td>
-</tr>
-</table>
+
+<a href="https://cairn.libresoftware.cloud" title="Open the live demo"><img src="docs/assets/two-views.png" alt="Left: a service detail page, with the name, a live status pill, a paragraph explaining what the tool is for, a screenshot with its caption and a button opening the tool. Right: the same directory on a phone, category chips then cards each showing an icon, a sentence, a self-hosted flag and a status pill" width="100%"></a>
+
+<em>Behind a card when a visitor wants more than one sentence, and the same page in a hand.</em>
+
 </div>
 
 ## 🛠️ What you get as the operator
@@ -119,10 +112,22 @@ rewriting rule.
 cairn does not ask you to change monitors. It reads the one you run, and the
 pills come from your server, never from the visitor's browser.
 
-|                 |                                                                                                                                                                                                                                                |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Self-hosted** | [Gatus](https://github.com/TwiN/gatus) · [Uptime Kuma](https://github.com/louislam/uptime-kuma) · [Cachet](https://github.com/cachethq/cachet) · [Statping-ng](https://github.com/statping-ng/statping-ng) · [Upptime](https://upptime.js.org) |
-| **Hosted**      | [Atlassian Statuspage](https://www.atlassian.com/software/statuspage) · [Instatus](https://instatus.com) · [UptimeRobot](https://uptimerobot.com) · [Better Stack](https://betterstack.com/uptime) · [StatusCake](https://www.statuscake.com)  |
+<table>
+<tr><td><strong>Self-hosted</strong></td><td>
+<a href="https://github.com/TwiN/gatus">Gatus</a> ·
+<a href="https://github.com/louislam/uptime-kuma">Uptime Kuma</a> ·
+<a href="https://github.com/cachethq/cachet">Cachet</a> ·
+<a href="https://github.com/statping-ng/statping-ng">Statping-ng</a> ·
+<a href="https://upptime.js.org">Upptime</a>
+</td></tr>
+<tr><td><strong>Hosted</strong></td><td>
+<a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a> ·
+<a href="https://instatus.com">Instatus</a> ·
+<a href="https://uptimerobot.com">UptimeRobot</a> ·
+<a href="https://betterstack.com/uptime">Better Stack</a> ·
+<a href="https://www.statuscake.com">StatusCake</a>
+</td></tr>
+</table>
 
 Every one of those was read from a live instance rather than from a manual, and
 the mapping each needed is written down with the count that came back. Anything
@@ -245,13 +250,39 @@ just grepped: each page teaches the why before the how, in plain prose a
 developer can enjoy rather than a reference dump to endure. If you like
 understanding how a thing works, start anywhere below.
 
-|               |                                                                                                                                                                                                                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Start**     | [Getting started](docs/getting-started.md), the five-minute path · [Upgrading](docs/upgrading.md), what a new version can refuse and how to fix it                                                                                                                                                                     |
-| **Configure** | [Services](docs/configuration/services.md) · [Site](docs/configuration/site.md) · [Text](docs/configuration/text.md) · [Theming](docs/configuration/theming.md) · [Languages](docs/configuration/i18n.md)                                                                                                              |
-| **Deploy**    | [Docker Compose](docs/deployment/docker-compose.md) · [Podman](docs/deployment/podman.md) · [Bare binary](docs/deployment/binary.md) · [Kubernetes](docs/deployment/kubernetes.md) · [Helm](docs/deployment/helm.md) · [Air-gapped](docs/deployment/airgap.md) · [Reverse proxies](docs/deployment/reverse-proxies.md) |
-| **Recipes**   | [Status page](docs/recipes/status.md) · [Icons](docs/recipes/icons.md) · [Multiple files](docs/recipes/multiple-files.md) · [Migration](docs/recipes/migration.md)                                                                                                                                                     |
-| **Look up**   | [Reference](docs/reference.md) · [FAQ](docs/faq.md) · [Comparison](docs/comparison.md)                                                                                                                                                                                                                                 |
+<table>
+<tr><td><strong>Start</strong></td><td>
+<a href="docs/getting-started.md">Getting started</a>, the five-minute path ·
+<a href="docs/upgrading.md">Upgrading</a>, what a new version can refuse and how to fix it
+</td></tr>
+<tr><td><strong>Configure</strong></td><td>
+<a href="docs/configuration/services.md">Services</a> ·
+<a href="docs/configuration/site.md">Site</a> ·
+<a href="docs/configuration/text.md">Text</a> ·
+<a href="docs/configuration/theming.md">Theming</a> ·
+<a href="docs/configuration/i18n.md">Languages</a>
+</td></tr>
+<tr><td><strong>Deploy</strong></td><td>
+<a href="docs/deployment/docker-compose.md">Docker Compose</a> ·
+<a href="docs/deployment/podman.md">Podman</a> ·
+<a href="docs/deployment/binary.md">Bare binary</a> ·
+<a href="docs/deployment/kubernetes.md">Kubernetes</a> ·
+<a href="docs/deployment/helm.md">Helm</a> ·
+<a href="docs/deployment/airgap.md">Air-gapped</a> ·
+<a href="docs/deployment/reverse-proxies.md">Reverse proxies</a>
+</td></tr>
+<tr><td><strong>Recipes</strong></td><td>
+<a href="docs/recipes/status.md">Status page</a> ·
+<a href="docs/recipes/icons.md">Icons</a> ·
+<a href="docs/recipes/multiple-files.md">Multiple files</a> ·
+<a href="docs/recipes/migration.md">Migration</a>
+</td></tr>
+<tr><td><strong>Look up</strong></td><td>
+<a href="docs/reference.md">Reference</a> ·
+<a href="docs/faq.md">FAQ</a> ·
+<a href="docs/comparison.md">Comparison</a>
+</td></tr>
+</table>
 
 ### 🤖 And for the assistant reading over your shoulder
 
