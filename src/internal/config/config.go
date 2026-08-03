@@ -152,8 +152,8 @@ type Site struct {
 	Title   LString    `yaml:"title"`
 	Tagline LString    `yaml:"tagline"`
 	URL     string     `yaml:"url"` // public base URL; enables canonical/hreflang
-	Logo    string     `yaml:"logo"`
-	Favicon string     `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
+	Logo    ThemedRef  `yaml:"logo"`
+	Favicon ThemedRef  `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
 	Icons   []SiteIcon `yaml:"icons"`   // home-screen set; overrides everything derived from favicon
 	Index   *bool      `yaml:"index"`   // nil means true; false asks search engines to stay away
 	Locales []string   `yaml:"locales"`
@@ -244,7 +244,7 @@ type Service struct {
 	ID       string         `yaml:"id"`
 	URL      string         `yaml:"url"`
 	Category string         `yaml:"category"`
-	Icon     string         `yaml:"icon"`
+	Icon     ThemedRef      `yaml:"icon"`
 	Name     LString        `yaml:"name"`
 	Desc     LString        `yaml:"desc"`
 	Details  LString        `yaml:"details"`
@@ -634,7 +634,9 @@ func Load(dir string) (*Config, error) {
 		MediaDims:  mediaDims(filepath.Join(dir, "media")),
 		LocalIcons: localIcons(filepath.Join(AssetsPath, "icons")),
 	}
-	cfg.FaviconDims = assetDims(site.Favicon)
+	// The manifest and /favicon.ico have no theme to follow, so both read the
+	// light one: it is the file a site with one favicon already names.
+	cfg.FaviconDims = assetDims(site.Favicon.Light)
 	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
 		cfg.CustomCSS = true
 	}
@@ -794,12 +796,24 @@ func parseServices(file string, data []byte) ([]Service, error) {
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
-		// A slug becomes a path segment on the icon CDN and a filename in the
-		// script -emit-icons writes, which the docs tell you to pipe into sh.
-		// Anything outside this shape could never resolve upstream anyway, so
-		// refusing it costs nothing and closes the shell off entirely.
-		case s.Icon != "" && !IsURLOrAbs(s.Icon) && !slugRe.MatchString(s.Icon):
-			return nil, fmt.Errorf("config: %s line %d: service %q: icon %q is not a slug, a URL or an /assets path (a slug is lowercase letters, digits, dashes, e.g. hedgedoc)", file, item.Line, s.ID, s.Icon)
+			// A slug becomes a path segment on the icon CDN and a filename in the
+			// script -emit-icons writes, which the docs tell you to pipe into sh.
+			// Anything outside this shape could never resolve upstream anyway, so
+			// refusing it costs nothing and closes the shell off entirely.
+		}
+		// Both halves of a themed icon are held to the same shape: each one
+		// becomes a path segment on the CDN and a filename in the -emit-icons
+		// script all the same.
+		for _, ic := range s.Icon.Refs() {
+			if !IsURLOrAbs(ic) && !slugRe.MatchString(ic) {
+				return nil, fmt.Errorf("config: %s line %d: service %q: icon %q is not a slug, a URL or an /assets path (a slug is lowercase letters, digits, dashes, e.g. hedgedoc)", file, item.Line, s.ID, ic)
+			}
+		}
+		// The dark icon is written into the page's stylesheet, so it answers
+		// to the same rule the dark logo does. A slug cannot carry either
+		// character; a URL or a path can.
+		if s.Icon.Themed() && strings.ContainsAny(s.Icon.Dark, "<>") {
+			return nil, fmt.Errorf("config: %s line %d: service %q: icon.dark %q carries %q or %q, and the dark icon is written into the page's stylesheet where nothing escapes it (expected a slug like github-light, or /assets/github-white.svg)", file, item.Line, s.ID, s.Icon.Dark, "<", ">")
 		}
 		for _, img := range s.Images {
 			switch {

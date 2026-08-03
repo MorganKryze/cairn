@@ -9,18 +9,18 @@ Any text field accepts a plain string or a per-locale map; see
 
 ## Keys
 
-| Key          | Required | Default       | What it is                                                                                                               |
-| ------------ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `id`         | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                             |
-| `url`        | yes      | n/a           | Where the card links. `https://…` or an absolute path.                                                                   |
-| `name`       | yes      | n/a           | The card title.                                                                                                          |
-| `desc`       | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor.                                              |
-| `details`    | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and [CommonMark, minus raw HTML](text.md).                  |
-| `images`     | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images).                                                  |
-| `category`   | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml).                                      |
-| `icon`       | no       | neutral glyph | Slug, URL or `/assets` path; see [Icons](../recipes/icons.md).                                                           |
-| `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                               |
-| `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag). |
+| Key          | Required | Default       | What it is                                                                                                                                                   |
+| ------------ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`         | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                                                                 |
+| `url`        | yes      | n/a           | Where the card links. `https://…` or an absolute path.                                                                                                       |
+| `name`       | yes      | n/a           | The card title.                                                                                                                                              |
+| `desc`       | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor.                                                                                  |
+| `details`    | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and [CommonMark, minus raw HTML](text.md).                                                      |
+| `images`     | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images).                                                                                      |
+| `category`   | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml).                                                                          |
+| `icon`       | no       | neutral glyph | Slug, URL or `/assets` path, or `{light, dark}` for a [monochrome mark](theming.md#artwork-that-cannot-serve-both-themes); see [Icons](../recipes/icons.md). |
+| `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                                                                   |
+| `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag).                                     |
 
 ## Full example
 

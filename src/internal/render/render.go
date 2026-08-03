@@ -105,6 +105,13 @@ func themeStyle(cfg *config.Config) string {
 		b.WriteString(fam)
 	}
 	b.WriteString("}")
+	// Last, so a site that themes no artwork produces the exact string it
+	// produced before this existed, hash included.
+	var logoDark string
+	if l := cfg.Site.Logo; l.Themed() {
+		logoDark = AppURL(l.Dark)
+	}
+	b.WriteString(themedFor(cfg).rules(logoDark))
 	return b.String()
 }
 
@@ -239,6 +246,10 @@ type uiStrings struct {
 
 type pageView struct {
 	Locale, Logo, Favicon, TouchIcon, OGImage, SwitchPath, Base, Version, AboutHash string
+	// FaviconDark is the tab icon for a dark system, empty without one. It is
+	// the one themed surface the stylesheet cannot reach, so it goes out as a
+	// second <link> and follows the system rather than the theme button.
+	FaviconDark string
 	// PageTitle and MetaDesc are the <title> and the meta/og description. Both
 	// are text inside markup rather than markup, so neither can carry a lang
 	// attribute, and neither can be split into a marked part and an unmarked
@@ -269,6 +280,10 @@ type pageView struct {
 
 type cardView struct {
 	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	// IconClass carries the dark variant of a themed icon, empty otherwise.
+	// The class names the pair rather than the service, so cards sharing an
+	// icon share the one rule in the page's stylesheet.
+	IconClass string
 	// MoreA11y names the detail link for a screen reader. The link is a glyph,
 	// which says nothing on its own, and a page of identical "Learn more"
 	// links is a link list nobody can navigate: it names the service too.
@@ -318,6 +333,7 @@ type detailView struct {
 	pageView
 	StatusID                                   string
 	Icon, URL, Status, StatusLabel, StatusHref string
+	IconClass                                  string // see cardView.IconClass
 	Name, Desc                                 locText
 	StatusA11y                                 string
 	Body                                       prose
@@ -483,6 +499,11 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		d := cfg.MediaDims[key]
 		return AppURL(mediaURL(src)), d[0], d[1]
 	}
+	// Built once here rather than per locale: the set is a property of the
+	// config, not of the language. themeStyle builds its own from the same
+	// function to write the rules, which is why that function has to stay
+	// deterministic.
+	themed := themedFor(cfg)
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
@@ -495,13 +516,19 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			ShowVer:    cfg.Site.ShowVer,
 			StatusPoll: statusPoll(cfg),
 			SiteTitle:  tr(cfg.Site.Title, loc, def),
-			Logo:       AppURL(cfg.Site.Logo),
-			Favicon:    AppURL(cfg.Site.Favicon),
-			TouchIcon:  AppURL(TouchIcon(cfg)),
+			Logo:       AppURL(cfg.Site.Logo.Light),
+			Favicon:    AppURL(cfg.Site.Favicon.Light),
+			FaviconDark: func() string {
+				if f := cfg.Site.Favicon; f.Themed() {
+					return AppURL(f.Dark)
+				}
+				return ""
+			}(),
+			TouchIcon: AppURL(TouchIcon(cfg)),
 			// AppURL has already added BasePath to a local logo, so the base
 			// passed here must not carry it again: it used to, and every
 			// og:image under -base-path pointed at /cairn/cairn/… and 404ed.
-			OGImage:   ogImage(cfg.Site.URL, AppURL(cfg.Site.Logo)),
+			OGImage:   ogImage(cfg.Site.URL, AppURL(cfg.Site.Logo.Light)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
 			Style:     template.CSS(themeStyle(cfg)),
@@ -553,13 +580,14 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			cv := catView{ID: c.ID, Name: catName(cfg, c, loc)}
 			for _, s := range c.Services {
 				card := cardView{
-					URL:      s.URL,
-					Icon:     AppURL(config.IconURL(cfg, s.Icon)),
-					Name:     tr(s.Name, loc, def),
-					Desc:     tr(s.Desc, loc, def),
-					Tags:     strings.Join(s.Tags, " "),
-					Status:   statusOf(cfg, statuses, s.ID),
-					StatusID: statusSlot(cfg, s.ID),
+					URL:       s.URL,
+					Icon:      AppURL(config.IconURL(cfg, s.Icon.Light)),
+					IconClass: themed.classFor(cfg, s.Icon),
+					Name:      tr(s.Name, loc, def),
+					Desc:      tr(s.Desc, loc, def),
+					Tags:      strings.Join(s.Tags, " "),
+					Status:    statusOf(cfg, statuses, s.ID),
+					StatusID:  statusSlot(cfg, s.ID),
 				}
 				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
 				if len(s.Details) > 0 || len(s.Images) > 0 {
@@ -588,14 +616,15 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		for _, c := range cfg.Categories {
 			for _, s := range c.Services {
 				dv := detailView{
-					pageView: base,
-					Name:     tr(s.Name, loc, def),
-					Desc:     tr(s.Desc, loc, def),
-					Icon:     AppURL(config.IconURL(cfg, s.Icon)),
-					URL:      s.URL,
-					Status:   statusOf(cfg, statuses, s.ID),
-					StatusID: statusSlot(cfg, s.ID),
-					Body:     proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
+					pageView:  base,
+					Name:      tr(s.Name, loc, def),
+					Desc:      tr(s.Desc, loc, def),
+					Icon:      AppURL(config.IconURL(cfg, s.Icon.Light)),
+					IconClass: themed.classFor(cfg, s.Icon),
+					URL:       s.URL,
+					Status:    statusOf(cfg, statuses, s.ID),
+					StatusID:  statusSlot(cfg, s.ID),
+					Body:      proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
@@ -699,8 +728,8 @@ func TouchIcon(cfg *config.Config) string {
 		}
 		return best
 	}
-	if strings.HasSuffix(strings.ToLower(cfg.Site.Favicon), ".png") {
-		return cfg.Site.Favicon
+	if strings.HasSuffix(strings.ToLower(cfg.Site.Favicon.Light), ".png") {
+		return cfg.Site.Favicon.Light
 	}
 	return defaultTouchIcon
 }
@@ -772,7 +801,7 @@ func AppIcons(cfg *config.Config) []AppIcon {
 		return out
 	}
 
-	if fav := cfg.Site.Favicon; fav != "" {
+	if fav := cfg.Site.Favicon.Light; fav != "" {
 		icon := AppIcon{Src: AppURL(fav), Type: iconType(fav)}
 		switch {
 		case icon.Type == "image/svg+xml":

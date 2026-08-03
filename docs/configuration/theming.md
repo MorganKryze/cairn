@@ -135,4 +135,60 @@ logo: /assets/logo.png
 
 Mount the file as described in [Icons: your own files](../recipes/icons.md#your-own-files).
 
+### Artwork that cannot serve both themes
+
+A logo drawn in one colour disappears in the theme it was not drawn for. It is
+worth being precise about how badly: on cairn's icon tile, a black mark reads
+**1.40:1** against the dark theme and a white one **1.24:1** against the light,
+where the rules ask 3:1 of anything you are meant to see. A full-colour mark
+usually clears both and needs nothing here.
+
+Give the field two images instead of one, keyed by the theme each appears in:
+
+```yaml
+# site.yaml
+logo:
+  light: /assets/logo.svg # shown in the light theme
+  dark: /assets/logo-white.svg # shown in the dark theme
+favicon:
+  light: /assets/fav.svg
+  dark: /assets/fav-white.svg
+```
+
+```yaml
+# services.yaml
+- id: code
+  url: https://git.example.org
+  name: Code
+  icon:
+    light: github
+    dark: github-light
+```
+
+Both keys are required. Half a pair paints nothing in one theme and leaves no
+trace of why, so cairn refuses it at the file rather than at the first visitor
+who switches. A plain string is still a plain string: one image, both themes,
+and every config written before this existed goes on meaning what it meant.
+
+The keys name the **theme**, not the ink. The icon collections do the opposite:
+dashboard-icons ships `github-light.svg` as the pale mark for a dark
+background, so it belongs under `dark:`. That reads backwards exactly once,
+here, instead of every time you write it.
+
+The logo and the icons follow the theme button, not just the system setting.
+The favicon cannot: a browser tab is outside the page's stylesheet, so cairn
+emits a second `<link>` with a `prefers-color-scheme` query, and the theme
+button then overrides that query by hand. Support is a browser's business
+rather than cairn's, and a browser that ignores it keeps the light one.
+
+Two things have no theme to follow and always take the light image: the social
+preview (`og:image`, which is a picture in someone else's chat window) and the
+web app manifest (`icons`, which is a home-screen icon).
+
+One cost, measured rather than guessed: a visitor whose system is light fetches
+the light file alone, and the dark one only if they press the button. A visitor
+whose system is dark fetches both, since the markup carries the light one and
+the rule then asks for the other. It buys the artwork keeping its `alt`, its
+dimensions and its lazy loading, and it is one small file.
+
 Next: [Languages](i18n.md)

@@ -1,0 +1,18 @@
+- id: themed-one
+  url: https://one.example.org
+  name: Themed one
+  icon: { light: /assets/mark-ink.svg, dark: /assets/mark-pale.svg }
+  # A detail page too: it draws the same icon from its own template, which is
+  # a second place the class has to be written.
+  details: The detail page carries the tile as well.
+# The same pair: both cards must end up wearing the one class, so the rule is
+# written once however many cards ask for it.
+- id: themed-two
+  url: https://two.example.org
+  name: Themed two
+  icon: { light: /assets/mark-ink.svg, dark: /assets/mark-pale.svg }
+# And one that themes nothing, which must stay untouched in either theme.
+- id: plain
+  url: https://three.example.org
+  name: Plain
+  icon: /assets/plain.svg

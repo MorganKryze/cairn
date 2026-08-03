@@ -1,0 +1,12 @@
+# Artwork that cannot serve both themes, for the browser suite: the swap is
+# pure CSS driven by data-theme, so nothing about it survives a look at the
+# markup. The paths need not resolve. What is under test is which url() the
+# browser has resolved on each element, before and after the theme button.
+title: Themed
+locales: [en]
+logo:
+  light: /assets/logo-ink.svg
+  dark: /assets/logo-pale.svg
+favicon:
+  light: /assets/fav-ink.svg
+  dark: /assets/fav-pale.svg

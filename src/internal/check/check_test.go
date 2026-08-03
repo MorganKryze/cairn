@@ -541,6 +541,37 @@ func TestCheckWarnsAboutAVectorLogo(t *testing.T) {
 	}
 }
 
+// With two logos it has to say which one it judged. og:image has no theme to
+// follow, so the answer is always the light one, and an operator staring at a
+// pair should not have to work that out from the path in the message.
+func TestCheckNamesWhichLogoIsNotARaster(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "url: https://tools.example.org\nlocales: [en]\n" +
+			"logo:\n  light: /assets/logo.svg\n  dark: /assets/logo-white.svg\n",
+		"services.yaml": "- {id: a, url: https://a.example.org, name: A}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The assertion has to be on the raster line itself. Other warnings about
+	// the same pair already say logo.light, so looking for it anywhere in the
+	// output passes whether or not this message was ever fixed.
+	warnings := checkWarnings(cfg, dir)
+	var raster string
+	for _, line := range warnings {
+		if strings.Contains(line, "not a raster") {
+			raster = line
+		}
+	}
+	if raster == "" {
+		t.Fatalf("no raster warning at all:\n%s", strings.Join(warnings, "\n"))
+	}
+	if !strings.Contains(raster, "logo.light") {
+		t.Errorf("the raster warning does not say which half it judged: %s", raster)
+	}
+}
+
 // A bare filename in logo, favicon or a link url is passed through untouched,
 // so the browser resolves it against whatever page it is on: logo.png is
 // /en/logo.png from the home page and /logo.png from the manifest, and 404s

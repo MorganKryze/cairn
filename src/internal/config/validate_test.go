@@ -181,15 +181,15 @@ func TestValidateSiteRejections(t *testing.T) {
 		// a real path in the wrong place, and nothing puts javascript: there by
 		// accident. The favicon is the one that escapes html/template entirely,
 		// since it reaches the manifest as JSON and /favicon.ico as a Location.
-		{"logo that is a script url", func(s *Site) { s.Logo = "javascript:alert(1)" },
+		{"logo that is a script url", func(s *Site) { s.Logo = ThemedRef{Light: "javascript:alert(1)"} },
 			[]string{"logo", `"javascript:alert(1)"`, "javascript: scheme", "/assets"}},
-		{"favicon that is a script url", func(s *Site) { s.Favicon = "vbscript:msgbox(1)" },
+		{"favicon that is a script url", func(s *Site) { s.Favicon = ThemedRef{Light: "vbscript:msgbox(1)"} },
 			[]string{"favicon", `"vbscript:msgbox(1)"`, "vbscript: scheme"}},
 		// data:text/html carries a document, script and all. It is refused for
 		// the same reason and named separately, because an operator who reaches
 		// for it is reaching for an inline icon and deserves to be told which
 		// of the three rules they hit.
-		{"favicon that is a data url", func(s *Site) { s.Favicon = "data:text/html,<script>x</script>" },
+		{"favicon that is a data url", func(s *Site) { s.Favicon = ThemedRef{Light: "data:text/html,<script>x</script>"} },
 			[]string{"favicon", "data: scheme"}},
 		{"links url that is a script url", func(s *Site) {
 			s.Links = []FooterLink{{Label: LString{"": "Wiki"}, URL: "javascript:alert(1)"}}
@@ -602,7 +602,7 @@ func TestTelIsRefusedInLinksAndKeptInSecurityTxt(t *testing.T) {
 		{"a footer link", func(s *Site) {
 			s.Footer = []FooterLink{{Label: LString{"": "Call"}, URL: "tel:+33123456789"}}
 		}},
-		{"a logo", func(s *Site) { s.Logo = "tel:+33123456789" }},
+		{"a logo", func(s *Site) { s.Logo = ThemedRef{Light: "tel:+33123456789"} }},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			s := &Site{Locales: []string{"en"}}
@@ -666,8 +666,8 @@ func TestValidateSiteAccepts(t *testing.T) {
 	s := &Site{
 		Locales: []string{"fr", "en", "pt-BR"},
 		URL:     "http://tools.example.org",
-		Logo:    "/assets/logo.png",
-		Favicon: "https://cdn.example.org/favicon.png",
+		Logo:    ThemedRef{Light: "/assets/logo.png"},
+		Favicon: ThemedRef{Light: "https://cdn.example.org/favicon.png"},
 		Links: []FooterLink{
 			{Label: LString{"": "Wiki"}, URL: "https://w.example.org", Icon: "book"},
 			{Label: LString{"": "Logo"}, URL: "https://x.example.org", Icon: "/assets/l.png"},

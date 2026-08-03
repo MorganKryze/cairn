@@ -107,13 +107,18 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	// favicon is the sharp case: it reaches the manifest as JSON, which no
 	// html/template escaping covers, and comes back from /favicon.ico as a
 	// Location header.
-	for _, f := range []struct{ key, val string }{
-		{"logo", site.Logo},
-		{"favicon", site.Favicon},
-	} {
-		if err := checkLinkScheme(f.key, f.val, imageSchemes, "https://… or an /assets path"); err != nil {
+	// Both halves of a themed pair go through it: the dark one reaches the
+	// same manifest and the same Location header the light one does.
+	for _, f := range append(site.Logo.Fields("logo"), site.Favicon.Fields("favicon")...) {
+		if err := checkLinkScheme(f.Key, f.Val, imageSchemes, "https://… or an /assets path"); err != nil {
 			return err
 		}
+	}
+	if err := checkDarkImage("logo", site.Logo); err != nil {
+		return err
+	}
+	if err := checkDarkImage("favicon", site.Favicon); err != nil {
+		return err
 	}
 	// security.txt is a line-based format, so a newline in any value would let
 	// a typo forge a field. Reject that here rather than escape it later.
@@ -400,4 +405,27 @@ func quotedFontName(name string) string {
 		return name
 	}
 	return `"` + name + `"`
+}
+
+// checkDarkImage guards the one half of a themed image that leaves the markup
+// behind. The light one goes into an src attribute, where html/template
+// escapes it; the dark one is written into the page's inline stylesheet as the
+// url() of a content rule, and nothing escapes a stylesheet for us.
+//
+// Two characters are all it takes. A path that is not a climb, names no other
+// origin and ends in .svg can still carry "</style>", and the browser ends the
+// style element there and reads the rest as markup. That is exactly the shape
+// theme.font.file was accepted with, so it is worth refusing by the same rule
+// rather than by a second look at where the value points.
+//
+// Only the dark half is held to it: it is the new surface, and nothing an
+// existing site serves today changes meaning.
+func checkDarkImage(key string, ref ThemedRef) error {
+	if !ref.Themed() {
+		return nil
+	}
+	if strings.ContainsAny(ref.Dark, "<>") {
+		return fmt.Errorf("config: site.yaml: %s.dark %q carries %q or %q, and the dark image is written into the page's stylesheet where nothing escapes it: an image URL has no use for either (expected e.g. /assets/logo-white.svg)", key, ref.Dark, "<", ">")
+	}
+	return nil
 }

@@ -27,7 +27,7 @@
   <ul class="cards">
     {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
       <div class="card-main">
-        <span class="tile">{{if .Icon}}<img src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
+        <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
           <a class="card-name" href="{{.URL}}"{{.Name.Attrs}}>{{.Name}}</a>
           {{if .Desc.Text}}<span class="card-desc"{{.Desc.Attrs}}>{{.Desc}}</span>{{end}}

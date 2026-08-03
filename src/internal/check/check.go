@@ -59,11 +59,21 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 	// links above. og:image feeds chat unfurls, not crawlers, and a portal
 	// kept out of search results is precisely the one that gets pasted into a
 	// team channel, where a preview is all anyone sees before clicking.
-	if cfg.Site.URL != "" && !render.IsRaster(cfg.Site.Logo) {
-		if cfg.Site.Logo == "" {
+	// og:image has no theme to follow, so it is the light logo that has to be
+	// a raster, and it alone.
+	if cfg.Site.URL != "" && !render.IsRaster(cfg.Site.Logo.Light) {
+		if cfg.Site.Logo.Light == "" {
 			out = append(out, "site.yaml has no logo: links to the site preview with no image (og:image wants a png, jpg, webp or gif)")
 		} else {
-			out = append(out, fmt.Sprintf("site.yaml logo %q is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)", cfg.Site.Logo))
+			// Named logo.light when there are two, the way the other logo
+			// warnings are: an operator reading "logo" with a pair in front of
+			// them has to guess which half was judged, and the answer is
+			// always this one.
+			key := "logo"
+			if cfg.Site.Logo.Themed() {
+				key = "logo.light"
+			}
+			out = append(out, fmt.Sprintf("site.yaml %s %q is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)", key, cfg.Site.Logo.Light))
 		}
 	}
 	out = append(out, unresolvableRefs(cfg)...)
@@ -375,11 +385,15 @@ func unresolvableRefs(cfg *config.Config) []string {
 	looksLocal := func(v string) bool {
 		return v != "" && !config.IsURLOrAbs(v) && !uriRe.MatchString(v)
 	}
-	if v := cfg.Site.Logo; looksLocal(v) {
-		out = append(out, fmt.Sprintf("site.yaml logo %q resolves nowhere: it is neither a URL nor an /assets path, so the header image and og:image both point at a 404", v))
+	for _, f := range cfg.Site.Logo.Fields("logo") {
+		if looksLocal(f.Val) {
+			out = append(out, fmt.Sprintf("site.yaml %s %q resolves nowhere: it is neither a URL nor an /assets path, so the header image and og:image both point at a 404", f.Key, f.Val))
+		}
 	}
-	if v := cfg.Site.Favicon; looksLocal(v) {
-		out = append(out, fmt.Sprintf("site.yaml favicon %q resolves nowhere: it is neither a URL nor an /assets path", v))
+	for _, f := range cfg.Site.Favicon.Fields("favicon") {
+		if looksLocal(f.Val) {
+			out = append(out, fmt.Sprintf("site.yaml %s %q resolves nowhere: it is neither a URL nor an /assets path", f.Key, f.Val))
+		}
 	}
 	for _, set := range []struct {
 		where string
@@ -482,11 +496,15 @@ func missingAssets(cfg *config.Config) []string {
 		return p, true
 	}
 	var out []string
-	if p, miss := absent(cfg.Site.Logo); miss {
-		out = append(out, fmt.Sprintf("site.yaml logo %q is not in the assets directory: the header paints a broken image and og:image sends every link preview to a 404 (expected a file at %s)", cfg.Site.Logo, p))
+	for _, f := range cfg.Site.Logo.Fields("logo") {
+		if p, miss := absent(f.Val); miss {
+			out = append(out, fmt.Sprintf("site.yaml %s %q is not in the assets directory: the header paints a broken image and og:image sends every link preview to a 404 (expected a file at %s)", f.Key, f.Val, p))
+		}
 	}
-	if p, miss := absent(cfg.Site.Favicon); miss {
-		out = append(out, fmt.Sprintf("site.yaml favicon %q is not in the assets directory: the browser tab falls back to a blank page icon (expected a file at %s)", cfg.Site.Favicon, p))
+	for _, f := range cfg.Site.Favicon.Fields("favicon") {
+		if p, miss := absent(f.Val); miss {
+			out = append(out, fmt.Sprintf("site.yaml %s %q is not in the assets directory: the browser tab falls back to a blank page icon (expected a file at %s)", f.Key, f.Val, p))
+		}
 	}
 	// The loudest of these: with no authority to verify against, every poll
 	// fails and every pill stays grey, and nothing on the page says why.

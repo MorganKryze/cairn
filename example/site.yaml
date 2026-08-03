@@ -12,6 +12,13 @@ theme:
   # font:
   #   family: "Inter, system-ui, sans-serif"
   #   file: "fonts/custom-font.woff2"
+# A logo or a favicon drawn in one colour disappears in the other theme. Give
+# the field two images instead, keyed by the theme each one appears in; a plain
+# string still means one image for both. See
+# docs/configuration/theming.md#artwork-that-cannot-serve-both-themes.
+# logo:
+#   light: /assets/logo.svg
+#   dark: /assets/logo-white.svg
 footer:
   - label: { fr: Statut des services, en: Service status }
     url: https://status.example.org

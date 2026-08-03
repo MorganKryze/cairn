@@ -24,7 +24,8 @@
 {{range .Locales}}<link rel="alternate" hreflang="{{.}}" href="{{$.Base}}/{{.}}/{{$.SwitchPath}}">
 {{end}}<link rel="alternate" hreflang="x-default" href="{{.Base}}/">
 {{end}}
-{{if .Favicon}}<link rel="icon" href="{{.Favicon}}">
+{{if .Favicon}}{{if .FaviconDark}}<link rel="icon" href="{{.FaviconDark}}" media="(prefers-color-scheme: dark)">
+{{end}}<link rel="icon" href="{{.Favicon}}">
 {{else}}<link rel="icon" href="{{.Prefix}}/static/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="{{.Prefix}}/static/favicon.ico" sizes="32x32">
 {{end}}<link rel="apple-touch-icon" href="{{.TouchIcon}}">

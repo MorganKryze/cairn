@@ -56,12 +56,15 @@ func CdnSlugs(cfg *Config) []string {
 	seen := map[string]bool{}
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
-			ic := s.Icon
-			if ic == "" || IsURLOrAbs(ic) {
-				continue
-			}
-			if cfg.LocalIcons[ic] == "" {
-				seen[ic] = true
+			// Both halves: a site self-hosting its icons needs the dark one
+			// downloaded too, or half its cards go to the CDN after all.
+			for _, ic := range s.Icon.Refs() {
+				if IsURLOrAbs(ic) {
+					continue
+				}
+				if cfg.LocalIcons[ic] == "" {
+					seen[ic] = true
+				}
 			}
 		}
 	}
