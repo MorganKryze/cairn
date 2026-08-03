@@ -7,7 +7,23 @@
   category: pages
   icon: nginx
   name: { fr: Page nginx, en: nginx page }
-  desc: { fr: La page de bienvenue du serveur web nginx., en: The nginx web server welcome page. }
+  desc:
+    {
+      fr: La page de bienvenue du serveur web nginx.,
+      en: The nginx web server welcome page.,
+    }
+  details:
+    fr: |
+      nginx est le serveur web qui sert cette page, et l'un des plus répandus
+      du web. Chez la plupart des gens qui s'auto-hébergent, il tient aussi la
+      porte : il reçoit les requêtes et les distribue aux services derrière
+      lui. Ici il n'en fait que la première moitié, et affiche sa page par
+      défaut.
+    en: |
+      nginx is the web server behind this page, and one of the most widely used
+      on the web. For most people who self-host it also keeps the door: it
+      takes the requests and hands them to the services behind it. Here it does
+      only the first half of that, and shows its default page.
   tags: [nginx, web]
   selfhosted: true
 
@@ -16,7 +32,11 @@
   category: pages
   icon: apache
   name: { fr: Page Apache, en: Apache page }
-  desc: { fr: La page de bienvenue du serveur web Apache., en: The Apache web server welcome page. }
+  desc:
+    {
+      fr: La page de bienvenue du serveur web Apache.,
+      en: The Apache web server welcome page.,
+    }
   tags: [apache, web]
   selfhosted: true
 
@@ -25,7 +45,11 @@
   category: tools
   icon: traefik
   name: { fr: "Qui suis-je ?", en: "Who am I?" }
-  desc: { fr: Affiche ce que le serveur voit de votre requête., en: Shows what the server sees in your request. }
+  desc:
+    {
+      fr: Affiche ce que le serveur voit de votre requête.,
+      en: Shows what the server sees in your request.,
+    }
   details:
     fr: |
       Ouvrez la page et vous verrez votre requête telle que le serveur la
@@ -47,7 +71,11 @@
   url: http://localhost:8085
   category: tools
   name: { fr: Podinfo, en: Podinfo }
-  desc: { fr: Une petite application de démonstration qui dit bonjour., en: A tiny demo application that says hello. }
+  desc:
+    {
+      fr: Une petite application de démonstration qui dit bonjour.,
+      en: A tiny demo application that says hello.,
+    }
   details:
     fr: |
       Une application témoin : elle affiche sa version, le nom du conteneur
@@ -71,7 +99,11 @@
   url: http://localhost:8086
   category: tools
   name: { fr: Service fantôme, en: Ghost service }
-  desc: { fr: "Volontairement éteint, pour montrer la pastille rouge.", en: "Intentionally down, to show the red dot." }
+  desc:
+    {
+      fr: "Volontairement éteint, pour montrer la pastille rouge.",
+      en: "Intentionally down, to show the red dot.",
+    }
   details:
     fr: |
       Ce service n'existe pas : aucun conteneur n'écoute derrière. Gatus le
@@ -92,7 +124,11 @@
   category: links
   icon: github
   name: { fr: Code source de cairn, en: cairn source code }
-  desc: { fr: Le dépôt de la page que vous regardez., en: The repository of the page you are looking at. }
+  desc:
+    {
+      fr: Le dépôt de la page que vous regardez.,
+      en: The repository of the page you are looking at.,
+    }
   tags: [github, source]
   selfhosted: false
 
@@ -101,7 +137,11 @@
   category: links
   icon: /static/favicon.svg
   name: { fr: cairn en production, en: cairn in production }
-  desc: { fr: "Une vraie instance de cairn, en ligne.", en: "A real cairn instance, live." }
+  desc:
+    {
+      fr: "Une vraie instance de cairn, en ligne.",
+      en: "A real cairn instance, live.",
+    }
   tags: [prod, libresoftware, demo]
   selfhosted: false
 
@@ -110,6 +150,10 @@
   category: links
   icon: gatus
   name: { fr: Projet Gatus, en: Gatus project }
-  desc: { fr: L'outil qui alimente les pastilles de statut., en: The tool that powers the status pills. }
+  desc:
+    {
+      fr: L'outil qui alimente les pastilles de statut.,
+      en: The tool that powers the status pills.,
+    }
   tags: [gatus, status, monitoring]
   selfhosted: false

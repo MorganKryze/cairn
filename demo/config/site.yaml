@@ -16,9 +16,15 @@ security:
   contact: https://github.com/MorganKryze/cairn/security/advisories/new
   policy: https://github.com/MorganKryze/cairn/blob/main/SECURITY.md
 
+# Both flags lead to the same page, because the answer is one explanation
+# with two halves: what I run myself, and what I only point at.
+hosting_flag:
+  self: hosting
+  external: hosting
+
 status:
-  gatus: http://gatus:8080        # cairn polls this over the compose network
-  page: http://localhost:8081     # the pill links visitors to the published port
+  gatus: http://gatus:8080 # cairn polls this over the compose network
+  page: http://localhost:8081 # the pill links visitors to the published port
   interval: 10s
 about:
   fr: |
@@ -55,6 +61,78 @@ footer:
   - label: { fr: Statut des services (Gatus), en: Service status (Gatus) }
     url: http://localhost:8081
 pages:
+  - id: hosting
+    title: { fr: Où tournent ces services, en: Where these services run }
+    body:
+      fr: >
+        Chaque carte porte une petite étiquette : « Auto-hébergé » ou
+        « Externe ». Elle dit qui fait tourner le service, et donc ce que vous
+        pouvez attendre de moi.
+      en: >
+        Every card carries a small label: "Self-hosted" or "External". It says
+        who runs the service, and therefore what you can expect from me.
+    sections:
+      - title: { fr: Auto-hébergé, en: Self-hosted }
+        body:
+          fr: >
+            Le service tourne sur ma propre flotte : des machines louées en
+            France, chez OVH, et mes machines à moi, hors de tout cloud. Vos
+            données restent dessus : elles ne traversent aucun intermédiaire, ne
+            sont revendues à personne et ne servent à aucune publicité.
+            L'ensemble est sauvegardé régulièrement. Si quelque chose casse,
+            c'est moi qu'il faut prévenir, et c'est moi qui répare.
+          en: >
+            The service runs on a fleet of my own: machines rented in
+            France, at OVH, and machines that are mine outright, outside any
+            cloud. Your data stays on them: it crosses no middleman, is sold to
+            nobody and feeds no advertising. The whole lot is backed up
+            regularly. If something breaks, I am the one to tell, and I am the
+            one who fixes it.
+      - title: { fr: Externe, en: External }
+        body:
+          fr: >
+            Je n'héberge rien : je partage un lien vers un service tenu par
+            quelqu'un d'autre, parce que je le trouve bon et que je lui fais
+            confiance. Ce qui s'y passe ne dépend pas de moi, ni la
+            disponibilité, ni les conditions d'utilisation, ni le traitement de
+            vos données. Je n'en porte pas la responsabilité, alors lisez leurs
+            propres pages avant d'y déposer quoi que ce soit.
+          en: >
+            I host nothing here: I am sharing a link to a service someone else
+            runs, because I think it is good and I trust them with it. What
+            happens there is not mine to decide, neither the uptime, nor the
+            terms, nor what becomes of your data. I carry no responsibility for
+            it, so read their own pages before you put anything there.
+      - title:
+          {
+            fr: "Logiciel libre, auto-hébergement : de quoi parle-t-on ?",
+            en: "Free software and self-hosting, briefly",
+          }
+        body:
+          fr: >
+            Un **logiciel libre** est un logiciel dont le code source est
+            public : n'importe qui peut le lire, vérifier ce qu'il fait, le
+            modifier et le faire tourner chez lui. Personne ne peut le fermer,
+            ni décider un matin d'en changer le prix ou les règles.
+
+
+            L'**auto-hébergement**, c'est faire tourner ce logiciel sur sa
+            propre machine plutôt que d'utiliser la version d'une entreprise.
+            On y gagne le contrôle de ses données et son indépendance ; on y
+            perd le confort de n'avoir rien à entretenir. C'est le choix que
+            j'ai fait pour tout ce qui porte l'étiquette « Auto-hébergé ».
+          en: >
+            **Free software** is software whose source code is public: anyone
+            can read it, check what it does, change it and run it themselves.
+            Nobody can close it, or wake up one morning and change its price or
+            its rules.
+
+
+            **Self-hosting** means running that software on your own machine
+            rather than using a company's version of it. You gain control of
+            your data and your independence; you lose the comfort of having
+            nothing to maintain. It is the choice I made for everything
+            labelled "Self-hosted".
   - id: mentions-legales
     title: { fr: Mentions légales, en: Legal notice }
     body:
