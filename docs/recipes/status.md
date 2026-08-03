@@ -180,9 +180,11 @@ exist.
 
 Three things have to be true, and only the first is work:
 
-1. **Each monitor is named after the cairn service id.** Kuma has no config
-   file and no setup API, so there is no `cairn -emit-kuma` and there cannot
-   be one: everything in Kuma is created by clicking, which is exactly how the
+1. **Each monitor is named after the cairn service id.** Capitals do not
+   matter, a monitor called `Immich` finds the service `immich`, but a space
+   or a dot does: neither can appear in an id. Kuma has no config file and no
+   setup API, so there is no `cairn -emit-kuma` and there cannot be one:
+   everything in Kuma is created by clicking, which is exactly how the
    instance this was tested against was set up, with a script driving a
    browser.
 2. **The monitors are attached to the status page**, inside a group. A page
@@ -284,10 +286,11 @@ pending, maintenance, validating`, in lower case: `validating` is the amber
   field. So a test you switched off draws a **green** pill on your directory.
   Delete the tests you stop using rather than pausing them. StatusCake also
   pages at 25, hence `?limit=100`.
-- **A monitor's name has to be a valid cairn service id**: lowercase letters,
-  digits and dashes. A monitor named after a domain, `pdf.example.org`,
-  never matches, because a service id carries no dot. Rename the monitor, or
-  the pill never appears.
+- **A monitor's name has to be a cairn service id**: letters, digits and
+  dashes. Capitals are fine, cairn folds them, so `Immich` finds `immich`. A
+  dot or a space is not: a monitor named after a domain, `pdf.example.org`,
+  never matches, because an id carries neither. Rename the monitor, or the
+  pill never appears.
 
 ### The token, if the API needs one
 
