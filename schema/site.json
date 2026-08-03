@@ -237,6 +237,24 @@
         }
       }
     },
+    "service_links": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How the two links that lead to a service behave: the name on a card, and the button on a detail page. Only links that leave the site are affected; a service whose url is a page cairn serves is untouched. Both keys are off by default.",
+      "properties": {
+        "new_tab": {
+          "type": "boolean",
+          "description": "true opens a service link in a new tab, with rel=\"noopener noreferrer\", so the directory stays where the visitor left it. Off by default."
+        },
+        "confirm": {
+          "description": "Which service links raise a dialog naming the destination before the visitor follows them. \"external\" covers only the services flagged selfhosted: false, which is the case worth a sentence; \"all\" covers every link that leaves the site, and true means the same. Off by default. A service with no selfhosted flag never counts as external.",
+          "oneOf": [
+            { "type": "string", "enum": ["all", "external", "off"] },
+            { "type": "boolean" }
+          ]
+        }
+      }
+    },
     "status": {
       "type": "object",
       "additionalProperties": false,

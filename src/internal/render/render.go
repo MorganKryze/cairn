@@ -242,6 +242,10 @@ func catName(cfg *config.Config, c config.Category, loc string) locText {
 
 type uiStrings struct {
 	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
+	// The six the leave dialog needs, empty on a site that does not ask for
+	// it. LeaveCopied is the label the copy button swaps to, so it is written
+	// into a data attribute rather than the button: the script needs both.
+	LeaveTitle, LeaveBody, LeaveCopy, LeaveCopied, LeaveGo, LeaveStay string
 }
 
 type pageView struct {
@@ -276,6 +280,11 @@ type pageView struct {
 	Links             []linkView
 	Footer            []linkView
 	S                 uiStrings
+	// Leave ships the dialog and its script, and it is set per page rather
+	// than per site: a page with nothing to guard gets neither, so a detail
+	// page for a service the operator runs stays exactly the page it was.
+	// LeaveBlank makes the dialog's own continue link agree with new_tab.
+	Leave, LeaveBlank bool
 }
 
 type cardView struct {
@@ -297,6 +306,38 @@ type cardView struct {
 	// target that is not this site.
 	HostHref  string
 	HostBlank bool
+	// Blank and Leave describe the link on the service's own name. Both are
+	// set from service_links and both only ever apply to a url that leaves
+	// the site, which is why they live on the card rather than on the config:
+	// a service whose url is a page cairn serves gets neither.
+	Blank, Leave bool
+}
+
+// serviceLink decides how one service url behaves. hostKind is the card's own
+// flag, which is what lets a site warn about other people's services without
+// warning about its own.
+//
+// Everything here is gated on leaving the site. A url that is a path cairn
+// serves is not a departure, and treating it as one would put a "you are
+// leaving" dialog in front of the operator's own page.
+// hostKindOf is the card's flag, read off the service rather than off the
+// built card, so the detail page can reach the same verdict without one.
+func hostKindOf(s config.Service) string {
+	if s.Selfhosted == nil {
+		return ""
+	}
+	if *s.Selfhosted {
+		return "self"
+	}
+	return "external"
+}
+
+func serviceLink(cfg *config.Config, url, hostKind string) (blank, leave bool) {
+	if config.IsLocalPath(url) {
+		return false, false
+	}
+	sl := cfg.Site.ServiceLinks
+	return sl.NewTab, sl.Confirm.Wants(hostKind)
 }
 
 type catView struct {
@@ -338,6 +379,7 @@ type detailView struct {
 	StatusA11y                                 string
 	Body                                       prose
 	Images                                     []imageView
+	Blank, Leave                               bool // see cardView
 }
 
 type imageView struct {
@@ -534,6 +576,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			Style:     template.CSS(themeStyle(cfg)),
 			CustomCSS: cfg.CustomCSS,
 			Locales:   cfg.Site.Locales,
+			// Leave itself is per page, set once the links are known.
+			LeaveBlank: cfg.Site.ServiceLinks.NewTab,
 			S: uiStrings{
 				Skip:              cfg.Str(loc, "nav.skip"),
 				Languages:         cfg.Str(loc, "nav.languages"),
@@ -553,6 +597,12 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				Powered:           cfg.Str(loc, "foot.powered"),
 				Menu:              cfg.Str(loc, "nav.menu"),
 				Top:               cfg.Str(loc, "nav.top"),
+				LeaveTitle:        cfg.Str(loc, "leave.title"),
+				LeaveBody:         cfg.Str(loc, "leave.body"),
+				LeaveCopy:         cfg.Str(loc, "leave.copy"),
+				LeaveCopied:       cfg.Str(loc, "leave.copied"),
+				LeaveGo:           cfg.Str(loc, "leave.go"),
+				LeaveStay:         cfg.Str(loc, "leave.stay"),
 			},
 		}
 		base.VerLabel, base.VerHref = versionInfo(Version)
@@ -603,6 +653,9 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
+				// After the flag, since the scope reads it.
+				card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
+				hv.Leave = hv.Leave || card.Leave
 				cv.Cards = append(cv.Cards, card)
 			}
 			hv.Cats = append(hv.Cats, cv)
@@ -631,6 +684,11 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
 				}
 				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
+				// The detail page has to reach the same verdict as the card
+				// for the same service, or a visitor meets the dialog on one
+				// route and not the other.
+				dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
+				dv.pageView.Leave = dv.Leave
 				dv.PageTitle = dv.Name.Text + " · " + base.SiteTitle.Text
 				dv.MetaDesc = dv.Desc.Text
 				dv.SwitchPath = s.ID + "/"

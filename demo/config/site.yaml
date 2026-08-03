@@ -22,6 +22,14 @@ hosting_flag:
   self: hosting
   external: hosting
 
+# The other half of the same idea. A visitor sent to something I run stays in
+# the flow; one sent to somebody else's site is told so first, with the address
+# on screen to read. Everything opens in a new tab either way, so the directory
+# is never the thing they had to navigate back to.
+service_links:
+  new_tab: true
+  confirm: external
+
 status:
   gatus: http://gatus:8080 # cairn polls this over the compose network
   page: http://localhost:8081 # the pill links visitors to the published port

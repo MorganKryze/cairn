@@ -190,6 +190,22 @@ type Site struct {
 		Self     string `yaml:"self"`
 		External string `yaml:"external"`
 	} `yaml:"hosting_flag"`
+	// ServiceLinks is how the two links that lead to a service behave: the
+	// name on a card, and the button on a detail page. Both are off, so a
+	// site that says nothing keeps exactly the page it has today.
+	//
+	// The block is `service_links` and not `links`, which is what the feature
+	// request called it: `links` has been the header link list since long
+	// before this, and a key cannot be a sequence and a mapping at once.
+	//
+	// Neither key touches a link cairn serves itself. A "Learn more" page, the
+	// language switcher, a footer entry: those stay where they are, on the
+	// same off-site test the hosting flag already applies. What is being
+	// described is leaving the site, not following a link.
+	ServiceLinks struct {
+		NewTab  bool         `yaml:"new_tab"`
+		Confirm ConfirmScope `yaml:"confirm"`
+	} `yaml:"service_links"`
 	Status struct {
 		Gatus string `yaml:"gatus"`
 		// Provider names the monitor behind the address, and URL is that

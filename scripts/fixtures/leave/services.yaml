@@ -1,0 +1,18 @@
+# Somebody else's, so it is guarded.
+- id: mail
+  url: https://mail.example.org/inbox?tab=1
+  name: Mail
+  desc: Runs elsewhere.
+  selfhosted: false
+  details: A detail page too, which carries the guarded button.
+# The host's own, so it is not.
+- id: pad
+  url: https://pad.example.org
+  name: Pad
+  desc: Ours.
+  selfhosted: true
+# Nothing said, which under `external` is not a claim that it is external.
+- id: quiet
+  url: https://quiet.example.org
+  name: Quiet
+  desc: Unsaid.

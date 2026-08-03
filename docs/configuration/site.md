@@ -5,27 +5,28 @@ so is every key in it.
 
 ## Keys
 
-| Key            | Default   | What it is                                                                                                                                                                                                                                                                                                       |
-| -------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`        | `cairn`   | Site name: header, `<title>`. Translatable like every text key.                                                                                                                                                                                                                                                  |
-| `tagline`      | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show.                                                                                                                                                                             |
-| `url`          | none      | Public base URL, **the domain alone**: `https://tools.example.org`, never `https://example.org/cairn`. Enables canonical and hreflang links, absolute sitemap URLs and the preview image. See [below](#the-domain-and-nothing-else).                                                                             |
-| `logo`         | none      | Image in the header, and the picture on a shared link. A URL or an [`/assets` path](../recipes/icons.md#your-own-files); [it has to be a raster](#the-logo-and-the-picture-on-a-shared-link). Takes `{light, dark}` when one image cannot serve [both themes](theming.md#artwork-that-cannot-serve-both-themes). |
-| `favicon`      | cairn's   | The tab icon: a URL or an `/assets` path, or `{light, dark}` for [two themes](theming.md#artwork-that-cannot-serve-both-themes). See [the icon set](#the-icon-set) for what replacing it costs.                                                                                                                  |
-| `index`        | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web.                                                                                                                |
-| `locales`      | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                                                                                                                                         |
-| `theme.accent` | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                                                                                                                                            |
-| `theme.font`   | none      | Body font: `family`, a CSS font stack; `file`, a font in the config directory's `fonts/` folder, served by cairn itself so the page makes no external font request. See [Theming](theming.md).                                                                                                                   |
-| `about`        | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and [CommonMark, minus raw HTML](text.md).                                                                                                                                                        |
-| `links`        | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                                                                                                                                         |
-| `footer`       | `[]`      | Links at the bottom of every page.                                                                                                                                                                                                                                                                               |
-| `pages`        | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept [CommonMark, minus raw HTML](text.md).                                                                                                                                                                                              |
-| `credit`       | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                                                                                                                                          |
-| `show_version` | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                                                                                            |
-| `strings`      | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                                                                                                          |
-| `security`     | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                                                                                                                                     |
-| `hosting_flag` | none      | Where the self-hosted and external [flags](services.md#making-the-flag-lead-somewhere) lead: `self` and `external`, each a page id, a path or a URL. Omitted, the flags stay plain text.                                                                                                                         |
-| `status`       | none      | Live status pills fed by your monitor (`status.gatus`, or `status.url` with `status.provider` and, per monitor, `status.slug` or `status.map`; then `status.page`, `status.interval`, `status.linked`, `status.insecure`, `status.ca`); see [Status page](../recipes/status.md).                                 |
+| Key             | Default   | What it is                                                                                                                                                                                                                                                                                                       |
+| --------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`         | `cairn`   | Site name: header, `<title>`. Translatable like every text key.                                                                                                                                                                                                                                                  |
+| `tagline`       | empty     | One sentence about the site, translatable. Opens the home page and feeds the meta description search engines and link previews show.                                                                                                                                                                             |
+| `url`           | none      | Public base URL, **the domain alone**: `https://tools.example.org`, never `https://example.org/cairn`. Enables canonical and hreflang links, absolute sitemap URLs and the preview image. See [below](#the-domain-and-nothing-else).                                                                             |
+| `logo`          | none      | Image in the header, and the picture on a shared link. A URL or an [`/assets` path](../recipes/icons.md#your-own-files); [it has to be a raster](#the-logo-and-the-picture-on-a-shared-link). Takes `{light, dark}` when one image cannot serve [both themes](theming.md#artwork-that-cannot-serve-both-themes). |
+| `favicon`       | cairn's   | The tab icon: a URL or an `/assets` path, or `{light, dark}` for [two themes](theming.md#artwork-that-cannot-serve-both-themes). See [the icon set](#the-icon-set) for what replacing it costs.                                                                                                                  |
+| `index`         | `true`    | `index: false` asks search engines to stay away: `robots.txt` disallows everything, every page carries `noindex`, the sitemap turns off. For directories meant for ten people, not the whole web.                                                                                                                |
+| `locales`       | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                                                                                                                                         |
+| `theme.accent`  | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                                                                                                                                            |
+| `theme.font`    | none      | Body font: `family`, a CSS font stack; `file`, a font in the config directory's `fonts/` folder, served by cairn itself so the page makes no external font request. See [Theming](theming.md).                                                                                                                   |
+| `about`         | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and [CommonMark, minus raw HTML](text.md).                                                                                                                                                        |
+| `links`         | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                                                                                                                                         |
+| `footer`        | `[]`      | Links at the bottom of every page.                                                                                                                                                                                                                                                                               |
+| `pages`         | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept [CommonMark, minus raw HTML](text.md).                                                                                                                                                                                              |
+| `credit`        | `true`    | The small "powered by cairn" in the footer. `credit: false` removes it.                                                                                                                                                                                                                                          |
+| `show_version`  | `false`   | Prints the running cairn version beside that credit: the release number for a tagged build, the commit for a build off `main`. Handy when you report a bug, or run several instances.                                                                                                                            |
+| `strings`       | built-ins | UI text overrides; see [Languages](i18n.md#ui-strings).                                                                                                                                                                                                                                                          |
+| `security`      | none      | `contact`, and optionally `policy` and `encryption`. Setting `contact` makes cairn serve [`/.well-known/security.txt`](#telling-researchers-where-to-write).                                                                                                                                                     |
+| `hosting_flag`  | none      | Where the self-hosted and external [flags](services.md#making-the-flag-lead-somewhere) lead: `self` and `external`, each a page id, a path or a URL. Omitted, the flags stay plain text.                                                                                                                         |
+| `service_links` | none      | How the links that lead to a service behave: `new_tab`, and `confirm` for a dialog naming the destination. Only links that leave the site are touched. See [below](#leaving-the-site).                                                                                                                           |
+| `status`        | none      | Live status pills fed by your monitor (`status.gatus`, or `status.url` with `status.provider` and, per monitor, `status.slug` or `status.map`; then `status.page`, `status.interval`, `status.linked`, `status.insecure`, `status.ca`); see [Status page](../recipes/status.md).                                 |
 
 ## Full example
 
@@ -206,6 +207,50 @@ browser drops tabs and newlines from a URL and strips leading control
 characters before it looks at the scheme. `JavaScript:`, a leading space and a
 tab inside the word are all the same URL as the plain one, so they all get the
 same answer.
+
+## Leaving the site
+
+Two links lead a visitor to a service: the name on a card, and the button on
+its detail page. `service_links` says how they behave. Both keys are off, so a
+site that says nothing keeps the pages it has today.
+
+```yaml
+service_links:
+  new_tab: true
+  confirm: external
+```
+
+**`new_tab`** opens the link in a new tab, carrying `rel="noopener noreferrer"`,
+so the directory stays where the visitor left it instead of being one back
+button, or a chain of them, away.
+
+**`confirm`** puts a dialog in front of the link, naming where it goes and
+offering to copy the address before the visitor follows it. It takes which
+links to guard rather than a yes:
+
+| Value      | Guards                                                                    |
+| ---------- | ------------------------------------------------------------------------- |
+| `external` | only the services flagged [`selfhosted: false`](services.md#hosting-flag) |
+| `all`      | every service link that leaves the site (`true` means the same)           |
+| absent     | nothing, which is the default                                             |
+
+`external` is the useful one for most directories: a visitor being sent to
+somebody else's site is the case worth a sentence, while being sent to your own
+Nextcloud is not. A service with **no** `selfhosted` flag never counts as
+external. That is the literal reading and the safe one, since silence is what a
+config says before you have thought about it, not a claim about who runs
+something.
+
+**Neither key touches a link cairn serves itself.** A "Learn more" page, the
+language switcher, a footer entry, or a service whose `url` is a path on this
+site: all of those navigate in place as they always have. What is being
+described is leaving, not being a link.
+
+**Both degrade.** The dialog is a native `<dialog>`, so the focus trap, the
+Escape key and the return of focus come from the browser rather than from a
+script that has to remember all three, and the button that continues is an
+ordinary link. With JavaScript off, a guarded link is simply a link and the
+visitor arrives. `new_tab` needs no script at all.
 
 ## A footer entry is a label and a url, and only those
 
