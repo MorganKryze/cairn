@@ -55,6 +55,11 @@ docker compose up -d
 Open <http://localhost:8080>. You get a finished page: one category, one
 card, working search, light and dark.
 
+The image is also on Docker Hub as `morgankryze/cairn`, if that is where the
+rest of your stack comes from. It is the same object, copied from the same
+signed digest, so the two are interchangeable. This documentation uses `ghcr.io`
+throughout because it is where the release publishes first.
+
 ## 3. Make it yours
 
 Add `config/site.yaml`, every key optional:

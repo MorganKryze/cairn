@@ -20,9 +20,11 @@ color=$(awk -v p="$pct" 'BEGIN {
 
 # badge LABEL VALUE LABEL_WIDTH VALUE_WIDTH COLOUR NAME
 #
-# The widths are given rather than measured: this writes the SVG by hand
-# instead of pulling in a renderer, and a shell script has no font metrics.
-# They only have to hold what these two ever say, a percentage and a count.
+# The widths are passed in rather than worked out here: this writes the SVG by
+# hand instead of pulling in a renderer, and a shell script has no font
+# metrics. They were measured elsewhere, in Verdana at 11px, the first family
+# the SVG asks for, and they are what makes the two badges look like a pair:
+# roughly 6px of air on each side of a label, 4.5px on each side of a value.
 badge() {
   local w=$(($3 + $4))
   cat >"/tmp/$6.svg" <<SVG
@@ -40,7 +42,16 @@ SVG
 }
 
 badge coverage "${pct}%" 62 46 "$color" coverage
-badge tests "$tests" 44 46 "#4c1" tests
+
+# A count is the one value here that can gain a character, so its box is the
+# one that has to follow: a digit is exactly 7px wide in Verdana at 11px, and
+# 9px is the air the coverage value already carries. A box wide enough for a
+# percentage is what left `505` floating in the middle of its own.
+#
+# Even widths on purpose where the choice exists: the text is centred on
+# width/2 in shell arithmetic, which truncates, so an odd box sits its text
+# half a pixel off centre.
+badge tests "$tests" 38 "$((9 + 7 * ${#tests}))" "#4c1" tests
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

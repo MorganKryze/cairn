@@ -19,8 +19,11 @@ import { readFileSync } from 'node:fs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'assets');
 const URL = process.env.CAIRN_URL ?? 'http://127.0.0.1:8080/en/';
-// The same site, for the shots that open a page of their own.
-const DEMO = URL.replace(/\/en\/$/, '/en/');
+// The same site, for the shots that open a page of their own. The two below
+// append a path to it, so what it has to guarantee is the trailing slash, not
+// the locale: this replaced `/en/` with `/en/`, which is nothing, and left
+// `CAIRN_URL=http://host/en` producing `http://host/enwhoami/`.
+const DEMO = URL.endsWith('/') ? URL : URL + '/';
 const SIZE = { width: 1440, height: 1000 };
 
 const browser = await chromium.launch();
