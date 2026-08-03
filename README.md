@@ -12,7 +12,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
 [![Image](https://img.shields.io/badge/image-4.4%20MB%20pull-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/morgankryze/cairn/tags)
-[![Docker Hub](https://img.shields.io/docker/pulls/morgankryze/cairn?label=docker%20hub&color=2496ED&logo=docker&logoColor=white)](https://hub.docker.com/r/morgankryze/cairn)
+[![Docker Hub](https://img.shields.io/docker/pulls/morgankryze/cairn?label=docker%20hub&color=2496ED&logo=docker&logoColor=white&cacheSeconds=3600)](https://hub.docker.com/r/morgankryze/cairn)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Helm](https://img.shields.io/badge/Helm-chart-0F1689?logo=helm&logoColor=white)](docs/deployment/helm.md)
 [![Docker Compose](https://img.shields.io/badge/Compose-ready-2496ED?logo=docker&logoColor=white)](docs/deployment/docker-compose.md)
