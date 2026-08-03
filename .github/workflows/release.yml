@@ -70,6 +70,12 @@ jobs:
       contents: read
       packages: write # pushes the versioned tags to ghcr.io
       id-token: write # cosign signs keylessly against this workflow identity
+    # What the `hub` job copies. The tag rules live here and only here: a
+    # second registry that recomputed them would be a list to keep in step.
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
+      floating: ${{ steps.promote.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -185,6 +191,7 @@ jobs:
       # rebuilds the index instead of copying it, the tag would point at an
       # unsigned digest, and this is what would catch it.
       - name: move stable and latest onto the verified digest
+        id: promote
         if: ${{ !contains(github.ref_name, '-') }}
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
@@ -198,7 +205,90 @@ jobs:
               exit 1
             }
           done
+          # Written from inside the loop's own step rather than restated below,
+          # so a prerelease, which skips this step, hands the `hub` job an
+          # empty string and floats nothing there either.
+          echo "tags=${IMAGE}:stable ${IMAGE}:latest" >> "$GITHUB_OUTPUT"
 
+
+  # Docker Hub, from the digest ghcr has already published, signed and proved.
+  #
+  # A copy, not a second push target. Naming docker.io in the build's own tag
+  # list is one line shorter and it puts Hub on the critical path of every
+  # release: this is the registry cairn stopped pulling from after 1.13.2,
+  # because it does not fail by saying so, it times out. As a separate job a
+  # Hub outage is one red square on a release that is already complete and
+  # signed on ghcr, and it can be re-run by itself.
+  #
+  # Copying the index means the same digest lands in both registries, so the
+  # SLSA provenance and the SBOM come with it and one signature covers the
+  # same bytes either side. Asserted below rather than assumed, the way the
+  # promotion above is.
+  hub:
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # cosign signs keylessly, same workflow identity as ghcr
+    # No setup-buildx-action here, deliberately. `imagetools` talks to the two
+    # registries directly and needs no builder, so starting one would pull the
+    # buildkit image to do nothing. The runner ships the plugin itself, listed
+    # as Docker-Buildx in the ubuntu image manifest.
+    steps:
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # ghcr serves this package publicly, so the read would work without a
+      # token. Logging in anyway keeps the copy off the anonymous rate limit.
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # No registry key: docker/login-action defaults to Docker Hub. The
+      # account name is public, so only the token is a secret. It carries
+      # Read & Write and not Delete, which is why nothing here removes a tag.
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          username: morgankryze
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: copy the verified digest to Docker Hub, then sign it there
+        env:
+          DIGEST: ${{ needs.image.outputs.digest }}
+          TAGS: ${{ needs.image.outputs.tags }}
+          FLOATING: ${{ needs.image.outputs.floating }}
+        run: |
+          set -euo pipefail
+          # The tags the release actually published, from the job that
+          # published them, with the registry swapped. Nothing here decides
+          # which tags a version gets, so a prerelease floats nothing here
+          # for the same reason it floats nothing on ghcr: FLOATING is empty.
+          refs=$(printf '%s %s' "$TAGS" "$FLOATING" | tr ' ' '\n' | grep . \
+            | sed 's|^ghcr\.io/|docker.io/|')
+
+          # Both names come out of the tag lists rather than out of
+          # github.repository, which carries a capital the registries refuse.
+          src=$(printf '%s\n' "$TAGS" | head -n1); src="${src%%:*}"
+          dst=$(printf '%s\n' "$refs" | head -n1); dst="${dst%%:*}"
+
+          for ref in $refs; do
+            docker buildx imagetools create --tag "$ref" "${src}@${DIGEST}"
+            landed=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")
+            [ "$landed" = "$DIGEST" ] || {
+              echo "::error::${ref} points at ${landed}, not the signed ${DIGEST}"
+              exit 1
+            }
+          done
+
+          # A signature is an object in the registry it is pushed to, so the
+          # one made against ghcr does not exist here. Same keyless identity,
+          # same digest, so SECURITY.md's command works unchanged on either
+          # name, which is what the verify below is checking.
+          cosign sign --yes "${dst}@${DIGEST}"
+          cosign verify "${dst}@${DIGEST}" \
+            --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
 
   chart:
     runs-on: ubuntu-latest

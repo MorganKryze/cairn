@@ -2,3 +2,6 @@
 
 # just shots installs playwright here on demand; nothing to commit
 node_modules/
+
+# macOS writes one into any folder opened in Finder, docs/assets especially
+.DS_Store

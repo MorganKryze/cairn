@@ -31,6 +31,13 @@ cosign verify ghcr.io/morgankryze/cairn:stable \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
+The same image is published to Docker Hub as `morgankryze/cairn`, and the
+command works there unchanged: the release copies the digest ghcr has already
+signed rather than building a second time, so both names resolve to the same
+object and the signature covers the same bytes. Substituting one name for the
+other in any command on this page is safe, including the provenance inspection
+below.
+
 The [Helm chart](docs/deployment/helm.md) is published the same way, as an OCI
 artifact next to the image, and signed by the same workflow:
 
