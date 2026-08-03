@@ -42,7 +42,9 @@ want to know what this place is, what each tool does, and whether it works
 right now. cairn is that page. Written in their language, readable without an
 account or a manual, and boring for you to operate.
 
-## What your visitors get
+## Features
+
+### What your visitors get
 
 - 👋 **A welcome note in your words**: who hosts this, for whom, how to
   reach you. Dismissable, remembered for a year (a plain cookie, no
@@ -80,7 +82,7 @@ account or a manual, and boring for you to operate.
 
 </div>
 
-## What you get as the operator
+### What you get as the operator
 
 - 📦 **One static binary, about 10 MB**, zero runtime dependencies, no
   database. The image around it is 4.4 MB to pull on amd64 and 4.0 on arm64,
@@ -97,9 +99,9 @@ account or a manual, and boring for you to operate.
   prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no
   rewriting rule.
 
-## Whatever already tells you it is up
+## Status monitoring
 
-cairn does not ask you to change monitors. It reads the one you run, and the
+**Whatever already tells you it is up.** cairn does not ask you to change monitors. It reads the one you run, and the
 pills come from your server, never from the visitor's browser.
 
 <table>
@@ -142,9 +144,9 @@ no monitor yet, start there.
 </tr>
 </table>
 
-## Secure by subtraction
+## Security
 
-The safest surface is the one that isn't there: cairn stores nothing, signs no
+**Secure by subtraction:** the safest surface is the one that isn't there. cairn stores nothing, signs no
 one in, and takes no input it has to trust. What little runs is kept
 deliberately tight, from the image down to the wire.
 
@@ -268,7 +270,7 @@ understanding how a thing works, start anywhere below.
 </td></tr>
 </table>
 
-### And for the assistant reading over your shoulder
+### For your AI assistant
 
 Those pages are indexed on
 **[Context7](https://context7.com/morgankryze/cairn)**, so an assistant with
@@ -276,15 +278,15 @@ the Context7 MCP server can pull cairn's real documentation instead of
 inventing config keys that never existed. Ask it for `morgankryze/cairn` by
 name.
 
-## Not a dashboard, on purpose
+## Scope
 
-cairn is a directory, not a control panel: no auth, no widgets, no Docker
+**Not a dashboard, on purpose.** cairn is a directory, not a control panel: no auth, no widgets, no Docker
 socket, no admin UI. If the audience is _you_, the admin,
 [Homepage](https://github.com/gethomepage/homepage) or
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
 
-## Ideas, contributions, support
+## Contributing
 
 cairn is young and opinionated, and other people's eyes make it better.
 Ideas and bug reports are welcome in the
@@ -293,7 +295,7 @@ Ideas and bug reports are welcome in the
 serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps its
 maintainer walking the trail.
 
-## The people who built this
+## Contributors
 
 Following the [all-contributors](https://allcontributors.org) convention,
 which counts every kind of contribution rather than only the commits: an
