@@ -88,9 +88,9 @@ func (s *themedSet) rules(logoDark string) string {
 	return b.String()
 }
 
-// classFor is the class a card wears, empty for an icon that is one image.
-// It reads the set built by themedFor rather than adding to it, so a card can
-// never carry a class no rule paints.
+// classFor is the class a card wears, empty for an icon that is one image. It
+// reads the set rather than adding to it, so a card can never carry a class no
+// rule paints.
 func (s *themedSet) classFor(cfg *config.Config, ref config.ThemedRef) string {
 	if !ref.Themed() {
 		return ""
@@ -98,9 +98,14 @@ func (s *themedSet) classFor(cfg *config.Config, ref config.ThemedRef) string {
 	return s.class[AppURL(config.IconURL(cfg, ref.Dark))]
 }
 
-// themedFor walks the config in the order the page will and hands back the set
-// of dark images, so the class a card is given and the rule that paints it are
-// produced by one pass and cannot disagree.
+// themedFor hands back the set of dark images a config asks for.
+//
+// It is called twice, once to name the classes the cards wear and once to
+// write the rules that paint them, and the two have to agree or a card wears
+// a class nothing paints. They do, because this walks slices in config order
+// and nothing here reads a map: one function, one input, one answer. Keep it
+// that way; iterating a map to build the set would make the classes disagree
+// on some runs and not others, which is the worst shape a bug can take.
 func themedFor(cfg *config.Config) *themedSet {
 	s := newThemedSet()
 	for _, c := range cfg.Categories {

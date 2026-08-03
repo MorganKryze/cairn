@@ -65,7 +65,15 @@ func checkWarnings(cfg *config.Config, dir string) []string {
 		if cfg.Site.Logo.Light == "" {
 			out = append(out, "site.yaml has no logo: links to the site preview with no image (og:image wants a png, jpg, webp or gif)")
 		} else {
-			out = append(out, fmt.Sprintf("site.yaml logo %q is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)", cfg.Site.Logo.Light))
+			// Named logo.light when there are two, the way the other logo
+			// warnings are: an operator reading "logo" with a pair in front of
+			// them has to guess which half was judged, and the answer is
+			// always this one.
+			key := "logo"
+			if cfg.Site.Logo.Themed() {
+				key = "logo.light"
+			}
+			out = append(out, fmt.Sprintf("site.yaml %s %q is not a raster image: links to the site preview with no image (og:image wants a png, jpg, webp or gif)", key, cfg.Site.Logo.Light))
 		}
 	}
 	out = append(out, unresolvableRefs(cfg)...)

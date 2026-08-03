@@ -499,9 +499,10 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		d := cfg.MediaDims[key]
 		return AppURL(mediaURL(src)), d[0], d[1]
 	}
-	// One pass over the config, before any page: the class a card is given and
-	// the rule that paints it come from the same set, and the set is the same
-	// for every locale.
+	// Built once here rather than per locale: the set is a property of the
+	// config, not of the language. themeStyle builds its own from the same
+	// function to write the rules, which is why that function has to stay
+	// deterministic.
 	themed := themedFor(cfg)
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {

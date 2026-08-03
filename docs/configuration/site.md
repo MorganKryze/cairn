@@ -126,6 +126,12 @@ Two things cairn deliberately will not do: fall back to its own mark when you
 have no logo, because that would put cairn's stones on your link card, and
 derive the tab icon from the logo, which is the separate `favicon` key.
 
+A logo drawn in one colour disappears in the theme it was not drawn for. Give
+`logo` two images instead of one and cairn swaps them with the theme; the
+preview card still takes the light one, since a card in someone else's chat
+window has no theme to follow. See
+[artwork that cannot serve both themes](theming.md#artwork-that-cannot-serve-both-themes).
+
 ## The domain and nothing else
 
 `url` is the base of your domain, not the address of the page:
@@ -256,6 +262,11 @@ about it depends on what it can actually establish, and it never guesses:
 An entry without a size is still a valid manifest entry, and browsers still
 use the icon. What it costs is the install prompt: Chromium offers "install
 this site" only when it sees both a 192 and a 512.
+
+A `favicon` can be [two images](theming.md#artwork-that-cannot-serve-both-themes),
+one per theme, and only the browser tab uses both: the manifest and the
+`apple-touch-icon` take the light one, because a home-screen icon has no theme
+to follow.
 
 iOS is the exception the table cannot cover, because an iPhone never reads the
 manifest: it takes the home-screen icon from the `apple-touch-icon` link alone,

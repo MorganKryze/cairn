@@ -109,7 +109,7 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	// Location header.
 	// Both halves of a themed pair go through it: the dark one reaches the
 	// same manifest and the same Location header the light one does.
-	for _, f := range append(themedFields("logo", site.Logo), themedFields("favicon", site.Favicon)...) {
+	for _, f := range append(site.Logo.Fields("logo"), site.Favicon.Fields("favicon")...) {
 		if err := checkLinkScheme(f.Key, f.Val, imageSchemes, "https://… or an /assets path"); err != nil {
 			return err
 		}

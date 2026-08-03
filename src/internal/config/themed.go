@@ -68,8 +68,6 @@ func (t ThemedRef) Fields(key string) []ThemedField {
 	return []ThemedField{{key + ".light", t.Light}, {key + ".dark", t.Dark}}
 }
 
-func themedFields(key string, ref ThemedRef) []ThemedField { return ref.Fields(key) }
-
 // Refs lists the values actually written, for the checks and the emitters that
 // have to walk every image an operator named.
 func (t ThemedRef) Refs() []string {
