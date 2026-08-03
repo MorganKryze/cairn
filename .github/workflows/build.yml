@@ -55,15 +55,28 @@ jobs:
           go-version: stable
       - name: measure and gate
         run: |
-          go test -covermode=atomic -coverpkg=./src/... -coverprofile=cov.out ./src/...
+          # One run, two numbers. -json is what makes the count possible, so
+          # the human output is rebuilt from the same file when it fails:
+          # otherwise a red build shows a wall of JSON and nothing readable.
+          if ! go test -covermode=atomic -coverpkg=./src/... \
+            -coverprofile=cov.out -json ./src/... > tests.json; then
+            jq -r 'select(.Action == "output") | .Output' tests.json | tail -60
+            exit 1
+          fi
+          # Subtests included, since a table case that can fail on its own is
+          # a test. Deduplicated by package and name: a package tested twice
+          # in one run would otherwise count twice.
+          count=$(jq -r 'select(.Action == "pass" and .Test != null)
+            | "\(.Package)\t\(.Test)"' tests.json | sort -u | wc -l | tr -d ' ')
           pct=$(go tool cover -func=cov.out | awk '/^total:/ {sub(/%/,"",$NF); print $NF}')
-          echo "coverage: ${pct}%"
+          echo "coverage: ${pct}%, tests: ${count}"
           awk -v p="$pct" 'BEGIN { exit (p + 0 >= 87) ? 0 : 1 }' \
             || { echo "::error::coverage ${pct}% is below the 87% floor"; exit 1; }
           echo "PCT=$pct" >> "$GITHUB_ENV"
-      - name: publish badge
+          echo "TESTS=$count" >> "$GITHUB_ENV"
+      - name: publish badges
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: bash .github/coverage-badge.sh "$PCT"
+        run: bash .github/badges.sh "$PCT" "$TESTS"
 
   # Named `search` and it stays named `search`, whatever else it grows to run:
   # this is a required check on a protected branch, and a required check under
