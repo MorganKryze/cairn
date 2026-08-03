@@ -142,6 +142,9 @@ jobs:
     permissions:
       contents: read
       packages: write # pushes ghcr.io/…:unstable, on main only
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -182,7 +185,8 @@ jobs:
             type=sha,prefix=
 
       # vet + tests run inside the Dockerfile, so they gate the push.
-      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+      - id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           file: docker/Dockerfile
@@ -197,6 +201,54 @@ jobs:
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # `unstable` and the by-sha tag, on Docker Hub too, so the two registries
+  # carry the same names rather than Hub holding releases alone.
+  #
+  # Same shape as the release's own hub job and for the same reason: it copies
+  # the digest the build already pushed instead of building again, and it sits
+  # outside the `image` job so it cannot fail one. That matters more here than
+  # there, because `image` is a required check and a Docker Hub hiccup has no
+  # business blocking a merge. This job is deliberately not a required check.
+  #
+  # Nothing signs `unstable` on either registry: it is whatever main is this
+  # minute, not something anyone is asked to trust. Releases are signed, in
+  # release.yml, on both.
+  hub:
+    needs: image
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          username: morgankryze
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: copy the pushed digest to Docker Hub
+        env:
+          DIGEST: ${{ needs.image.outputs.digest }}
+          TAGS: ${{ needs.image.outputs.tags }}
+        run: |
+          set -euo pipefail
+          refs=$(printf '%s' "$TAGS" | tr ' ' '\n' | grep . \
+            | sed 's|^ghcr\.io/|docker.io/|')
+          src=$(printf '%s\n' "$TAGS" | head -n1); src="${src%%:*}"
+          for ref in $refs; do
+            docker buildx imagetools create --tag "$ref" "${src}@${DIGEST}"
+            landed=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")
+            [ "$landed" = "$DIGEST" ] || {
+              echo "::error::${ref} points at ${landed}, not ${DIGEST}"
+              exit 1
+            }
+          done
 
   demo:
     runs-on: ubuntu-latest

@@ -1,0 +1,120 @@
+name: mirror
+
+# Copies tags from ghcr to Docker Hub, on demand and never on its own.
+#
+# It exists for two jobs. The first was one-off: Docker Hub joined at 1.17.2,
+# and everything published before that lived on ghcr alone, so the two
+# registries told different stories about the same project. The second is
+# repair. Releases copy themselves, but if that job ever fails after ghcr is
+# already published, re-running the whole release is a heavier thing than
+# copying one tag across, and this is the smaller tool.
+#
+# It never builds. Every tag it writes is the index ghcr already holds, copied
+# digest for digest, which is asserted per tag rather than assumed.
+#
+# It signs nothing, deliberately. cosign signs a digest, and the signature made
+# at release time lives in the registry it was pushed to. Signing a 1.9.0 here
+# in 2026 would produce a valid signature saying something true but useless,
+# that this workflow pushed those bytes today, in a place where a reader will
+# reasonably take it for the release's own. Better that `cosign verify` says
+# nothing on a mirrored old tag and the reader goes to ghcr, which SECURITY.md
+# tells them to do. Releases from 1.17.2 onward are signed on both registries
+# by release.yml, at the moment they are cut.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Tags to copy, space separated. Empty means every release, every floating version, stable, latest and unstable."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read # reads the source index from ghcr
+    steps:
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+        with:
+          username: morgankryze
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: work out which tags to copy
+        id: pick
+        env:
+          WANTED: ${{ inputs.tags }}
+        run: |
+          set -euo pipefail
+          if [ -n "$WANTED" ]; then
+            # Held to what a tag can contain before it reaches $GITHUB_OUTPUT,
+            # where a newline would be a second key rather than a bad tag.
+            # Dispatching this already needs write access, so this is a guard
+            # against a slip, not against a stranger.
+            case "$WANTED" in
+              *[!A-Za-z0-9._\ -]*|"")
+                echo "::error::tags may only contain letters, digits, dot, underscore, dash and spaces"
+                exit 1 ;;
+            esac
+            echo "tags=$WANTED" >> "$GITHUB_OUTPUT"
+            echo "asked for: $WANTED"
+            exit 0
+          fi
+
+          token=$(curl -fsS "https://ghcr.io/token?scope=repository:morgankryze/cairn:pull" \
+            | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
+          curl -fsS -H "Authorization: Bearer $token" \
+            "https://ghcr.io/v2/morgankryze/cairn/tags/list?n=1000" > tags.json
+
+          # The version tags are derived from the releases rather than matched
+          # by shape, because a commit hash can look exactly like a major: the
+          # repository has tags `3403640` and `5299497`, and any pattern loose
+          # enough to accept `1` accepts those too. Starting from X.Y.Z and
+          # keeping only the X.Y and X that actually exist cannot make that
+          # mistake.
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, re
+          tags = set(json.load(open("tags.json"))["tags"])
+          rel = sorted(t for t in tags if re.fullmatch(r"\d+\.\d+\.\d+", t))
+          want = list(rel)
+          want += sorted({t.rsplit(".", 1)[0] for t in rel} & tags)
+          want += sorted({t.split(".", 1)[0] for t in rel} & tags)
+          want += [t for t in ("stable", "latest", "unstable") if t in tags]
+          print("tags=" + " ".join(want))
+          PY
+          echo "found: $(grep '^tags=' "$GITHUB_OUTPUT" | tail -n1)"
+
+      - name: copy each one, and prove it landed unchanged
+        env:
+          TAGS: ${{ steps.pick.outputs.tags }}
+        run: |
+          set -euo pipefail
+          src=ghcr.io/morgankryze/cairn
+          dst=docker.io/morgankryze/cairn
+          copied=0
+          for tag in $TAGS; do
+            digest=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "${src}:${tag}")
+            docker buildx imagetools create --tag "${dst}:${tag}" "${src}@${digest}"
+            landed=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "${dst}:${tag}")
+            [ "$landed" = "$digest" ] || {
+              echo "::error::${dst}:${tag} points at ${landed}, not the ${digest} ghcr holds"
+              exit 1
+            }
+            echo "  ${tag}  ${digest}"
+            copied=$((copied + 1))
+          done
+          echo "::notice::mirrored ${copied} tags to Docker Hub"

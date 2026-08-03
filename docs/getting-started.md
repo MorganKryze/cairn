@@ -33,7 +33,7 @@ Save this as `compose.yaml`, next to the `config` folder:
 ```yaml
 services:
   cairn:
-    image: ghcr.io/morgankryze/cairn:latest
+    image: morgankryze/cairn:latest
     ports:
       - 8080:8080
     volumes:
@@ -55,10 +55,12 @@ docker compose up -d
 Open <http://localhost:8080>. You get a finished page: one category, one
 card, working search, light and dark.
 
-The image is also on Docker Hub as `morgankryze/cairn`, if that is where the
-rest of your stack comes from. It is the same object, copied from the same
-signed digest, so the two are interchangeable. This documentation uses `ghcr.io`
-throughout because it is where the release publishes first.
+The same image is on GitHub Container Registry as `ghcr.io/morgankryze/cairn`,
+if that is where the rest of your stack comes from. Every tag lives on both,
+copied from one signed digest rather than built twice, so the two names are
+interchangeable everywhere in this documentation. Docker Hub is what the
+examples use; ghcr is worth knowing about if you pull a lot from one address,
+since it sets no anonymous rate limit.
 
 ## 3. Make it yours
 
@@ -105,7 +107,7 @@ a key that was accepted and then does nothing, icons that load from a CDN. It
 exits 0 or 1, so it slots into CI if you version your config:
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+docker run --rm -v ./config:/config morgankryze/cairn:stable -check
 ```
 
 The two warnings that open a file, the `/assets` path and the icon size, need
@@ -123,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+      - run: docker run --rm -v ./config:/config morgankryze/cairn:stable -check
 ```
 
 ## Next

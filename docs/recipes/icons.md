@@ -91,7 +91,7 @@ network with no internet it means broken images. cairn removes it in two
 steps and zero YAML edits:
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -emit-icons > get-icons.sh
+docker run --rm -v ./config:/config morgankryze/cairn:stable -emit-icons > get-icons.sh
 cd assets && sh ../get-icons.sh
 ```
 

@@ -6,7 +6,7 @@ use them, they cost nothing here.
 ```yaml
 services:
   cairn:
-    image: ghcr.io/morgankryze/cairn:latest
+    image: morgankryze/cairn:latest
     # user: "1000:1000"    # optional; the image defaults to 65534 (nobody)
     ports:
       - 8080:8080
@@ -58,8 +58,9 @@ Why each line holds:
 docker compose pull && docker compose up -d
 ```
 
-Images are published to `ghcr.io/morgankryze/cairn`, always gated by the
-test suite inside the build:
+Images are published to `morgankryze/cairn` on Docker Hub and to
+`ghcr.io/morgankryze/cairn`, the same tags on both, always gated by the test
+suite inside the build:
 
 | Tag                 | Follows                                                 |
 | ------------------- | ------------------------------------------------------- |
@@ -67,6 +68,10 @@ test suite inside the build:
 | `1`, `1.0`, `1.0.0` | semver, from the release tags; pin as tight as you like |
 | `unstable`          | every commit on `main`                                  |
 | a commit hash       | that exact build                                        |
+
+Prefix any of them with `ghcr.io/` to pull from GitHub instead. One build
+produces one digest, published to ghcr and copied to Docker Hub, so the two
+registries hold the same bytes under the same names.
 
 Following `latest` or `stable` means a new version arrives on its own. A
 release occasionally tightens what the config accepts, and this is the
@@ -76,7 +81,7 @@ your site. One command tells you beforehand, and
 [Upgrading](../upgrading.md) is the page that answers whatever it prints:
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+docker run --rm -v ./config:/config morgankryze/cairn:stable -check
 ```
 
 To build from source instead, replace `image:` with:

@@ -69,7 +69,7 @@ lives and every URL it writes carries the prefix:
 # compose.yaml
 services:
   cairn:
-    image: ghcr.io/morgankryze/cairn:latest
+    image: morgankryze/cairn:latest
     command: ["-base-path", "/cairn"]
     ports:
       - 8080:8080
