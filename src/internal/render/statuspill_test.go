@@ -180,7 +180,7 @@ func TestNoGatusShipsNoRefresh(t *testing.T) {
 func TestRefreshScriptCarriesThePollInterval(t *testing.T) {
 	home, detail := pages(t, withGatus+"  interval: 30s\n")
 	for _, page := range []struct{ name, html string }{{"home", home}, {"detail", detail}} {
-		if !strings.Contains(page.html, `<script src="/static/status.js" defer data-poll="30"></script>`) {
+		if !strings.Contains(page.html, `<script src="`+AssetURL("status.js")+`" defer data-poll="30"></script>`) {
 			t.Errorf("%s: no refresh script, or it does not carry the interval", page.name)
 		}
 	}
