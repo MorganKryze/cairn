@@ -28,7 +28,7 @@ One or two sentences: what this release is about, in plain words.
 ## 📦 Image
 
 ```sh
-docker pull ghcr.io/morgankryze/cairn:X.Y.Z   # or: docker pull morgankryze/cairn:X.Y.Z
+docker pull morgankryze/cairn:X.Y.Z   # or: ghcr.io/morgankryze/cairn:X.Y.Z
 ```
 
 This release also moves `X.Y`, `X` (majors ≥ 1), `stable` and `latest`, on

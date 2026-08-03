@@ -61,7 +61,7 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: cairn
-          image: ghcr.io/morgankryze/cairn:stable
+          image: morgankryze/cairn:stable
           ports:
             - containerPort: 8080
           securityContext:
@@ -161,7 +161,7 @@ More in [Reverse proxies](reverse-proxies.md#under-a-sub-path).
 natural gate in whatever pipeline renders your manifests:
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:stable -check
+docker run --rm -v ./config:/config morgankryze/cairn:stable -check
 ```
 
 Next: [Helm](helm.md)

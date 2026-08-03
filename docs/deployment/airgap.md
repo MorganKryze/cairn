@@ -39,7 +39,7 @@ cosign verify ghcr.io/morgankryze/charts/cairn:1.17.1 \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-The same two lines for `ghcr.io/morgankryze/cairn:1.17.1`, the image. Keep the
+The same two lines for `morgankryze/cairn:1.17.1`, the image. Keep the
 output: this is the only moment where you can prove where these bytes came from.
 
 Gatus publishes its own chart, from a classic repository rather than a registry,
@@ -64,7 +64,7 @@ amd64 cluster from an arm64 laptop is the classic way to learn this at
 ```sh
 PLATFORM=linux/amd64
 
-docker pull --platform $PLATFORM ghcr.io/morgankryze/cairn:1.17.1
+docker pull --platform $PLATFORM morgankryze/cairn:1.17.1
 docker pull --platform $PLATFORM ghcr.io/twin/gatus:v5.36.0
 ```
 
@@ -75,7 +75,7 @@ names nothing you can reason about six months later. To be exact, v5.36.0 is
 Then give both the name they will carry inside, and save them together:
 
 ```sh
-docker tag ghcr.io/morgankryze/cairn:1.17.1 harbor.internal/cairn:1.17.1
+docker tag morgankryze/cairn:1.17.1 harbor.internal/cairn:1.17.1
 docker tag ghcr.io/twin/gatus:v5.36.0 harbor.internal/gatus:5.36.0
 docker save harbor.internal/cairn:1.17.1 harbor.internal/gatus:5.36.0 -o images.tar
 ```
@@ -89,7 +89,7 @@ to have a route after all: the mistake becomes loud instead of invisible.
 This is the step nothing downstream will remind you about.
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:1.17.1 -emit-icons > get-icons.sh
+docker run --rm -v ./config:/config morgankryze/cairn:1.17.1 -emit-icons > get-icons.sh
 mkdir -p assets && (cd assets && sh ../get-icons.sh)
 ```
 
@@ -101,7 +101,7 @@ bring the files. See [Icons](../recipes/icons.md).
 ### The Gatus endpoints
 
 ```sh
-docker run --rm -v ./config:/config ghcr.io/morgankryze/cairn:1.17.1 -emit-gatus > gatus-endpoints.yaml
+docker run --rm -v ./config:/config morgankryze/cairn:1.17.1 -emit-gatus > gatus-endpoints.yaml
 ```
 
 One endpoint per service, named after its id, which is how each pill finds its
@@ -111,7 +111,7 @@ service. More in [Status page](../recipes/status.md).
 
 ```sh
 docker run --rm -v ./config:/config:ro -v ./assets:/assets:ro \
-  ghcr.io/morgankryze/cairn:1.17.1 -check
+  morgankryze/cairn:1.17.1 -check
 ```
 
 **Mount both directories.** Given only `/config`, `-check` cannot see the icons

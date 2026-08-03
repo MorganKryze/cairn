@@ -4,7 +4,7 @@
 # serves its own getting-started page and tells you what to feed it.
 
 image:
-  repository: ghcr.io/morgankryze/cairn
+  repository: morgankryze/cairn
   # Empty means the chart's appVersion, which is the cairn this chart was
   # released with. Set a tag to pin a version or to follow `stable`.
   tag: ""

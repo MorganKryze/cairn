@@ -20,7 +20,7 @@ Save as `~/.config/containers/systemd/cairn.container` (rootless) or
 Description=cairn directory page
 
 [Container]
-Image=ghcr.io/morgankryze/cairn:stable
+Image=morgankryze/cairn:stable
 PublishPort=8080:8080
 Volume=%h/cairn/config:/config:ro,Z
 ReadOnly=true
