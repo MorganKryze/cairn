@@ -133,7 +133,7 @@ pages:
             your data and your independence; you lose the comfort of having
             nothing to maintain. It is the choice I made for everything
             labelled "Self-hosted".
-  - id: mentions-legales
+  - id: legal
     title: { fr: Mentions légales, en: Legal notice }
     body:
       fr: >
@@ -177,7 +177,7 @@ pages:
             The names and logos of the listed services belong to their
             respective projects. The rest of this site's content is
             published under the publisher's responsibility.
-  - id: confidentialite
+  - id: privacy
     title: { fr: Confidentialité, en: Privacy }
     sections:
       - title: { fr: Données collectées, en: Data we collect }

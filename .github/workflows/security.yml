@@ -42,3 +42,39 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
+
+  # The one pinned thing nothing else watches.
+  #
+  # Every action in this repository is pinned to a commit, and the buildkit
+  # image the builder runs is pinned to a digest for the same reason: it
+  # executes during the build, with the context in reach. Dependabot updates
+  # the actions and would update a Dockerfile, but it does not read an image
+  # named inside a workflow (dependabot-core#5541), so that digest is the one
+  # pin with nobody behind it. Left alone it would quietly freeze the builder
+  # on whatever was current the day it was written, which is a worse place to
+  # be than following a tag.
+  #
+  # So this fails, weekly, when buildx-stable-1 has moved past the pin. Never
+  # on a pull request: the jobs above are required checks, and a buildkit
+  # release is no reason to stop everyone merging.
+  buildkit-pin:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: buildx-stable-1 still points at the digest we build with
+        run: |
+          # The two files by name, not a glob: a glob includes this one,
+          # and the pattern below then matches itself.
+          pinned=$(grep -hoE 'buildkit@sha256:[0-9a-f]{64}' \
+            .github/workflows/build.yml .github/workflows/release.yml | sort -u)
+          test "$(echo "$pinned" | wc -l)" -eq 1 || {
+            echo "::error::the workflows pin different buildkit digests: $pinned"; exit 1; }
+          pinned=${pinned#buildkit@}
+          current=$(docker buildx imagetools inspect \
+            mirror.gcr.io/moby/buildkit:buildx-stable-1 --format '{{.Manifest.Digest}}')
+          echo "pinned:  $pinned"
+          echo "current: $current"
+          test "$pinned" = "$current" || {
+            echo "::error::buildx-stable-1 is now $current; bump the pin in build.yml and release.yml"
+            exit 1; }
