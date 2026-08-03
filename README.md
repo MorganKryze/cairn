@@ -11,7 +11,6 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-[![Downloads](https://img.shields.io/github/downloads/MorganKryze/cairn/total?color=247b7b&label=binaries)](https://github.com/MorganKryze/cairn/releases)
 [![Image](https://img.shields.io/badge/image-4.4%20MB%20pull-2496ED?logo=docker&logoColor=white)](https://github.com/MorganKryze/cairn/pkgs/container/cairn)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Helm](https://img.shields.io/badge/Helm-chart-0F1689?logo=helm&logoColor=white)](docs/deployment/helm.md)
