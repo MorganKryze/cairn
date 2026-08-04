@@ -95,6 +95,12 @@ docs: quickstart readme and example config
 
 No trailers, no bodies unless the _why_ genuinely needs a sentence.
 
+**On your first pull request the checks will sit there doing nothing**, and
+that is normal rather than something you did wrong: this repository asks a
+maintainer to approve workflow runs coming from a fork the first time, so
+nobody can spend its CI by opening a pull request. One click here starts them,
+and after that yours run on their own.
+
 ## The browser tests
 
 A handful of behaviours are what `go test` cannot reach: the Go tests assert
