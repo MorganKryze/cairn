@@ -26,6 +26,24 @@ unpack to roughly 10 MB on the node, nearly all of it the one static binary.
 
 ## 1. On the connected side
 
+### A shortcut, if you have the repository
+
+Everything in this section can be done by hand, and the rest of it shows how.
+If you have cairn checked out, two of the steps are a recipe:
+
+```sh
+just save 1.18.2 linux/amd64   # the platform of the cluster, not of your laptop
+```
+
+That pulls cairn's image for that one platform, saves it to `dist/`, pulls the
+packaged chart, and **verifies both signatures before anything moves**, which is
+the step you cannot repeat once the line is cut.
+
+It deliberately stops there. **Gatus, its chart and the icons are still yours to
+fetch**, and the icons in particular are the step nothing downstream will remind
+you about. Read on: the sections below are what the recipe automates and what it
+does not.
+
 ### The chart, verified before it crosses
 
 The order matters. `cosign verify` queries the public transparency log, so it is
