@@ -48,6 +48,50 @@ demo:
 demo-rebuild:
     docker compose -f demo/compose.yaml up -d --build
 
+# save a release to dist/ for an air-gapped move: just save 1.18.2 [linux/amd64]
+save version platform="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # docker save exports the platform you pulled and nothing else, so this is
+    # an argument rather than an assumption: preparing an amd64 cluster from
+    # an arm64 laptop is the classic way to learn that at CrashLoopBackOff
+    # instead of here. Left out, it is this machine's, spelled the way the
+    # rest of the project spells it: uname says aarch64, images say arm64.
+    plat="{{ platform }}"
+    if [ -z "$plat" ]; then
+      case "$(uname -m)" in
+        arm64|aarch64) plat=linux/arm64 ;;
+        x86_64|amd64) plat=linux/amd64 ;;
+        *) plat="linux/$(uname -m)" ;;
+      esac
+    fi
+    mkdir -p dist
+    docker pull --platform "$plat" morgankryze/cairn:{{ version }}
+    # --platform on the save too, and it is load-bearing rather than belt and
+    # braces. Under the containerd image store a tag keeps its whole index, so
+    # saving by name exports every platform present and `docker load` then
+    # materialises the host's: asking for amd64 on an arm64 laptop produced a
+    # tar that loaded as arm64, silently, which is the CrashLoopBackOff this
+    # recipe exists to prevent. Measured before it was written this way.
+    docker save --platform "$plat" morgankryze/cairn:{{ version }} \
+      -o "dist/cairn-{{ version }}-${plat//\//-}.tar"
+    # The packaged chart rather than charts/ from git: it is the artifact the
+    # release signed, and the only one whose version is not whatever the
+    # working tree happens to say.
+    helm pull oci://ghcr.io/morgankryze/charts/cairn --version {{ version }} --destination dist
+    # Verified here on purpose, and this is the whole reason the recipe exists
+    # rather than two docker commands: cosign queries the public transparency
+    # log, so it is not something you get to do on the other side of the gap.
+    # Both write their summary to stderr, hence 2>&1 and not just >/dev/null.
+    for ref in morgankryze/cairn ghcr.io/morgankryze/charts/cairn; do
+      cosign verify "$ref:{{ version }}" \
+        --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+        --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null 2>&1 \
+        || { echo "cosign could not verify $ref:{{ version }}; nothing here is trustworthy" >&2; exit 1; }
+    done
+    ls -lh dist/ | tail -n +2 | awk '{print "  " $9 "  " $5}'
+    echo "signatures verified for $plat. Moving it across: docs/deployment/airgap.md"
+
 # stop everything
 down:
     docker compose -f demo/compose.yaml down
