@@ -130,8 +130,34 @@ and answers the refresh itself with cairn's own markup, so the test needs no
 second server and cannot go green on HTML it wrote itself. It uses Playwright's
 fake clock, so a five-second poll costs no seconds.
 
-The recipe serves all three configs, on 8090, 8091 and 8092, and kills them on
-the way out. The CI job stays named `search` whatever else it grows to run: it
+**Prove a browser check red before you trust it**, by deleting the thing it
+guards and watching it fail. This is not ceremony here, it is the single most
+common way a check in this file turns out to be worthless, and it has happened
+three times:
+
+- a check that the dialog closes on Escape passed with its script deleted,
+  because a dialog that never opened is already closed. It asserts the dialog
+  is open before pressing anything now.
+- a check that a button "has a focus outline" passed with the rule deleted,
+  because the browser paints its own. It asserts the ring cairn draws, `solid
+2px`, against Chromium's `auto 1px`.
+- a check that three buttons shared a row compared their top edges, and failed
+  on a layout that was correct: `align-items: center` centres controls of
+  different heights, so their tops legitimately differ. It measures the row's
+  height now.
+
+The pattern in all three: the assertion was satisfied by the platform, or by
+the absence of the feature, rather than by the feature. If deleting the code
+leaves the check green, the check is decoration.
+
+**Do not leave a server behind.** The recipe serves all three configs, on 8090,
+8091 and 8092, and kills them on the way out, and the guard at the top refuses
+to start if something already answers. Servers you start by hand while
+measuring have no such guard, and a leaked one is not merely untidy: one bound
+to `:8080` with no `-addr` shadowed the demo through IPv6 for ten minutes while
+`127.0.0.1` reached the real thing, and a second that failed to take a port
+left the first answering, which quietly invalidated a measurement. Give every
+ad-hoc instance its own port and kill it in the same command. The CI job stays named `search` whatever else it grows to run: it
 is a required check on a protected branch, and a required check under a new
 name never runs, which leaves every pull request waiting for a job that no
 longer exists.
@@ -160,6 +186,18 @@ breaks that.
 demo. Run it before every release: the screenshot is the first thing anyone
 sees, and it goes stale quietly. Playwright installs itself into a gitignored
 `node_modules/` on demand, so nothing is added to the repository.
+
+**Compare against the tag, not against `main`.** Before cutting a version,
+build the previous tag in a worktree, serve the same configs on the same port
+with both binaries in turn, and diff every response with the `Date` header
+stripped. Then say in the notes what actually moved.
+
+That is not a formality. Comparing against `main` is comparing a thing with
+itself, since whatever you are about to release is already merged there, and
+doing it that way hid a dropped `.btn:focus-visible` for an hour. Done against
+the tag it has twice been the thing that found a regression no test had:
+that rule, and an `imagetools` copy that silently rewrapped a single-manifest
+image under a new digest.
 
 The chart needs nothing at release time. CI packages it with the tag as both
 `version` and `appVersion`, so chart 1.2.3 installs cairn 1.2.3 and the numbers
