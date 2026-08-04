@@ -226,7 +226,7 @@ f.save("src/internal/render/assets/fonts/fraunces.woff2")
 EOF
 ```
 
-Those ranges cover the seven built-in languages and the rest of Latin-script
+Those ranges cover the eight built-in languages and the rest of Latin-script
 Europe. A site whose headings need Greek, Cyrillic or CJK should point
 `--font-display` at its own face through
 [custom.css](configuration/theming.md).

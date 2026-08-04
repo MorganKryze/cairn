@@ -332,7 +332,7 @@ four before anything is drawn.
 | **Offline**     | red, static and outlined   | it does not work                  |
 | **Unknown**     | neutral, hollow            | nobody has said anything about it |
 
-Every label is localized in all seven built-in languages, and every dot was
+Every label is localized in all eight built-in languages, and every dot was
 measured against the pill it sits in on both themes, because colour alone is
 never the only cue. The pulse stops under `prefers-reduced-motion`.
 
