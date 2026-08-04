@@ -316,6 +316,7 @@ it, and a translation are all work.
 <a href="https://github.com/AntonPalmqvist"><img src="https://github.com/AntonPalmqvist.png?size=100" width="80" alt=""><br><sub><b>AntonPalmqvist</b></sub></a><br>
 <a href="https://github.com/MorganKryze/cairn/issues/33" title="Bug reports">🐛</a>
 <a href="https://github.com/MorganKryze/cairn/issues/33" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/pull/72" title="Translation">🌍</a>
 </td>
 <td align="center" width="150">
 <a href="https://github.com/rbourgeat"><img src="https://github.com/rbourgeat.png?size=100" width="80" alt=""><br><sub><b>rbourgeat</b></sub></a><br>
@@ -325,7 +326,7 @@ it, and a translation are all work.
 </tr>
 </table>
 
-💻 code · 📖 documentation · 🎨 design · 🤔 ideas · 🐛 bug reports · 🚧 maintenance
+💻 code · 📖 documentation · 🌍 translation · 🎨 design · 🤔 ideas · 🐛 bug reports · 🚧 maintenance
 
 The avatars come from GitHub itself rather than from a third-party image
 service, for the reason the coverage badge is self-hosted: nothing about this
