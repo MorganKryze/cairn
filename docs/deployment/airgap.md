@@ -14,7 +14,7 @@ page renders, and the icons are simply missing.
 
 | Artifact             | Size     | Where it comes from                                            |
 | -------------------- | -------- | -------------------------------------------------------------- |
-| `cairn-1.18.0.tgz`   | 4 KB     | `helm pull`, the signed artifact rather than the folder in git |
+| `cairn-1.18.1.tgz`   | 4 KB     | `helm pull`, the signed artifact rather than the folder in git |
 | `gatus-1.5.0.tgz`    | 9 KB     | the Gatus project's own chart                                  |
 | `images.tar`         | 26 MB    | `docker save` of cairn and Gatus                               |
 | `assets/icons/*.svg` | a few KB | what `cairn -emit-icons` downloads                             |
@@ -32,14 +32,14 @@ The order matters. `cosign verify` queries the public transparency log, so it is
 not something you get to do on the other side.
 
 ```sh
-helm pull oci://ghcr.io/morgankryze/charts/cairn --version 1.18.0
+helm pull oci://ghcr.io/morgankryze/charts/cairn --version 1.18.1
 
-cosign verify ghcr.io/morgankryze/charts/cairn:1.18.0 \
+cosign verify ghcr.io/morgankryze/charts/cairn:1.18.1 \
   --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-The same two lines for `morgankryze/cairn:1.18.0`, the image. Keep the
+The same two lines for `morgankryze/cairn:1.18.1`, the image. Keep the
 output: this is the only moment where you can prove where these bytes came from.
 
 Gatus publishes its own chart, from a classic repository rather than a registry,
@@ -64,7 +64,7 @@ amd64 cluster from an arm64 laptop is the classic way to learn this at
 ```sh
 PLATFORM=linux/amd64
 
-docker pull --platform $PLATFORM morgankryze/cairn:1.18.0
+docker pull --platform $PLATFORM morgankryze/cairn:1.18.1
 docker pull --platform $PLATFORM ghcr.io/twin/gatus:v5.36.0
 ```
 
@@ -75,9 +75,9 @@ names nothing you can reason about six months later. To be exact, v5.36.0 is
 Then give both the name they will carry inside, and save them together:
 
 ```sh
-docker tag morgankryze/cairn:1.18.0 harbor.internal/cairn:1.18.0
+docker tag morgankryze/cairn:1.18.1 harbor.internal/cairn:1.18.1
 docker tag ghcr.io/twin/gatus:v5.36.0 harbor.internal/gatus:5.36.0
-docker save harbor.internal/cairn:1.18.0 harbor.internal/gatus:5.36.0 -o images.tar
+docker save harbor.internal/cairn:1.18.1 harbor.internal/gatus:5.36.0 -o images.tar
 ```
 
 Retag even if you have no registry. An image named after a host that resolves
@@ -89,7 +89,7 @@ to have a route after all: the mistake becomes loud instead of invisible.
 This is the step nothing downstream will remind you about.
 
 ```sh
-docker run --rm -v ./config:/config morgankryze/cairn:1.18.0 -emit-icons > get-icons.sh
+docker run --rm -v ./config:/config morgankryze/cairn:1.18.1 -emit-icons > get-icons.sh
 mkdir -p assets && (cd assets && sh ../get-icons.sh)
 ```
 
@@ -101,7 +101,7 @@ bring the files. See [Icons](../recipes/icons.md).
 ### The Gatus endpoints
 
 ```sh
-docker run --rm -v ./config:/config morgankryze/cairn:1.18.0 -emit-gatus > gatus-endpoints.yaml
+docker run --rm -v ./config:/config morgankryze/cairn:1.18.1 -emit-gatus > gatus-endpoints.yaml
 ```
 
 One endpoint per service, named after its id, which is how each pill finds its
@@ -111,7 +111,7 @@ service. More in [Status page](../recipes/status.md).
 
 ```sh
 docker run --rm -v ./config:/config:ro -v ./assets:/assets:ro \
-  morgankryze/cairn:1.18.0 -check
+  morgankryze/cairn:1.18.1 -check
 ```
 
 **Mount both directories.** Given only `/config`, `-check` cannot see the icons
@@ -142,7 +142,7 @@ the far side of the gap there is no fixing a broken image with a download.
 
 ```sh
 docker load -i images.tar
-docker push harbor.internal/cairn:1.18.0
+docker push harbor.internal/cairn:1.18.1
 docker push harbor.internal/gatus:5.36.0
 ```
 
@@ -152,7 +152,7 @@ Harbor, Zot or `registry:2` you already run. The chart wants one value.
 ```yaml
 image:
   repository: harbor.internal/cairn
-  tag: "1.18.0"
+  tag: "1.18.1"
 # Only if the project is private. The Secrets have to exist in the namespace
 # already; the chart names them, it does not create them.
 imagePullSecrets:
@@ -164,7 +164,7 @@ OCI artifacts, so a project named `helm` holds them next to the images and
 nothing else has to be installed:
 
 ```sh
-helm push cairn-1.18.0.tgz oci://harbor.internal/helm
+helm push cairn-1.18.1.tgz oci://harbor.internal/helm
 helm push gatus-1.5.0.tgz oci://harbor.internal/helm
 ```
 
@@ -199,7 +199,7 @@ it worked:
 
 ```console
 $ kubectl get events --field-selector reason=Pulled
-Container image "harbor.internal/cairn:1.18.0" already present on machine
+Container image "harbor.internal/cairn:1.18.1" already present on machine
 Container image "harbor.internal/gatus:5.36.0" already present on machine
 ```
 
@@ -223,7 +223,7 @@ under `binaryData` on its own.
 # values.yaml
 image:
   repository: harbor.internal/cairn
-  tag: "1.18.0"
+  tag: "1.18.1"
 
 config:
   site.yaml: |
@@ -272,7 +272,7 @@ and one version to name, which is also what Argo CD will read:
 
 ```sh
 helm registry login harbor.internal --ca-file /etc/pki/internal-ca.crt
-helm install cairn oci://harbor.internal/helm/cairn --version 1.18.0 \
+helm install cairn oci://harbor.internal/helm/cairn --version 1.18.1 \
   --ca-file /etc/pki/internal-ca.crt -f values.yaml
 ```
 
@@ -289,7 +289,7 @@ credential store: a `docker login` already done on that host does not count.
 Without a registry, install what you carried:
 
 ```sh
-helm install cairn ./cairn-1.18.0.tgz -f values.yaml
+helm install cairn ./cairn-1.18.1.tgz -f values.yaml
 ```
 
 `linked: false` is a decision rather than an omission. Without it the pills link
@@ -629,7 +629,7 @@ no shell, no busybox, nothing to attach to. What you need is in the logs, on
 The same crossing, then:
 
 ```sh
-helm upgrade cairn oci://harbor.internal/helm/cairn --version 1.18.0 -f values.yaml
+helm upgrade cairn oci://harbor.internal/helm/cairn --version 1.18.1 -f values.yaml
 ```
 
 Always pass your full values file. As soon as one `-f` is present, Helm stops

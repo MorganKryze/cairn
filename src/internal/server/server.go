@@ -72,7 +72,11 @@ func handler(cfgDir, assetsDir string) http.Handler {
 func routes(cfgDir, assetsDir string) *http.ServeMux {
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(render.Embedded, "assets")
-	mux.Handle("GET /static/", cacheControl(http.StripPrefix("/static/", http.FileServerFS(static))))
+	// stamped inside cacheControl, not around it, and the order is the whole
+	// point: both write Cache-Control, so the last one to run wins. Written
+	// the other way the day-long header overwrote the year on every stamped
+	// asset, silently, and a test now holds it.
+	mux.Handle("GET /static/", cacheControl(stamped(http.StripPrefix("/static/", http.FileServerFS(static)))))
 	// Mounted unconditionally: a dir that appears after boot just works.
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(assetsDir)))))
 	// Service preview images live next to the yaml, in <config>/media/.

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/MorganKryze/cairn/src/internal/config"
@@ -117,8 +118,25 @@ func TestAGatusSiteRendersWhatItAlwaysDid(t *testing.T) {
 	}
 }
 
+// blurDigests replaces the content digest in an asset url with a fixed word,
+// so the golden files pin the markup rather than the bytes of the stylesheet.
+//
+// Without it every edit to style.css or a script rewrites four golden files,
+// because the url they are linked under moves with their contents, which is
+// the whole point of the digest and no business of a markup net. What the
+// digest actually is has its own tests: it is computed from the file in
+// TestTheDigestIsOfTheFilesOwnBytes, and no page may link an asset without one
+// in TestNoPageLinksAnUnstampedAsset. Blurring it here loses nothing those two
+// do not already hold, and stops the net crying wolf.
+var digestInURL = regexp.MustCompile(`(/static/[A-Za-z0-9._/-]+?)\.[0-9a-f]{8}\.`)
+
+func blurDigests(b []byte) []byte {
+	return digestInURL.ReplaceAll(b, []byte("$1.DIGEST."))
+}
+
 func compare(t *testing.T, name string, got []byte) {
 	t.Helper()
+	got = blurDigests(got)
 	if *update {
 		if err := os.MkdirAll(filepath.Dir(name), 0o750); err != nil {
 			t.Fatal(err)

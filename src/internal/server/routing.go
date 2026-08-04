@@ -294,3 +294,32 @@ func cacheControl(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+// stamped serves cairn's own assets under the digested names the pages point
+// at, and only under a digest cairn itself issued.
+//
+// A year and immutable, which is safe for exactly one reason: the name changes
+// whenever the bytes do, so this response can never become the wrong answer.
+// The pages that point here are served no-cache, so an upgrade is picked up on
+// the next visit without anyone reaching for a hard refresh, which is the
+// whole point of the exercise.
+//
+// A plain name falls through to the handler behind this one, on the day-long
+// cache it has always had, so anything that hardcoded /static/style.css goes
+// on working. A name shaped like a digest that cairn never issued falls
+// through too, and meets the 404 it deserves.
+func stamped(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if real, ok := render.AssetPath(strings.TrimPrefix(r.URL.Path, "/static/")); ok {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			r2 := new(http.Request)
+			*r2 = *r
+			u := *r.URL
+			u.Path = "/static/" + real
+			r2.URL = &u
+			h.ServeHTTP(w, r2)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}

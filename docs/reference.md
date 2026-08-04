@@ -117,7 +117,7 @@ ids, alphabetically.
 | `/{locale}/`                | home; server-rendered, `ETag` (suffixed `-gzip` when the answer is compressed), `Cache-Control: no-cache` |
 | `/{locale}/{id}/`           | service detail page or [hosted page](configuration/site.md#hosted-pages); same caching                    |
 | `/{locale}/…?choose`        | sets the one-year locale cookie, then redirects clean                                                     |
-| `/static/…`                 | embedded assets, cached one day                                                                           |
+| `/static/…`                 | embedded assets; a name carrying a content digest is cached for a year, a plain one for a day (see below) |
 | `/assets/…`                 | your mounted files, if the mount exists                                                                   |
 | `/media/…`                  | images from `<config>/media/`, the ones services and long text name                                       |
 | `/fonts/…`                  | the self-hosted font `theme.font.file` names, from `<config>/fonts/`                                      |
@@ -138,6 +138,33 @@ since compressing them again only spends CPU to add bytes, so the 62 KB font
 weighs 62 KB either way. Every response carries `Vary: Accept-Encoding` so a
 shared cache cannot hand the compressed answer to a client that did not ask for
 it.
+
+### Why an asset url carries a digest
+
+cairn's own assets go out under a name that carries a digest of what is inside
+them: `style.css` is linked as `style.0629016b.css`. It exists to fix one thing
+an operator meets on every upgrade. Pages are served `no-cache`, so they update
+the moment cairn restarts; the stylesheet beside them was cached for a day
+under a name that never changed, so the new page arrived wearing yesterday's
+CSS and only a hard refresh fixed it.
+
+Since the name changes exactly when the bytes do, the fresh page points at a
+name the browser has never seen, and a file nobody touched keeps its name and
+stays in the cache. That is what makes `max-age=31536000, immutable` safe here:
+nothing has to expire, because nothing is ever replaced under the same name.
+
+The digest is in the name rather than in a `?v=` query, because a query leaves
+an intermediary cache free to key on the path alone and pin a stale file for
+the whole year. Plain `/static/style.css` still answers, on the day-long cache,
+so anything that hardcoded it goes on working. A digest cairn did not issue
+gets a 404 rather than a file.
+
+The display font is the one exception: `style.css` reaches it with a relative
+`url()` of its own, which nothing out here can rewrite, so it keeps its plain
+name and the shorter cache. Everything else cairn ships is stamped, including
+the apple-touch-icon and the manifest's icons, which are built in Go rather
+than written in a template. Your own files, under `/assets/` and `/media/`,
+are never stamped: cairn has not read their bytes and has no digest to offer.
 
 ## Binary flags
 

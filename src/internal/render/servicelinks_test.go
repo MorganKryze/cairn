@@ -91,7 +91,7 @@ func TestConfirmAllGuardsEveryOffSiteLink(t *testing.T) {
 	if n := strings.Count(pages["en/pad"], `id="leave"`); n != 1 {
 		t.Errorf("detail page carries %d leave dialogs, want 1", n)
 	}
-	if !strings.Contains(pages["en"], "leave.js") {
+	if !strings.Contains(pages["en"], AssetURL("leave.js")) {
 		t.Error("the page does not load leave.js")
 	}
 }
@@ -119,7 +119,7 @@ func TestConfirmExternalGuardsOnlyTheFlaggedOnes(t *testing.T) {
 		t.Error("the self-hosted detail button was guarded")
 	}
 	// A page with nothing to guard carries no dialog and loads no script.
-	if strings.Contains(pages["en/pad"], `id="leave"`) || strings.Contains(pages["en/pad"], "leave.js") {
+	if strings.Contains(pages["en/pad"], `id="leave"`) || strings.Contains(pages["en/pad"], AssetURL("leave.js")) {
 		t.Error("a page with no guarded link still shipped the dialog")
 	}
 }
@@ -129,7 +129,7 @@ func TestNoDialogWithoutConfirm(t *testing.T) {
 	if strings.Contains(pages["en"], `id="leave"`) {
 		t.Error("a leave dialog shipped with confirm off")
 	}
-	if strings.Contains(pages["en"], "leave.js") {
+	if strings.Contains(pages["en"], AssetURL("leave.js")) {
 		t.Error("leave.js shipped with confirm off")
 	}
 	if strings.Contains(pages["en"], "data-leave") {
