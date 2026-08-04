@@ -5,3 +5,6 @@ node_modules/
 
 # macOS writes one into any folder opened in Finder, docs/assets especially
 .DS_Store
+
+# just save writes release tarballs here; they are downloads, not sources
+dist/
