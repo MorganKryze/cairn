@@ -40,6 +40,35 @@
   tags: [apache, web]
   selfhosted: true
 
+- id: caddy
+  category: pages
+  state: soon
+  icon: caddy
+  name: { fr: Page Caddy, en: Caddy page }
+  desc:
+    {
+      fr: "Le troisième serveur web, pas encore déployé.",
+      en: "The third web server, not deployed yet.",
+    }
+  details:
+    fr: |
+      Cette carte n'a pas de `url` du tout, et cairn n'en demande pas pour un
+      service annoncé : il n'y a rien à lier tant qu'il n'existe pas. La carte
+      n'est donc pas un lien, elle sort du parcours au clavier, et elle
+      s'atténue pour dire de passer son chemin. Aucun conteneur ne tourne
+      derrière, et aucun endpoint Gatus ne la surveille.
+
+      Cette page-ci fonctionne : c'est l'endroit où raconter ce qui arrive.
+    en: |
+      This card has no `url` at all, and cairn asks for none on a service that
+      is announced: there is nothing to link until it exists. So the card is
+      not a link, it leaves the keyboard path, and it dims to say walk past.
+      No container runs behind it and no Gatus endpoint watches it.
+
+      This page still works: it is where you say what is coming.
+  tags: [web, serveur, server]
+  selfhosted: true
+
 - id: whoami
   url: http://localhost:8082
   category: tools
@@ -72,6 +101,7 @@
   selfhosted: true
 
 - id: podinfo
+  icon: go
   url: http://localhost:8085
   category: tools
   name: { fr: Podinfo, en: Podinfo }
@@ -100,6 +130,7 @@
   selfhosted: true
 
 - id: ghost
+  icon: docker
   url: http://localhost:8086
   category: tools
   name: { fr: Service fantôme, en: Ghost service }
@@ -118,68 +149,6 @@
       notices and cairn shows the red dot: exactly what your visitors would
       see if a real service went down.
   tags: [status, down, panne]
-  selfhosted: true
-
-# The two below carry a disabling state. Neither has a container and neither
-# is in the Gatus config, which is the point: nothing is monitored, so no pill
-# is drawn and none is missing. The first has no url at all, the second keeps
-# the address it used to have and simply stops linking it.
-
-- id: paperless
-  category: tools
-  state: soon
-  name: { fr: Paperless, en: Paperless }
-  desc:
-    {
-      fr: "Vos documents scannés, triés et cherchables.",
-      en: "Your scanned documents, sorted and searchable.",
-    }
-  details:
-    fr: |
-      Cette carte n'a pas de `url` du tout, et cairn n'en demande pas pour un
-      service annoncé : il n'y a rien à lier tant qu'il n'existe pas. La carte
-      n'est donc pas un lien, elle sort du parcours au clavier, et elle
-      s'atténue pour dire de passer son chemin.
-
-      Cette page-ci, elle, fonctionne : c'est l'endroit où raconter ce qui
-      arrive et quand.
-    en: |
-      This card has no `url` at all, and cairn asks for none on a service that
-      is announced: there is nothing to link until it exists. So the card is
-      not a link, it leaves the keyboard path, and it dims to say walk past.
-
-      This page still works, though: it is where you say what is coming and
-      when.
-  tags: [documents, scan, ged]
-  selfhosted: true
-
-- id: old-pad
-  url: http://localhost:8087
-  category: tools
-  state: retired
-  name: { fr: Ancien bloc-notes, en: Old notepad }
-  desc:
-    {
-      fr: "Remplacé par Podinfo, juste au-dessus.",
-      en: "Replaced by Podinfo, just above.",
-    }
-  details:
-    fr: |
-      Ce service a fermé. Son adresse est toujours dans le fichier de config,
-      juste au-dessus de cette ligne : retirer un service se fait en ajoutant
-      `state: retired`, jamais en supprimant quoi que ce soit. cairn cesse de
-      la lier et la garde.
-
-      Cette page reste servie, et c'est tout son intérêt : c'est le seul
-      endroit où dire vers quoi aller à la place.
-    en: |
-      This service closed. Its address is still in the config file, right
-      above this line: retiring a service is adding `state: retired`, never
-      deleting anything. cairn stops linking it and keeps it.
-
-      This page is still served, and that is the whole point: it is the only
-      place left to say where to go instead.
-  tags: [notes, pad, archive]
   selfhosted: true
 
 # The three below are external references: no container, no Gatus endpoint,
@@ -222,4 +191,34 @@
       en: The tool that powers the status pills.,
     }
   tags: [gatus, status, monitoring]
+  selfhosted: false
+
+- id: old-forum
+  url: https://forum.example.org
+  category: links
+  state: retired
+  icon: discourse
+  name: { fr: Ancien forum, en: Old forum }
+  desc:
+    {
+      fr: "Remplacé par les discussions sur le dépôt.",
+      en: "Replaced by the discussions on the repository.",
+    }
+  details:
+    fr: |
+      Ce forum a fermé. Son adresse est toujours dans le fichier de config,
+      juste au-dessus de cette ligne : retirer un service se fait en ajoutant
+      `state: retired`, jamais en supprimant quoi que ce soit. cairn cesse de
+      la lier et la garde.
+
+      Cette page reste servie, et c'est tout son intérêt : c'est le seul
+      endroit où dire vers quoi aller à la place.
+    en: |
+      This forum closed. Its address is still in the config file, right above
+      this line: retiring a service is adding `state: retired`, never deleting
+      anything. cairn stops linking it and keeps it.
+
+      This page is still served, and that is the whole point: it is the only
+      place left to say where to go instead.
+  tags: [forum, discussion, archive]
   selfhosted: false
