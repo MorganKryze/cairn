@@ -1,5 +1,4 @@
-// Drives the search in a real browser against a running cairn, because
-// search.js is the one piece of behaviour the Go tests cannot reach: they
+// Drives the search in a real browser against a running cairn. The Go tests
 // assert the markup that ships, not what happens once someone types into it.
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
@@ -17,10 +16,9 @@ await page.goto(URL);
 const q = page.locator('#q');
 const empty = page.locator('#empty');
 // Painted, not merely marked. `.card:not([hidden])` reads the attribute, and
-// the attribute was right the whole time an author `display` rule was quietly
-// overriding the browser's [hidden] and leaving those cards on screen. A test
-// that asks the DOM what it was told cannot catch that; getClientRects asks
-// what the layout actually did.
+// the attribute was right the whole time an author `display` rule overrode
+// [hidden] and left those cards on screen. getClientRects asks what the layout
+// did.
 const painted = sel =>
   page.$$eval(sel, els =>
     els.filter(e => e.getClientRects().length > 0).map(e => e.textContent.trim()),
@@ -43,7 +41,6 @@ const eq = (got, want, label) => {
   if (g !== w) throw new Error(`${label}: got ${g}, want ${w}`);
 };
 
-// The state a visitor starts in, and the one every other case returns to.
 const total = await visible();
 if (total < 2) throw new Error(`the page under test has ${total} cards; it needs several`);
 const first = (await names())[0];
@@ -55,10 +52,9 @@ await check('an untouched page shows every card and no message', async () => {
 });
 
 // What the live region says and what the page shows have to be the same
-// number. This is the assertion the old "fewer cards than before" check was
-// missing: with the [hidden] override in place, filtering on a category that
-// also held a non-match announced "1 result" and painted two, and any
-// count-is-smaller test still passed.
+// number. With the [hidden] override in place, filtering on a category that
+// also held a non-match announced "1 result" and painted two, and a
+// count-is-smaller check still passed.
 await check('the page shows exactly as many cards as it announces', async () => {
   await q.fill(word);
   const said = (await page.locator('#count').textContent()).trim();
@@ -81,8 +77,8 @@ await check('a query that matches nothing says so', async () => {
   eq(await empty.isHidden(), false, 'the empty message is shown');
 });
 
-// The regression: clearing the box is a return to the full list, not a search
-// that found nothing. It used to leave "no results" on screen, and announce it.
+// Clearing the box is a return to the full list, not a search that found
+// nothing. It used to leave "no results" on screen, and announce it.
 await check('clearing the box restores every card, with no message', async () => {
   await q.fill('ejbhdoehfauhefouah');
   await q.fill('');

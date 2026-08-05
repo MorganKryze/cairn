@@ -10,8 +10,7 @@
 
   const spy = () => {
     const visible = sections.filter(s => !s.hidden);
-    // active: the last section whose top has crossed the upper viewport,
-    // or the final one once the page bottom is reached
+    // the last section whose top has crossed, or the final one at page bottom
     let active = visible[0];
     for (const s of visible) {
       if (s.getBoundingClientRect().top <= innerHeight * 0.4) active = s;

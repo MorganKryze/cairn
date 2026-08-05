@@ -12,13 +12,12 @@ import (
 )
 
 // Mapping reads a flat array of objects out of any JSON document. Six keys and
-// no expression language: a path is a dotted walk and nothing else. Anything
-// cleverer would be a query language, and a query language in YAML is a second
-// product to document, secure and support.
+// no expression language: a path is a dotted walk and nothing else, since a
+// query language in YAML is a second product to document, secure and support.
 //
 // That is enough for every status API the audit found bar two: Atlassian
-// Statuspage, Instatus, Upptime, StatusCake, Better Stack and whatever is
-// written next all answer with a list of objects carrying a name and a state.
+// Statuspage, Instatus, Upptime, StatusCake and Better Stack all answer with a
+// list of objects carrying a name and a state.
 type Mapping struct {
 	List        string   // path to the array, empty when the document is the array
 	Key         string   // per element: the field holding the service name
@@ -26,16 +25,15 @@ type Mapping struct {
 	Up          []string // values that mean up
 	Degraded    []string // values that mean up but not well
 	Maintenance []string // values that mean off on purpose
-	// Unknown are the values that mean nobody is checking: a monitor paused,
-	// or one waiting for its first verdict. Those services get no pill at all
-	// rather than a red one, which is what cairn's neutral state has always
-	// meant and what the kuma provider does with its own pending.
+	// Unknown are the values that mean nobody is checking: a monitor paused, or
+	// one waiting for its first verdict. Those services get no pill at all
+	// rather than a red one, as the kuma provider does with its own pending.
 	Unknown []string
 }
 
-// level reads one state through the three allow-lists, checked maintenance,
-// degraded, up, then down. A value in none of them reads as down, which is the
-// safe direction twice over: a vendor that adds a word next year cannot make a
+// level reads one state through the three allow-lists in order: maintenance,
+// degraded, up, then down. A value in none of them reads as down, the safe
+// direction twice over: a vendor that adds a word next year cannot make a
 // broken service look green, and an operator who forgot to list one sees a red
 // pill rather than a wrong one.
 func (m Mapping) level(state string) string {
@@ -51,7 +49,6 @@ func (m Mapping) level(state string) string {
 	}
 }
 
-// fetchJSON reads any status API shaped like a list of {name, state}.
 func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	resp, err := get(client, src, src.URL)
 	if err != nil {
@@ -62,7 +59,7 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 		return nil, err
 	}
 	var doc any
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(&doc); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxBody)).Decode(&doc); err != nil {
 		return nil, fmt.Errorf("status.url %s answered something that is not JSON: %w", src.URL, err)
 	}
 
@@ -77,19 +74,17 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	out := make(map[string]State, len(rows))
 	named, stated := 0, 0
 	for _, row := range rows {
-		// A row the mapping cannot read is skipped rather than fatal. Real
-		// status pages carry group headers and marketing rows, and cairn only
-		// draws a pill for a name matching a service id, so junk is already
-		// harmless: one bad row must not cost the whole poll.
+		// A row the mapping cannot read is skipped rather than fatal: real
+		// status pages carry group headers and marketing rows, and one bad row
+		// must not cost the whole poll.
 		name, ok := walk(row, m.Key).(string)
 		if !ok || name == "" {
 			continue
 		}
 		named++
 		// A row with a name and no state is left out rather than called down,
-		// which is what Gatus does with an endpoint that has no result and
-		// Kuma with a monitor that has no heartbeat. Nothing has been said
-		// about it, and the unknown pill is what says that.
+		// as Gatus does with an endpoint that has no result and Kuma with a
+		// monitor that has no heartbeat. Nothing has been said about it.
 		state, ok := stateOf(walk(row, m.State))
 		if !ok {
 			continue
@@ -104,11 +99,10 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	}
 	// Nothing read at all is a mapping that is wrong rather than a status page
 	// that is empty, and the two possible typos get separate messages: the
-	// operator is reading one log line and has to know which key to open.
-	//
-	// The counters are what was found, not what was drawn: a page whose every
-	// monitor is paused reads fine and simply produces no pill, so it must not
-	// look like a mapping that missed.
+	// operator is reading one log line and has to know which key to open. The
+	// counters are what was found, not what was drawn, so a page whose every
+	// monitor is paused produces no pill without looking like a mapping that
+	// missed.
 	switch {
 	case len(rows) == 0:
 	case named == 0:
@@ -121,14 +115,11 @@ func fetchJSON(client *http.Client, src Source) (map[string]State, error) {
 	return out, nil
 }
 
-// stateOf reads the state field as text. JSON has three scalar types and
-// monitors use all three: Statping answers a bool, Cachet a number, most
-// vendors a word. Formatting the other two rather than refusing them is what
-// makes "any flat status API" true instead of nearly true. A whole number
+// stateOf reads the state field as text. Monitors use all three JSON scalars:
+// Statping answers a bool, Cachet a number, most vendors a word. A whole number
 // keeps no decimal point, so a mapping lists 1 as "1" and not as "1.000000".
-//
 // Anything else, an object or an array where a state was expected, is not a
-// state; that row is skipped like any other the mapping cannot read.
+// state, and that row is skipped like any other the mapping cannot read.
 func stateOf(v any) (string, bool) {
 	switch t := v.(type) {
 	case string:
@@ -142,7 +133,7 @@ func stateOf(v any) (string, bool) {
 	}
 }
 
-// walk descends a dotted path. An empty path is the document itself, which is
+// walk descends a dotted path; an empty one is the document itself, which is
 // what a bare array answers with.
 func walk(v any, path string) any {
 	if path == "" {
@@ -159,8 +150,8 @@ func walk(v any, path string) any {
 }
 
 // keysOf and describe exist so a mapping that read nothing says what was
-// actually there. -check makes no network request, deliberately, so a typo in
-// a mapping first shows up as one line in a log: that line has to be enough.
+// actually there. -check makes no network request, so a typo in a mapping first
+// shows up as one line in a log: that line has to be enough.
 func keysOf(v any) string {
 	obj, ok := v.(map[string]any)
 	if !ok {

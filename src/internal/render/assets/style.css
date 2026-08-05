@@ -1,8 +1,7 @@
 @font-face {
-  /* Fraunces, cut down from the upstream variable font: Latin ranges only, and
-     the SOFT and WONK axes pinned to the single values used below. That halves
-     the file (118 -> 62 KB) while keeping opsz, so headings still get their
-     proper optical size. Rebuild: see docs/reference.md#the-display-font. */
+  /* Fraunces, subset from the upstream variable font: Latin ranges only, SOFT
+     and WONK pinned to the values used below, opsz kept so headings still get
+     their optical size. 118 -> 62 KB. Rebuild: docs/reference.md#the-display-font. */
   font-family: "Fraunces";
   /* relative to this stylesheet, so it resolves under any -base-path */
   src: url("fonts/fraunces.woff2") format("woff2");
@@ -11,59 +10,50 @@
   font-display: swap;
 }
 
-/* The browser's own [hidden] rule is display:none, but any author rule with a
-   display beats it, and plenty below set one. That is not academic: .card sets
-   display:flex, so search marked non-matching cards hidden and left them on
-   screen while the live region announced "1 result". The same slip left the
-   theme toggle and the dismiss button clickable and inert without JavaScript,
-   since both ship hidden and are un-hidden by their script.
-
-   !important is the point here rather than a shortcut: this restores a browser
-   invariant that later rules must not be able to take back. Every script that
-   reveals a control clears the attribute (theme.js, about.js, search.js). */
+/* The browser's own [hidden] rule is display:none, and any author rule with a
+   display beats it: .card sets display:flex, so search marked non-matching
+   cards hidden and left them on screen while the live region announced
+   "1 result". The same slip left the theme toggle and the dismiss button
+   clickable and inert without JavaScript. !important restores the invariant so
+   a later rule cannot take it back; every script that reveals a control clears
+   the attribute (theme.js, about.js, search.js). */
 [hidden] {
   display: none !important;
 }
 
 :root {
-  /* Mineral palette: cool weathered stone, not warm cream. Every variable
-     carries its light and dark value; the browser preference picks one, and
-     forcing a theme (the header toggle) is just color-scheme below. */
+  /* Mineral palette: cool weathered stone, not warm cream. */
   color-scheme: light dark;
   --bg: light-dark(#eef0ea, #14181a);
   --card: light-dark(#fbfbf9, #1b2123);
   --fg: light-dark(#1b2220, #e6e9e5);
   --muted: light-dark(#5c6461, #98a19d);
   --faint: light-dark(#e8e7df, #212829);
-  /* --border is decoration: card outlines, rules, the trail's spine. WCAG
-     1.4.11 does not reach it, and it used to sit at 1.21:1 against --bg in
-     light and 1.34:1 in dark, which is a hairline that survives a good screen
-     in a dim room and disappears on a cheap one in daylight. Around 2:1 is a
-     deliberate middle: no rule asks for it, and a card whose edge you cannot
-     find is still a card you cannot scan. Measured: light 1.84:1 on --bg and
-     2.04:1 on --card, dark 2.02:1 and 1.84:1. */
+  /* Decoration: card outlines, rules, the trail's spine. WCAG 1.4.11 does not
+     reach it. At 1.21:1 against --bg in light and 1.34:1 in dark it was a
+     hairline that disappeared on a cheap screen in daylight; around 2:1 is the
+     floor. Measured: light 1.84:1 on --bg and 2.04:1 on --card, dark 2.02:1
+     and 1.84:1. */
   --border: light-dark(#b4b3a8, #434c4a);
-  /* The boundary that *is* the control, where nothing else says where to click
-     or type, and where 1.4.11 does ask for 3:1. Kept separate from --border so
-     the decoration above can be chosen for looks and this one cannot. Measured
-     against both neighbours: light 3.31:1 on --bg and 3.67:1 on --card, dark
-     3.63:1 and 3.31:1. */
+  /* The boundary that is the control, where nothing else says where to click or
+     type and 1.4.11 does ask 3:1. Separate from --border so the decoration
+     above can be chosen for looks and this one cannot. Measured against both
+     neighbours: light 3.31:1 on --bg and 3.67:1 on --card, dark 3.63:1 and
+     3.31:1. */
   --ui-border: light-dark(#7f8482, #6b7270);
   --accent: #247b7b;                                       /* set inline from theme.accent */
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
   --up: light-dark(#2e8b57, #4cb47c);
   --down: light-dark(#c0392b, #e0685b);
-  /* Two more states, for the monitors that report more than a bool. Measured
-     against the pill's own fill on both themes, which is the only neighbour a
-     dot has: degraded 4.29:1 light and 5.95:1 dark, maintenance 4.99:1 and
-     5.85:1. WCAG 1.4.11 asks 3:1 of a graphic that carries meaning, and the
-     browser test holds all four. */
+  /* Two more states, for monitors that report more than a bool. WCAG 1.4.11
+     asks 3:1 of a graphic that carries meaning. Measured against the pill's own
+     fill, the only neighbour a dot has: degraded 4.29:1 light and 5.95:1 dark,
+     maintenance 4.99:1 and 5.85:1. */
   --degraded: light-dark(#a86a00, #cf9020);
   --maintenance: light-dark(#2f6fb5, #5aa0e0);
   /* A status token paints a dot, a graphic that needs 3:1. Used raw as a word
      it fails: green measured 4.10:1 and amber 4.29:1 against a card. Each is
-     pushed until it can carry text, the way --accent-ink is the accent pushed.
-     Measured after: beta 8.20:1, deprecated 8.07:1, soon 7.69:1. */
+     pushed until it carries text: beta 8.20:1, deprecated 8.07:1, soon 7.69:1. */
   --ink-beta: light-dark(color-mix(in oklab, var(--up) 72%, #000), color-mix(in oklab, var(--up) 82%, #fff));
   --ink-deprecated: light-dark(color-mix(in oklab, var(--degraded) 74%, #000), color-mix(in oklab, var(--degraded) 88%, #fff));
   --ink-soon: light-dark(color-mix(in oklab, var(--maintenance) 78%, #000), color-mix(in oklab, var(--maintenance) 85%, #fff));
@@ -76,6 +66,8 @@
 
   --radius: .9rem;
   --maxw: 66rem;
+  /* the sticky header on narrow screens; .skip has to paint one above it */
+  --z-header: 40;
 }
 
 :root[data-theme="light"] { color-scheme: light; }
@@ -154,14 +146,13 @@ header { padding-block: 1.4rem; }
 .menu-link svg { width: .95rem; height: .95rem; opacity: .85; flex: none; }
 .menu-link img { width: 1rem; height: 1rem; flex: none; }
 
-/* nav: the header links live in a <details>. On desktop the wrapper is
-   transparent (display:contents) so the links flow inline and the burger is
-   hidden; the mobile block turns it into a real burger + dropdown. */
+/* The header links live in a <details>: transparent on desktop so they flow
+   inline, a burger and a dropdown in the mobile block. */
 .nav { display: contents; }
 .nav-burger { display: none; }
-/* closed <details> hides its content: newer engines via content-visibility on
-   the ::details-content wrapper, older ones via display:none. Undo both so the
-   links show inline on desktop; the mobile block shows/hides via .nav-links. */
+/* A closed <details> hides its content: newer engines through
+   content-visibility on ::details-content, older ones through display:none.
+   Both are undone here; the mobile block shows and hides via .nav-links. */
 .nav::details-content { content-visibility: visible; display: contents; }
 .nav-links {
   display: flex;
@@ -272,8 +263,8 @@ header { padding-block: 1.4rem; }
   position: relative;
   margin: 2.2rem 0 2.4rem;
   /* Logical, not physical: the close button sits at inset-inline-end, so under
-     RTL a right-hand padding stayed on the right while the button moved left
-     and landed on the text. */
+     RTL a physical end padding stayed put while the button moved across and
+     landed on the text. */
   padding-block: 1.3rem;
   padding-inline: 1.5rem 3.4rem;
   background: var(--card);
@@ -283,13 +274,11 @@ header { padding-block: 1.4rem; }
 }
 .about p { line-height: 1.7; margin: 0 0 .85rem; }
 .about p:last-of-type { margin-bottom: 0; }
-/* The same fold as the host flag, and deliberately the same: a glyph at rest,
-   the word unfurled beside it on hover or focus. It used to swap display
-   between the two, which is the one way of writing this that cannot be
-   animated, since display does not interpolate; and it took the cross away at
-   the instant the pointer landed on it, so the button emptied itself to show
-   its own label. Clipping a nowrap row keeps both parts on screen and gives
-   the width something to travel. */
+/* The same fold as the host flag: a glyph at rest, the word unfurled beside it
+   on hover or focus. Swapping display between the two cannot be animated, since
+   display does not interpolate, and it took the cross away at the instant the
+   pointer landed on it. Clipping a nowrap row keeps both parts on screen and
+   gives the width something to travel. */
 .about-x {
   position: absolute;
   top: .8rem;
@@ -297,15 +286,15 @@ header { padding-block: 1.4rem; }
   display: inline-flex;
   align-items: center;
   gap: .32rem;
-  height: 1.9rem;
-  /* Folded it is a disc, not a pill: the same 1.9rem across as it is tall.
-     Which forces the padding, since the border, the glyph and two paddings
-     have to add up to exactly that: .8rem of glyph and 2px of border leave
-     .55rem a side minus the pixel the border took. Round it up and the box
-     goes oval; leave the pixel in and the cross sits 1px shy of centre. */
-  max-width: 1.9rem;
+  /* Folded it is a disc, not a pill: as wide as it is tall. The border, the
+     glyph and the two paddings have to add up to exactly that, border pixel
+     included, or the box goes oval and the cross sits off centre. */
+  --x-disc: 1.9rem;
+  --x-glyph: .8rem;
+  height: var(--x-disc);
+  max-width: var(--x-disc);
   overflow: hidden;
-  padding: 0 calc(.55rem - 1px);
+  padding: 0 calc((var(--x-disc) - var(--x-glyph)) / 2 - 1px);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--faint);
@@ -318,7 +307,7 @@ header { padding-block: 1.4rem; }
   transition: max-width .3s cubic-bezier(.2, .7, .3, 1), color .16s, border-color .16s;
 }
 /* flex: none, or the glyph is what gives way when the box is clipped */
-.about-x svg { width: .8rem; height: .8rem; flex: none; }
+.about-x svg { width: var(--x-glyph); height: var(--x-glyph); flex: none; }
 .about-x span { opacity: 0; transition: opacity .18s; }
 .about-x:hover, .about-x:focus-visible {
   max-width: 14rem;
@@ -327,22 +316,21 @@ header { padding-block: 1.4rem; }
 }
 .about-x:hover span, .about-x:focus-visible span { opacity: 1; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* No (hover: none) rule here, and that is the one place this parts company
-   with the flag. The flag sits in the card foot, in flow, so a permanently
-   unfurled label costs nothing. This button is absolute over the note, which
-   reserves 3.4rem of end padding for it folded: unfurled on every phone it
-   would lay its own label across the first line of the welcome text. A touch
-   visitor gets the cross, which is what the button means anyway. */
-/* width lives on the wrapper: as a flex item it would otherwise size to the
-   box's max-content and leave the box shy of the right edge */
+/* No (hover: none) rule here, unlike the flag. The flag sits in the card foot,
+   in flow, so an unfurled label costs nothing. This button is absolute over the
+   note, which reserves 3.4rem of end padding for it folded: unfurled on a phone
+   it would lay its label across the first line of the welcome text. */
+
+/* Width on the wrapper: as a flex item the box would otherwise size to its own
+   max-content and stop short of the inline end. */
 .search {
   margin-inline-start: auto;
   width: min(14.5rem, 100%);
   transition: width .2s ease;
 }
 .search:focus-within { width: min(19rem, 100%); }
-/* the bar renders on every page for layout parity; asleep it turns gray.
-   On the home page the script wakes it, elsewhere it stays decorative. */
+/* The bar renders on every page for layout parity. Only the home page has a
+   script to wake it; elsewhere it stays disabled and decorative. */
 .search-box:has(input:disabled) {
   background: var(--faint);
   box-shadow: none;
@@ -363,11 +351,9 @@ header { padding-block: 1.4rem; }
   transition: border-color .15s, box-shadow .15s;
 }
 /* An input's outline is the whole of what says where to type, so WCAG 1.4.11
-   wants 3:1 there. It exempts inactive components, and that is not a shortcut
-   here, it is the shape of the thing: the bar renders disabled and decorative
-   on every page but the home page, purely for layout parity, and nobody can
-   type in it. So the strong border goes exactly where the control is awake and
-   the quiet one stays exactly where it is asleep.
+   wants 3:1 there. It exempts inactive components, which is what the bar is on
+   every page but the home page, so the strong border goes where the control is
+   awake and the quiet one stays where it is asleep.
    :where() holds this at .search-box's own specificity so :focus-within below
    still gets to paint the border accent. */
 .search-box:where(:has(input:enabled)) { border-color: var(--ui-border); }
@@ -436,10 +422,10 @@ header { padding-block: 1.4rem; }
 
 /* ---- category trail ---- */
 
-/* A fixed rail beside the content: one diamond per category on a vertical
-   line, waypoints on the trail. Shown only where the margin can hold it. */
+/* A fixed rail beside the content: one diamond per category on a vertical line.
+   Shown only where the margin can hold it. */
 .toc { display: none; }
-.toc-jump { display: none; } /* the mobile jump-to select; shown in the mobile block */
+.toc-jump { display: none; } /* shown in the mobile block */
 @media (min-width: 88rem) {
   .toc {
     display: block;
@@ -526,9 +512,8 @@ html { scrollbar-gutter: stable; }
   transform: translateY(-3px);
   box-shadow: var(--shadow-lift);
 }
-/* the keyboard-selected match: the card Enter opens while searching. The ring
-   pings outward like the online indicator's beacon; the accent border keeps
-   the selection legible between pulses (and when motion is reduced). */
+/* The keyboard-selected match, the card Enter opens. The accent border keeps
+   the selection legible between beacon pulses and when motion is reduced. */
 .card.sel {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent), var(--shadow-lift);
@@ -569,23 +554,21 @@ html { scrollbar-gutter: stable; }
 }
 .card-foot .status-pill { margin-inline-start: auto; }
 /* status.js swaps what is inside the slot, so the slot has to be in the markup
-   before there is anything to swap. It takes no part in the layout: a pill
-   inside it is still a direct flex item of the foot, and the margin above
-   still pushes it to the end. */
+   before there is anything to swap. display:contents keeps a pill inside it a
+   direct flex item of the foot, so the margin above still pushes it to the
+   end. */
 .status-slot { display: contents; }
-/* Which leaves a foot that holds neither a flag nor a pill drawing its bottom
-   padding around nothing. That is a real card: a site with a status page, for
-   a service the status page does not monitor. */
+/* A foot holding neither a flag nor a pill would draw its bottom padding around
+   nothing: a site with a status page, for a service it does not monitor. */
 .card-foot:not(:has(.flag, .status-pill)) { display: none; }
 
 /* Host flag: an icon at rest that unfurls its label on hover or focus. The
    label stays in the DOM (clipped, not removed) for screen readers; on touch
-   and under reduced motion it simply shows expanded.
-   As a span it is not raised above the stretched-link overlay, so a click on
-   it opens the service like the rest of the card. As a link, which it becomes
-   when hosting_flag names a target, it has to be raised, and that is a
-   deliberate reversal: a third target inside the card, entered knowingly, and
-   only on the sites that ask for it. */
+   and under reduced motion it shows expanded.
+   As a span it stays under the stretched-link overlay, so a click on it opens
+   the service like the rest of the card. As a link, which it becomes when
+   hosting_flag names a target, it is raised above: a third target inside the
+   card, only on the sites that ask for it. */
 .flag {
   display: inline-flex;
   align-items: center;
@@ -602,17 +585,16 @@ html { scrollbar-gutter: stable; }
   white-space: nowrap;
   transition: max-width .3s cubic-bezier(.2, .7, .3, 1), color .2s, border-color .2s;
 }
-/* overflow visible: the cloud glyph's right lobe reaches the viewBox edge and
-   its stroke would be clipped flat; the flag's own padding absorbs the spill. */
+/* overflow visible: the cloud glyph reaches the viewBox edge and its stroke
+   would be clipped flat; the flag's own padding absorbs the spill. */
 .flag svg { width: .9rem; height: .9rem; flex: none; overflow: visible; }
 .flag-label { opacity: 0; padding-inline-end: .14rem; transition: opacity .18s; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
 a.flag { position: relative; z-index: 1; text-decoration: none; }
 a.flag:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 a.flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* A link has to be reachable at rest, so it does not hide behind its own
-   fold: an unfurled label is the hover state, the icon alone is what a thumb
-   arrives on. 2rem wide by the padding and the glyph is the floor. */
+/* A link has to be reachable at rest, behind its own fold: the icon alone is
+   what a thumb arrives on, and 2rem by the padding and the glyph is the floor. */
 a.flag { min-height: 1.5rem; }
 .card:hover .flag, .card:focus-within .flag { max-width: 14rem; }
 .card:hover .flag-label, .card:focus-within .flag-label { opacity: 1; }
@@ -623,18 +605,17 @@ a.flag { min-height: 1.5rem; }
 @media (prefers-reduced-motion: reduce) {
   .flag { transition: none; max-width: 14rem; }
   .flag-label { transition: none; opacity: 1; }
-  /* the dismiss button loses the travel but keeps the fold, unlike the flag
-     just above: see the note on why it does not unfurl on touch either */
+  /* the dismiss button keeps the fold and loses only the travel, unlike the
+     flag above: it is absolute over the note and has no room to unfurl */
   .about-x, .about-x span { transition: none; }
   header, .nav-links { transition: none; }
 }
-/* Where a service stands, declared and not measured, which is why it carries
-   no dot: the dot in the foot is what says a machine looked. It hangs on the
-   top border rather than taking a row inside the card, because the grid
-   stretches a row to its tallest card and a row inside would charge 27px to
-   every card beside it, measured. Out here it lives in the gap between rows,
-   which existed already. .card declares no overflow, so nothing has to be
-   opened for it. */
+/* Where a service stands, declared and not measured, so it carries no dot: the
+   dot in the foot is what says a machine looked. It hangs on the top border
+   rather than taking a row inside the card, because the grid stretches a row to
+   its tallest card and a row inside charged 27px to every card beside it,
+   measured. Out here it lives in the gap between rows, and .card declares no
+   overflow to open. */
 .card-badge {
   position: absolute;
   z-index: 2;
@@ -658,13 +639,11 @@ a.flag { min-height: 1.5rem; }
 .card-badge-soon { color: var(--ink-soon); border-color: color-mix(in oklab, var(--maintenance) 40%, var(--border)); }
 /* .card-badge-retired needs no rule: --muted above is already its colour. */
 
-/* The two disabling states. A film over the card rather than a lighter text:
-   the card, the icon and the two chips recede together, which is what makes it
-   read as gone at a glance.
-   Nothing readable goes under the film. Measured: at 45% no text reaches
-   4.5:1, not even painted near black, because the veil lifts ink and
-   background together. So the words stay above it and the film is what is
-   behind them. */
+/* The two disabling states. A film over the card rather than lighter text: the
+   card, the icon and the two chips recede together.
+   Nothing readable goes under the film. Measured: at 45% no text reaches 4.5:1,
+   not even painted near black, because the veil lifts ink and background
+   together. The words stay above it and the film sits behind them. */
 .card-off {
   box-shadow: none;
   background: color-mix(in oklab, var(--card) 30%, var(--bg));
@@ -685,9 +664,8 @@ a.flag { min-height: 1.5rem; }
   background: color-mix(in oklab, var(--bg) 45%, transparent);
 }
 .card-off .card-text { position: relative; z-index: 2; }
-/* The flag and the glyph kept their full-strength fill and ring while the card
-   behind them dropped away, and a bright chip on a receded card is what read
-   as wrong. They lose their own surfaces instead. Both measure 5.39:1 after. */
+/* A full-strength chip on a receded card read as wrong, so the flag and the
+   glyph lose their own fill and ring too. Both measure 5.39:1 after. */
 .card-off .flag {
   position: relative;
   z-index: 2;
@@ -697,8 +675,7 @@ a.flag { min-height: 1.5rem; }
 }
 /* z-index alone. .card-more is already absolutely positioned and adding
    position:relative overrides that: the glyph leaves the card through the
-   inline start and adds a line to its height. Done twice while drawing this,
-   an hour apart, which is why a browser check holds it. */
+   inline start and adds a line to its height. A browser check holds it. */
 .card-off .card-more {
   z-index: 2;
   background: transparent;
@@ -713,20 +690,18 @@ a.flag { min-height: 1.5rem; }
   color: inherit;
   text-decoration: none;
 }
-/* stretched link: the whole card follows the service link, so the pill and
-   "learn more" (raised above it) stay independently clickable. */
+/* Stretched link: the whole card follows the service link. The pill and the
+   detail glyph are raised above it and stay independently clickable. */
 .card-name::after { content: ""; position: absolute; inset: 0; z-index: 0; }
 .card:has(.card-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card-desc { color: var(--muted); font-size: .95rem; }
 
 /* The detail link: a glyph in the card's corner, raised above the stretched
-   link like the status pill. It sits there rather than at the end of the
-   description for two reasons. Inline, it was 90 by 16, under the 24 by 24
-   WCAG 2.2 asks of a target, and no padding would fix that without pushing the
-   prose around. In the card foot, which was the other candidate, it squeezed
-   the host flag: on a 320px phone the flag is unfurled and "Self-hosted" came
-   out as "Self-". The corner is the one place on a card that belongs to
-   nothing else. */
+   link like the status pill. Inline at the end of the description it measured
+   90 by 16, under the 24 by 24 WCAG 2.2 asks of a target, and no padding fixes
+   that without pushing the prose around. In the card foot it squeezed the host
+   flag: on a 320px phone the flag is unfurled and "Self-hosted" came out as
+   "Self-". The corner belongs to nothing else. */
 .card-more {
   position: absolute;
   inset-block-start: .85rem;
@@ -734,42 +709,38 @@ a.flag { min-height: 1.5rem; }
   z-index: 1;
   display: grid;
   place-items: center;
-  /* Whole pixels, both of them, and that is the whole point. A card grid lands
-     on fractional track widths (325.33px on the demo), so each card sits at a
-     different subpixel phase: .438 for one, .766 for the next. The ring is
-     painted on the box edges and the glyph is centred inside it, and when the
-     gap between them is fractional the two round to different sides, so the
-     glyph reads half a pixel off centre, left on one card and right on the
-     next. Measured: 1 device pixel of disagreement at .95rem, and 0 at 16px,
-     on every card and every phase. 28 minus 16 is 12, so the gap is 6 on each
-     side and there is nothing left to round. */
-  width: 28px;
-  height: 28px;
+  /* Whole pixels on both, so the gap between them is a whole number too: 28
+     minus 16 leaves 6 a side with nothing to round. A card grid lands on
+     fractional track widths (325.33px on the demo), so each card sits at its
+     own subpixel phase, and a fractional gap rounds the ring and the glyph to
+     different sides. Measured: 1 device pixel of disagreement at .95rem, 0 at
+     16px, on every card and every phase. */
+  --ring: 28px;
+  --ring-glyph: 16px;
+  width: var(--ring);
+  height: var(--ring);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--card);
   color: var(--muted);
   transition: color .16s, border-color .16s;
 }
-/* Hover fills rather than tints. The card is one big link, so the pointer is
-   already a hand everywhere on it: a cursor says nothing extra when it reaches
-   a control, and the old treatment only moved the border from 2.04:1 to
-   2.82:1 against the card, which is invisible next to the card lifting at the
-   same moment. A fill is the one signal the card does not already give.
+/* Hover fills rather than tints. The whole card is a link, so the pointer is
+   already a hand here, and tinting the border moved it from 2.04:1 to 2.82:1
+   against the card, invisible next to the card lifting at the same moment.
    --accent-ink rather than --accent: it is the accent already adjusted per
    theme to read against the card, so the fill measures 6.82:1 in light and
-   5.47:1 in dark, and the card-coloured mark on it measures the same, whatever
-   accent the operator chose. */
+   5.47:1 in dark, and the card-coloured mark on it the same, whatever accent
+   the operator chose. */
 .card-more:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.more-glyph { width: 16px; height: 16px; }
+.more-glyph { width: var(--ring-glyph); height: var(--ring-glyph); }
 /* Room for it, so a long name does not run underneath. */
 .card:has(.card-more) .card-name { padding-inline-end: 2.2rem; }
 
 /* ---- status dots ---- */
 
-/* Status pill: dot + label, links to Gatus. The dot breathes like a beacon
-   when online; offline is static and marked; unknown is a neutral hollow. */
+/* Status pill: a dot and a label, linked to the status page when there is one. */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -784,15 +755,14 @@ a.flag { min-height: 1.5rem; }
   text-decoration: none;
   white-space: nowrap;
 }
-/* Only a pill that leads somewhere answers to a pointer. A display-only one
-   (status.linked: false) is not a control, so it does not pretend to be. */
+/* Only a pill that leads somewhere answers to a pointer: a display-only one
+   (status.linked: false) is not a control. */
 .card-foot a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 a.status-pill:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
 a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card .status-pill { flex: none; }
-/* Raised above the card's stretched link so a click reaches the status page
-   instead of the service. A display-only pill stays underneath, and the click
-   opens the service like anywhere else on the card. */
+/* Raised above the card's stretched link so a click reaches the status page. A
+   display-only pill stays underneath and the click opens the service. */
 .card a.status-pill { position: relative; z-index: 1; }
 
 .status-pill .dot { width: .55rem; height: .55rem; flex: none; border-radius: 50%; }
@@ -801,9 +771,8 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .status-down { border-color: color-mix(in oklab, var(--down) 35%, var(--border)); }
 .status-degraded .dot { background: var(--degraded); }
 /* Blue against green is the pairing hardest to tell apart, and the dot is nine
-   pixels across. The label already carries the meaning without colour, which is
-   what 1.4.1 asks; the square is the redundancy for the glance rather than the
-   read. */
+   pixels across. The label carries the meaning without colour, which is what
+   1.4.1 asks; the square is the redundancy for the glance. */
 .status-maintenance .dot { background: var(--maintenance); border-radius: 1px; }
 .status-unknown .dot { background: transparent; box-shadow: inset 0 0 0 1.6px var(--muted); }
 
@@ -818,11 +787,10 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 /* ---- detail page ---- */
 
 .detail { max-width: 44rem; margin-inline: auto; padding-block: 1.4rem 1rem; }
-/* The way back out of a detail page. It was a bare text link 51 by 23, under
-   the 24 by 24 WCAG 2.2 asks of a target, and its arrow was a CSS ::before,
-   which some screen readers read out and a stylesheet that fails to load takes
-   with it. It is a chip now, the same rounded outline the pills and the flag
-   already wear, with the arrow inline in the markup as decoration. */
+/* The way back out of a detail page. As a bare text link it measured 51 by 23,
+   under the 24 by 24 WCAG 2.2 asks of a target, and its arrow was a CSS
+   ::before, which some screen readers read out and a stylesheet that fails to
+   load takes with it. A chip now, with the arrow inline in the markup. */
 .back {
   display: inline-flex;
   align-items: center;
@@ -846,16 +814,15 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .detail-head .tile img { width: 2.3rem; height: 2.3rem; }
 .detail-head .tile svg { width: 2rem; height: 2rem; }
 .detail-title { display: flex; flex-direction: column; gap: .6rem; align-items: flex-start; }
-/* No card here, so no badge: the state sits under the title where the pill
-   lives, and shares its row. On a line of its own it read as an orphan. The
-   pill leads: it is the heavier object, and small caps read better trailing it
-   than leading it. */
+/* No card here, so no badge: the state shares the pill's row under the title.
+   On a line of its own it read as an orphan, and the pill leads as the heavier
+   object. */
 .detail-state-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
-/* A rule between them, saying the two are different kinds of claim: one was
-   measured, one was declared. Only when something is actually to its left,
-   though. A disabling state has no pill at all, and a slot the monitor has not
-   answered yet is empty, and either would leave a stroke hanging off nothing.
-   :empty is live, so the rule arrives with the pill status.js swaps in. */
+/* A rule between them: one claim was measured, the other declared. Only when
+   the slot before it holds something, though. A disabling state has no pill,
+   and a slot the monitor has not answered yet is empty, and either would leave
+   a stroke hanging off nothing. :empty is live, so the rule arrives with the
+   pill status.js swaps in. */
 .detail-state-row .status-slot:not(:empty) + .detail-state {
   padding-inline-start: .8rem;
   border-inline-start: 1px solid var(--border);
@@ -906,9 +873,8 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   box-shadow: var(--shadow);
   transition: transform .15s, box-shadow .15s;
 }
-/* Sized in em so it follows the label rather than a fixed pixel value, and
-   mirrored right-to-left the way the back arrow is: an arrow leaving its
-   frame points the other way when the text does. */
+/* Sized in em so it follows the label, and mirrored under RTL like the back
+   arrow: an arrow leaving its frame points the other way when the text does. */
 .btn-glyph { width: 1.05em; height: 1.05em; flex: none; }
 [dir="rtl"] .btn-glyph { transform: scaleX(-1); }
 
@@ -916,10 +882,9 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 /* ---- leaving the site ----
-   A native <dialog>, so ::backdrop, the focus trap and Escape are the
-   browser's job. Nothing here positions it: a modal dialog is centred by the
-   UA already, and reproducing that by hand is how a dialog ends up off screen
-   on a short viewport. */
+   A native <dialog>, so ::backdrop, the focus trap and Escape are the browser's
+   job. Nothing here positions it: a modal dialog is centred by the UA already,
+   and reproducing that by hand puts it off screen on a short viewport. */
 .leave {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -932,10 +897,9 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .leave::backdrop { background: light-dark(rgba(20, 30, 28, .38), rgba(0, 0, 0, .62)); }
 .leave h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 .6rem; }
 .leave-body { margin: 0 0 1rem; color: var(--muted); }
-/* The address, and the reason it is split in two: the origin is the part
-   that says who you are about to talk to, and a long path is very good at
-   pushing it out of sight. anywhere, not break-all, so a hostname breaks at
-   its dots rather than mid-label. */
+/* The address, split in two because the origin says who you are about to talk
+   to and a long path pushes it out of sight. anywhere, not break-all, so a
+   hostname breaks at its dots rather than mid-label. */
 .leave-url {
   margin: 0 0 1.4rem;
   padding: .7rem .9rem;
@@ -947,14 +911,14 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .leave-host { font-weight: 600; }
 .leave-rest { color: var(--muted); }
 .leave-acts { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
-/* The two that are not the primary action read as buttons rather than as
-   links, and they clear 24px in both directions without a chip's ceremony. */
+/* The two that are not the primary action read as buttons rather than links,
+   and clear 24px in both directions without a chip's ceremony. */
 .leave-copy, .leave-stay {
   font: inherit;
   min-height: 2.5rem;
   padding: .55rem 1rem;
-  /* --ui-border, not --border: this outline is the only thing saying these
-     two are controls, which is the case 1.4.11 asks 3:1 for. */
+  /* --ui-border, not --border: this outline is the only thing saying these two
+     are controls, which is the case 1.4.11 asks 3:1 for. */
   border: 1px solid var(--ui-border);
   border-radius: .55rem;
   background: transparent;
@@ -964,26 +928,16 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .leave-copy:hover, .leave-stay:hover { background: var(--bg); }
 .leave-copy:focus-visible, .leave-stay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* The continue link borrows .btn, which carries a 1.4rem top margin for the
-   detail page it was drawn for; in a row of buttons that margin is a step. */
+   detail page; in a row of buttons that margin is a step. */
 .leave-acts .btn { margin-top: 0; margin-inline-start: auto; }
-/* Narrow: stack them, each filling the row.
-
-   The row above is a wide-screen idea and it does not degrade, it breaks. The
-   auto margin parks the primary at the far end, which reads well until the row
-   wraps: at 390px Continue landed alone on a second line shoved right, with
-   dead space beside it, and at 320px all three sat at three different widths
-   with the last still offset. Measured, both.
-
-   44rem rather than the width where three buttons stop fitting, because that
-   width is a property of the words in them: "Copy the address" and "Adresse
-   kopieren" wrap at different viewports, and a breakpoint tuned to English
-   would be wrong in six other languages. This is the breakpoint the rest of
-   the site already turns on, and above it the row always fits.
-
-   Order is left alone on purpose. A column-reverse would put the primary on
-   top while the keyboard still tabs copy, stay, continue, which trades 2.4.3
-   for a layout. Stacked in reading order the primary lands at the bottom,
-   nearest the thumb, which is where a phone wants it anyway. */
+/* Narrow: stack them, each filling the row. The auto margin above parks the
+   primary at the far end, which breaks once the row wraps: measured at 390px,
+   Continue landed alone on a second line with dead space beside it, and at
+   320px all three sat at three different widths. 44rem rather than the width
+   where three buttons stop fitting: that width is a property of the words in
+   them, and a breakpoint tuned to English would be wrong in six other
+   languages. The order stays: column-reverse would put the primary on top while
+   the keyboard still tabs copy, stay, continue, trading 2.4.3 for a layout. */
 @media (max-width: 44rem) {
   .leave-acts { flex-direction: column; align-items: stretch; }
   .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
@@ -1012,12 +966,12 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .page { padding-bottom: 2.5rem; }
 .page-intro { color: var(--muted); }
 .page-sec { margin-top: 2rem; }
-/* The section label, worn by the hosted page's own section titles and by a
-   markdown ## alike. Child, not descendant, on .detail, or it would also
-   repaint the .page-sec titles nested inside and hand them a top margin the
-   section already provides. The [lang] step is the wrapper the prose template
-   adds when a field falls back to another language: without it, exactly the
-   pages that need the most help rendered their headings as browser defaults. */
+/* The section label, worn by a hosted page's own section titles and by a
+   markdown ## alike. Child, not descendant, on .detail, or it repaints the
+   .page-sec titles nested inside and hands them a top margin the section
+   already provides. The [lang] step is the wrapper the prose template adds when
+   a field falls back to another language: without it, exactly the pages that
+   need the most help rendered their headings as browser defaults. */
 .page-sec h2,
 :is(.detail, .detail > [lang]) > h2,
 .about h2 {
@@ -1042,84 +996,72 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 
 /* ---- rich text (markdown) ----
 
-   Three containers, one scope. .about is the welcome note, .detail is a
-   service page, and a hosted page is <article class="detail page">, so
-   :is(.about, .detail) already reaches all three and everything below follows
-   it rather than styling bare elements, which would leak into the header, the
-   cards and the footer.
+   Three containers, one scope. .about is the welcome note, .detail is a service
+   page, and a hosted page is <article class="detail page">, so
+   :is(.about, .detail) reaches all three. Everything below follows it rather
+   than styling bare elements, which would leak into the header, the cards and
+   the footer. */
 
-   The voice is deliberately quiet: cairn is a directory page, and prose is the
-   short note beside the links, not the point of the site. */
-
-/* Long unbreakable words are what push a page sideways: a linkified bare URL,
-   a path in inline code, an id in a table cell. break-word (not anywhere)
-   breaks only the word that would otherwise overflow and leaves min-content
-   widths alone, so tables still size themselves the way tables do. */
+/* Long unbreakable words push a page sideways: a linkified bare URL, a path in
+   inline code, an id in a table cell. break-word, not anywhere: it breaks only
+   the word that would overflow and leaves min-content widths alone, so tables
+   still size themselves the way tables do. */
 :is(.about, .detail) { overflow-wrap: break-word; }
 
-/* Was :is(p, li, figcaption) a, which is where the prose used to live. A link
-   in a table cell or in a heading then got no accent and only the browser's
-   default underline, and the same descendant rule reached down into <p><a
-   class="back">, repainting the quiet back link accent and underlined against
-   its own rule. Scope by container, and name the three anchors inside these
-   articles that are controls rather than prose. */
+/* Scoped by container, not by :is(p, li, figcaption) a: that left a link in a
+   table cell or a heading with the browser's default underline and no accent,
+   and it reached down into <p><a class="back">, repainting the quiet back link
+   against its own rule. The three anchors named here are controls, not prose. */
 :is(.about, .detail) a:not(.btn, .back, .status-pill) {
   color: var(--accent-ink);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-/* Headings. h2 keeps the small uppercase section label set further up, which
-   is the house voice for "a new section starts here" and is what ## has
-   rendered as all along; the rest of the scale is built to sit around it.
+/* Headings. h2 keeps the small uppercase section label set further up, which is
+   what ## has rendered as all along, and the rest of the scale sits around it.
    Left to the browser, h1 came out as 2em of bold body font, louder than the
-   page's own title right above it, and h6 came out smaller than body text.
-   h4 down collapse into one rule: a directory page has no use for four more
-   sizes, and giving them one keeps the deep ones legible. */
-/* No h1 here on purpose, and no rule for one: the renderer demotes a single #
-   to a level two, because the page already has its own top heading. A style
-   for an element that can no longer be emitted would read as a promise. */
+   page's own title right above it, and h6 smaller than body text. h4 down share
+   one rule: a directory page has no use for four more sizes.
+   No h1 rule: the renderer demotes a single # to a level two, since the page
+   already has its own top heading. */
 :is(.about, .detail) :is(h3, h4, h5, h6) { margin: 1.7rem 0 .5rem; line-height: 1.3; }
 :is(.about, .detail) h3 { font-size: 1rem; font-weight: 650; }
 :is(.about, .detail) :is(h4, h5, h6) { font-size: .95rem; font-weight: 600; color: var(--muted); }
 
-/* The note's own padding sets its top edge. Without this, a note opening with
-   a heading got the padding and the heading's margin one after the other and
-   sat visibly lower in the card than one opening with a paragraph; padding
-   does not collapse with a child's margin. The dismiss button is absolutely
-   positioned, so the first block of prose is whatever follows it, and one
-   step further in when the note fell back to another language and the prose
-   template wrapped it to say so. */
+/* The note's own padding sets its top edge: padding does not collapse with a
+   child's margin, so a note opening with a heading got both one after the other
+   and sat visibly lower than one opening with a paragraph. The dismiss button
+   is absolutely positioned, so the first block of prose is whatever follows it,
+   one step further in when the prose template wrapped a fallback language. */
 .about > .about-x + *,
 .about > [lang] > :first-child { margin-top: 0; }
-/* Space below the last block is the card's padding to give. p:last-of-type
-   used to say this and now says something else entirely: with lists and
-   tables in the mix the last <p> is often mid-note, and every paragraph that
-   ended a list item or a quote matched it too and lost its spacing. */
+/* Space below the last block is the card's padding to give. p:last-of-type used
+   to say this: with lists and tables in the mix the last <p> is often mid-note,
+   and every paragraph ending a list item or a quote matched it too. */
 :is(.about, .about > [lang]) > :last-child { margin-bottom: 0; }
 
 :is(.about, .detail) ul { margin: 0 0 .9rem; padding-inline-start: 1.15rem; }
-/* ol had no rule at all, so it kept the browser's 40px indent and sat visibly
-   further in than the ul above it. Wider than the ul because the marker is
-   drawn in this padding and a two-digit number needs the room. */
+/* Without a rule, ol kept the browser's 40px indent and sat visibly further in
+   than the ul above it. Wider than the ul because the marker is drawn in this
+   padding and a two-digit number needs the room. */
 :is(.about, .detail) ol { margin: 0 0 .9rem; padding-inline-start: 1.6rem; }
 :is(.about, .detail) li { line-height: 1.7; margin-bottom: .3rem; }
 :is(.about, .detail) li::marker { color: var(--accent-ink); }
-/* A nested list closes with the item that holds it. It was inheriting the
-   margin-bottom above, which left a blank line inside the parent item. */
+/* A nested list closes with the item that holds it: inheriting the margin-bottom
+   above left a blank line inside the parent item. */
 :is(.about, .detail) li :is(ul, ol) { margin-block: .25rem 0; }
 
-/* GFM task lists. goldmark marks these with the checkbox and nothing else, no
-   class to hook, so the item is found by what it holds: without this the
-   bullet stayed and the item read as two markers side by side. The box hangs
-   back into the list's own indent, so wrapped lines line up under the text
-   rather than under the box. */
+/* GFM task lists. goldmark marks these with the checkbox and no class to hook,
+   so the item is found by what it holds: without this the bullet stayed and the
+   item read as two markers side by side. The box hangs back into the list's own
+   indent, so wrapped lines line up under the text rather than under the box. */
 :is(.about, .detail) li:has(> input[type="checkbox"]) { list-style: none; }
 :is(.about, .detail) li > input[type="checkbox"] { margin-inline: -1.15rem .35rem; }
 
-/* A quote reads as a quote by its rule, not by an indent. goldmark's
-   blockquote arrives with the browser's bare 40px margins, so a quote that
-   followed a list looked like one more level of that list. */
+/* A quote reads as a quote by its rule, not by an indent: goldmark's blockquote
+   arrives with the browser's bare 40px margins, so a quote after a list looked
+   like one more level of it. */
 :is(.about, .detail) blockquote {
   margin: 0 0 .9rem;
   padding-inline-start: 1rem;
@@ -1132,10 +1074,9 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
    widget; this is the hairline the header rule and the waypoints already use. */
 :is(.about, .detail) hr { margin: 1.6rem 0; border: 0; border-top: 1px solid var(--border); }
 
-/* The chrome below is for a word inside a sentence. As a descendant selector
-   it also caught every <code> inside a <pre>, and a fenced block came out as a
-   stack of bordered, padded boxes, one per painted line. The block owns the
-   chrome now and the code inside it owns none. */
+/* The chrome below is for a word inside a sentence. As a descendant selector it
+   also caught every <code> inside a <pre>, and a fenced block came out as a
+   stack of bordered, padded boxes, one per painted line. */
 :is(.about, .detail) code {
   font-size: .88em;
   background: var(--faint);
@@ -1149,12 +1090,10 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   background: var(--faint);
   border: 1px solid var(--border);
   border-radius: .6rem;
-  /* A fenced block is the one run of text nobody can rewrap, so it scrolls
-     itself rather than pushing the whole page sideways. */
+  /* a fenced block cannot be rewrapped, so it scrolls rather than the page */
   overflow-x: auto;
-  /* Sized rather than left alone: monospace at the browser's default size
-     draws a visible step smaller than the prose around it, and the two would
-     not agree on what one line is worth. */
+  /* Sized rather than left alone: monospace at the browser's default draws a
+     visible step smaller than the prose around it. */
   font-size: .88em;
   line-height: 1.55;
 }
@@ -1166,14 +1105,9 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   font-size: inherit;
 }
 
-/* Tables. goldmark emits a bare <table> with no wrapper, and a table is the
-   one block that cannot rewrap: enough columns and it pushed the document
-   sideways on a phone. display:block makes the table its own scroll
-   container, which is the only way to get one without an element to wrap it
-   in. The cost is real and worth naming: some engines read the table role off
-   the computed display, so a wrapper <div> in the renderer is the fix that
-   does not pay it. Chromium keeps the role either way. */
-/* The wrapper scrolls, not the table. display:block on a <table> is the usual
+/* Tables. goldmark emits a bare <table> with no wrapper, and a table cannot
+   rewrap: enough columns and it pushed the document sideways on a phone. The
+   wrapper scrolls, not the table: display:block on a <table> is the usual
    one-liner and it strips the table role from the accessibility tree in Chrome
    and Safari, so the cells stop being announced as a table. The renderer emits
    this div with tabindex, because a region that scrolls has to be reachable
@@ -1192,21 +1126,20 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   padding: .45rem .7rem;
   border-bottom: 1px solid var(--border);
   /* Cells opt out of the break-word above: the table has a scroll container of
-     its own, so a long path or an env var keeps its shape and the table
-     scrolls. Left in, one id squeezed its whole column into a ladder of broken
-     syllables while the rest of the table sat half empty. */
+     its own, so a long path or an env var keeps its shape. Left in, one id
+     squeezed its whole column into a ladder of broken syllables while the rest
+     of the table sat half empty. */
   overflow-wrap: normal;
 }
 /* The browser centres a header cell. Only the ones GFM did not align, or this
-   would beat the align attribute: an attribute is a presentational hint, and
-   any author rule at all outranks it. */
+   beats the align attribute: a presentational hint loses to any author rule. */
 :is(.about, .detail) th:not([align]) { text-align: start; }
 :is(.about, .detail) thead th { color: var(--muted); }
 
 /* An image written inside a sentence carries the intrinsic width the media
-   resolver measured, so a 512px screenshot ran straight off a 340px column.
-   height:auto is the other half: cap the width attribute and leave the height
-   attribute alone and the picture comes out squashed. */
+   resolver measured, so a 512px screenshot ran off a 340px column. height:auto
+   is the other half: cap the width and leave the height attribute alone and the
+   picture comes out squashed. */
 :is(.about, .detail) :is(p, li, td, th) img { max-width: 100%; height: auto; }
 
 /* ---- empty state ---- */
@@ -1235,8 +1168,7 @@ footer {
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { color: var(--accent-ink); font-weight: 500; }
-/* the optional build stamp: present for whoever needs it, quiet enough that
-   the footer still reads as one line */
+/* the optional build stamp, quiet enough that the footer still reads as one line */
 .foot-version { font-size: .95em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .powered a.foot-version { color: var(--muted); font-weight: 400; }
 .powered a.foot-version:hover { color: var(--fg); }
@@ -1248,10 +1180,9 @@ footer {
   position: absolute;
   inset-inline-start: -999px;
   top: .5rem;
-  /* Above the header, which is sticky at z-index 40 on narrow screens: at 2
-     the first Tab stop was painted over and the skip link, whose whole job is
-     to be seen first, was invisible on a phone. */
-  z-index: 41;
+  /* one above the sticky header: at 2 the first Tab stop was painted over and
+     the skip link, whose whole job is to be seen first, was invisible */
+  z-index: calc(var(--z-header) + 1);
   padding: .5rem 1rem;
   background: var(--card);
   border: 1px solid var(--border);
@@ -1275,10 +1206,8 @@ footer {
   * { transition: none !important; animation: none !important; }
 }
 
-/* ---- print: the version that ends up on the fridge ---- */
-
-/* back-to-top: a fixed pill, mobile-only, shown once you have scrolled a
-   screen (where scroll-driven animations exist; otherwise always on). */
+/* back-to-top: a fixed pill, mobile only, revealed by nav.js past a screen of
+   scroll. */
 .totop {
   display: none;
   position: fixed;
@@ -1308,18 +1237,18 @@ footer {
   html { scroll-behavior: smooth; }
 }
 
-/* ---- mobile (below 44rem): a burger for the header links (the search stays
-   put), the category trail as a wrapping chip row, finger-sized targets, a
-   one-column footer, and the back-to-top button. ---- */
+/* ---- mobile (below 44rem): a burger for the header links, the category trail
+   as a wrapping chip row, finger-sized targets, a one-column footer, and the
+   back-to-top button ---- */
 @media (max-width: 44rem) {
   .wrap { padding-inline: 1.15rem; }
 
   /* auto-hiding sticky header: nav.js toggles .header-hidden by scroll
-     direction (down hides, up shows), so a long page keeps search in reach */
+     direction, so a long page keeps search in reach */
   header {
     position: sticky;
     top: 0;
-    z-index: 40;
+    z-index: var(--z-header);
     padding-block: .9rem;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
@@ -1328,8 +1257,8 @@ footer {
   header.header-hidden { transform: translateY(-100%); }
   .cat { scroll-margin-top: 4.5rem; }
 
-  /* the header links fold behind a burger; the search stays visible beside it.
-     Drop the desktop divider and even the rhythm so the row sits centered. */
+  /* the header links fold behind a burger, the search stays beside it, and the
+     desktop divider goes so the row sits centered */
   .menu { flex-wrap: nowrap; align-items: center; gap: .6rem; margin-top: .9rem; padding-block: 0; border-top: 0; }
   .nav { display: inline-flex; position: relative; flex: none; }
   .nav-burger {
@@ -1382,13 +1311,13 @@ footer {
   .theme-toggle { width: 2.75rem; height: 2.75rem; }
   .langs a { display: inline-flex; align-items: center; min-height: 2.75rem; }
   .search-box input { padding-block: .55rem; }
-  /* 44px for the thumb, and still a disc: the width is capped by the fold, so
-     raising the height alone left a 30 by 44 oval with the cross 3px from the
-     clip. Same arithmetic as the desktop rule, at this height. */
+  /* 44px for the thumb, and still a disc: the fold caps the width, so raising
+     the height alone left a 30 by 44 oval with the cross 3px from the clip. */
   .about-x {
-    height: 2.75rem;
-    max-width: 2.75rem;
-    padding-inline: calc(.975rem - 1px);
+    --x-disc: 2.75rem;
+    height: var(--x-disc);
+    max-width: var(--x-disc);
+    padding-inline: calc((var(--x-disc) - var(--x-glyph)) / 2 - 1px);
   }
 
   /* the category trail becomes a wrapping chip row under the intro */
@@ -1412,12 +1341,11 @@ footer {
   }
 
   /* Above ~7 categories the chips give way to a compact jump-to select, but
-     only where something can drive it: the select's entire behaviour lives in
+     only where something can drive it: the select's behaviour lives entirely in
      nav.js, so with JavaScript off this swap left a phone with no category
-     navigation at all, on the viewport where the list matters most. The
-     pre-paint script in <head> stamps data-js before first render, so gating
-     on it costs no flash of the wrong one, and the fallback needs no markup:
-     .toc.many simply stays a chip row. */
+     navigation at all. The pre-paint script in <head> stamps data-js before
+     first render, so gating on it costs no flash of the wrong one, and the
+     fallback needs no markup: .toc.many stays a chip row. */
   [data-js] .toc.many { display: none; }
   [data-js] .toc-jump { display: block; margin: 1.5rem 0 .3rem; }
   .toc-select {
@@ -1425,8 +1353,7 @@ footer {
     max-width: 22rem;
     min-height: 2.75rem;
     padding: .3rem .9rem;
-    /* a form control, so its boundary is the control: --ui-border, not
-       --border, for the same 3:1 reason as the search box */
+    /* a form control, so --ui-border and its 3:1, like the search box */
     border: 1px solid var(--ui-border);
     border-radius: .7rem;
     background: var(--card);
@@ -1435,10 +1362,8 @@ footer {
     font-size: .9rem;
   }
 
-  /* nav.js reveals the back-to-top button (via .show) past a screen of scroll */
   .totop { display: grid; }
 
-  /* footer: one clean column, logo grouped with the credit */
   .foot { flex-direction: column; align-items: flex-start; gap: 1.1rem; padding-block: 1.6rem 2rem; }
   .foot-links { flex-direction: column; gap: .9rem; }
   .powered { margin-inline-start: 0; }
@@ -1463,15 +1388,14 @@ footer {
     word-break: break-all;
   }
   .shot { break-inside: avoid; }
-  /* On screen a fenced block and a wide table scroll. Paper does not scroll,
-     so whatever hung off the right edge would simply be missing: the block
-     wraps instead, and the table goes back to being laid out as a table. */
+  /* Paper does not scroll, so whatever hung off the edge would simply be
+     missing: the block wraps instead, and the table is laid out as a table. */
   :is(.about, .detail) pre { overflow-x: visible; white-space: pre-wrap; }
   :is(.about, .detail) .table-wrap { overflow-x: visible; }
   :is(.about, .detail) table { width: 100%; }
 }
 
-/* Right-to-left: the layout follows from the logical properties above, only
-   the two literal arrows have to be turned around by hand. */
-/* One glyph, mirrored, rather than a second character to keep in step. */
+/* Right-to-left follows from the logical properties above; only the two literal
+   arrows are turned around by hand, one glyph mirrored rather than a second
+   character to keep in step. */
 [dir="rtl"] .back-glyph { transform: scaleX(-1); }

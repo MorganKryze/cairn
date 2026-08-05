@@ -1,8 +1,7 @@
-// Drives five accessibility behaviours in a real browser against a running
-// cairn, because not one of them survives a look at the markup: the theme
-// toggle's state is only known once theme.js has run, the mobile category
-// swap turns on whether JavaScript exists at all, a contrast ratio needs the
-// colours the browser actually resolved, and a scroll is a scroll.
+// Drives the accessibility behaviours no look at the markup can settle: the
+// theme toggle's state is only known once theme.js has run, the mobile
+// category swap turns on whether JavaScript exists at all, a contrast ratio
+// needs the colours the browser resolved, and a scroll is a scroll.
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
 // config, scripts/fixtures/many-categories, scripts/fixtures/status,
@@ -45,9 +44,9 @@ const eq = (got, want, label) => {
   const [g, w] = [JSON.stringify(got), JSON.stringify(want)];
   if (g !== w) throw new Error(`${label}: got ${g}, want ${w}`);
 };
-// Painted, not merely marked. Everything below turns on a display rule, and a
-// display rule is invisible to any test that asks the DOM what it contains:
-// the element is there either way. getClientRects asks what the layout did.
+// Painted, not merely marked. A display rule is invisible to any test that
+// asks the DOM what it contains, since the element is there either way.
+// getClientRects asks what the layout did.
 const painted = (page, sel) =>
   page.$$eval(sel, (els) =>
     els
@@ -100,15 +99,13 @@ await check("and it flips with the theme, in both directions", async () => {
 
 // ---- A2: the welcome note's dismiss button folds like the host flag ----
 
-// Two controls on this page wear the same fold: a glyph at rest, the word
-// unfurled beside it on hover. Nothing of that survives a look at the markup,
-// and it has to run here rather than on `home` below, which asks for reduced
-// motion and so measures every transition already finished.
+// The fold: a glyph at rest, the word unfurled beside it on hover. It runs on
+// `page` rather than on `home` below, which asks for reduced motion and so
+// measures every transition already finished.
 //
-// A display swap satisfies neither half. It cannot be animated, since display
-// does not interpolate, and it takes the glyph away at the instant the pointer
-// lands on it, which is the one moment the visitor is looking at it. So both
-// states are held: faded and clipped at rest, both parts painted once open.
+// A display swap satisfies neither half: display does not interpolate, and it
+// takes the glyph away at the instant the pointer lands on it. Both states are
+// held instead, faded and clipped at rest, both parts painted once open.
 await check("the welcome note's dismiss button unfurls its label", async () => {
   const x = page.locator("#about-x");
   await x.waitFor({ state: "visible" });
@@ -119,32 +116,32 @@ await check("the welcome note's dismiss button unfurls its label", async () => {
       return {
         w: box.width,
         h: box.height,
-        // the glyph's own rect ignores the clip, so a negative side is a
-        // cross with a leg cut off rather than one merely sitting off centre
+        // the glyph's own rect ignores the clip, so a negative side is a leg
+        // cut off rather than a cross merely sitting off centre
         sides: [g.left - box.left, box.right - g.right],
-        glyph: el.querySelector("svg").getClientRects().length > 0,
-        // a span that is display:none still reports opacity 1, so this reads as
-        // "faded" only when it really is faded
-        label: parseFloat(getComputedStyle(el.querySelector("span")).opacity),
+        glyphPainted: el.querySelector("svg").getClientRects().length > 0,
+        // a display:none span still reports opacity 1
+        labelOpacity: parseFloat(
+          getComputedStyle(el.querySelector("span")).opacity,
+        ),
       };
     });
 
   const rest = await read();
-  if (rest.label !== 0)
+  if (rest.labelOpacity !== 0)
     throw new Error(
-      `the label sits at opacity ${rest.label} before anyone hovers, so there is nothing to fade in`,
+      `the label sits at opacity ${rest.labelOpacity} before anyone hovers, so there is nothing to fade in`,
     );
-  if (!rest.glyph)
+  if (!rest.glyphPainted)
     throw new Error("no glyph at rest: the button reads as empty");
-  // Folded, it is a disc rather than a pill. The border radius is already past
-  // half of either side, so any difference between the two reads as a circle
-  // squashed flat top and bottom, and the eye catches it at a glance.
+  // Folded it is a disc, not a pill: the radius is already past half of either
+  // side, so any difference between width and height reads as a circle
+  // squashed flat top and bottom.
   if (Math.abs(rest.w - rest.h) > 1)
     throw new Error(
       `${Math.round(rest.w)} by ${Math.round(rest.h)} folded, so the pill is not round`,
     );
-  // and the cross sits in the middle of it, whole: a clip tight enough to
-  // square the box must not be tight enough to take a leg off the glyph
+  // a clip tight enough to square the box must not take a leg off the cross
   const [near, far] = rest.sides;
   if (Math.min(near, far) < 0 || Math.abs(near - far) > 1)
     throw new Error(
@@ -158,9 +155,11 @@ await check("the welcome note's dismiss button unfurls its label", async () => {
   await x.hover();
   await page.waitForTimeout(450);
   const open = await read();
-  if (open.label !== 1)
-    throw new Error(`hovered, the label is still at opacity ${open.label}`);
-  if (!open.glyph)
+  if (open.labelOpacity !== 1)
+    throw new Error(
+      `hovered, the label is still at opacity ${open.labelOpacity}`,
+    );
+  if (!open.glyphPainted)
     throw new Error(
       "the glyph left as the pointer arrived: the button empties itself to show the word",
     );
@@ -173,16 +172,15 @@ await check("the welcome note's dismiss button unfurls its label", async () => {
 
 // ---- A3: 3:1 for the boundary of a control someone can operate (1.4.11) ----
 
-// The border and both of its neighbours, straight out of the browser: the
-// inside is the control's own fill, the outside is the nearest ancestor that
-// actually paints one, since the header paints nothing on a wide viewport and
-// the colour behind the box is really the body's.
+// The border and both of its neighbours, straight out of the browser. The
+// outside is the nearest ancestor that actually paints one: the header paints
+// nothing on a wide viewport, so the colour behind the box is the body's.
 const boundary = (p, sel) =>
   p.$eval(sel, async (el) => {
     const chan = (s) => {
       // Plain colours serialize as rgb()/rgba(). A color-mix() comes back as
-      // oklab(), whose three numbers are not sRGB channels at all, and reading
-      // them as channels reports near-black for every mix without complaining.
+      // oklab(), whose three numbers are not sRGB channels, and reading them
+      // as channels reports near-black for every mix without complaining.
       if (!s.startsWith("rgb"))
         throw new Error(`cannot read ${s} as sRGB channels`);
       return s
@@ -213,10 +211,10 @@ const boundary = (p, sel) =>
     }
     // Read once, wait a frame, read again. A colour still on its way from one
     // palette value to the other differs between the two, and that is the only
-    // way this measurement has ever been wrong: it reported a point between
-    // --border and --ui-border and called it the answer. Reduced motion should
-    // make that impossible; this is here for the day it stops working, and it
-    // fails on any machine rather than only on a slow one.
+    // way this measurement has ever been wrong: a point between --border and
+    // --ui-border, reported as the answer. Reduced motion should make it
+    // impossible; this catches the day that stops holding, on any machine
+    // rather than only on a slow one.
     const before = getComputedStyle(el).borderTopColor;
     await new Promise((r) =>
       requestAnimationFrame(() => requestAnimationFrame(r)),
@@ -248,15 +246,14 @@ const atLeast3 = (m, what) => {
   }
 };
 
-// Every contrast measurement runs with reduced motion asked for, because the
-// box transitions its border-color over .15s and search.js starts that fade by
-// enabling the input on load. Sampling mid-fade reads a colour that is on
-// neither palette: a CI runner reported rgb(149, 152, 146) at 2.55:1, which is
-// neither --border nor --ui-border but a point between them. A page of its own
-// is not enough, since the fade starts on every one of them, and a fast machine
-// hides the race entirely. The stylesheet turns every transition off under
-// prefers-reduced-motion, so asking for it measures the resting value by
-// construction rather than by winning a race, and that is also the colour a
+// Every contrast measurement runs with reduced motion asked for. The box
+// transitions its border-color over .15s and search.js starts that fade by
+// enabling the input on load, so sampling mid-fade reads a colour on neither
+// palette: a CI runner reported rgb(149, 152, 146) at 2.55:1, a point between
+// --border and --ui-border. A page of its own does not help, since the fade
+// starts on every one, and a fast machine hides the race. Under
+// prefers-reduced-motion the stylesheet turns every transition off, so this
+// measures the resting value by construction, which is also the colour a
 // visitor with that preference sees for the whole life of the page.
 const still = await browser.newContext({ reducedMotion: "reduce" });
 const home = await still.newPage();
@@ -269,10 +266,9 @@ await check(
   },
 );
 
-// The rule is scoped rather than global on purpose: 1.4.11 exempts an inactive
-// component, and the bar renders disabled and decorative on every page but the
-// home page, purely for layout parity. So there is no ratio to assert for the
-// sleeping one, only that it was left alone.
+// 1.4.11 exempts an inactive component, and the bar renders disabled and
+// decorative on every page but the home page, for layout parity. There is no
+// ratio to assert for the sleeping one, only that it was left alone.
 const detail = await still.newPage();
 await detail.goto(new URL("pdf/", SITE).href);
 await check(
@@ -289,9 +285,7 @@ await check(
 );
 
 // The colour math in node, for the checks below. boundary keeps its own copy
-// inside the page because it walks the ancestors there; here the two colours
-// come out and the ratio is computed on this side, which is the half that is
-// easier to read when a value moves.
+// inside the page because it walks the ancestors there.
 const luminance = (s) => {
   if (!s.startsWith("rgb"))
     throw new Error(`cannot read ${s} as sRGB channels`);
@@ -311,10 +305,9 @@ const ratio = (a, b) => {
 
 // ---- A5: the card's detail glyph, which is both a target and a graphic ----
 
-// It replaced words at the end of the description, so it has two duties the
-// words did not: it has to be big enough to hit (2.5.8 asks 24 by 24) and its
-// glyph has to be visible, since the glyph is now the whole message (1.4.11
-// asks 3:1 of a graphic that carries meaning).
+// It replaced words at the end of the description, so it carries two duties
+// those words did not: 24 by 24 to hit (2.5.8), and 3:1 for the glyph, which
+// is now the whole message (1.4.11, a graphic that carries meaning).
 const glyph = (p, theme) =>
   p.$eval(
     ".card-more",
@@ -352,15 +345,14 @@ for (const theme of ["light", "dark"]) {
   );
 }
 
-// The button that opens the service, keyboard-first. Added after a rewrite of
-// the stylesheet silently dropped .btn:focus-visible, which no check here
-// noticed because every other one is about size or colour at rest.
+// The button that opens the service, keyboard-first. Added after a stylesheet
+// rewrite silently dropped .btn:focus-visible, which no check here noticed
+// because every other one is about size or colour at rest.
 //
-// It asserts the designed ring rather than merely that focus is visible, and
-// the difference is the whole point: with the rule gone the button still gets
-// a ring, Chromium's own, which reports outline-style "auto" at 1px in its
-// blue. The rule paints solid 2px in --fg. A check that only asked "is there
-// an outline" passed with the rule deleted, measured.
+// It asserts the designed ring rather than merely that focus is visible: with
+// the rule gone the button still gets a ring, Chromium's own, outline-style
+// "auto" at 1px in its blue, and a check that only asked for an outline passed
+// with the rule deleted. The rule paints solid 2px in --fg.
 await check(
   "the detail page's open button wears cairn's focus ring",
   async () => {
@@ -377,8 +369,7 @@ await check(
   },
 );
 
-// The way back out of a detail page: the same two duties as the card glyph,
-// since it was the other control under 24 by 24.
+// The way back out of a detail page: the same two duties as the card glyph.
 await check("the back link is a real target on a detail page", async () => {
   const m = await detail.$eval(".back", (el) => {
     const r = el.getBoundingClientRect();
@@ -403,9 +394,8 @@ await check("the back link is a real target on a detail page", async () => {
   }
 });
 
-// A hosting flag that leads somewhere is a control, and the demo sets one, so
-// the resting size is worth holding: folded, before anyone hovers, is what a
-// thumb arrives on.
+// A hosting flag that leads somewhere is a control, and folded, before anyone
+// hovers, is what a thumb arrives on.
 await check(
   "a linked hosting flag is a real target while still folded",
   async () => {
@@ -423,11 +413,11 @@ await check(
 
 // A card is one big link, so the pointer is a hand everywhere on it and says
 // nothing extra when it reaches a control. The fill is what tells a visitor
-// they are on a button, so it is worth holding: 3:1 against the card for the
-// boundary, 4.5:1 for the words the pill and the flag carry on top of it.
+// they are on a button: 3:1 against the card for the boundary, 4.5:1 for the
+// words the pill and the flag carry on top of it.
 //
 // color-mix() serializes as oklab(), which the sRGB reader above refuses, so
-// the colours go through a canvas: it hands back what would be painted.
+// these colours go through a canvas, which hands back what would be painted.
 const hoverColours = (p, sel, theme) =>
   p.$eval(
     sel,
@@ -456,9 +446,9 @@ for (const theme of ["light", "dark"]) {
   await check(
     `hovering a card control fills it, visibly, in ${theme}`,
     async () => {
-      // The example config has no monitor, so it has no pill: the controls
-      // checked are the ones this page actually carries, and none at all is a
-      // failure rather than a quiet pass.
+      // The example config has no monitor, so it has no pill. The controls
+      // checked are the ones this page carries, and none at all is a failure
+      // rather than a quiet pass.
       const present = [];
       for (const sel of [
         ".card-more",
@@ -493,11 +483,9 @@ for (const theme of ["light", "dark"]) {
 }
 
 // A card grid lands on fractional track widths, so every card sits at its own
-// subpixel phase. A ring painted on the box edges and a glyph centred inside it
-// then round to different sides, and the glyph reads off centre, differently on
-// each card. Whole numbers on both sides is what stops it, so that is what is
-// held here: the gap has to be an integer, or the drawing goes back to
-// disagreeing with its own outline.
+// subpixel phase. A ring painted on the box edges and a glyph centred inside
+// it then round to different sides, and the glyph reads off centre,
+// differently on each card. An integer gap on both sides is what stops it.
 await check("the detail glyph and its ring round the same way", async () => {
   const gap = await home.$eval(".card-more", (el) => {
     const s = getComputedStyle(el);
@@ -517,11 +505,10 @@ await check("the detail glyph and its ring round the same way", async () => {
 
 // ---- A6: 3:1 for a dot that carries meaning, on both themes (1.4.11) ----
 
-// The fixture's monitor is a port nothing listens on, so every pill on that
-// page renders unknown and neither of these two states can be reached by
-// waiting. Both come from monitors that report more than a bool, which a
-// fixture cannot stand up. What the stylesheet keys on is the class, so the
-// class is what is set: this measures the colours, which is all it claims to.
+// The fixture's monitor is a port nothing listens on, so every pill renders
+// unknown and neither of these two states can be reached by waiting: both come
+// from monitors that report more than a bool. The stylesheet keys on the
+// class, so the class is what is set, and this measures colours only.
 const dot = (p, cls, theme) =>
   p.$eval(
     ".status-pill",
@@ -560,8 +547,8 @@ for (const cls of ["status-degraded", "status-maintenance"]) {
 }
 
 // Blue against green is the pairing most often indistinguishable, and this dot
-// is nine pixels across. The label carries the meaning without colour, which is
-// what 1.4.1 asks for; the shape is the redundancy for the glance.
+// is nine pixels across. The label carries the meaning without colour (1.4.1);
+// the shape is the redundancy for the glance.
 await check(
   "the maintenance dot is square, so colour is not the only cue",
   async () => {
@@ -584,8 +571,8 @@ await m.goto(MANY);
 // A phone raises the dismiss button to 44px for the thumb, and that rule is
 // older than the fold. The fold caps the width from the desktop block, so
 // raising only the height leaves an oval with the cross pressed against the
-// clip: 30 by 44 with 3px of air on one side, measured on a shipped release.
-// Held at 320 as well, where a rem is no smaller but the note is tightest.
+// clip: 30 by 44 with 3px of air on one side, on a shipped release. Held at
+// 320 as well, where a rem is no smaller but the note is tightest.
 for (const width of [390, 320]) {
   await check(`the dismiss button is a disc at ${width}px`, async () => {
     const p = await browser.newPage({ viewport: { width, height: 780 } });
@@ -621,8 +608,7 @@ for (const width of [390, 320]) {
   });
 }
 
-// Measured still as well, and at phone width, which is the only place this
-// control is painted at all.
+// The jump-to select is painted only at phone width.
 const stillPhone = await browser.newContext({
   viewport: PHONE,
   reducedMotion: "reduce",
@@ -641,10 +627,10 @@ await check(
   },
 );
 
-// The regression: the swap to a select is gated on JavaScript because nav.js
-// is the select's entire behaviour. Ungated, a phone with scripting off got no
-// category navigation at all, on the viewport where a nine-category list is
-// least scrollable.
+// The swap to a select is gated on JavaScript because nav.js is the select's
+// entire behaviour. Ungated, a phone with scripting off got no category
+// navigation at all, on the viewport where a nine-category list is least
+// scrollable.
 const dumb = await browser.newContext({
   viewport: PHONE,
   javaScriptEnabled: false,
@@ -675,17 +661,17 @@ const openMenu = async () => {
   await m.locator(".nav-burger").click();
   eq(await nav.evaluate((el) => el.open), true, "the menu opened");
   // The dropdown fades in over .16s from visibility:hidden, and focus() on a
-  // hidden element is a no-op that leaves focus on the burger, which is the
-  // other case entirely and would pass for the wrong reason.
+  // hidden element is a no-op that leaves focus on the burger: the other case
+  // entirely, passing for the wrong reason.
   await m
     .locator(".nav-links .menu-link")
     .first()
     .waitFor({ state: "visible" });
 };
 // behavior:'instant' because the stylesheet sets scroll-behavior:smooth, so a
-// plain scrollBy animates and scrollY has barely moved a frame later. And a
-// page that did not move fires no scroll at all, which would let every check
-// below pass without testing anything: hence the assertion that it did.
+// plain scrollBy animates and scrollY has barely moved a frame later. A page
+// that did not move fires no scroll at all and every check below would pass
+// without testing anything, so the move itself is asserted.
 const scrollDown = async () => {
   const moved = await m.evaluate(async () => {
     const before = scrollY;
@@ -730,11 +716,11 @@ await check(
   },
 );
 
-// Artwork that cannot serve both themes. The whole feature is a CSS rule
-// keyed on data-theme, so the markup says nothing about it: what matters is
-// which url() the browser has resolved on each element, and that pressing the
-// theme button moves it. A <picture> would pass a markup test and fail this
-// one, because it answers to the operating system and not to the button.
+// Artwork that cannot serve both themes. The feature is a CSS rule keyed on
+// data-theme, so the markup says nothing about it: what counts is which url()
+// the browser resolved on each element, and that the theme button moves it. A
+// <picture> would pass a markup test and fail this one, since it answers to
+// the operating system and not to the button.
 {
   const t = await browser.newPage();
   await t.goto(THEMED, { waitUntil: "networkidle" });
@@ -765,8 +751,8 @@ await check(
     eq(p.first, "mark-pale.svg", "a themed icon in dark");
   });
 
-  // A negative control: it passes whether or not the feature exists, and is
-  // here to catch a rule written loosely enough to repaint every icon.
+  // A negative control: it passes whether or not the feature exists, and
+  // catches a rule written loosely enough to repaint every icon.
   await check("an icon that themes nothing is left alone", async () => {
     eq((await painted()).plain, "normal", "the untouched icon in dark");
   });
@@ -805,9 +791,8 @@ await check(
     eq(await file(), "normal", "the detail tile in light");
     await t.locator("#theme-toggle").click();
     eq(await file(), "mark-pale.svg", "the detail tile in dark");
-    // Put the theme back: the choice lives in localStorage and outlives the
-    // navigation, so a check that left it on dark would decide what the next
-    // one starts from.
+    // The choice lives in localStorage and outlives the navigation, so
+    // leaving it on dark would decide what the next check starts from.
     await t.locator("#theme-toggle").click();
     await t.goto(THEMED, { waitUntil: "networkidle" });
   });
@@ -835,11 +820,10 @@ await check(
 
 // ---- the leaving dialog ----
 //
-// The server decides which links are guarded, and Go tests hold that. What
-// only a browser can say is whether the dialog a visitor meets behaves like a
-// dialog: modal, escapable, and returning them where they were. All of it
-// comes from <dialog>.showModal(), which is exactly why it is worth checking
-// that the script really calls it rather than rolling its own div.
+// Go tests hold which links are guarded. Only a browser can say whether the
+// dialog a visitor meets behaves like one: modal, escapable, and returning
+// them where they were. All of that comes from <dialog>.showModal(), so what
+// is checked here is that the script calls it rather than rolling its own div.
 {
   const l = await browser.newPage();
   await l.goto(LEAVE, { waitUntil: "networkidle" });
@@ -875,8 +859,8 @@ await check(
     "it is modal, so the page behind it cannot be reached",
     async () => {
       // A real showModal() puts everything else in the inert subtree, which is
-      // what makes the focus trap and the backdrop work. A div pretending to be
-      // a dialog passes every markup check and fails this one.
+      // what makes the focus trap and the backdrop work. A div pretending to
+      // be a dialog passes every markup check and fails this one.
       eq(
         await l.evaluate(
           () =>
@@ -920,12 +904,9 @@ await check(
     eq(await go.getAttribute("rel"), "noopener noreferrer", "the rel");
   });
 
-  // Chromium lets Tab walk off the end of a modal dialog: the press after the
-  // last control leaves the page for the browser's own toolbar, and nothing on
-  // screen moves. A bare <dialog> with three controls does the same, so this is
-  // the platform rather than anything in this markup, and it is worth holding
-  // because one press in four then reads as a dead key. WAI-ARIA's dialog
-  // pattern asks for the wrap.
+  // Chromium lets Tab off the end of a modal dialog, into the browser's own
+  // toolbar, so one press in four moves nothing on screen. A bare <dialog>
+  // does the same. WAI-ARIA's dialog pattern asks for the wrap.
   await check(
     "Tab wraps inside the dialog rather than leaving it",
     async () => {
@@ -960,9 +941,9 @@ await check(
   );
 
   await check("Escape closes it and the focus comes back", async () => {
-    // Asserted open first, and not for tidiness: with no script at all this
-    // check passed on its own, because a dialog that never opened is already
-    // closed and the focus never left the link that was clicked.
+    // Open is asserted first: a dialog that never opened is already closed and
+    // the focus never left the link that was clicked, so with no script at all
+    // this check passed on its own.
     eq(await dialog.evaluate((d) => d.open), true, "dialog.open before Escape");
     await l.keyboard.press("Escape");
     eq(await dialog.evaluate((d) => d.open), false, "dialog.open after Escape");
@@ -992,11 +973,11 @@ await check(
 
   // ---- the same dialog on a phone ----
   //
-  // Measured because it was wrong: the actions are a wrapping row with the
-  // primary pushed to the far end by an auto margin, which reads well on a
-  // wide screen and falls apart the moment it wraps. At 390px Continue landed
-  // alone on a second line, shoved right, with dead space beside it; at 320px
-  // all three stacked at three different widths, the last one still offset.
+  // The actions are a wrapping row with the primary pushed to the far end by
+  // an auto margin, which reads well on a wide screen and falls apart the
+  // moment it wraps. At 390px Continue landed alone on a second line, shoved
+  // right, with dead space beside it; at 320px all three stacked at three
+  // different widths, the last one still offset.
   {
     const ph = await browser.newPage({ viewport: { width: 390, height: 780 } });
     await ph.goto(LEAVE, { waitUntil: "networkidle" });
@@ -1046,9 +1027,8 @@ await check(
     await check(
       "and they are painted in the order they are read in",
       async () => {
-        // Not cosmetic: a column-reverse here would put the primary on top
-        // while a keyboard still tabs copy, stay, continue, which is 2.4.3
-        // broken for the sake of a layout.
+        // A column-reverse would put the primary on top while a keyboard still
+        // tabs copy, stay, continue: 2.4.3 broken for the sake of a layout.
         const b = await boxes();
         if (!(b.copy.y < b.stay.y && b.stay.y < b.go.y)) {
           throw new Error(
@@ -1073,8 +1053,8 @@ await check(
     await ph.close();
   }
 
-  // Wide screens keep the row they had: the utility on the left, the primary
-  // at the far end, which is what the phone layout is a departure from.
+  // Wide screens keep the row: the utility on the left, the primary at the far
+  // end, which is what the phone layout departs from.
   await check("on a wide screen the actions stay on one row", async () => {
     await l.setViewportSize({ width: 1100, height: 900 });
     await l.goto(LEAVE, { waitUntil: "networkidle" });
@@ -1085,10 +1065,10 @@ await check(
       const go = one(".leave-go");
       return {
         // The row's own height, against the tallest thing in it. Comparing
-        // the tops instead looks right and is not: align-items centres them,
-        // and the three are not the same height, so their tops differ by a
-        // few pixels while sharing a row. That comparison is what failed
-        // here on a layout that was correct.
+        // the tops instead looks right and is not: align-items centres three
+        // controls of different heights, so their tops differ by a few pixels
+        // while sharing a row, and that comparison failed on a layout that
+        // was correct.
         rowH: d.querySelector(".leave-acts").getBoundingClientRect().height,
         tallest: Math.max(
           one(".leave-copy").height,
@@ -1112,12 +1092,11 @@ await check(
   });
 
   // The two buttons are controls whose boundary is the only thing saying so,
-  // which is the case 1.4.11 asks 3:1 for. This one opens the dialog itself
-  // rather than through the script: what is under test is the paint, and
-  // making it depend on leave.js would only give it a second way to fail.
-  // Read from the browser rather than
-  // from the stylesheet: --ui-border is a light-dark(), and a computed style
-  // hands back the unresolved function until something actually paints it.
+  // the case 1.4.11 asks 3:1 for. This opens the dialog directly rather than
+  // through leave.js: the paint is what is under test. The colours are read
+  // from the browser and not from the stylesheet, since --ui-border is a
+  // light-dark() and a computed style hands back the unresolved function
+  // until something paints it.
   await check("the dialog's own buttons clear 3:1 in both themes", async () => {
     await l.goto(LEAVE, { waitUntil: "networkidle" });
     for (const theme of ["light", "dark"]) {
@@ -1150,11 +1129,11 @@ await check(
 // ---- the card states ----
 //
 // Four things no markup assertion can see. The contrast helper here is not the
-// one above: it has to composite a translucent veil itself, respect the paint
-// order while doing it, and read colours the browser hands back as oklab() or
-// as color(srgb …) with a channel just outside the gamut in scientific
-// notation. Each of those three produced a plausible wrong number while this
-// design was being drawn, and none of them produced an error.
+// one above: it composites the translucent veil itself, respects the paint
+// order while doing it, and reads colours the browser hands back as oklab() or
+// as color(srgb ...) with a channel just outside the gamut in scientific
+// notation. Each of those three produced a plausible wrong number, and none of
+// them produced an error.
 {
   const st = await browser.newPage();
   await st.goto(STATES, { waitUntil: "networkidle" });
@@ -1171,8 +1150,8 @@ await check(
         `the name of a retired service is a ${tag}, so Tab still reaches it`,
       );
     }
-    // and walk it, because a tag name is markup and this file exists for what
-    // markup cannot say: the name must never take focus
+    // and walk it: a tag name is markup, and what has to hold is that the
+    // name never takes focus
     await st.evaluate(() => document.body.focus());
     for (let i = 0; i < 40; i++) {
       await st.keyboard.press("Tab");
@@ -1191,10 +1170,10 @@ await check(
   });
   // Not by comparing two cards in a row: the grid stretches every card in a
   // row to the tallest, so those two numbers are equal whatever the badge
-  // does. Measured that way this check passed with the badge put back inside
-  // the box, which is the one failure it exists to catch. What it asks instead
-  // is whether the badge is in flow at all: if it is, the card body starts
-  // below it, and that offset is what the grid charges to every neighbour.
+  // does, and measured that way this check passed with the badge back inside
+  // the box, the one failure it exists to catch. It asks instead whether the
+  // badge is in flow: if it is, the card body starts below it, and the grid
+  // charges that offset to every neighbour.
   await check("the badge takes no row inside the card", async () => {
     const drop = await st.evaluate(() => {
       const card = document.querySelector(".card-badge").closest(".card");
@@ -1243,17 +1222,16 @@ await check(
     "a muted card and every badge still clear their thresholds",
     async () => {
       const bad = await st.evaluate(() => {
-        // A number here can be negative and can be in scientific notation: a mix
-        // that lands just outside the gamut serialises as -3.48948e-7, and
-        // [\d.]+ splits that into "3.48948" and "7", read as a blue channel of
-        // 891. It reported a colour with 8:1 as having 1.39:1.
+        // A number here can be negative and can be in scientific notation: a
+        // mix just outside the gamut serialises as -3.48948e-7, and [\d.]+
+        // splits that into "3.48948" and "7", read as a blue channel of 891.
+        // It reported a colour with 8:1 as having 1.39:1.
         const NUM = /-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
         const probe = document.createElement("span");
         probe.style.display = "none";
         document.body.append(probe);
         // oklab() is not sRGB, and half this palette arrives that way because
-        // --accent-ink is itself such a mix. Let the browser convert rather than
-        // writing the conversion here.
+        // --accent-ink is itself such a mix. The browser does the conversion.
         const toSRGB = (v) => {
           if (v.startsWith("rgb") || v.startsWith("color(srgb")) return v;
           probe.style.color = `color-mix(in srgb, ${v} 100%, transparent)`;
@@ -1332,10 +1310,9 @@ await check(
     },
   );
 
-  // The rule between the pill and the state says the two are different kinds
-  // of claim. It must not be drawn with nothing to its left, which is every
-  // disabling state, since none of them is monitored: a stroke hanging off
-  // the start of a line reads as a rendering fault.
+  // The rule between the pill and the state must not be drawn with nothing to
+  // its left, which is every disabling state, since none of them is monitored:
+  // a stroke hanging off the start of a line reads as a rendering fault.
   await check(
     "the rule appears only when a pill precedes the state",
     async () => {

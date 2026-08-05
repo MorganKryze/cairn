@@ -74,9 +74,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	locale, _, _ := strings.Cut(loc, "/")
-	// The cookie is an explicit choice only: the switcher links carry
-	// ?choose. A negotiated visit leaves no trace, so a visitor whose
-	// browser language changes is followed until they pick one themselves.
+	// The cookie records an explicit choice only: the switcher links carry
+	// ?choose. A negotiated visit leaves no trace, so a visitor whose browser
+	// language changes is followed until they pick one themselves.
 	if r.URL.Query().Has("choose") {
 		http.SetCookie(w, &http.Cookie{Name: "locale", Value: locale, Path: render.BasePath + "/", MaxAge: 365 * 24 * 3600, SameSite: http.SameSiteLaxMode, Secure: secureRequest(r)})
 		w.Header().Set("Cache-Control", "no-store")
@@ -96,11 +96,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 // faviconICO answers the well-known path. No browser asks for it, since the
-// head declares the icons; it is here for the feed readers, link previewers
-// and bookmark tools that skip the html and fetch /favicon.ico directly.
-//
-// An operator who set their own favicon gets pointed at it. Serving cairn's
-// stones to a link previewer would put our mark on their site's card.
+// head declares the icons: it is here for the feed readers, link previewers
+// and bookmark tools that skip the html. An operator's own favicon wins, or
+// cairn's stones end up on their site's link card.
 func faviconICO(static fs.FS) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if own := Current().Cfg.Site.Favicon.Light; own != "" {
@@ -111,8 +109,8 @@ func faviconICO(static fs.FS) http.HandlerFunc {
 	}
 }
 
-// manifest makes "add to home screen" give the site its own name and icon;
-// deliberately no service worker and no offline mode.
+// manifest makes "add to home screen" give the site its own name and icon.
+// No service worker, no offline mode.
 func manifest(w http.ResponseWriter, r *http.Request) {
 	cfg := Current().Cfg
 	name := cfg.Site.Title.Get(negotiate(r, cfg.Site.Locales), cfg.DefaultLocale())
@@ -131,15 +129,13 @@ func manifest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// secureRequest reports whether the visitor reached us over https, directly
-// or behind a proxy. The cookies carry Secure exactly then, so they keep
-// working on the plain-http LAN deployments cairn is also made for.
+// secureRequest reports whether the visitor reached us over https, directly or
+// behind a proxy. The cookies carry Secure exactly then, so they keep working
+// on the plain-http LAN deployments cairn is also made for.
 func secureRequest(r *http.Request) bool {
 	return r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 }
 
-// siteBase prefers the configured public URL; without one it falls back to
-// what the request headers suggest.
 func siteBase(r *http.Request) string {
 	if u := Current().Cfg.Site.URL; u != "" {
 		return u + render.BasePath
@@ -150,9 +146,9 @@ func siteBase(r *http.Request) string {
 func baseURL(r *http.Request) string {
 	// X-Forwarded-Proto is attacker-controlled until a proxy overwrites it, and
 	// what it builds here is published in robots.txt, the sitemap and
-	// security.txt. Only the two schemes cairn can be reached over are taken;
-	// anything else falls back to what this connection actually is. Host needs
-	// no such guard: net/http rejects a malformed one with 400 before we run.
+	// security.txt. Only the two schemes cairn can be reached over are taken.
+	// Host needs no such guard: net/http rejects a malformed one with 400
+	// before we run.
 	scheme := r.Header.Get("X-Forwarded-Proto")
 	if scheme != "http" && scheme != "https" {
 		if r.TLS != nil {
@@ -175,11 +171,10 @@ func robots(w http.ResponseWriter, r *http.Request) {
 }
 
 // securityTxt answers RFC 9116, and only once an operator has given a contact.
-// Expires is computed per request rather than configured, because a
-// security.txt that has quietly expired is worth less than none at all, and a
-// file regenerated on every read cannot. Canonical and Preferred-Languages are
-// cairn's to fill too: it knows where it is served and which languages it
-// speaks.
+// Expires is computed per request rather than configured: a security.txt that
+// has quietly expired is worth less than none at all, and a file regenerated
+// on every read cannot. cairn fills Canonical and Preferred-Languages from
+// what it already knows.
 func securityTxt(w http.ResponseWriter, r *http.Request) {
 	sec := Current().Cfg.Site.Security
 	if sec.Contact == "" {
@@ -201,7 +196,6 @@ func securityTxt(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Canonical: %s/.well-known/security.txt\n", siteBase(r))
 }
 
-// xmlText escapes a value for an element body.
 func xmlText(s string) string {
 	var b strings.Builder
 	if err := xml.EscapeText(&b, []byte(s)); err != nil {
@@ -224,8 +218,8 @@ func sitemap(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	io.WriteString(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
 	for _, k := range keys {
-		// The host reaches this from the request, so it is text cairn did not
-		// write: escaped, or one odd Host makes the whole document unparseable.
+		// The host comes from the request, so it is text cairn did not write:
+		// escaped, or one odd Host makes the document unparseable.
 		fmt.Fprintf(w, "  <url><loc>%s</loc></url>\n", xmlText(siteBase(r)+"/"+k+"/"))
 	}
 	io.WriteString(w, "</urlset>\n")

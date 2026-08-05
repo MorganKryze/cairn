@@ -14,9 +14,8 @@ import (
 	"github.com/MorganKryze/cairn/src/internal/status"
 )
 
-// watch polls instead of using inotify: polling survives bind mounts and
-// configmap symlink swaps that file watchers routinely miss. The loop is only
-// the clock; reloadOnce does the work and is what the tests drive.
+// Watch polls instead of using inotify: polling survives the bind mounts and
+// configmap symlink swaps that file watchers routinely miss.
 func Watch(dir string) {
 	last := watchPrint(dir)
 	for range time.Tick(2 * time.Second) {
@@ -24,15 +23,14 @@ func Watch(dir string) {
 	}
 }
 
-// watchPrint fingerprints everything a page is built from: the config dir, and
-// the local icons that live outside it but change the pages too.
+// watchPrint fingerprints everything a page is built from. The local icons
+// live outside the config dir and change the pages too.
 func watchPrint(dir string) string {
 	return fingerprint(dir) + fingerprint(filepath.Join(config.AssetsPath, "icons"))
 }
 
-// reloadOnce runs one iteration of the watcher and returns the fingerprint to
-// compare against next time. An unchanged directory costs one stat sweep; a
-// broken config is logged and the previous pages stay up.
+// reloadOnce returns the fingerprint to compare against next time. A broken
+// config is logged and the previous pages stay up.
 func reloadOnce(dir, last string) string {
 	fp := watchPrint(dir)
 	if fp == last {
@@ -57,8 +55,8 @@ func reloadOnce(dir, last string) string {
 	return fp
 }
 
-// pollStatus feeds the status dots from the Gatus API, server-side only. On
-// any fetch problem the dots disappear rather than go stale.
+// Poll feeds the status dots from the monitor's API, server-side only. On any
+// fetch problem the dots disappear rather than go stale.
 func Poll() {
 	if cfg := Current().Cfg; cfg.Site.StatusAddress() != "" {
 		log.Printf("status: polling %s at %s every %s", cfg.Site.StatusProvider(), cfg.Site.StatusAddress(), cfg.StatusInterval())
@@ -79,14 +77,13 @@ func Poll() {
 	}
 }
 
-// source is the status block as the poller needs it.
 func source(cfg *config.Config) status.Source {
 	return status.Source{
 		URL:      cfg.Site.StatusAddress(),
 		Provider: cfg.Site.StatusProvider(),
 		Slug:     cfg.Site.Status.Slug,
-		// The two mapping types are deliberately separate, since config
-		// imports nothing of cairn's; this is where one becomes the other.
+		// config imports nothing of cairn's, so the two mapping types stay
+		// separate; this is where one becomes the other.
 		TokenFile:   cfg.Site.Status.TokenFile,
 		TokenScheme: cfg.Site.Status.TokenScheme,
 		Map: status.Mapping{
@@ -103,12 +100,10 @@ func source(cfg *config.Config) status.Source {
 	}
 }
 
-// pollLog remembers the last messages printed, so a Gatus that stays down
+// pollLog remembers the last messages printed, so a monitor that stays down
 // says so once instead of every interval.
 type pollLog struct{ err, missing string }
 
-// pollOnce runs one status poll and swaps the pages in when the dots changed.
-// An empty url is a no-op: a site without Gatus shows no pill at all.
 func pollOnce(src status.Source, seen *pollLog) {
 	if src.URL == "" {
 		return
@@ -146,11 +141,10 @@ func pollOnce(src status.Source, seen *pollLog) {
 
 // fingerprint walks the tree rather than listing one level. A directory's own
 // mtime does not move when a file inside it is overwritten, so media/shot.png
-// replaced in place used to stay invisible: the page kept declaring the old
-// image's width and height until something unrelated touched the top level.
-//
-// The walk is bounded by what a config directory holds, a handful of yaml and
-// a media folder, and it runs on the same two-second tick as before.
+// replaced in place stayed invisible: the page kept declaring the old image's
+// width and height until something unrelated touched the top level. The walk
+// is bounded by what a config directory holds, a handful of yaml and a media
+// folder.
 func fingerprint(dir string) string {
 	var b strings.Builder
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {

@@ -40,9 +40,9 @@ func yamlWord(t string) string {
 	if w, ok := words[t]; ok {
 		return w
 	}
-	// yaml.v3 qualifies our own types with the package they live in, which is
-	// an implementation detail the operator never needs and which silently
-	// changed the day the packages were split. Match on the bare name.
+	// yaml.v3 qualifies our own types with the package they live in, which the
+	// operator never needs and which changed when the packages were split.
+	// Match on the bare name.
 	if bare := dropPackage(t); bare != t {
 		if w, ok := words[bare]; ok {
 			return w
@@ -65,9 +65,9 @@ func dropPackage(t string) string {
 	return prefix + t
 }
 
-// yamlKeys lists the keys a struct accepts, in the order they are declared.
-// An inline struct contributes its own keys dotted onto its name, because
-// "theme.accent" is how the operator writes it.
+// yamlKeys lists the keys a struct accepts, in declaration order. An inline
+// struct contributes its own keys dotted onto its name, because "theme.accent"
+// is how the operator writes it.
 func yamlKeys(t reflect.Type) []string {
 	var out []string
 	for i := range t.NumField() {
@@ -89,10 +89,8 @@ func yamlKeys(t reflect.Type) []string {
 
 // yamlShapes maps every named struct reachable from a config file to itself,
 // so an "unknown key" error can offer the keys of the entry that actually
-// failed. It is built by reflection rather than written down: the hand-kept
-// list had drifted (it had never gained show_version), a nested entry could
-// only ever be offered the top-level keys, and a service entry got no list at
-// all. None of those can happen to a list nothing maintains.
+// failed. Reflection rather than a written list: the hand-kept one had
+// drifted, and a nested entry could only ever be offered the top-level keys.
 var yamlShapes = func() map[string]reflect.Type {
 	shapes := map[string]reflect.Type{}
 	var walk func(reflect.Type)
@@ -124,8 +122,6 @@ func entryErr(err error) string {
 	return innerLineRe.ReplaceAllString(err.Error(), "")
 }
 
-// unknownKey phrases the refusal for the entry the operator actually mistyped:
-// which kind of entry it is, and what it does accept.
 func unknownKey(field, typ string) string {
 	out := fmt.Sprintf("unknown key %q", field)
 	shape, ok := yamlShapes[dropPackage(typ)]
