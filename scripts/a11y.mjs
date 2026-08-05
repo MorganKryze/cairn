@@ -25,6 +25,10 @@ const THEMED =
   "http://127.0.0.1:8093/en/";
 const LEAVE =
   process.argv[6] ?? process.env.CAIRN_LEAVE_URL ?? "http://127.0.0.1:8094/en/";
+const STATES =
+  process.argv[7] ??
+  process.env.CAIRN_STATES_URL ??
+  "http://127.0.0.1:8095/en/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -1101,6 +1105,194 @@ await check(
     }
   });
   await l.close();
+}
+
+// ---- the card states ----
+//
+// Four things no markup assertion can see. The contrast helper here is not the
+// one above: it has to composite a translucent veil itself, respect the paint
+// order while doing it, and read colours the browser hands back as oklab() or
+// as color(srgb …) with a channel just outside the gamut in scientific
+// notation. Each of those three produced a plausible wrong number while this
+// design was being drawn, and none of them produced an error.
+{
+  const st = await browser.newPage();
+  await st.goto(STATES, { waitUntil: "networkidle" });
+  console.log("\ncard states");
+
+  await check("a disabled card is not reachable by Tab", async () => {
+    const tag = await st.evaluate(() => {
+      const card = document.querySelector(".card-off");
+      return card ? card.querySelector(".card-name").tagName : null;
+    });
+    if (tag === null) throw new Error("no muted card on the page at all");
+    if (tag !== "SPAN") {
+      throw new Error(
+        `the name of a retired service is a ${tag}, so Tab still reaches it`,
+      );
+    }
+    // and walk it, because a tag name is markup and this file exists for what
+    // markup cannot say: the name must never take focus
+    await st.evaluate(() => document.body.focus());
+    for (let i = 0; i < 40; i++) {
+      await st.keyboard.press("Tab");
+      const inside = await st.evaluate(
+        () =>
+          !!document.activeElement
+            ?.closest(".card-off")
+            ?.querySelector(".card-name:focus"),
+      );
+      if (inside) {
+        throw new Error(
+          `Tab landed inside the muted card's name after ${i + 1} presses`,
+        );
+      }
+    }
+  });
+  // Not by comparing two cards in a row: the grid stretches every card in a
+  // row to the tallest, so those two numbers are equal whatever the badge
+  // does. Measured that way this check passed with the badge put back inside
+  // the box, which is the one failure it exists to catch. What it asks instead
+  // is whether the badge is in flow at all: if it is, the card body starts
+  // below it, and that offset is what the grid charges to every neighbour.
+  await check("the badge takes no row inside the card", async () => {
+    const drop = await st.evaluate(() => {
+      const card = document.querySelector(".card-badge").closest(".card");
+      const main = card.querySelector(".card-main");
+      return (
+        main.getBoundingClientRect().top - card.getBoundingClientRect().top
+      );
+    });
+    if (drop > 3) {
+      throw new Error(
+        `the card body starts ${Math.round(drop)}px below the card's top: the badge is in flow, and the grid charges that height to every card beside it`,
+      );
+    }
+  });
+
+  await check(
+    "the corner glyph stays in its corner on a muted card",
+    async () => {
+      const m = await st.evaluate(() => {
+        const card = document.querySelector(".card-off");
+        const g = card.querySelector(".card-more");
+        if (!g) return null;
+        const c = card.getBoundingClientRect();
+        const r = g.getBoundingClientRect();
+        return {
+          inside: r.left >= c.left && r.right <= c.right,
+          gap: c.right - r.right,
+        };
+      });
+      if (m === null)
+        throw new Error("the muted card has no detail glyph to measure");
+      if (!m.inside) {
+        throw new Error(
+          "the glyph is outside the card: it was raised with position:relative, which overrides its own absolute",
+        );
+      }
+      if (m.gap > 40) {
+        throw new Error(
+          `the glyph is ${Math.round(m.gap)}px from the end: it is no longer in the corner`,
+        );
+      }
+    },
+  );
+
+  await check(
+    "a muted card and every badge still clear their thresholds",
+    async () => {
+      const bad = await st.evaluate(() => {
+        // A number here can be negative and can be in scientific notation: a mix
+        // that lands just outside the gamut serialises as -3.48948e-7, and
+        // [\d.]+ splits that into "3.48948" and "7", read as a blue channel of
+        // 891. It reported a colour with 8:1 as having 1.39:1.
+        const NUM = /-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
+        const probe = document.createElement("span");
+        probe.style.display = "none";
+        document.body.append(probe);
+        // oklab() is not sRGB, and half this palette arrives that way because
+        // --accent-ink is itself such a mix. Let the browser convert rather than
+        // writing the conversion here.
+        const toSRGB = (v) => {
+          if (v.startsWith("rgb") || v.startsWith("color(srgb")) return v;
+          probe.style.color = `color-mix(in srgb, ${v} 100%, transparent)`;
+          return getComputedStyle(probe).color;
+        };
+        const clamp = (v) => Math.min(255, Math.max(0, v));
+        const chan = (raw) => {
+          const v = toSRGB(raw);
+          const n = v.match(NUM).map(Number);
+          if (v.startsWith("rgb")) return n.slice(0, 3).map(clamp);
+          if (v.startsWith("color(srgb"))
+            return n.slice(0, 3).map((x) => clamp(x * 255));
+          throw new Error(`cannot read ${v} as sRGB channels`);
+        };
+        const alphaOf = (v) =>
+          v.includes("/") ? Number(v.split("/")[1].match(NUM)[0]) : 1;
+        const over = (fg, fa, bg) =>
+          fg.map((c, i) => c * fa + bg[i] * (1 - fa));
+        const lum = ([r, g, b]) => {
+          const f = (x) =>
+            (x /= 255) <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const ratio = (a, b) => {
+          const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+          return (x + 0.05) / (y + 0.05);
+        };
+
+        const page = chan(getComputedStyle(document.body).backgroundColor);
+        const fails = [];
+        const fillOf = (el) =>
+          over(
+            chan(getComputedStyle(el).backgroundColor),
+            alphaOf(getComputedStyle(el).backgroundColor),
+            page,
+          );
+
+        const badges = document.querySelectorAll(".card-badge");
+        if (!badges.length) fails.push("no badge on the page at all");
+        for (const badge of badges) {
+          const bg = fillOf(badge.closest(".card"));
+          const r = ratio(chan(getComputedStyle(badge).color), bg);
+          if (r < 4.5)
+            fails.push(`${badge.textContent.trim()} at ${r.toFixed(2)}:1`);
+        }
+
+        const card = document.querySelector(".card-off");
+        if (!card) fails.push("no muted card on the page at all");
+        if (card) {
+          const veil = getComputedStyle(card, "::after").backgroundColor;
+          const v = chan(veil);
+          const va = alphaOf(veil);
+          const behind = over(v, va, fillOf(card));
+          // paint order: what sits above the film is not read through it
+          const above = (el) => (Number(getComputedStyle(el).zIndex) || 0) >= 2;
+          const inkOf = (el) => {
+            const c = chan(getComputedStyle(el).color);
+            return above(el) || above(el.parentElement) ? c : over(v, va, c);
+          };
+          for (const [sel, floor] of [
+            [".card-name", 4.5],
+            [".card-desc", 4.5],
+            [".flag-label", 4.5],
+            [".card-more", 3],
+          ]) {
+            const el = card.querySelector(sel);
+            if (!el) continue;
+            const r = ratio(inkOf(el), behind);
+            if (r < floor)
+              fails.push(`${sel} at ${r.toFixed(2)}:1, floor ${floor}`);
+          }
+        }
+        return fails;
+      });
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+
+  await st.close();
 }
 
 await browser.close();

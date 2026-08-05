@@ -126,7 +126,7 @@ test-browser:
     # both halves of that apply to every port: a stale server on any one of
     # them is enough to make the whole run measure yesterday's build.
     set -euo pipefail
-    for port in 8090 8091 8092 8093 8094; do
+    for port in 8090 8091 8092 8093 8094 8095; do
         if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
             echo "test-browser: something already answers on 127.0.0.1:$port, probably" >&2
             echo "a leaked cairn. Kill it, or this run measures that one instead." >&2
@@ -140,7 +140,8 @@ test-browser:
     # categories and a header burger, neither of which example/ has; 8092 is
     # the one with a status page, which example/ has no business carrying;
     # 8093 is the one whose logo and icons differ between the two themes;
-    # 8094 is the one that guards its external links with a dialog.
+    # 8094 is the one that guards its external links with a dialog;
+    # 8095 is the one carrying a card per state.
     /tmp/cairn-browser -config example -addr 127.0.0.1:8090 &
     pids=$!
     /tmp/cairn-browser -config scripts/fixtures/many-categories -addr 127.0.0.1:8091 &
@@ -151,8 +152,10 @@ test-browser:
     pids="$pids $!"
     /tmp/cairn-browser -config scripts/fixtures/leave -addr 127.0.0.1:8094 &
     pids="$pids $!"
+    /tmp/cairn-browser -config scripts/fixtures/states -addr 127.0.0.1:8095 &
+    pids="$pids $!"
     trap 'kill $pids 2>/dev/null || true' EXIT INT TERM
-    for port in 8090 8091 8092 8093 8094; do
+    for port in 8090 8091 8092 8093 8094 8095; do
         ready=
         for _ in $(seq 1 20); do
             if curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then ready=1; break; fi
@@ -161,7 +164,7 @@ test-browser:
         [ -n "$ready" ] || { echo "test-browser: cairn never came up on $port" >&2; exit 1; }
     done
     node scripts/search.mjs http://127.0.0.1:8090/en/
-    node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/
+    node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
     node scripts/status.mjs http://127.0.0.1:8092/en/
 
 # regenerate every icon from the one drawing in the script; checks the
