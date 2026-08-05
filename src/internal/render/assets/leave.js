@@ -63,6 +63,28 @@
 
   if (stay) stay.addEventListener("click", function () { dialog.close(); });
 
+  // The one thing showModal() does not give us. Chromium lets Tab walk off the
+  // end of a modal dialog: the press after the last control leaves the page for
+  // the browser's own toolbar, so nothing on screen moves and one press in four
+  // reads as a dead key. A bare <dialog> with three buttons does the same, so
+  // this is the platform and not the markup. WAI-ARIA's dialog pattern asks for
+  // the wrap, and three controls are few enough that the visitor notices the
+  // gap. Painted, not merely present: a control the layout dropped is not a
+  // place to send the focus.
+  dialog.addEventListener("keydown", function (e) {
+    if (e.key !== "Tab") return;
+    var stops = [];
+    var all = dialog.querySelectorAll("a[href], button:not([disabled])");
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].getClientRects().length) stops.push(all[i]);
+    }
+    if (!stops.length) return;
+    var edge = e.shiftKey ? stops[0] : stops[stops.length - 1];
+    if (document.activeElement !== edge) return;
+    e.preventDefault();
+    (e.shiftKey ? stops[stops.length - 1] : stops[0]).focus();
+  });
+
   // A click on the backdrop lands on the dialog element itself, since its
   // children cover the rest of it.
   dialog.addEventListener("click", function (e) {

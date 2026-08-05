@@ -876,6 +876,45 @@ await check(
     eq(await go.getAttribute("rel"), "noopener noreferrer", "the rel");
   });
 
+  // Chromium lets Tab walk off the end of a modal dialog: the press after the
+  // last control leaves the page for the browser's own toolbar, and nothing on
+  // screen moves. A bare <dialog> with three controls does the same, so this is
+  // the platform rather than anything in this markup, and it is worth holding
+  // because one press in four then reads as a dead key. WAI-ARIA's dialog
+  // pattern asks for the wrap.
+  await check(
+    "Tab wraps inside the dialog rather than leaving it",
+    async () => {
+      eq(
+        await dialog.evaluate((d) => d.open),
+        true,
+        "dialog.open before tabbing",
+      );
+      const focused = () =>
+        l.evaluate(() => {
+          const a = document.activeElement;
+          if (!a) return "(none)";
+          return a.closest("#leave") ? a.className : `outside: ${a.tagName}`;
+        });
+
+      await l.locator(".leave-go").focus();
+      await l.keyboard.press("Tab");
+      eq(
+        await focused(),
+        "leave-copy",
+        "where Tab off the last control landed",
+      );
+
+      await l.locator(".leave-copy").focus();
+      await l.keyboard.press("Shift+Tab");
+      eq(
+        await focused(),
+        "btn leave-go",
+        "where Shift+Tab off the first control landed",
+      );
+    },
+  );
+
   await check("Escape closes it and the focus comes back", async () => {
     // Asserted open first, and not for tidiness: with no script at all this
     // check passed on its own, because a dialog that never opened is already
