@@ -27,19 +27,6 @@
   tags: [nginx, web]
   selfhosted: true
 
-- id: httpd
-  url: http://localhost:8084
-  category: pages
-  icon: apache
-  name: { fr: Page Apache, en: Apache page }
-  desc:
-    {
-      fr: La page de bienvenue du serveur web Apache.,
-      en: The Apache web server welcome page.,
-    }
-  tags: [apache, web]
-  selfhosted: true
-
 - id: caddy
   category: pages
   state: soon
