@@ -25,11 +25,18 @@
     <span class="way-rule" aria-hidden="true"></span>
   </div>
   <ul class="cards">
-    {{range .Cards}}<li class="card"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
-      <div class="card-main">
+    {{/* The badge is the card's first child so it is read before the name,
+         which is the right order for a service that is gone. It hangs on the
+         top border rather than taking a row: the grid stretches a row to its
+         tallest card, so a row inside would charge its height to every card
+         beside it. The comment closes hard against the range, since the
+         newline after it would otherwise print into every page that has no
+         state at all. */}}{{range .Cards}}<li class="card{{if .Off}} card-off{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
+      {{if .State}}<span class="card-badge card-badge-{{.State}}">{{.StateLabel}}</span>
+      {{end}}<div class="card-main">
         <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
-          <a class="card-name" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}{{.Name.Attrs}}>{{.Name}}</a>
+          {{if .Off}}<span class="card-name"{{.Name.Attrs}}>{{.Name}}</span>{{else}}<a class="card-name" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}{{.Name.Attrs}}>{{.Name}}</a>{{end}}
           {{if .Desc.Text}}<span class="card-desc"{{.Desc.Attrs}}>{{.Desc}}</span>{{end}}
         </div>
       </div>

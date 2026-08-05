@@ -305,6 +305,14 @@ type cardView struct {
 	StatusA11y          string // set only when the pill is a link
 	StatusID            string // names the pill's slot, empty without a Gatus
 	HostKind, HostLabel string // "self"/"external"/"" and its localized label
+	// State is the declared word, `soon` and friends, used as a class; the
+	// label is that word in the page's language. Beware the name: `state` is
+	// already this file's local for a status level, which is the other thing
+	// entirely. See statusMeta.
+	State, StateLabel string
+	// Off is the two disabling states, hoisted onto the view so the template
+	// asks one question instead of comparing strings in three places.
+	Off bool
 	// HostHref is where the flag leads, empty when it leads nowhere and the
 	// flag stays the plain text it has always been. HostBlank is set for a
 	// target that is not this site.
@@ -640,10 +648,20 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Name:      tr(s.Name, loc, def),
 					Desc:      tr(s.Desc, loc, def),
 					Tags:      strings.Join(s.Tags, " "),
-					Status:    statusOf(cfg, statuses, s.ID),
-					StatusID:  statusSlot(cfg, s.ID),
+					Off:       s.State.Disables(),
 				}
-				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
+				if s.State != config.StateNone {
+					card.State = string(s.State)
+					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
+				}
+				// A disabling state means nothing is monitored, so there is no
+				// slot for a pill to be swapped into. The other three are live
+				// and keep theirs.
+				if !card.Off {
+					card.Status = statusOf(cfg, statuses, s.ID)
+					card.StatusID = statusSlot(cfg, s.ID)
+					card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
+				}
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 					card.MoreA11y = s.Name.Get(loc, def) + ", " + cfg.Str(loc, "card.more")
@@ -657,9 +675,12 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
-				// After the flag, since the scope reads it.
-				card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
-				hv.Leave = hv.Leave || card.Leave
+				// After the flag, since the scope reads it. A disabling state
+				// has no link at all, so neither key can mean anything.
+				if !card.Off {
+					card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
+					hv.Leave = hv.Leave || card.Leave
+				}
 				cv.Cards = append(cv.Cards, card)
 			}
 			hv.Cats = append(hv.Cats, cv)
