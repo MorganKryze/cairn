@@ -246,11 +246,13 @@ language switcher, a footer entry, or a service whose `url` is a path on this
 site: all of those navigate in place as they always have. What is being
 described is leaving, not being a link.
 
-**Both degrade.** The dialog is a native `<dialog>`, so the focus trap, the
+**Both degrade.** The dialog is a native `<dialog>`, so the modality, the
 Escape key and the return of focus come from the browser rather than from a
 script that has to remember all three, and the button that continues is an
-ordinary link. With JavaScript off, a guarded link is simply a link and the
-visitor arrives. `new_tab` needs no script at all.
+ordinary link. The one part the browser leaves alone is Tab off the last
+control, which walks out of the page to the toolbar rather than wrapping round;
+a few lines send it back to the first. With JavaScript off, a guarded link is
+simply a link and the visitor arrives. `new_tab` needs no script at all.
 
 ## A footer entry is a label and a url, and only those
 

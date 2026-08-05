@@ -48,7 +48,7 @@ demo:
 demo-rebuild:
     docker compose -f demo/compose.yaml up -d --build
 
-# save a release to dist/ for an air-gapped move: just save 1.18.2 [linux/amd64]
+# save a release to dist/ for an air-gapped move: just save 1.18.3 [linux/amd64]
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
