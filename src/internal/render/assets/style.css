@@ -847,8 +847,19 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .detail-head .tile svg { width: 2rem; height: 2rem; }
 .detail-title { display: flex; flex-direction: column; gap: .6rem; align-items: flex-start; }
 /* No card here, so no badge: the state sits under the title where the pill
-   lives, and shares its row. On a line of its own it read as an orphan. */
+   lives, and shares its row. On a line of its own it read as an orphan. The
+   pill leads: it is the heavier object, and small caps read better trailing it
+   than leading it. */
 .detail-state-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+/* A rule between them, saying the two are different kinds of claim: one was
+   measured, one was declared. Only when something is actually to its left,
+   though. A disabling state has no pill at all, and a slot the monitor has not
+   answered yet is empty, and either would leave a stroke hanging off nothing.
+   :empty is live, so the rule arrives with the pill status.js swaps in. */
+.detail-state-row .status-slot:not(:empty) + .detail-state {
+  padding-inline-start: .8rem;
+  border-inline-start: 1px solid var(--border);
+}
 .detail-state {
   font-size: .72rem;
   font-weight: 600;

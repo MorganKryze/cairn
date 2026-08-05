@@ -11,6 +11,11 @@
   desc: Rough edges.
   state: beta
   selfhosted: true
+  details: |
+    A decorative state keeps everything: the link, the monitoring and the pill.
+    This page exists so the rule between the pill and the state has something
+    to its left, which the retired one below deliberately does not.
+
 - id: gone
   url: https://gone.example.org
   name: Gone one
