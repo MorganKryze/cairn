@@ -1292,6 +1292,56 @@ await check(
     },
   );
 
+  // The rule between the pill and the state says the two are different kinds
+  // of claim. It must not be drawn with nothing to its left, which is every
+  // disabling state, since none of them is monitored: a stroke hanging off
+  // the start of a line reads as a rendering fault.
+  await check(
+    "the rule appears only when a pill precedes the state",
+    async () => {
+      const border = async (page, path) => {
+        const p2 = await browser.newPage();
+        await p2.goto(new URL(path, page).href, { waitUntil: "networkidle" });
+        const m = await p2.evaluate(() => {
+          const el = document.querySelector(".detail-state");
+          if (!el) return null;
+          const s = getComputedStyle(el);
+          return {
+            w: parseFloat(s.borderInlineStartWidth) || 0,
+            style: s.borderInlineStartStyle,
+            pill: !!document.querySelector(".status-slot")?.textContent.trim(),
+          };
+        });
+        await p2.close();
+        return m;
+      };
+
+      const withPill = await border(STATES, "beta/");
+      if (!withPill)
+        throw new Error("the beta detail page names no state at all");
+      if (!withPill.pill)
+        throw new Error(
+          "the beta detail page has no pill, so this proves nothing",
+        );
+      if (withPill.w < 1 || withPill.style === "none") {
+        throw new Error("no rule beside a state that follows a pill");
+      }
+
+      const alone = await border(STATES, "gone/");
+      if (!alone)
+        throw new Error("the retired detail page names no state at all");
+      if (alone.pill)
+        throw new Error(
+          "the retired detail page has a pill, so this proves nothing",
+        );
+      if (alone.w >= 1 && alone.style !== "none") {
+        throw new Error(
+          "a rule is drawn with nothing to its left on a page that has no pill",
+        );
+      }
+    },
+  );
+
   await st.close();
 }
 

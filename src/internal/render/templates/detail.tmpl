@@ -5,10 +5,14 @@
     <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">
       <h1{{.Name.Attrs}}>{{.Name}}</h1>
-      {{/* One row, and the state first: what it is, then whether it answers.
-           On its own line under the pill it read as an orphan. The else branch
+      {{/* One row, the pill first. The state was written first at first, on
+           the reasoning that what a thing is comes before whether it answers;
+           seen on the page, the pill is the heavier object and the small caps
+           read better trailing it than leading it. On its own line under the
+           pill the state read as an orphan, which is why they share a row at
+           all. The else branch
            is not a duplicate for tidiness: wrapping the pill on every page
-           moved 43 bytes on a site that declares no state at all. */}}{{if .State}}<div class="detail-state-row"><span class="detail-state detail-state-{{.State}}">{{.StateLabel}}</span>{{template "statuspill" .}}</div>{{else}}{{template "statuspill" .}}{{end}}
+           moved 43 bytes on a site that declares no state at all. */}}{{if .State}}<div class="detail-state-row">{{template "statuspill" .}}<span class="detail-state detail-state-{{.State}}">{{.StateLabel}}</span></div>{{else}}{{template "statuspill" .}}{{end}}
     </div>
   </div>
   {{if .Desc.Text}}<p class="lead"{{.Desc.Attrs}}>{{.Desc}}</p>

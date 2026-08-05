@@ -130,13 +130,23 @@ func TestTheDetailPageShowsTheStateBesideThePill(t *testing.T) {
 		t.Fatal(err)
 	}
 	page := string(m.Pages["en/beta"].HTML)
-	i := strings.Index(page, `class="detail-state`)
+	// The span, not the row that wraps both. `class="detail-state` matches
+	// `detail-state-row` too, and that wrapper precedes the pill whichever
+	// order its children are in: written that way this could not see the order
+	// it claimed to hold, and passed against both.
+	i := strings.Index(page, `class="detail-state detail-state-`)
 	j := strings.Index(page, `class="status-slot`)
 	if i < 0 {
 		t.Fatal("the detail page does not name the state at all")
 	}
-	if j >= 0 && i > j {
-		t.Error("the state is written after the pill: what it is comes before whether it answers")
+	if j < 0 {
+		t.Fatal("no status slot on a page that has a monitor: nothing to order against")
+	}
+	if i < j {
+		t.Error("the state is written before the pill: the pill is the heavier object and leads the row")
+	}
+	if !strings.Contains(page, `class="detail-state-row"`) {
+		t.Error("the two are not in one row, so the state falls under the pill and reads as an orphan")
 	}
 }
 
