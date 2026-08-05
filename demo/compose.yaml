@@ -5,7 +5,7 @@ name: cairn-demo
 # None of these images comes from Docker Hub: anonymous pulls there share a
 # rate limit across the whole CI runner pool, which failed this stack twice in
 # one day. The three project images are their maintainers' own ghcr.io builds;
-# nginx and httpd exist only on Docker Hub, so they come through Google's
+# nginx exists only on Docker Hub, so it comes through Google's
 # public mirror, which needs no account. The cairn service below is built from
 # docker/Dockerfile, whose base image reads through that same mirror, so this
 # whole stack now comes up without one anonymous Hub pull.
@@ -24,7 +24,6 @@ services:
       - 127.0.0.1:8081:8081
       - 127.0.0.1:8082:8082
       - 127.0.0.1:8083:8083
-      - 127.0.0.1:8084:8084
       - 127.0.0.1:8085:8085
     networks:
       - demo
@@ -86,11 +85,6 @@ services:
 
   welcome:
     image: mirror.gcr.io/library/nginx:alpine
-    networks:
-      - demo
-
-  httpd:
-    image: mirror.gcr.io/library/httpd:alpine
     networks:
       - demo
 

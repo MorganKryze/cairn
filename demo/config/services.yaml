@@ -27,19 +27,6 @@
   tags: [nginx, web]
   selfhosted: true
 
-- id: httpd
-  url: http://localhost:8084
-  category: pages
-  icon: apache
-  name: { fr: Page Apache, en: Apache page }
-  desc:
-    {
-      fr: La page de bienvenue du serveur web Apache.,
-      en: The Apache web server welcome page.,
-    }
-  tags: [apache, web]
-  selfhosted: true
-
 - id: caddy
   category: pages
   state: soon
@@ -162,19 +149,6 @@
 
 # The three below are external references: no container, no Gatus endpoint,
 # just links out. Note how cards without monitoring simply show no status pill.
-
-- id: cairn-source
-  url: https://github.com/MorganKryze/cairn
-  category: links
-  icon: github
-  name: { fr: Code source de cairn, en: cairn source code }
-  desc:
-    {
-      fr: Le dépôt de la page que vous regardez.,
-      en: The repository of the page you are looking at.,
-    }
-  tags: [github, source]
-  selfhosted: false
 
 - id: cairn-prod
   url: https://libresoftware.cloud

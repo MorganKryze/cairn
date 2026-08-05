@@ -72,7 +72,6 @@ produces for any site; refresh them with
 | 8081 | Gatus dashboard     |
 | 8082 | whoami              |
 | 8083 | nginx               |
-| 8084 | Apache              |
 | 8085 | podinfo             |
 | 8086 | nothing (the ghost) |
 

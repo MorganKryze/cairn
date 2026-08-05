@@ -15,12 +15,6 @@ endpoints:
     interval: 10s
     conditions: ["[STATUS] == 200"]
 
-  - name: httpd
-    group: pages
-    url: http://httpd:80
-    interval: 10s
-    conditions: ["[STATUS] == 200"]
-
   - name: whoami
     group: tools
     url: http://whoami:80
