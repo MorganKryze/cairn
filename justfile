@@ -148,6 +148,7 @@ test-browser:
     /tmp/cairn-browser -config scripts/fixtures/status -addr 127.0.0.1:8092 &
     pids="$pids $!"
     /tmp/cairn-browser -config scripts/fixtures/themed -addr 127.0.0.1:8093 &
+    pids="$pids $!"
     /tmp/cairn-browser -config scripts/fixtures/leave -addr 127.0.0.1:8094 &
     pids="$pids $!"
     trap 'kill $pids 2>/dev/null || true' EXIT INT TERM

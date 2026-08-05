@@ -4,6 +4,11 @@ tagline:
   fr: Des outils libres, simples, pour tout le monde.
   en: Free, simple tools for everyone.
 locales: [fr, en]
+about:
+  fr: |
+    Bienvenue ! Voici les services que j'héberge pour vous.
+  en: |
+    Welcome! These are the services I host for you.
 theme:
   accent: "#247b7b"
   # Typography: a CSS font stack for body text, or the first name of a font
