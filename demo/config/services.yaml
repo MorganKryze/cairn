@@ -43,6 +43,10 @@
 - id: whoami
   url: http://localhost:8082
   category: tools
+  # Decorative: the link works, Gatus still watches it, and the pill still
+  # reports. The badge only warns. This is the pair the docs draw a line
+  # between: the state is declared, the status is measured.
+  state: beta
   icon: traefik
   name: { fr: "Qui suis-je ?", en: "Who am I?" }
   desc:
@@ -114,6 +118,68 @@
       notices and cairn shows the red dot: exactly what your visitors would
       see if a real service went down.
   tags: [status, down, panne]
+  selfhosted: true
+
+# The two below carry a disabling state. Neither has a container and neither
+# is in the Gatus config, which is the point: nothing is monitored, so no pill
+# is drawn and none is missing. The first has no url at all, the second keeps
+# the address it used to have and simply stops linking it.
+
+- id: paperless
+  category: tools
+  state: soon
+  name: { fr: Paperless, en: Paperless }
+  desc:
+    {
+      fr: "Vos documents scannés, triés et cherchables.",
+      en: "Your scanned documents, sorted and searchable.",
+    }
+  details:
+    fr: |
+      Cette carte n'a pas de `url` du tout, et cairn n'en demande pas pour un
+      service annoncé : il n'y a rien à lier tant qu'il n'existe pas. La carte
+      n'est donc pas un lien, elle sort du parcours au clavier, et elle
+      s'atténue pour dire de passer son chemin.
+
+      Cette page-ci, elle, fonctionne : c'est l'endroit où raconter ce qui
+      arrive et quand.
+    en: |
+      This card has no `url` at all, and cairn asks for none on a service that
+      is announced: there is nothing to link until it exists. So the card is
+      not a link, it leaves the keyboard path, and it dims to say walk past.
+
+      This page still works, though: it is where you say what is coming and
+      when.
+  tags: [documents, scan, ged]
+  selfhosted: true
+
+- id: old-pad
+  url: http://localhost:8087
+  category: tools
+  state: retired
+  name: { fr: Ancien bloc-notes, en: Old notepad }
+  desc:
+    {
+      fr: "Remplacé par Podinfo, juste au-dessus.",
+      en: "Replaced by Podinfo, just above.",
+    }
+  details:
+    fr: |
+      Ce service a fermé. Son adresse est toujours dans le fichier de config,
+      juste au-dessus de cette ligne : retirer un service se fait en ajoutant
+      `state: retired`, jamais en supprimant quoi que ce soit. cairn cesse de
+      la lier et la garde.
+
+      Cette page reste servie, et c'est tout son intérêt : c'est le seul
+      endroit où dire vers quoi aller à la place.
+    en: |
+      This service closed. Its address is still in the config file, right
+      above this line: retiring a service is adding `state: retired`, never
+      deleting anything. cairn stops linking it and keeps it.
+
+      This page is still served, and that is the whole point: it is the only
+      place left to say where to go instead.
+  tags: [notes, pad, archive]
   selfhosted: true
 
 # The three below are external references: no container, no Gatus endpoint,
