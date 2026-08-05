@@ -7,17 +7,14 @@
   const dark = () => (root.dataset.theme
     ? root.dataset.theme === 'dark'
     : matchMedia('(prefers-color-scheme: dark)').matches);
-  // A toggle that never says whether it is pressed is a button and no state to
-  // a screen reader (WCAG 4.1.2). Pressed means dark. The server cannot render
+  // A toggle that never says whether it is pressed reads as a plain button to a
+  // screen reader (WCAG 4.1.2); pressed means dark. The server cannot render
   // it: the button ships hidden, and by the time it is revealed the pre-paint
-  // script may already have applied a stored theme, so only here is the
-  // current one known.
-  // A themed favicon is the one piece of artwork this stylesheet cannot
-  // reach, so it ships as a second <link> whose media query answers to the
-  // system. Pressing the button has to override that the way it overrides
-  // everything else, and the only handle is the query itself: "all" always
-  // matches, "not all" never does, and dropping back to the original hands
-  // the decision to the system again.
+  // script may already have applied a stored theme.
+  // The favicon is the one piece of artwork the stylesheet cannot reach, so it
+  // ships as a second <link> whose media query answers to the system. The only
+  // handle on it is the query itself: "all" always matches, "not all" never
+  // does, and the original hands the decision back to the system.
   const favDark = document.querySelector('link[rel="icon"][media]');
   const favQuery = favDark && favDark.media;
   const syncFavicon = () => {

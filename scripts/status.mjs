@@ -1,15 +1,13 @@
 // Drives the pill refresh in a real browser against a running cairn. The Go
-// tests assert that the slots and the script ship; what they cannot see is a
-// pill changing in a page nobody reloaded, which is the entire point of
-// status.js and the bug it was written for: cairn reconnects to Gatus, the
-// tab left open on a wall display never does.
+// tests assert that the slots and the script ship; a pill changing in a page
+// nobody reloaded is only visible here. cairn reconnects to Gatus, a tab left
+// open on a wall display does not.
 //
-// The refresh answers itself. cairn here is pointed at a Gatus that does not
-// exist, so every pill starts unknown; the test intercepts the fetch the
-// script makes and hands back the page cairn would have rendered once Gatus
-// answered. That keeps the fixture from depending on a second server, and it
-// is the same bytes either way, since what the script parses is a whole cairn
-// page.
+// cairn is pointed at a Gatus that does not exist, so every pill starts
+// unknown; the test intercepts the fetch the script makes and hands back the
+// page cairn would have rendered once Gatus answered. No second server to
+// stand up, and the same bytes either way, since what the script parses is a
+// whole cairn page.
 //
 // Run it with `just test-browser`, which serves scripts/fixtures/status first.
 //
@@ -35,27 +33,26 @@ const eq = (got, want, label) => {
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
-// Fake time, so a five-second poll is not five seconds of test. Installed
-// before the navigation, which is the only moment it can be.
+// Fake time, so a five-second poll is not five seconds of test. It has to be
+// installed before the navigation.
 await page.clock.install();
 await page.goto(URL);
 
 // The page as cairn first served it, and the only source of the markup fed
-// back in: a swap driven by handwritten HTML would prove the test's markup
-// works, not cairn's.
+// back in: handwritten HTML would prove the test's markup works, not cairn's.
 const original = await page.content();
 let answer = original;
 await page.route(URL, async route => {
-  // Only the script's own request. The navigation above already happened, but
-  // a reload during the run must still reach cairn.
+  // Only the script's own request: a reload during the run must still reach
+  // cairn.
   if (route.request().resourceType() !== 'fetch') return route.fallback();
   await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: answer });
 });
 
 const pillOf = id =>
   page.$eval(`.status-slot[data-status="${id}"]`, el => el.firstElementChild?.className ?? '');
-// Painted rather than merely present: an empty foot that still draws its
-// padding is exactly the regression the :has() rule exists to stop.
+// An empty foot that still draws its padding is the regression the :has()
+// rule stops.
 const footHeight = id =>
   page.$eval(`.status-slot[data-status="${id}"]`, el => {
     const foot = el.closest('.card-foot');
@@ -118,7 +115,6 @@ await check('a pill under the keyboard is left alone until focus moves on', asyn
     'what the keyboard is on',
   );
 
-  // And once it is no longer focused, the update it was holding back lands.
   await page.locator('.card-name').first().focus();
   await tick();
   eq(await pillOf('alpha'), 'status-pill status-down', "alpha's pill");

@@ -9,10 +9,7 @@ import (
 	"time"
 )
 
-// validateSite normalizes and checks the site.yaml fields (defaults, hex
-// accent, URLs, links, pages). definedIn is the service-id -> file map, used
-// to reject page ids that collide with a service id.
-func validateSite(site *Site, definedIn map[string]string) error {
+func validateSite(site *Site, serviceFiles map[string]string) error {
 	if len(site.Locales) == 0 {
 		site.Locales = []string{"en"}
 	}
@@ -62,9 +59,9 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		}
 	}
 	// status.ca is a trust anchor, so a value cairn cannot reach is refused
-	// here rather than discovered on the first poll: the failure mode is grey
-	// pills and one log line, which is the shape of problem this file exists
-	// to stop. http is deliberate; the loudness that pays for it is elsewhere.
+	// here rather than discovered on the first poll, where the whole failure
+	// is grey pills and one log line. http stays allowed; the warning that
+	// pays for it lives elsewhere.
 	if ca := site.Status.CA; ca != "" {
 		if err := checkLinkScheme("status.ca", ca, imageSchemes, "http://…, https://… or an /assets path"); err != nil {
 			return err
@@ -73,10 +70,10 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: status.ca %q is neither a URL nor a file under the mounted assets dir (expected e.g. https://pki.example.org/ca.crt or /assets/ca.crt)", ca)
 		}
 	}
-	// A hosting flag leads to a page cairn serves, to a path, or to a URL.
-	// The page id is the interesting case: it is what lets the link follow the
-	// visitor's language, and it is the one that can be a typo, so a name that
-	// matches no page stops the load and lists the ones that do.
+	// A hosting flag leads to a page cairn serves, to a path, or to a URL. A
+	// page id is the one that follows the visitor's language and the one that
+	// can be a typo, so a name matching no page stops the load and lists the
+	// ones that do.
 	for _, f := range []struct{ key, val string }{
 		{"hosting_flag.self", site.HostingFlag.Self},
 		{"hosting_flag.external", site.HostingFlag.External},
@@ -102,13 +99,11 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		}
 	}
 	// logo and favicon are the two image fields nothing else validates: a value
-	// that is not a URL only earns a -check warning, since a missing file is a
-	// plausible typo. An executable scheme is not, so it stops the load. The
-	// favicon is the sharp case: it reaches the manifest as JSON, which no
+	// that is not a URL only earns a -check warning, a missing file being a
+	// plausible typo, while an executable scheme stops the load. The favicon
+	// is the sharp case: it reaches the manifest as JSON, which no
 	// html/template escaping covers, and comes back from /favicon.ico as a
-	// Location header.
-	// Both halves of a themed pair go through it: the dark one reaches the
-	// same manifest and the same Location header the light one does.
+	// Location header. Both halves of a themed pair reach both.
 	for _, f := range append(site.Logo.Fields("logo"), site.Favicon.Fields("favicon")...) {
 		if err := checkLinkScheme(f.Key, f.Val, imageSchemes, "https://… or an /assets path"); err != nil {
 			return err
@@ -120,8 +115,8 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	if err := checkDarkImage("favicon", site.Favicon); err != nil {
 		return err
 	}
-	// security.txt is a line-based format, so a newline in any value would let
-	// a typo forge a field. Reject that here rather than escape it later.
+	// security.txt is a line-based format: a newline in any value would let a
+	// typo forge a field.
 	for _, f := range []struct{ key, val string }{
 		{"security.contact", site.Security.Contact},
 		{"security.policy", site.Security.Policy},
@@ -133,12 +128,10 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if strings.ContainsAny(f.val, "\r\n") {
 			return fmt.Errorf("config: site.yaml: %s must be one line", f.key)
 		}
-		// uriRe takes any scheme, because security.txt takes mailto:, https:
-		// and tel: alike, so it is the one URL check here that an executable
-		// scheme walks straight through. Catch it before uriRe has a chance to
-		// bless it, or the researcher this file is written for gets a dead
-		// link. tel: stays legal here and nowhere else: this file is plain
-		// text, so nothing blanks it, and RFC 9116 names it.
+		// uriRe takes any scheme, so it is the one URL check here an
+		// executable scheme walks straight through. Catch it first. tel:
+		// stays legal here and nowhere else: this file is plain text, so
+		// nothing blanks it, and RFC 9116 names it.
 		if err := checkContactScheme(f.key, f.val); err != nil {
 			return err
 		}
@@ -157,10 +150,9 @@ func validateSite(site *Site, definedIn map[string]string) error {
 	// -base-path itself, so a path written here is carried twice: an operator
 	// serving example.org/cairn who writes the full public URL ends up with
 	// canonical links, hreflang alternates and a whole sitemap pointing at
-	// example.org/cairn/cairn/. Nothing else would ever say so, and search
-	// engines act on it, so this is an error rather than a warning: a fresh
-	// start then serves the getting-started page with the reason logged, and a
-	// reload keeps the previous pages. cairn never exits on a bad config.
+	// example.org/cairn/cairn/. Search engines act on it, so this is an error
+	// rather than a warning: a fresh start then serves the getting-started
+	// page with the reason logged, and a reload keeps the previous pages.
 	if u, err := url.Parse(site.URL); site.URL != "" && err == nil && strings.Trim(u.Path, "/") != "" {
 		return fmt.Errorf("config: site.yaml: url %q must be the domain alone, with no path (serving under example.org/cairn is what -base-path is for, and cairn adds that prefix itself)", site.URL)
 	}
@@ -168,34 +160,30 @@ func validateSite(site *Site, definedIn map[string]string) error {
 		if len(l.Label) == 0 || l.URL == "" {
 			return fmt.Errorf("config: site.yaml: every links entry needs label and url (expected: - {label: Wiki, url: https://…})")
 		}
-		// mailto: is a legitimate target here, which is why this field gets the
-		// link list rather than the image one.
+		// mailto: is a legitimate target here, so this field gets the link
+		// list rather than the image one.
 		if err := checkLinkScheme("links url", l.URL, linkSchemes, "https://…, mailto:… or an absolute path"); err != nil {
 			return err
 		}
 		if ic := l.Icon; ic != "" && !IsURLOrAbs(ic) {
-			// Any scheme at all lands here: it is not a URL, not an /assets path
-			// and not a glyph name, so this refusal already covers the ones
-			// above and a second gate would only say the same thing twice.
+			// Any scheme at all lands here, being neither a URL nor an /assets
+			// path, so this refusal already covers the schemes checked above.
 			if _, ok := Glyphs[ic]; !ok {
 				return fmt.Errorf("config: site.yaml: links icon %q is not a built-in glyph (%s), a URL or an /assets path", ic, strings.Join(GlyphNames(), ", "))
 			}
 		}
 	}
-	// Footer entries used to be validated nowhere at all: an entry with no url
-	// rendered an empty href, which is a footer link that looks live and
-	// reloads the page, and one with no label rendered as nothing visible at
-	// all. links has always demanded both, and there was never a reason for
-	// the two lists to disagree.
+	// A footer entry needs what a links entry needs: no url renders an empty
+	// href, a link that looks live and reloads the page, and no label renders
+	// nothing visible at all.
 	for _, l := range site.Footer {
 		if len(l.Label) == 0 || l.URL == "" {
 			return fmt.Errorf("config: site.yaml: every footer entry needs label and url (expected: - {label: Legal, url: /legal})")
 		}
-		// icon is a header-link key. A footer entry took it without complaint
-		// and never rendered it, which -check reported as inert; schema/site.json
-		// has never listed it at all, so the editor said one thing and the
-		// loader another. Refusing it is what makes those two agree, and it says
-		// the useful half out loud: there is a list where the icon does work.
+		// icon is a header-link key. A footer entry renders none, and
+		// schema/site.json does not list it, so accepting one had the editor
+		// and the loader saying different things. The refusal names the list
+		// where an icon does work.
 		if l.Icon != "" {
 			return fmt.Errorf("config: site.yaml: footer entry %q has an icon: only header links render one (move the entry to links, or drop the icon)", l.URL)
 		}
@@ -232,8 +220,8 @@ func validateSite(site *Site, definedIn map[string]string) error {
 			return fmt.Errorf("config: site.yaml: page %q needs a title and a body or sections", p.ID)
 		case pageIDs[p.ID]:
 			return fmt.Errorf("config: site.yaml: duplicate page id %q", p.ID)
-		case definedIn[p.ID] != "":
-			return fmt.Errorf("config: site.yaml: page id %q collides with the service id defined in %s", p.ID, definedIn[p.ID])
+		case serviceFiles[p.ID] != "":
+			return fmt.Errorf("config: site.yaml: page id %q collides with the service id defined in %s", p.ID, serviceFiles[p.ID])
 		}
 		pageIDs[p.ID] = true
 		for _, s := range p.Sections {
@@ -247,12 +235,12 @@ func validateSite(site *Site, definedIn map[string]string) error {
 
 // validateStatusAddress settles which monitor cairn polls and where.
 //
-// There are two ways to name it and they must not both be taken: status.gatus,
-// which every site running today uses and which implies its own provider, and
+// Two keys can name it and they must not both be taken: status.gatus, which
+// every site running today uses and which implies its own provider, and
 // status.url with status.provider for a monitor that is not Gatus. Each
 // ambiguity below is refused with the key to fix rather than resolved by
-// guessing, because guessing wrong means pills drawn from an address the
-// operator did not mean.
+// guessing, since a wrong guess draws pills from an address the operator did
+// not mean.
 func validateStatusAddress(site *Site) error {
 	st := &site.Status
 	if st.Provider != "" && !slices.Contains(StatusProviders(), st.Provider) {
@@ -274,8 +262,7 @@ func validateStatusAddress(site *Site) error {
 	}
 	// Kuma reads by status page and has no endpoint listing every monitor, so
 	// the slug is half the address rather than an extra. Anywhere else it is a
-	// key that would silently do nothing, which is worth an error while there
-	// is still someone reading the file.
+	// key that would silently do nothing.
 	switch p := site.StatusProvider(); {
 	case p == "kuma":
 		if st.Slug == "" && st.URL != "" {
@@ -286,28 +273,28 @@ func validateStatusAddress(site *Site) error {
 	}
 	// A mapping is the whole configuration of the json provider and means
 	// nothing to any other. Both halves are refused here rather than left to
-	// -check, because a mapping that silently does nothing is the failure this
-	// file exists to catch while somebody is still reading it.
-	empty := st.Map.List == "" && st.Map.Key == "" && st.Map.State == "" &&
+	// -check: a mapping that silently does nothing is what this file exists to
+	// catch.
+	noMapping := st.Map.List == "" && st.Map.Key == "" && st.Map.State == "" &&
 		len(st.Map.Up) == 0 && len(st.Map.Degraded) == 0 && len(st.Map.Maintenance) == 0 &&
 		len(st.Map.Unknown) == 0
 	switch p := site.StatusProvider(); {
 	case p == "json":
-		if empty && st.URL != "" {
+		if noMapping && st.URL != "" {
 			return fmt.Errorf("config: site.yaml: status.map is needed with status.provider: json (it says how to read the document: list, the path to the array; key and state, the fields of each element; then up, degraded and maintenance, the values that mean each)")
 		}
 		for _, f := range []struct{ key, val string }{{"key", st.Map.Key}, {"state", st.Map.State}} {
-			if !empty && f.val == "" {
+			if !noMapping && f.val == "" {
 				return fmt.Errorf("config: site.yaml: status.map.%s is needed (it names the field of each element holding the service %s; status.map.list is the only optional path, and empty means the document is the array)", f.key, f.key)
 			}
 		}
-	case !empty && p != "":
+	case !noMapping && p != "":
 		return fmt.Errorf("config: site.yaml: status.map means nothing to status.provider: %s (only json reads a document through a mapping)", p)
 	}
 	// The assets directory is served to every visitor: GET /assets/token.txt
-	// on a running cairn returns the file. status.ca under /assets stays legal
-	// and the asymmetry is deliberate: a CA certificate is the public half of
-	// an authority, and a token is not the public half of anything.
+	// on a running cairn returns the file. status.ca under /assets stays legal,
+	// a CA certificate being the public half of an authority where a token is
+	// the public half of nothing.
 	if tf := st.TokenFile; tf != "" {
 		if AssetFile(tf) != "" || strings.HasPrefix(tf, "/assets/") {
 			return fmt.Errorf("config: site.yaml: status.token_file %q is inside the assets directory, which cairn serves to every visitor: the token would be published rather than stored (mount it somewhere else, as /run/secrets/status-token)", tf)
@@ -322,12 +309,11 @@ func validateStatusAddress(site *Site) error {
 // The schemes cairn will actually emit. html/template puts http, https,
 // mailto and paths in an href or a src, and replaces every other scheme with
 // #ZgotmplZ, so a value carrying one renders as a link that goes nowhere and
-// says nothing. tel: fails exactly the way javascript: does, and just as
-// quietly; the only difference between them is intent.
+// says nothing. tel: fails exactly the way javascript: does, and as quietly.
 //
-// An allow-list rather than a list of the dangerous ones. A deny-list is only
-// as current as the last time somebody thought about it, and the question that
-// decides this is not which schemes are hostile but which ones cairn can emit.
+// An allow-list rather than a list of the dangerous ones: a deny-list is only
+// as current as the last time somebody thought about it, and the question here
+// is which schemes cairn can emit, not which ones are hostile.
 var (
 	linkSchemes = []string{"http", "https", "mailto"}
 	// An image is a file, so mailto: has no business naming one.
@@ -336,21 +322,19 @@ var (
 	// scoped to links rather than applied to the whole file: that file is
 	// plain text, never markup, so nothing blanks anything on the way out and
 	// RFC 9116 names tel: itself. Only the schemes a browser can be talked
-	// into executing are refused there, and data: is among them because
-	// data:text/html carries a whole document, script and all.
+	// into executing are refused there, data: among them, since data:text/html
+	// carries a whole document, script and all.
 	unsafeSchemes = []string{"javascript", "vbscript", "data"}
 )
 
 // urlScheme returns the scheme a browser would read from s, lowercased, and ""
 // when there is none, which is every relative and root-absolute path.
 //
-// It reads the value the way a browser does rather than the way it is written.
 // A browser removes every tab, newline and carriage return from a URL and
 // strips leading control characters and spaces before it looks at the scheme,
 // so "java\tscript:alert(1)", " javascript:…" and "JavaScript:…" are all the
 // same URL as the plain one. Matching the literal text would refuse the
-// obvious spelling and pass the three that matter, which is worse than not
-// checking: it reads as a check that works.
+// obvious spelling and pass the three that matter.
 func urlScheme(s string) string {
 	s = strings.Map(func(r rune) rune {
 		if r == '\t' || r == '\n' || r == '\r' {
@@ -368,11 +352,9 @@ func urlScheme(s string) string {
 	return strings.ToLower(s[:i])
 }
 
-// checkLinkScheme refuses a value cairn cannot put in an href or a src.
-//
-// It is an error rather than a warning because the alternative is what this
-// replaces: the page renders, the link is there, it does nothing when clicked,
-// and no log line anywhere mentions it.
+// checkLinkScheme refuses a value cairn cannot put in an href or a src. An
+// error rather than a warning: the alternative is a page that renders, a link
+// that does nothing when clicked, and no log line mentioning it.
 func checkLinkScheme(field, val string, allowed []string, accepted string) error {
 	sc := urlScheme(val)
 	if sc == "" || slices.Contains(allowed, sc) {
@@ -390,16 +372,13 @@ func checkContactScheme(field, val string) error {
 }
 
 // isQuotedFontName reports whether a CSS family name carries its own quotes,
-// which is what a name with spaces needs before it can stand on its own in an
-// @font-face.
+// which a name with spaces needs before it can stand alone in an @font-face.
 func isQuotedFontName(name string) bool {
 	return len(name) >= 2 &&
 		(name[0] == '"' && name[len(name)-1] == '"' ||
 			name[0] == '\'' && name[len(name)-1] == '\'')
 }
 
-// quotedFontName is isQuotedFontName's inverse: it returns the name wrapped
-// in double quotes unless it already is.
 func quotedFontName(name string) string {
 	if isQuotedFontName(name) {
 		return name
@@ -407,24 +386,20 @@ func quotedFontName(name string) string {
 	return `"` + name + `"`
 }
 
-// checkDarkImage guards the one half of a themed image that leaves the markup
+// checkDarkImage guards the half of a themed image that leaves the markup
 // behind. The light one goes into an src attribute, where html/template
 // escapes it; the dark one is written into the page's inline stylesheet as the
-// url() of a content rule, and nothing escapes a stylesheet for us.
+// url() of a content rule, which nothing escapes.
 //
-// Two characters are all it takes. A path that is not a climb, names no other
+// Two characters are all it takes: a path that is not a climb, names no other
 // origin and ends in .svg can still carry "</style>", and the browser ends the
-// style element there and reads the rest as markup. That is exactly the shape
-// theme.font.file was accepted with, so it is worth refusing by the same rule
-// rather than by a second look at where the value points.
-//
-// Only the dark half is held to it: it is the new surface, and nothing an
-// existing site serves today changes meaning.
+// style element there and reads the rest as markup. Only the dark half is held
+// to this, so nothing an existing site serves changes meaning.
 func checkDarkImage(key string, ref ThemedRef) error {
 	if !ref.Themed() {
 		return nil
 	}
-	if strings.ContainsAny(ref.Dark, "<>") {
+	if strings.ContainsAny(ref.Dark, stylesheetBreakers) {
 		return fmt.Errorf("config: site.yaml: %s.dark %q carries %q or %q, and the dark image is written into the page's stylesheet where nothing escapes it: an image URL has no use for either (expected e.g. /assets/logo-white.svg)", key, ref.Dark, "<", ">")
 	}
 	return nil

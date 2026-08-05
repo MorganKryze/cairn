@@ -2,8 +2,8 @@ package config
 
 // The getting-started page: what cairn serves instead of dying when the
 // config directory is empty or invalid at boot. It goes through the normal
-// rendering pipeline (an in-memory config whose welcome note carries the
-// instructions), so it looks like the product and needs nothing special.
+// rendering pipeline, as an in-memory config whose welcome note carries the
+// instructions.
 
 const StarterAbout = `## Almost there
 

@@ -1,16 +1,13 @@
 // Regenerates every picture the README shows, from the running demo stack.
 // Run it with `just shots`, which brings the demo up first.
 //
-// Why a script rather than `playwright screenshot`: the CLI has no device
-// scale factor, and these have to be 2x or they look soft on a retina screen.
+// A script rather than `playwright screenshot`: the CLI has no device scale
+// factor, and these look soft on a retina screen below 2x.
 //
-// Four things come out of here. The hero, light and dark, which the README
-// swaps with a <picture>. A detail page and a phone, because the hero shows
-// one screen and the two questions it leaves are "what is behind a card" and
-// "what does this look like in a hand". And the social card, which is the
-// picture GitHub puts on a link when somebody shares the repository: it is
-// the only one that is composed rather than captured, since a page screenshot
-// cropped to 2:1 loses either its header or its cards.
+// Out of here come the hero in light and dark, which the README swaps with a
+// <picture>, a detail page, a phone, and the social card GitHub puts on a
+// shared link. The social card is composed rather than captured: a page
+// screenshot cropped to 2:1 loses either its header or its cards.
 
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
@@ -19,12 +16,11 @@ import { readFileSync } from 'node:fs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'assets');
 const URL = process.env.CAIRN_URL ?? 'http://127.0.0.1:8080/en/';
-// The same site, for the shots that open a page of their own. The two below
-// append a path to it, so what it has to guarantee is the trailing slash, not
-// the locale: this replaced `/en/` with `/en/`, which is nothing, and left
-// `CAIRN_URL=http://host/en` producing `http://host/enwhoami/`.
+// The shots below append a path, so this has to guarantee the trailing slash:
+// without it, `CAIRN_URL=http://host/en` produces `http://host/enwhoami/`.
 const DEMO = URL.endsWith('/') ? URL : URL + '/';
 const SIZE = { width: 1440, height: 1000 };
+const RETINA = 2;
 
 const browser = await chromium.launch();
 
@@ -32,11 +28,11 @@ for (const scheme of ['light', 'dark']) {
   const context = await browser.newContext({
     colorScheme: scheme,
     viewport: SIZE,
-    deviceScaleFactor: 2, // retina: the README is read on laptops
-    // Reduced motion does two things here: no animation caught mid-frame, and
-    // the hosting flags render with their labels out, which is the state the
-    // stylesheet already gives reduced-motion and touch visitors. So the hero
-    // explains what the little house means without staging a fake hover.
+    deviceScaleFactor: RETINA,
+    // Reduced motion holds every animation finished and renders the hosting
+    // flags with their labels out, the state the stylesheet gives reduced
+    // motion and touch visitors. The hero names the little house without
+    // staging a fake hover.
     reducedMotion: 'reduce',
   });
   const page = await context.newPage();
@@ -56,7 +52,6 @@ for (const scheme of ['light', 'dark']) {
   await context.close();
 }
 
-// The detail page and the phone: the two questions the hero leaves open.
 for (const [name, url, viewport] of [
   ['detail', DEMO + 'whoami/', { width: 1100, height: 900 }],
   ['phone', DEMO, { width: 390, height: 844 }],
@@ -64,16 +59,16 @@ for (const [name, url, viewport] of [
   const context = await browser.newContext({
     colorScheme: 'light',
     viewport,
-    deviceScaleFactor: 2,
+    deviceScaleFactor: RETINA,
     reducedMotion: 'reduce',
     isMobile: name === 'phone',
     hasTouch: name === 'phone',
   });
   const page = await context.newPage();
   await page.goto(url, { waitUntil: 'networkidle' });
-  // On a phone the welcome note fills the frame and the directory itself
-  // barely shows. Dismissing it is what a returning visitor sees anyway, and
-  // it is the half worth photographing: the chips and the cards.
+  // On a phone the welcome note fills the frame and the directory barely
+  // shows. Dismissed is what a returning visitor sees, and it leaves the
+  // chips and the cards in shot.
   if (name === 'phone') {
     await page.locator('#about-x').click().catch(() => {});
     await page.waitForTimeout(150);
@@ -85,15 +80,14 @@ for (const [name, url, viewport] of [
   await context.close();
 }
 
-// The two views, composed into one picture rather than left to a two-cell
+// The two views composed into one picture rather than left to a two-cell
 // table. Their aspects are 1.22 and 0.46, and a table equalises neither the
 // heights nor the captions: the phone ran on far past the detail page and left
-// a hole beside it. Matching the heights here means the layout cannot break,
-// whatever the reader's width.
+// a hole beside it. Matched heights here hold at any reader width.
 {
   const context = await browser.newContext({
     viewport: { width: 1400, height: 830 },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: RETINA,
   });
   const page = await context.newPage();
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -114,19 +108,16 @@ for (const [name, url, viewport] of [
   await context.close();
 }
 
-// The social card. GitHub renders it at 1280x640 on a shared link, and a page
-// screenshot cropped to that ratio loses either its header or its cards, so
-// this one is composed: the mark, the sentence, and the page itself held at
-// the edge of the frame.
+// The social card: the mark, the sentence, and the page itself held at the
+// edge of the frame. GitHub renders it at 1280x640.
 //
 // Everything is inlined as a data URI. A page built with setContent has an
-// about:blank origin, which blocks every file:// subresource, so a src that
-// points at the repository loads nothing and the card comes out with a broken
-// image where the mark should be.
+// about:blank origin, which blocks every file:// subresource, so a src
+// pointing at the repository loads nothing.
 {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 640 },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: RETINA,
   });
   const page = await context.newPage();
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -173,17 +164,16 @@ for (const [name, url, viewport] of [
 }
 
 // Rounded corners, baked in. GitHub strips the style attribute from a README,
-// so a border-radius in the markup does nothing: the only place the corner can
-// live is the file. Transparent outside the radius, so the page shows through
-// and the same file sits right on a light canvas and a dark one.
+// so the only place the corner can live is the file. Transparent outside the
+// radius, so the same file sits right on a light canvas and a dark one.
 //
-// Last, after the social card is composed, so that one keeps the square source
-// it draws inside its own frame.
+// Last, so the social card keeps the square source it draws in its own frame.
 for (const [file, radius] of [
   ['home-light.png', 26],
   ['home-dark.png', 26],
   ['two-views.png', 26],
 ]) {
+  // 1, not RETINA: these sources are already 2x.
   const context = await browser.newContext({ deviceScaleFactor: 1 });
   const page = await context.newPage();
   const src = `data:image/png;base64,${readFileSync(join(OUT, file)).toString('base64')}`;

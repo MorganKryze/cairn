@@ -18,9 +18,8 @@
     // presses a button or opens a <details>. Nobody starts a query with one.
     if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1 || e.key === ' ') return;
     const a = document.activeElement;
-    // The tag list has to hold every element that does something with a plain
-    // key, not just the text fields: stealing focus from a focused button ate
-    // its activation.
+    // Every element that does something with a plain key, not just the text
+    // fields: stealing focus from a focused button ate its activation.
     if (a === input || /^(INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY|A)$/.test(a.tagName) || a.isContentEditable) return;
     // focus on keydown: the default action then types the character here
     input.focus();
@@ -40,22 +39,21 @@
     const label = n === 1 ? count.dataset.single : count.dataset.plural.replace('%d', n);
     count.textContent = name ? `${label}, ${name}` : label;
   };
-  const cards = Array.from(document.querySelectorAll('.card'), (el, dom) => {
+  const cards = Array.from(document.querySelectorAll('.card'), (el, pos) => {
     const main = el.querySelector('.card-main').cloneNode(true);
     main.querySelectorAll('.visually-hidden, .status-pill, .card-more').forEach(n => n.remove());
     return {
       el,
-      dom,                                    // original position, the tie-breaker
-      cat: cats.indexOf(el.closest('.cat')),  // which category row it lives in
-      label: el.querySelector('.card-name').textContent.trim(), // as written, for the announcement
+      pos,
+      cat: cats.indexOf(el.closest('.cat')),
+      label: el.querySelector('.card-name').textContent.trim(),
       name: norm(el.querySelector('.card-name').textContent),
       text: norm(main.textContent + ' ' + (el.dataset.tags || '')),
     };
   });
   const empty = document.getElementById('empty');
 
-  // The visible matches, in the order they now read on screen, and the index of
-  // the "selected" one (the one Enter opens). -1 when nothing is selected.
+  // the visible matches in on-screen order; sel is the one Enter opens, -1 none
   let matches = [];
   let sel = -1;
 
@@ -73,8 +71,8 @@
     const q = norm(input.value).trim();
     const words = q.split(/\s+/).filter(Boolean);
     // Name matches win: when the query hits a service's name, show only those,
-    // so a full name doesn't drag in cards that merely mention it. Fall back to
-    // the full text (descriptions, tags) only when no name matches.
+    // so a full name does not drag in cards that merely mention it. The full
+    // text (descriptions, tags) is the fallback.
     const nameHit = c => words.every(w => c.name.includes(w));
     const byName = words.length > 0 && cards.some(nameHit);
     const hit = byName ? nameHit : c => words.every(w => c.text.includes(w));
@@ -88,26 +86,23 @@
       c.el.classList.remove('sel');
       if (ok && words.length) {
         c.score = score(c);
-        c.el.style.order = String(-c.score); // the better the match, the further left in its row
+        c.el.style.order = String(-c.score); // the better the match, the earlier in its row
         hits.push(c);
       } else {
         c.el.style.order = '';
       }
     }
-    // read them in on-screen order: category by category, best score first,
-    // original order breaking ties
-    hits.sort((a, b) => a.cat - b.cat || b.score - a.score || a.dom - b.dom);
+    // on-screen order: category, then score, then original position
+    hits.sort((a, b) => a.cat - b.cat || b.score - a.score || a.pos - b.pos);
     matches = hits;
 
     for (const s of cats) s.hidden = !s.querySelector('.card:not([hidden])');
-    // "No results" answers a search that found nothing. An empty box is not a
-    // search: clearing the field brings every card back, and `matches` is empty
-    // then for the keyboard's sake, not because nothing matched. Reading it as
-    // a result made the message appear on the way back to the full list, and
-    // #empty carries role="status", so it was announced too.
+    // An empty box is not a search that found nothing: clearing the field
+    // brings every card back, and `matches` is empty then for the keyboard's
+    // sake. #empty carries role="status", so reading it as a result announced
+    // "no results" on the way back to the full list.
     empty.hidden = !(words.length && matches.length === 0);
-    // Preselect the strongest match: it also sits first-left in its category, so
-    // typing a name lands you on that one card, top-left of its row.
+    // the strongest match, which also sits first in its category row
     sel = -1;
     if (matches.length) {
       let best = 0;
@@ -119,9 +114,9 @@
 
   input.addEventListener('input', apply);
 
-  // ponytail: a class + a real link click, not a full ARIA combobox. The live
-  // region above carries the count and the pick, which is what a listbox would
-  // announce anyway; upgrade only if real screen-reader testing asks for it.
+  // A class and a real link click, not a full ARIA combobox: the live region
+  // above carries the count and the pick, which is what a listbox would
+  // announce anyway.
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') { input.value = ''; apply(); return; }
     if (!matches.length) return;

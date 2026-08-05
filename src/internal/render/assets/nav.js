@@ -1,8 +1,10 @@
-// Scroll chrome: hide the header on the way down and bring it back on the way
-// up, reveal the back-to-top button past a screen, and wire the "jump to
-// category" select. All progressive: without JS the header just stays put, the
-// button stays hidden, and the select is inert.
+// Scroll chrome for the header, the back-to-top button and the jump-to-category
+// select. All progressive: without JS the header stays put, the button stays
+// hidden and the select is inert.
 (() => {
+  const NEAR_TOP = 80;   // still counts as the top of the page
+  const JITTER = 4;      // below this a scroll is not a direction
+
   const header = document.querySelector('header');
   const totop = document.querySelector('.totop');
   const nav = document.querySelector('.nav');
@@ -11,9 +13,8 @@
 
   // A scroll dismisses the open menu, which is right for a pointer and wrong
   // for a keyboard: tabbing to a menu link the browser has to scroll into view
-  // fires this handler, and closing the menu underneath both takes away what
-  // the user was tabbing through and drops focus to <body>, so the next Tab
-  // restarts at the skip link. Focus on the burger itself is still the pointer
+  // fires this handler, and closing the menu drops focus to <body>, so the next
+  // Tab restarts at the skip link. Focus on the burger itself is the pointer
   // case: clicking it leaves focus there, and the summary survives the close.
   const keyboardInside = () => {
     const a = document.activeElement;
@@ -24,9 +25,8 @@
     const y = scrollY;
     if (nav && nav.open && !keyboardInside()) nav.open = false;
     if (header) {
-      // near the top or scrolling up: show; scrolling down past a bit: hide
-      if (y < 80 || y < last - 4) header.classList.remove('header-hidden');
-      else if (y > last + 4) header.classList.add('header-hidden');
+      if (y < NEAR_TOP || y < last - JITTER) header.classList.remove('header-hidden');
+      else if (y > last + JITTER) header.classList.add('header-hidden');
     }
     if (totop) totop.classList.toggle('show', y > innerHeight * 0.9);
     last = y;

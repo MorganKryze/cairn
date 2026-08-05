@@ -5,11 +5,10 @@ import (
 	"strings"
 )
 
-// The built-in UI strings, one small table per language. Adding a language
-// is exactly one block here plus nothing else: every key must exist (a test
-// enforces completeness against the English table), and site.yaml `strings`
-// can still override any entry. Content lookup falls back through the base
-// language, so pt-BR content finds the pt table automatically.
+// The built-in UI strings, one small table per language. Adding a language is
+// one block here and nothing else: every key must exist (a test checks each
+// table against the English one), and site.yaml `strings` overrides any entry.
+// Content lookup falls back through the base language, so pt-BR finds pt.
 
 var builtinStrings = map[string]map[string]string{
 	"en": {
@@ -327,9 +326,9 @@ var builtinStrings = map[string]map[string]string{
 }
 
 // StringKeys lists every UI string an operator may override, sorted. A key
-// outside this set is a typo that silently does nothing: Str falls through to
-// the built-in table, so the page looks exactly as it would with no override
-// at all. -check compares against this.
+// outside this set silently does nothing: Str falls through to the built-in
+// table, so the page looks as it would with no override at all. -check
+// compares against this.
 func StringKeys() []string {
 	out := make([]string, 0, len(builtinStrings["en"]))
 	for k := range builtinStrings["en"] {
@@ -349,9 +348,9 @@ func BuiltinLocales() []string {
 	return out
 }
 
-// rtlLocales lists the base language codes written right to left. None of the
-// built-in UI languages is among them, but a site's own content can be, and
-// the html dir attribute is what makes the whole layout follow.
+// rtlLocales lists the base language codes written right to left. No built-in
+// UI language is among them, but a site's own content can be, and the html dir
+// attribute is what makes the whole layout follow.
 var rtlLocales = map[string]bool{
 	"ar": true, "arc": true, "ckb": true, "dv": true, "fa": true, "he": true,
 	"ku": true, "ps": true, "sd": true, "ug": true, "ur": true, "yi": true,
@@ -368,19 +367,17 @@ func LocaleDir(locale string) string {
 
 // IsLocale reports a well-formed locale tag.
 //
-// Every locale that reaches a page has already passed this pattern once:
-// site.locales is checked when site.yaml loads, and so is every key of a
-// per-locale mapping. It is exported so the one place that writes a locale
-// into markup without the template escaper can check it there too, at the
-// point where it matters, rather than trust an invariant established three
-// files away.
+// Every locale that reaches a page has passed this pattern once already:
+// site.locales when site.yaml loads, and every key of a per-locale mapping.
+// Exported so the one place that writes a locale into markup without the
+// template escaper can check it there rather than trust an invariant
+// established three files away.
 func IsLocale(s string) bool { return localeRe.MatchString(s) }
 
 // SameLanguage reports whether two locale tags name the same language, a
 // regional variant counting as its base: pt-BR content on a pt page is
 // Portuguese either way, read aloud by the same voice. Only a real change of
-// language is worth marking, and a site that writes pt for pt-BR should not
-// collect a lang attribute on every field for it.
+// language is worth a lang attribute.
 func SameLanguage(a, b string) bool {
 	ab, _, _ := strings.Cut(a, "-")
 	bb, _, _ := strings.Cut(b, "-")
