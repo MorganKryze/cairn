@@ -54,7 +54,10 @@ func Emit(cfg *config.Config, hide bool) ([]byte, error) {
 	var eps []endpoint
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
-			if !strings.HasPrefix(s.URL, "http") {
+			// Nothing to monitor for a service that is not there yet or not
+			// there any more, and an endpoint for one is a red dashboard row
+			// its operator can never fix.
+			if !strings.HasPrefix(s.URL, "http") || s.State.Disables() {
 				continue
 			}
 			eps = append(eps, endpoint{

@@ -73,6 +73,65 @@ const goldenServices = `- id: pdf
   name: Wiki
 `
 
+// One service per state, pinned apart from the Gatus site below. Editing that
+// one to carry a state would move all four of its pages and cost the proof
+// that a config with no state renders what it always did.
+const stateSite = `title: States
+locales: [en]
+status:
+  gatus: https://status.example.org
+`
+
+const stateServices = `- id: plain
+  url: https://plain.example.org
+  name: Plain
+  desc: No state at all.
+- id: beta
+  url: https://beta.example.org
+  name: Beta one
+  desc: Rough edges.
+  state: beta
+- id: new
+  url: https://new.example.org
+  name: New one
+  state: new
+- id: deprecated
+  url: https://deprecated.example.org
+  name: Deprecated one
+  state: deprecated
+- id: soon
+  name: Soon one
+  desc: Not open yet.
+  state: soon
+- id: gone
+  url: https://gone.example.org
+  name: Gone one
+  desc: Moved to the new one.
+  state: retired
+`
+
+func TestEveryStateRendersWhatItShould(t *testing.T) {
+	prev := Version
+	Version = "1.14.0"
+	t.Cleanup(func() { Version = prev })
+
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     stateSite,
+		"services.yaml": stateServices,
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := BuildModel(cfg, map[string]status.State{
+		"plain": {Level: status.LevelUp},
+		"beta":  {Level: status.LevelUp},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	compare(t, filepath.Join("testdata", "golden", "states.html"), m.Pages["en"].HTML)
+}
+
 // A Gatus site is what every cairn deployment with status pills runs today.
 // The multi-source work adds providers beside it; this pins that "beside" is
 // what it stays. A byte that moves here is a byte that moved on somebody's

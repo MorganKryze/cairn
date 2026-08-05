@@ -1,0 +1,22 @@
+# The flag is on every card on purpose: it is one of the two chips that has to
+# recede with a muted card, and its word is one of the four contrasts measured.
+- id: plain
+  url: https://plain.example.org
+  name: Plain
+  desc: No state at all.
+  selfhosted: true
+- id: beta
+  url: https://beta.example.org
+  name: Beta one
+  desc: Rough edges.
+  state: beta
+  selfhosted: true
+- id: gone
+  url: https://gone.example.org
+  name: Gone one
+  desc: Moved to the new one.
+  state: retired
+  selfhosted: true
+  details: |
+    This one moved. The detail page still works, which is the point: it is the
+    only place left to say where to go instead.

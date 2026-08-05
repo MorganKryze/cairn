@@ -305,6 +305,14 @@ type cardView struct {
 	StatusA11y          string // set only when the pill is a link
 	StatusID            string // names the pill's slot, empty without a Gatus
 	HostKind, HostLabel string // "self"/"external"/"" and its localized label
+	// State is the declared word, `soon` and friends, used as a class; the
+	// label is that word in the page's language. Beware the name: `state` is
+	// already this file's local for a status level, which is the other thing
+	// entirely. See statusMeta.
+	State, StateLabel string
+	// Off is the two disabling states, hoisted onto the view so the template
+	// asks one question instead of comparing strings in three places.
+	Off bool
 	// HostHref is where the flag leads, empty when it leads nowhere and the
 	// flag stays the plain text it has always been. HostBlank is set for a
 	// target that is not this site.
@@ -383,7 +391,9 @@ type detailView struct {
 	StatusA11y                                 string
 	Body                                       prose
 	Images                                     []imageView
-	Blank, Leave                               bool // see cardView
+	Blank, Leave                               bool   // see cardView
+	State, StateLabel                          string // see cardView
+	Off                                        bool   // see cardView
 }
 
 type imageView struct {
@@ -640,10 +650,20 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Name:      tr(s.Name, loc, def),
 					Desc:      tr(s.Desc, loc, def),
 					Tags:      strings.Join(s.Tags, " "),
-					Status:    statusOf(cfg, statuses, s.ID),
-					StatusID:  statusSlot(cfg, s.ID),
+					Off:       s.State.Disables(),
 				}
-				card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
+				if s.State != config.StateNone {
+					card.State = string(s.State)
+					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
+				}
+				// A disabling state means nothing is monitored, so there is no
+				// slot for a pill to be swapped into. The other three are live
+				// and keep theirs.
+				if !card.Off {
+					card.Status = statusOf(cfg, statuses, s.ID)
+					card.StatusID = statusSlot(cfg, s.ID)
+					card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
+				}
 				if len(s.Details) > 0 || len(s.Images) > 0 {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 					card.MoreA11y = s.Name.Get(loc, def) + ", " + cfg.Str(loc, "card.more")
@@ -657,9 +677,12 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
-				// After the flag, since the scope reads it.
-				card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
-				hv.Leave = hv.Leave || card.Leave
+				// After the flag, since the scope reads it. A disabling state
+				// has no link at all, so neither key can mean anything.
+				if !card.Off {
+					card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
+					hv.Leave = hv.Leave || card.Leave
+				}
 				cv.Cards = append(cv.Cards, card)
 			}
 			hv.Cats = append(hv.Cats, cv)
@@ -679,20 +702,29 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Icon:      AppURL(config.IconURL(cfg, s.Icon.Light)),
 					IconClass: themed.classFor(cfg, s.Icon),
 					URL:       s.URL,
-					Status:    statusOf(cfg, statuses, s.ID),
-					StatusID:  statusSlot(cfg, s.ID),
 					Body:      proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
+					Off:       s.State.Disables(),
+				}
+				if s.State != config.StateNone {
+					dv.State = string(s.State)
+					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
+				}
+				if !dv.Off {
+					dv.Status = statusOf(cfg, statuses, s.ID)
+					dv.StatusID = statusSlot(cfg, s.ID)
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
 				}
-				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
-				// The detail page has to reach the same verdict as the card
-				// for the same service, or a visitor meets the dialog on one
-				// route and not the other.
-				dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
-				dv.pageView.Leave = dv.Leave
+				if !dv.Off {
+					dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
+					// The detail page has to reach the same verdict as the card
+					// for the same service, or a visitor meets the dialog on one
+					// route and not the other.
+					dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
+					dv.pageView.Leave = dv.Leave
+				}
 				dv.PageTitle = dv.Name.Text + " · " + base.SiteTitle.Text
 				dv.MetaDesc = dv.Desc.Text
 				dv.SwitchPath = s.ID + "/"

@@ -1,0 +1,9 @@
+# Every family on one page, for the browser suite. What is under test is what
+# a markup assertion cannot see: whether a card with no link is out of the tab
+# order, whether the badge and the muted card hold their contrast once the
+# browser has resolved every color-mix, and whether a state costs the row it
+# sits in any height.
+title: States
+locales: [en]
+status:
+  gatus: https://status.example.org

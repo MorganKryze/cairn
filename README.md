@@ -54,6 +54,9 @@ account or a manual, and boring for you to operate.
 - 🚦 **Live status pills** fed by the monitor you already run, whichever it
   is, each linking to its status page. Your server does the polling, never
   the visitor's browser.
+- 🏷️ **Say where a service stands**: coming soon, no longer available, beta,
+  deprecated, new. A word on the card, in the visitor's language, and the two
+  that mean "do not go there" stop being links at all.
 - 🌍 **Their language**: the server picks it from the browser, a switcher
   pins it. One config file, translations inline.
 - 🔍 **Search from anywhere**: just start typing, or ⌘K. A name finds that

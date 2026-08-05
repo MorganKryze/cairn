@@ -112,11 +112,12 @@ jobs:
           /tmp/cairn -config scripts/fixtures/status -addr 127.0.0.1:8092 &
           /tmp/cairn -config scripts/fixtures/themed -addr 127.0.0.1:8093 &
           /tmp/cairn -config scripts/fixtures/leave -addr 127.0.0.1:8094 &
-          for port in 8090 8091 8092 8093 8094; do
+          /tmp/cairn -config scripts/fixtures/states -addr 127.0.0.1:8095 &
+          for port in 8090 8091 8092 8093 8094 8095; do
             for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
           done
           node scripts/search.mjs http://127.0.0.1:8090/en/
-          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/
+          node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
 
   chart:
