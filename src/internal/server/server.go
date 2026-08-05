@@ -13,15 +13,14 @@ import (
 	"github.com/MorganKryze/cairn/src/internal/render"
 )
 
-// current is the whole served site: an immutable model swapped atomically on
-// config reload or status change, so a request never sees a half-built page.
+// current is the whole served site, swapped whole on config reload or status
+// change, so a request never sees a half-built page.
 var current atomic.Pointer[render.Model]
 
-// reloadMu serializes the two writers of current (config watcher and status
-// poller) so neither clobbers the other's half of the model.
+// reloadMu serializes the two writers of current, the config watcher and the
+// status poller, so neither clobbers the other's half of the model.
 var reloadMu sync.Mutex
 
-// Store installs a model, and Current reads the live one.
 func Store(m *render.Model) { current.Store(m) }
 
 // Current returns the model every handler renders from.
@@ -30,8 +29,8 @@ func Current() *render.Model { return current.Load() }
 // Serve builds the routes and blocks. cfgDir and assetsDir are served as
 // static trees on top of the embedded ones.
 func Serve(addr, cfgDir, assetsDir string) error {
-	// ReadHeaderTimeout caps slow-header (Slowloris) clients; WriteTimeout
-	// drops the ones that never read their answer; IdleTimeout reclaims
+	// ReadHeaderTimeout caps slow-header (Slowloris) clients, WriteTimeout
+	// drops the ones that never read their answer, IdleTimeout reclaims
 	// keep-alives. Every response is a small pre-rendered page, so these are
 	// generous.
 	srv := &http.Server{
@@ -51,37 +50,30 @@ func Serve(addr, cfgDir, assetsDir string) error {
 // root, /healthz, /readyz and the 404 for everything outside the prefix, and
 // with the headers inside mount those three came back bare under -base-path:
 // no COOP, no CORP, no HSTS. HSTS is the one that costs, because the bare host
-// is exactly where a first visit lands, and a header that never arrives there
-// cannot pin the scheme before someone gets to downgrade it.
+// is where a first visit lands, and a header that never arrives there cannot
+// pin the scheme before someone downgrades it.
 //
 // compress stays inside secureHeaders and still outside mount, so the two
-// deployments answer alike. Without -base-path the probes were already inside
-// both wrappers and nobody chose that difference; putting mount innermost
-// settles it in the direction the default deployment has been running all
-// along. It costs the probes nothing: healthz and readyz set no Content-Type,
-// compress reads the one on the header before net/http gets to sniff one, and
-// an empty type is not compressible, so "ok\n" goes out as three bytes either
-// way. What the two wrappers actually add there is Vary and the hardening
-// headers, which is the whole point.
+// deployments answer alike. It costs the probes nothing: healthz and readyz
+// set no Content-Type, compress reads the header before net/http gets to sniff
+// one, and an empty type is not compressible, so "ok\n" goes out as three
+// bytes either way. The two wrappers add Vary and the hardening headers there.
 func handler(cfgDir, assetsDir string) http.Handler {
 	return secureHeaders(compress(mount(routes(cfgDir, assetsDir))))
 }
 
-// routes maps every path cairn answers. Nothing here is exported: what the
-// program needs from this package is Serve, the loops and the probe.
 func routes(cfgDir, assetsDir string) *http.ServeMux {
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(render.Embedded, "assets")
-	// stamped inside cacheControl, not around it, and the order is the whole
-	// point: both write Cache-Control, so the last one to run wins. Written
-	// the other way the day-long header overwrote the year on every stamped
-	// asset, silently, and a test now holds it.
+	// stamped inside cacheControl, not around it: both write Cache-Control and
+	// the last to run wins. The other way round, the day-long header silently
+	// overwrote the year on every stamped asset. A test holds the order.
 	mux.Handle("GET /static/", cacheControl(stamped(http.StripPrefix("/static/", http.FileServerFS(static)))))
 	// Mounted unconditionally: a dir that appears after boot just works.
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", noListing(http.FileServer(http.Dir(assetsDir)))))
 	// Service preview images live next to the yaml, in <config>/media/.
 	mux.Handle("GET /media/", http.StripPrefix("/media/", noListing(http.FileServer(http.Dir(filepath.Join(cfgDir, "media"))))))
-	// And the self-hosted font theme.font.file names, in <config>/fonts/.
+	// theme.font.file names a self-hosted font in <config>/fonts/.
 	mux.Handle("GET /fonts/", http.StripPrefix("/fonts/", noListing(http.FileServer(http.Dir(filepath.Join(cfgDir, "fonts"))))))
 	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /readyz", readyz)
@@ -95,8 +87,8 @@ func routes(cfgDir, assetsDir string) *http.ServeMux {
 	mux.HandleFunc("GET /sitemap.xml", sitemap)
 	mux.HandleFunc("GET /.well-known/security.txt", securityTxt)
 	mux.HandleFunc("GET /{$}", root)
-	// Catch-all rather than /{locale}/{$}: a wildcard pattern would conflict
-	// with the /static/ and /assets/ subtrees in the 1.22 mux.
+	// Catch-all rather than /{locale}/{$}: a wildcard pattern conflicts with
+	// the /static/ and /assets/ subtrees in the 1.22 mux.
 	mux.HandleFunc("GET /", home)
 	return mux
 }

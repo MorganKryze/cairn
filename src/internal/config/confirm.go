@@ -8,15 +8,12 @@ import (
 
 // ConfirmScope says which service links raise the leaving dialog.
 //
-// A bool would have been enough to turn the dialog on, and not enough to say
-// what most operators actually want. cairn already knows, per service, whether
-// the host runs the thing or merely points at it, and that is the line the
-// warning belongs on: a visitor being sent to somebody else's site is the case
-// worth a sentence, while being sent to the host's own Nextcloud is not. So
-// the key takes that answer rather than a yes.
+// cairn knows per service whether the host runs the thing or merely points at
+// it, and that is the line the warning belongs on: a visitor sent to somebody
+// else's site is the case worth a sentence, the host's own Nextcloud is not.
 //
-// `true` is accepted and means `all`, because a reader who has seen new_tab
-// above will write it and should not be met with a type error.
+// `true` is accepted and means `all`, so a reader who has seen new_tab above
+// is not met with a type error.
 type ConfirmScope string
 
 const (
@@ -46,10 +43,9 @@ func (c *ConfirmScope) UnmarshalYAML(n *yaml.Node) error {
 // Wants reports whether a service raises the dialog. hostKind is the card's
 // own flag: "self", "external", or empty when the config says nothing.
 //
-// Under `external`, a service with no flag at all does not qualify. That is
-// the literal reading and the safe one: cairn refuses to guess that silence
-// means somebody else's site, when silence is what a config says before the
-// operator has thought about it.
+// Under `external`, a service with no flag does not qualify: silence is what a
+// config says before the operator has thought about it, not a statement that
+// the address belongs to somebody else.
 func (c ConfirmScope) Wants(hostKind string) bool {
 	switch c {
 	case ConfirmAll:

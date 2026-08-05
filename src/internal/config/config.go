@@ -21,13 +21,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LString is a string translated per locale. A plain YAML string decodes as
-// the value for every locale.
+// LString is a string translated per locale.
 type LString map[string]string
+
+// untranslated keys the plain YAML string form: one wording the operator
+// serves to every locale, a brand name being the usual case.
+const untranslated = ""
 
 func (l *LString) UnmarshalYAML(n *yaml.Node) error {
 	if n.Kind == yaml.ScalarNode {
-		*l = LString{"": n.Value}
+		*l = LString{untranslated: n.Value}
 		return nil
 	}
 	var m map[string]string
@@ -45,39 +48,28 @@ func (l *LString) UnmarshalYAML(n *yaml.Node) error {
 	return nil
 }
 
-// Get is the wording alone, for everything that only prints it. It is written
-// in terms of GetLocale so there is one lookup order rather than two that can
-// drift apart.
 func (l LString) Get(locale, fallback string) string {
 	s, _ := l.GetLocale(locale, fallback)
 	return s
 }
 
 // GetLocale resolves a translated field and reports the locale the wording
-// actually came from.
+// came from, so a page can mark a fallback rather than assert through
+// <html lang> that the sentence is in a language it is not: a screen reader
+// then reads it in the wrong voice, and an Arabic fallback in a
+// left-to-right page is laid out the wrong way round.
 //
-// That second half is what lets a page be honest about a fallback. A field
-// with no translation for the page's locale still renders, in whichever
-// language the config does have, and nothing used to say so: the page then
-// asserts through <html lang> that the sentence is in a language it is not. A
-// screen reader reads it in the wrong voice, and an Arabic fallback inside a
-// left-to-right page is laid out the wrong way round, which moves its
-// punctuation to the wrong end of the line.
+// Order: the exact locale, the untranslated form, the site default, then
+// anything at all in key order so a half-written config still renders.
 //
-// The order is unchanged: the exact locale, the untranslated form, the site
-// default, then anything at all in key order so a half-written config still
-// renders something.
-//
-// The untranslated form is the plain YAML string, kept under "". It reports
-// the locale that was asked for rather than a language of its own: one string
-// written for every locale is the operator saying it serves them all, which is
-// what a brand name is, and calling that a fallback would mark most fields of
-// most sites.
+// The untranslated form reports the locale that was asked for rather than a
+// language of its own, since it serves every locale; calling it a fallback
+// would mark most fields of most sites.
 func (l LString) GetLocale(locale, fallback string) (text, from string) {
 	if s := l[locale]; s != "" {
 		return s, locale
 	}
-	if s := l[""]; s != "" {
+	if s := l[untranslated]; s != "" {
 		return s, locale
 	}
 	if s := l[fallback]; s != "" {
@@ -102,9 +94,8 @@ type FooterLink struct {
 	Icon  string  `yaml:"icon"` // links only: a built-in glyph name, URL or /assets path; a footer entry carrying one is refused
 }
 
-// SitePage is a page cairn serves itself (legal notice, privacy…), linked
-// automatically in the footer after the manual entries. body is an optional
-// intro; sections add titled blocks below it.
+// SitePage is a page cairn serves itself (legal notice, privacy…), linked in
+// the footer after the manual entries.
 type SitePage struct {
 	ID       string        `yaml:"id"`
 	Title    LString       `yaml:"title"`
@@ -120,13 +111,11 @@ type PageSection struct {
 // StatusMap reads a flat array of objects out of any JSON status API: where
 // the array is, which field of each element holds the service name and which
 // holds its state, then the values that mean each level. A path is a dotted
-// walk and nothing more, because anything cleverer is a query language, and a
-// query language in YAML is a second product.
+// walk, nothing more.
 //
 // The value lists are allow-lists: a state in none of them reads as down, so a
 // vendor that adds a word next year cannot make a broken service look green.
-// The exception is unknown, which is read first and means the monitor said
-// nothing at all about that service.
+// Unknown is the exception, read first.
 type StatusMap struct {
 	List        string   `yaml:"list"`
 	Key         string   `yaml:"key"`
@@ -140,8 +129,7 @@ type StatusMap struct {
 }
 
 // SiteIcon is one home-screen icon an operator supplies themselves. cairn
-// cannot resize an image without pulling in a scaler, so an operator who wants
-// the full set names the files and their sizes; nothing here is guessed.
+// resizes nothing, so every file and its size is named rather than derived.
 type SiteIcon struct {
 	Src     string `yaml:"src"`
 	Sizes   string `yaml:"sizes"`   // "512x512", or "any" for an svg
@@ -171,37 +159,31 @@ type Site struct {
 	Credit  *bool              `yaml:"credit"`       // the footer "powered by cairn"; nil means true
 	ShowVer bool               `yaml:"show_version"` // print the running version beside the credit; off by default
 	Strings map[string]LString `yaml:"strings"`
-	// Security fills /.well-known/security.txt. Contact is the only field an
-	// operator writes: Expires, Canonical and Preferred-Languages are cairn's
-	// to compute, which is the whole reason to serve the file rather than let
-	// one go stale in a folder.
+	// Security fills /.well-known/security.txt. These three keys are the
+	// operator's; Expires, Canonical and Preferred-Languages are cairn's to
+	// compute, so the served file cannot go stale.
 	Security struct {
 		Contact    string `yaml:"contact"`    // a URI: mailto:…, https://… or tel:…
 		Policy     string `yaml:"policy"`     // where the disclosure policy lives
 		Encryption string `yaml:"encryption"` // where the public key lives
 	} `yaml:"security"`
-	// HostingFlag is where the self-hosted and external flags lead, when the
-	// operator wants them to lead anywhere. Each value is a page id cairn
-	// serves, an absolute path, or a URL; a page id resolves in the language
-	// the visitor is reading, the way the footer links to those pages already.
-	//
-	// Empty leaves the flags exactly as they were, plain text on the card.
+	// HostingFlag is where the self-hosted and external flags lead. Each value
+	// is a page id cairn serves, an absolute path, or a URL; a page id resolves
+	// in the language the visitor is reading, as the footer links already do.
+	// Empty leaves the flags as plain text on the card.
 	HostingFlag struct {
 		Self     string `yaml:"self"`
 		External string `yaml:"external"`
 	} `yaml:"hosting_flag"`
 	// ServiceLinks is how the two links that lead to a service behave: the
-	// name on a card, and the button on a detail page. Both are off, so a
-	// site that says nothing keeps exactly the page it has today.
+	// name on a card, and the button on a detail page. Both default off.
 	//
-	// The block is `service_links` and not `links`, which is what the feature
-	// request called it: `links` has been the header link list since long
-	// before this, and a key cannot be a sequence and a mapping at once.
+	// The block is `service_links` and not `links`: `links` is already the
+	// header link list, and a key cannot be a sequence and a mapping at once.
 	//
 	// Neither key touches a link cairn serves itself. A "Learn more" page, the
-	// language switcher, a footer entry: those stay where they are, on the
-	// same off-site test the hosting flag already applies. What is being
-	// described is leaving the site, not following a link.
+	// language switcher, a footer entry stay where they are, on the same
+	// off-site test the hosting flag applies.
 	ServiceLinks struct {
 		NewTab  bool         `yaml:"new_tab"`
 		Confirm ConfirmScope `yaml:"confirm"`
@@ -209,28 +191,25 @@ type Site struct {
 	Status struct {
 		Gatus string `yaml:"gatus"`
 		// Provider names the monitor behind the address, and URL is that
-		// address for a monitor that is not Gatus. Gatus keeps its own key
-		// because it had one first: every site running today says gatus: and
-		// has to keep meaning exactly what it meant. The two spellings resolve
-		// through StatusProvider and StatusAddress, and nothing else reads
-		// these three fields.
+		// address for a monitor that is not Gatus. Gatus keeps its own key:
+		// every site running today says gatus: and has to go on meaning what
+		// it meant. Read the two spellings through StatusProvider and
+		// StatusAddress, nowhere else.
 		Provider string `yaml:"provider"`
 		URL      string `yaml:"url"`
-		// Map tells cairn how to read somebody else's status document, and
-		// TokenFile names the file holding the credential for it. Its twin in
-		// the status package is status.Mapping: this package knows about no
-		// other, so server/watch.go copies one into the other the way it
-		// already copies the address and the trust settings.
+		// Map tells cairn how to read somebody else's status document. Its
+		// twin is status.Mapping: this package imports nothing of cairn's, so
+		// server/watch.go copies one into the other the way it already copies
+		// the address and the trust settings.
 		Map StatusMap `yaml:"map"`
-		// TokenFile is a path, never a token. A secret written in site.yaml is
-		// a secret in a config repository; every platform that has secrets
-		// delivers them as a mounted file, which is the shape status.ca takes
-		// already.
+		// TokenFile is a path, never a token: a secret written in site.yaml is
+		// a secret in a config repository. Every platform that has secrets
+		// delivers them as a mounted file.
 		TokenFile   string `yaml:"token_file"`
 		TokenScheme string `yaml:"token_scheme"` // default Bearer; Statuspage wants OAuth
 		// Slug is the published status page a Kuma instance serves statuses
 		// for. Kuma has no endpoint listing every monitor, only one per status
-		// page, so the slug is the address as much as the URL is.
+		// page, so the slug is half the address.
 		Slug     string `yaml:"slug"`
 		Page     string `yaml:"page"`
 		Interval string `yaml:"interval"`
@@ -238,20 +217,18 @@ type Site struct {
 		// makes them display-only, for a Gatus a visitor cannot reach.
 		Linked *bool `yaml:"linked"`
 		// Insecure stops cairn verifying the certificate Gatus presents, for
-		// an internal instance whose authority nothing public signed. A hole
-		// the operator opens deliberately, so cairn says so out loud rather
-		// than only obeying: once at startup, and on every -check.
+		// an internal instance whose authority nothing public signed. It is a
+		// hole in the poll, so cairn logs it at startup and on every -check.
 		Insecure bool `yaml:"insecure"`
 		// CA is a PEM bundle cairn adds to the system roots for that one
 		// connection: an http(s) URL, or an /assets/… path in the mounted
-		// directory. It is the answer to the same problem Insecure is, and the
-		// opposite answer: this one verifies rather than stops checking.
+		// directory. It answers what Insecure answers, by verifying rather
+		// than by stopping the check.
 		//
-		// A URL is fetched, which is why http is allowed here and why saying
-		// so matters. Over http, whatever is on the path to that address
-		// decides what cairn trusts for the poll, which lands in the same
-		// place Insecure does. cairn says which of the two it is at startup
-		// and on every -check.
+		// A URL is fetched, http included. Over http, whatever sits on the
+		// path to that address decides what cairn trusts for the poll, which
+		// lands where Insecure does. cairn says which of the two it is at
+		// startup and on every -check.
 		CA string `yaml:"ca"`
 	} `yaml:"status"`
 }
@@ -269,9 +246,7 @@ type Service struct {
 	// Selfhosted flags where the service runs: true self-hosted, false hosted
 	// elsewhere, nil no flag at all.
 	Selfhosted *bool `yaml:"selfhosted"`
-	// State is where the service stands, declared rather than measured. Empty
-	// is the whole of what cairn rendered before this key existed.
-	State State `yaml:"state"`
+	State      State `yaml:"state"`
 }
 
 // ServiceImage is a preview shown on the detail page. A plain YAML string is
@@ -284,8 +259,8 @@ type ServiceImage struct {
 
 // imageEntry is ServiceImage without its UnmarshalYAML, which decoding the
 // mapping form would otherwise re-enter forever. It sits at package level
-// rather than inside the method so an unknown key in an image entry can be
-// told what an image entry accepts; yaml names this type in its error.
+// rather than inside the method because yaml names this type in its error,
+// and an unknown key has to be told what an image entry accepts.
 type imageEntry ServiceImage
 
 func (i *ServiceImage) UnmarshalYAML(n *yaml.Node) error {
@@ -323,7 +298,7 @@ type Config struct {
 	// FaviconDims is the operator favicon's real size, when it is a raster
 	// sitting in the mounted assets dir. Zero for an svg, for a remote URL,
 	// and when no favicon is set: the manifest then says nothing about size
-	// rather than claiming one, which is what it used to do.
+	// rather than claiming one.
 	FaviconDims [2]int
 }
 
@@ -331,16 +306,14 @@ func (c *Config) DefaultLocale() string { return c.Site.Locales[0] }
 
 // StatusProviders lists the monitors status.provider accepts, sorted.
 //
-// This package imports nothing of cairn's, which is the rule the dependency
-// graph is built on, so the list cannot come from the poller that owns it. It
-// is kept in step by a test over there, where both are in reach: a name in one
-// list and not the other is either a config error nobody can fix or a config
-// that loads clean and then fails every poll.
+// This package imports nothing of cairn's, so the list cannot come from the
+// poller that owns it; a test in the status package keeps the two in step. A
+// name in one list and not the other is either a config error nobody can fix
+// or a config that loads clean and then fails every poll.
 func StatusProviders() []string { return []string{"gatus", "json", "kuma"} }
 
 // StatusAddress is the monitor cairn polls, whichever key named it, and empty
-// when the site has no status at all. Everything that used to ask whether
-// status.gatus was set asks this instead.
+// when the site has no status at all.
 func (s *Site) StatusAddress() string {
 	if s.Status.Gatus != "" {
 		return s.Status.Gatus
@@ -350,7 +323,7 @@ func (s *Site) StatusAddress() string {
 
 // StatusProvider is which monitor that address is. status.gatus implies it, so
 // a config written before providers existed resolves to gatus without saying
-// so, and empty means the site polls nothing.
+// so. Empty means the site polls nothing.
 func (s *Site) StatusProvider() string {
 	if s.StatusAddress() == "" && s.Status.Provider == "" {
 		return ""
@@ -368,12 +341,11 @@ func (c *Config) StatusInterval() time.Duration {
 	return 60 * time.Second
 }
 
-// Noindex reports whether the site asks search engines to stay away.
 func (c *Config) Noindex() bool { return c.Site.Index != nil && !*c.Site.Index }
 
 // StatusLinked reports whether a status pill is a link to the status page.
-// It is, unless the operator says otherwise: cairn cannot tell whether the
-// Gatus it polls is one a visitor can reach, so only they can.
+// cairn cannot tell whether the monitor it polls is one a visitor can reach,
+// so only the operator can turn this off.
 func (c *Config) StatusLinked() bool {
 	return c.Site.Status.Linked == nil || *c.Site.Status.Linked
 }
@@ -383,7 +355,7 @@ func (c *Config) StatusLinked() bool {
 // pt), English, then the key.
 func (c *Config) Str(locale, key string) string {
 	if ls, ok := c.Site.Strings[key]; ok {
-		for _, k := range []string{locale, ""} {
+		for _, k := range []string{locale, untranslated} {
 			if s := ls[k]; s != "" {
 				return s
 			}
@@ -418,39 +390,37 @@ var (
 	// computed-value time: the accent, and every focus ring drawn with it,
 	// silently disappears.
 	accentRe = regexp.MustCompile(`^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$`)
-	// A CSS font-family list goes verbatim into the page's inline <style>,
-	// so it is kept to the characters a family stack is made of: letters,
-	// digits, spaces, quotes and the punctuation between family names. A
-	// semicolon, a brace or a newline could break out of the declaration, and
-	// refusing them is what lets the value be inlined without escaping.
+	// A CSS font-family list goes verbatim into the page's inline <style>, so
+	// it is kept to the characters a family stack is made of. A semicolon, a
+	// brace or a newline could break out of the declaration; refusing them is
+	// what lets the value be inlined without escaping.
 	//
-	// Letter means letter in any script. A font family is a name, and a name
-	// is written in the language it belongs to: Époque, 思源黑体, الجزيرة. An
-	// ASCII-only rule refuses those, and refusing a family refuses the config
-	// it is in, so a site would lose every page to the getting-started one
-	// over a font. None of that widens what can end a declaration.
+	// Letter means letter in any script: a family name is written in the
+	// language it belongs to, as Époque, 思源黑体, الجزيرة are. An ASCII-only
+	// rule refuses those, and a refused family costs the site every page to
+	// the getting-started one. None of that widens what can end a declaration.
 	fontFamilyRe = regexp.MustCompile(`^[\p{L}\p{N} '",._@+-]+$`)
 	// theme.font.file lands in the same inline stylesheet, as the url() of the
-	// @font-face, and needs the same kind of guard for the same reason: a path
-	// can pass every check about where it points and still carry the sequence
-	// that ends a style element. This is the shape of a filename.
+	// @font-face: a path can pass every check about where it points and still
+	// carry the sequence that ends a style element. This is the shape of a
+	// filename.
 	fontFileRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9/._-]*$`)
 	localeRe   = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*$`)
 	idRe       = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	// An icon slug: what dashboard-icons publishes, and the only shape that can
 	// safely become both a filename and a URL segment.
-	slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
-	// A manifest icon size: one or more "WxH", or "any" for a scalable one.
+	slugRe      = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	iconSizesRe = regexp.MustCompile(`^(any|[0-9]+x[0-9]+( [0-9]+x[0-9]+)*)$`)
 	// Any URI with a scheme, since security.txt takes mailto:, https:// and
-	// tel: alike. Checking the scheme is what catches a bare email address,
-	// which is the mistake this field invites.
+	// tel: alike. Checking the scheme catches a bare email address, the
+	// mistake that field invites.
 	uriRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+$`)
 )
 
-// isHTTPURL reports an http(s) URL; IsURLOrAbs also accepts a root-absolute
-// /path. Both gate the "is this a link we pass through" checks scattered
-// across config and render.
+// stylesheetBreakers are the characters that can close a style element from
+// inside a url(), where nothing escapes them for us.
+const stylesheetBreakers = "<>"
+
 func isHTTPURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
@@ -458,25 +428,21 @@ func isHTTPURL(s string) bool {
 // IsLocalPath reports a root-absolute path that stays on this site.
 //
 // "//cdn.example.org/x" is not one, though it starts with a slash: a browser
-// reads it as a URL on another origin. The backslash form counts as external
-// too, because browsers normalise it to the same thing. Every place that has
-// to prefix a base path or a site URL needs this distinction rather than a
-// bare leading slash, or a protocol-relative logo comes out as
-// "/cairn//cdn.example.org/x", which resolves nowhere.
+// reads it as a URL on another origin, and normalises the backslash form to
+// the same thing. Anything prefixing a base path or a site URL needs that
+// distinction rather than a bare leading slash, or a protocol-relative logo
+// comes out as "/cairn//cdn.example.org/x", which resolves nowhere.
 func IsLocalPath(s string) bool {
 	return strings.HasPrefix(s, "/") &&
 		!strings.HasPrefix(s, "//") && !strings.HasPrefix(s, `/\`)
 }
 
-// isExternalURL reports a link that leaves this site: an explicit scheme, or
-// the protocol-relative form.
 func isExternalURL(s string) bool {
 	return isHTTPURL(s) || strings.HasPrefix(s, "//") || strings.HasPrefix(s, `/\`)
 }
 
 // IsURLOrAbs gates "is this a link we pass through rather than a slug we
-// resolve". It accepts exactly what it always did; it just no longer confuses
-// the two kinds of leading slash on the way.
+// resolve".
 func IsURLOrAbs(s string) bool {
 	return isExternalURL(s) || IsLocalPath(s)
 }
@@ -485,16 +451,13 @@ func IsURLOrAbs(s string) bool {
 // reports whether it names one at all.
 //
 // A file in media/ has two documented spellings, the bare name and the
-// /media/… path it is served at, and they have to mean the same thing here:
-// the bare one was stat'd and the absolute one was not, so the same missing
-// file refused to boot written one way and rendered a 404 written the other.
+// /media/… path it is served at, and both have to mean the same file here:
+// stat'ing only the bare one made a missing file refuse to boot written one
+// way and render a 404 written the other.
 //
-// Everything else stays out of it, because it is not this directory's to
-// serve: a URL, /assets/… from the mounted assets dir, any other absolute
-// path. Note that a value starting with "/media/" cannot be the
-// protocol-relative "//host/x" or its "/\host/x" twin, so the prefix already
-// draws the line IsLocalPath exists to draw. ".." cannot arrive either;
-// parseServices refuses it in every images entry before this runs.
+// Everything else stays out, being none of this directory's to serve: a URL,
+// /assets/… from the mounted assets dir, any other absolute path. ".." cannot
+// arrive; parseServices refuses it in every images entry before this runs.
 func mediaRef(src string) (rel string, ours bool) {
 	if !IsURLOrAbs(src) {
 		return src, true
@@ -504,16 +467,14 @@ func mediaRef(src string) (rel string, ours bool) {
 
 // FontRef maps theme.font.file to the file under the config directory's
 // fonts/ folder, and reports whether the value names one at all. The served
-// URL is "/fonts/" + rel, which is why the two spellings that are already a
-// path mean the file it leads to.
+// URL is "/fonts/" + rel.
 //
-// A font file has three documented spellings that have to mean the same
-// thing: the bare name "custom-font.woff2", the config-relative
-// "fonts/custom-font.woff2", and the "/fonts/custom-font.woff2" path it is
-// served at. Everything else -- a URL, an absolute path outside fonts/ , a
-// "../" climb -- comes back not-ok, and the caller answers with its own
-// message. The backslash form counts as a climb because a browser normalises
-// it to the same thing, the rule IsLocalPath already draws.
+// Three documented spellings mean the same file: the bare name
+// "custom-font.woff2", the config-relative "fonts/custom-font.woff2", and the
+// "/fonts/custom-font.woff2" path it is served at. A URL, an absolute path
+// outside fonts/, a "../" climb come back not-ok and the caller answers with
+// its own message. The backslash form counts as a climb: a browser normalises
+// it to the same thing, the rule IsLocalPath draws.
 func FontRef(file string) (rel string, ok bool) {
 	if file == "" {
 		return "", false
@@ -530,8 +491,8 @@ func FontRef(file string) (rel string, ok bool) {
 // FirstFontFamily is the first entry of a CSS font-family list, the name an
 // @font-face can declare. A list like "Inter, system-ui, sans-serif" names
 // the custom file first, and the @font-face has to use exactly that name for
-// the browser to connect the two; splitting on a comma a quote belongs to
-// would cut a name like "My, Font" in half.
+// the browser to connect the two. Splitting on a comma inside quotes would
+// cut a name like "My, Font" in half.
 func FirstFontFamily(family string) string {
 	var b strings.Builder
 	quote := rune(0)
@@ -555,8 +516,8 @@ func FirstFontFamily(family string) string {
 }
 
 // FontFormat maps a font file's extension to the format hint its @font-face
-// src carries. Empty for a file cairn has no label for, which validation
-// refuses before it ever reaches a page.
+// src carries. Empty for an extension cairn has no label for, which
+// validation refuses before it reaches a page.
 func FontFormat(rel string) string {
 	switch strings.ToLower(filepath.Ext(rel)) {
 	case ".woff2":
@@ -573,8 +534,7 @@ func FontFormat(rel string) string {
 
 // FontFaceName is the name the @font-face for theme.font.file declares: the
 // first family of theme.font.family, quoted if it is not already. The
-// @font-face and the --font-body override have to name the same font, so both
-// come from the one value.
+// @font-face and the --font-body override have to name the same font.
 func FontFaceName(family string) string {
 	return quotedFontName(FirstFontFamily(family))
 }
@@ -654,7 +614,7 @@ func Load(dir string) (*Config, error) {
 		LocalIcons: localIcons(filepath.Join(AssetsPath, "icons")),
 	}
 	// The manifest and /favicon.ico have no theme to follow, so both read the
-	// light one: it is the file a site with one favicon already names.
+	// light one, the file a site with a single favicon names.
 	cfg.FaviconDims = assetDims(site.Favicon.Light)
 	if st, err := os.Stat(filepath.Join(dir, "custom.css")); err == nil && !st.IsDir() {
 		cfg.CustomCSS = true
@@ -664,8 +624,8 @@ func Load(dir string) (*Config, error) {
 
 // AssetFile turns an /assets/… reference into the file it names in the mounted
 // directory, and returns "" for anything that is not one: a URL, a bare slug,
-// or a path that tries to climb out of the mount, which is the rule the file
-// server applies too. It touches no disk, so it answers the same either way.
+// or a path that climbs out of the mount, the rule the file server applies
+// too. It touches no disk, so it answers the same either way.
 func AssetFile(ref string) string {
 	rel, ok := strings.CutPrefix(ref, "/assets/")
 	if !ok || rel == "" || strings.Contains(rel, "..") {
@@ -677,9 +637,9 @@ func AssetFile(ref string) string {
 // assetDims measures a raster the operator dropped in the mounted assets dir,
 // so the manifest can state its real size instead of guessing one.
 //
-// Anything it cannot open comes back zero, on purpose: a remote URL would need
-// an outbound request, which cairn does not make, and an svg has no intrinsic
-// size to report. Both cases are handled by saying nothing rather than wrong.
+// Anything it cannot open comes back zero: a remote URL would need an outbound
+// request, which cairn does not make, and an svg has no intrinsic size. Both
+// say nothing rather than something wrong.
 func assetDims(ref string) [2]int {
 	p := AssetFile(ref)
 	if p == "" {
@@ -738,15 +698,15 @@ func strictDecode(n *yaml.Node, out any) error {
 
 // defaultSite is what a directory with no site.yaml means, and equally the
 // base a site.yaml decodes onto: every key in the file is optional, so the
-// two have to agree. One function so they cannot stop agreeing.
+// two have to agree.
 func defaultSite() Site {
-	s := Site{Title: LString{"": "cairn"}, Locales: []string{"en"}}
+	s := Site{Title: LString{untranslated: "cairn"}, Locales: []string{"en"}}
 	s.Theme.Accent = "#247b7b"
 	return s
 }
 
-// parseSite decodes site.yaml over those defaults. An empty file is a legal
-// site.yaml, so io.EOF means "nothing set", not "broken".
+// parseSite decodes site.yaml over those defaults. An empty file is legal, so
+// io.EOF means "nothing set", not "broken".
 func parseSite(file string, data []byte) (Site, error) {
 	site := defaultSite()
 	dec := yaml.NewDecoder(bytes.NewReader(data))
@@ -811,31 +771,25 @@ func parseServices(file string, data []byte) ([]Service, error) {
 			return nil, fmt.Errorf("config: %s line %d: service missing id (expected: id: my-tool)", file, item.Line)
 		case !idRe.MatchString(s.ID):
 			return nil, fmt.Errorf("config: %s line %d: invalid id %q, ids become URLs (expected lowercase letters, digits and dashes, e.g. my-tool)", file, item.Line, s.ID)
-		// The two disabling states have no destination worth naming, so the url
-		// stops being required for them and only for them. Retiring a service
-		// has to be adding a line rather than deleting one, so a url left
-		// beside `state: retired` is kept and simply not linked.
+		// The two disabling states are the only ones a url is optional for. A
+		// url left beside `state: retired` is kept and simply not linked, so
+		// retiring a service is adding a line rather than deleting one.
 		case !IsURLOrAbs(s.URL) && !s.State.Disables():
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…, or state: soon / state: retired, which do not need one)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
-			// A slug becomes a path segment on the icon CDN and a filename in the
-			// script -emit-icons writes, which the docs tell you to pipe into sh.
-			// Anything outside this shape could never resolve upstream anyway, so
-			// refusing it costs nothing and closes the shell off entirely.
 		}
 		// Both halves of a themed icon are held to the same shape: each one
-		// becomes a path segment on the CDN and a filename in the -emit-icons
-		// script all the same.
+		// becomes a path segment on the icon CDN and a filename in the script
+		// -emit-icons writes, which the docs tell you to pipe into sh.
 		for _, ic := range s.Icon.Refs() {
 			if !IsURLOrAbs(ic) && !slugRe.MatchString(ic) {
 				return nil, fmt.Errorf("config: %s line %d: service %q: icon %q is not a slug, a URL or an /assets path (a slug is lowercase letters, digits, dashes, e.g. hedgedoc)", file, item.Line, s.ID, ic)
 			}
 		}
 		// The dark icon is written into the page's stylesheet, so it answers
-		// to the same rule the dark logo does. A slug cannot carry either
-		// character; a URL or a path can.
-		if s.Icon.Themed() && strings.ContainsAny(s.Icon.Dark, "<>") {
+		// to the same rule the dark logo does.
+		if s.Icon.Themed() && strings.ContainsAny(s.Icon.Dark, stylesheetBreakers) {
 			return nil, fmt.Errorf("config: %s line %d: service %q: icon.dark %q carries %q or %q, and the dark icon is written into the page's stylesheet where nothing escapes it (expected a slug like github-light, or /assets/github-white.svg)", file, item.Line, s.ID, s.Icon.Dark, "<", ">")
 		}
 		for _, img := range s.Images {

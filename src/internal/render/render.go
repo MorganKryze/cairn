@@ -23,9 +23,9 @@ var Embedded embed.FS
 
 var tmpls = template.Must(template.New("").Funcs(template.FuncMap{
 	"upper": strings.ToUpper,
-	// asset resolves one of cairn's own files to the stamped name it is
-	// served under, base path included, so a template never writes /static/
-	// by hand and never has to remember .Prefix for one. See asseturl.go.
+	// asset resolves one of cairn's own files to the stamped name it is served
+	// under, base path included, so a template never writes /static/ by hand and
+	// never has to remember .Prefix for one. See asseturl.go.
 	"asset": AssetURL,
 }).ParseFS(Embedded, "templates/*.tmpl"))
 
@@ -35,32 +35,30 @@ type Page struct {
 }
 
 // Model is the immutable unit swapped atomically on config reload or status
-// change. Pages is keyed by URL path without slashes: "fr" for a home,
-// "fr/pdf" for a detail. Statuses is service-id -> what Gatus said about it.
+// change. Pages is keyed by URL path without surrounding slashes ("fr" for a
+// home, "fr/pdf" for a detail), Statuses by service id.
 type Model struct {
 	Cfg      *config.Config
 	Pages    map[string]Page
 	Statuses map[string]status.State
 	CSP      string
-	// Ready is false only while the getting-started page stands in for a
-	// config that never loaded. /readyz reports it; /healthz does not, so a
-	// liveness probe cannot restart-loop a container that is serving fine.
+	// Ready is false only while the getting-started page stands in for a config
+	// that never loaded. /readyz reports it, /healthz does not, so a liveness
+	// probe cannot restart-loop a container that is serving fine.
 	Ready bool
 }
 
-// prePaintScript must stay byte-identical to the inline script in
-// layout.tmpl: its hash is what the CSP allows. A test guards the match.
-// The about cookie stores a hash of the note's content (the data-about
-// attribute), so an edited note reappears even for visitors who dismissed
-// the previous one.
-// data-js is stamped here rather than from a deferred script because CSS keys
-// off it before first paint: with JavaScript off, the mobile category trail
-// must stay as chips instead of folding into a select only nav.js can drive.
+// prePaintScript must stay byte-identical to the inline script in layout.tmpl:
+// its hash is what the CSP allows, and a test guards the match. The about cookie
+// holds a hash of the note's content (the data-about attribute), so an edited
+// note reappears even for visitors who dismissed the previous one. data-js is
+// stamped here rather than from a deferred script because CSS keys off it before
+// first paint: with JavaScript off, the mobile category trail must stay as chips
+// instead of folding into a select only nav.js can drive.
 const prePaintScript = `document.documentElement.setAttribute('data-js','');var a=document.cookie.match(/(?:^|; )about=([^;]*)/);if(a&&a[1]===document.documentElement.getAttribute('data-about'))document.documentElement.setAttribute('data-noabout','');try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`
 
-// aboutHash fingerprints the welcome note across all locales; eight hex
-// chars are plenty for a cookie value that only needs to change when the
-// note does.
+// aboutHash fingerprints the welcome note across all locales. Eight hex chars
+// are enough for a cookie value that only has to change when the note does.
 func aboutHash(about config.LString) string {
 	if len(about) == 0 {
 		return ""
@@ -77,25 +75,23 @@ func aboutHash(about config.LString) string {
 	return hex.EncodeToString(h.Sum(nil))[:8]
 }
 
-// themeStyle is the inline <style> every page carries. It sets the accent on
-// :root -- the stylesheet's own value is a placeholder, this is the real one --
-// overrides the body font when theme.font.family names one, and declares the
-// self-hosted @font-face when theme.font.file does. Its hash is what the CSP
-// allows, so this string and the <style> layout.tmpl renders have to stay
-// identical; csp_test.go guards the match.
+// themeStyle is the inline <style> every page carries: the accent on :root (the
+// stylesheet's own value is a placeholder), the body font when
+// theme.font.family names one, and the self-hosted @font-face when
+// theme.font.file does. Its hash is what the CSP allows, so this string and the
+// <style> layout.tmpl renders have to stay identical; csp_test.go guards the
+// match.
 func themeStyle(cfg *config.Config) string {
 	var b strings.Builder
 	if f := cfg.Site.Theme.Font.File; f != "" {
 		if rel, ok := config.FontRef(f); ok {
-			// No font-weight descriptor, deliberately. cairn's own Fraunces
-			// declares 100 900 because Fraunces is variable; a file someone
-			// drops in fonts/ is usually one static weight, and a face that
-			// claims to cover 100 to 900 is matched at every weight, so the
-			// browser stops synthesizing bold. The page sets 470 through 650
-			// on names, headings and the current entry of a table of contents,
-			// and all of it would come out flat. A variable font measures the
-			// same with the descriptor and without, on Chromium and WebKit
-			// alike, so leaving it out costs that case nothing.
+			// No font-weight descriptor. A file dropped in fonts/ is usually one
+			// static weight, and a face claiming to cover 100 to 900 is matched
+			// at every weight, so the browser stops synthesizing bold: the 470
+			// through 650 the page sets on names, headings and the current entry
+			// of a table of contents would all come out flat. A variable font
+			// measures the same with the descriptor and without, on Chromium and
+			// WebKit alike.
 			fmt.Fprintf(&b, "@font-face{font-family:%s;src:url(%q) format(%q);font-style:normal;font-display:swap}",
 				config.FontFaceName(cfg.Site.Theme.Font.Family),
 				AppURL("/fonts/"+rel),
@@ -109,8 +105,8 @@ func themeStyle(cfg *config.Config) string {
 		b.WriteString(fam)
 	}
 	b.WriteString("}")
-	// Last, so a site that themes no artwork produces the exact string it
-	// produced before this existed, hash included.
+	// Last: a site that themes no artwork has to produce the same string, and so
+	// the same CSP hash, as one built before this existed.
 	var logoDark string
 	if l := cfg.Site.Logo; l.Themed() {
 		logoDark = AppURL(l.Dark)
@@ -124,45 +120,41 @@ func cspHash(s string) string {
 	return "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
 }
 
+// A site with no monitor ships no status.js, no pills and no slots for one.
+func hasMonitor(cfg *config.Config) bool { return cfg.Site.StatusAddress() != "" }
+
 // BuildCSP allows exactly what the pages use: self assets, the inline style
-// (accent, and the @font-face and body font when theme.font is set), the
-// known inline script by hash, and images from anywhere https (icon slugs).
+// (accent, and the @font-face and body font when theme.font is set), the known
+// inline script by hash, and images from anywhere https (icon slugs).
 func BuildCSP(cfg *config.Config) string {
 	csp := "default-src 'none'; img-src 'self' https: data:; " +
 		"style-src 'self' " + cspHash(themeStyle(cfg)) + "; " +
 		"script-src 'self' " + cspHash(prePaintScript) + "; " +
 		"font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 	// The one request a cairn page ever makes from the browser: status.js
-	// refetching the page it is on. Sites with no Gatus do not ship the script
-	// and do not get the permission.
-	if cfg.Site.StatusAddress() != "" {
+	// refetching the page it is on.
+	if hasMonitor(cfg) {
 		csp += "; connect-src 'self'"
 	}
 	return csp
 }
 
-// locText is one translated string together with the language it turned out
-// to be written in.
+// locText is one translated string together with the language it turned out to
+// be written in.
 //
-// A field with no translation for the page's locale still renders, in
-// whichever language the config does have, and the page used to claim through
-// <html lang> that the sentence was in its own: a screen reader then reads it
-// in the wrong voice, and an Arabic fallback inside a left-to-right page is
-// laid out the wrong way round, punctuation and all. Attrs is the ` lang="…"
-// dir="…"` that says otherwise, and a template opts into it element by
-// element.
+// A field with no translation for the page's locale still renders, in whichever
+// language the config does have, while <html lang> claims it is in the page's
+// own: a screen reader then reads it in the wrong voice, and an Arabic fallback
+// inside a left-to-right page is laid out the wrong way round, punctuation and
+// all. Attrs is the ` lang="…" dir="…"` that says otherwise, and a template opts
+// into it element by element.
 //
-// Printing is unchanged. String makes {{.Field}} render the wording and
-// nothing else, so every template that only prints keeps printing what it did.
-// Testing is not: this is a struct, and {{if .Field}} on a struct is always
-// true, so a template that shows an element only when the text exists has to
-// ask for {{if .Field.Text}}. TestEmptyFieldsStillRenderNothing is what
-// catches the slip, since the symptom is an empty element nobody looks at.
-//
-// Both Lang and Dir are empty in the overwhelmingly common case, a site whose
-// fields are translated for the locales it lists. A mark on every field would
-// be worse than none: it would say "foreign language" so often that the times
-// it is true would stop meaning anything.
+// String makes {{.Field}} render the wording and nothing else, so a template
+// that only prints keeps printing what it did. Testing differs: this is a
+// struct, and {{if .Field}} on a struct is always true, so a template that shows
+// an element only when the text exists has to ask for {{if .Field.Text}}.
+// TestEmptyFieldsStillRenderNothing catches the slip, since the symptom is an
+// empty element nobody looks at.
 type locText struct {
 	Text string
 	Lang string // the text's own locale, empty when it is the page's language
@@ -173,8 +165,8 @@ func (t locText) String() string { return t.Text }
 
 func (t locText) Attrs() template.HTMLAttr { return langAttrs(t.Lang, t.Dir) }
 
-// prose is the same thing for a markdown field: the blocks it rendered to,
-// and the language they are written in when it is not the page's.
+// prose is locText for a markdown field: the blocks it rendered to, and the
+// language they are written in when it is not the page's.
 type prose struct {
 	Blocks    []template.HTML
 	Lang, Dir string
@@ -185,19 +177,15 @@ func (p prose) Attrs() template.HTMLAttr { return langAttrs(p.Lang, p.Dir) }
 // langAttrs builds the attribute pair a marked run of text carries.
 //
 // template.HTMLAttr is an escape hatch: html/template copies it into the tag
-// verbatim, so a forgeable value here would be an injection. Nothing reaching
-// it is forgeable. lang is a locale tag, and IsLocale is checked here rather
-// than assumed from load, so the guarantee holds even if some later field
-// arrives by another road: localeRe is ^[a-zA-Z][a-zA-Z0-9-]*$, which admits
-// letters, digits and dashes and therefore no quote, space, angle bracket or
-// equals sign. dir is compared against the only two values it may ever hold.
-// Anything failing either check is dropped rather than escaped: a page with no
-// mark is merely as wrong as it was before this existed, while a page with a
-// forged attribute is a different kind of wrong.
+// verbatim, so a forgeable value here would be an injection. IsLocale is checked
+// here rather than assumed from load, so the guarantee holds even for a field
+// that arrives by some later road: localeRe is ^[a-zA-Z][a-zA-Z0-9-]*$, which
+// admits letters, digits and dashes and therefore no quote, space, angle bracket
+// or equals sign. dir is compared against the only two values it may ever hold.
+// Anything failing either check is dropped rather than escaped.
 //
-// dir is left out when it matches the page's own direction. English text on a
-// French page reads left to right either way, and dir="ltr" on every such
-// field would be noise restating what the browser already inherited.
+// dir is left out when it matches the page's own direction, which the browser
+// has already inherited.
 func langAttrs(lang, dir string) template.HTMLAttr {
 	if !config.IsLocale(lang) {
 		return ""
@@ -209,8 +197,6 @@ func langAttrs(lang, dir string) template.HTMLAttr {
 	return template.HTMLAttr(attrs)
 }
 
-// tr resolves one translated field for the page being built: loc is the
-// page's locale, def the site default that the lookup falls back through.
 func tr(ls config.LString, loc, def string) locText {
 	text, from := ls.GetLocale(loc, def)
 	t := locText{Text: text}
@@ -224,17 +210,14 @@ func tr(ls config.LString, loc, def string) locText {
 	return t
 }
 
-// proseOf renders a translated markdown field, keeping the language mark with
-// the blocks it produced.
 func proseOf(t locText, ctx mdCtx) prose {
 	return prose{Blocks: mdBlocks(t.Text, ctx), Lang: t.Lang, Dir: t.Dir}
 }
 
-// catName is CategoryName with the marking, and only where there is something
-// to mark. The name an operator wrote is a translation and falls back like any
-// other; the two cairn derives instead (the localized "Other" bucket, and a
-// category id title-cased into a heading) are in the page's language or in no
-// language at all, so neither carries a mark.
+// catName marks only a name an operator wrote, which falls back like any other
+// translation. The two cairn derives instead, the localized "Other" bucket and a
+// category id title-cased into a heading, are in the page's language or in no
+// language at all.
 func catName(cfg *config.Config, c config.Category, loc string) locText {
 	if len(c.Name) > 0 {
 		if t := tr(c.Name, loc, cfg.DefaultLocale()); t.Text != "" {
@@ -246,94 +229,80 @@ func catName(cfg *config.Config, c config.Category, loc string) locText {
 
 type uiStrings struct {
 	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
-	// The six the leave dialog needs, empty on a site that does not ask for
-	// it. LeaveCopied is the label the copy button swaps to, so it is written
-	// into a data attribute rather than the button: the script needs both.
+	// The six the leave dialog needs, empty on a site that does not ask for it.
+	// LeaveCopied is the label the copy button swaps to, so it goes into a data
+	// attribute rather than the button: the script needs both.
 	LeaveTitle, LeaveBody, LeaveCopy, LeaveCopied, LeaveGo, LeaveStay string
 }
 
 type pageView struct {
 	Locale, Logo, Favicon, TouchIcon, OGImage, SwitchPath, Base, Version, AboutHash string
-	// FaviconDark is the tab icon for a dark system, empty without one. It is
-	// the one themed surface the stylesheet cannot reach, so it goes out as a
-	// second <link> and follows the system rather than the theme button.
+	// FaviconDark is the tab icon for a dark system, empty without one. It is the
+	// one themed surface the stylesheet cannot reach, so it goes out as a second
+	// <link> and follows the system rather than the theme button.
 	FaviconDark string
-	// PageTitle and MetaDesc are the <title> and the meta/og description. Both
-	// are text inside markup rather than markup, so neither can carry a lang
-	// attribute, and neither can be split into a marked part and an unmarked
-	// one: a title is one string. A fallback shows there unannounced, and the
-	// only honest thing to do about it is not pretend otherwise. Same for the
-	// og:title and the aria-label statusMeta builds.
+	// PageTitle and MetaDesc are the <title> and the meta/og description: text
+	// inside markup rather than markup, with no element to hang lang and dir on
+	// and no way to split into a marked part and an unmarked one. A fallback
+	// shows there unannounced. Same for og:title and the aria-label statusMeta
+	// builds.
 	PageTitle, MetaDesc string
-	// Style is the inline <style> of every page, pre-built so its CSP hash
-	// can be computed over the same string the template renders. template.CSS
-	// is what tells html/template this block needs no CSS-escaping: it is
-	// trusted markup, the accent validated to a hex color and the font family
-	// to the characters a CSS font stack is made of.
+	// Style is the inline <style> of every page, pre-built so its CSP hash covers
+	// the same string the template renders. template.CSS tells html/template this
+	// block needs no CSS-escaping: the accent is validated to a hex color and the
+	// font family to the characters a CSS font stack is made of.
 	Style                                       template.CSS
 	SiteTitle                                   locText
 	Prefix                                      string // "" or "/cairn", see BasePath
 	Dir                                         string // "ltr" or "rtl", from the locale
 	CustomCSS, Search, Credit, Noindex, ShowVer bool
-	// StatusPoll is how often, in seconds, status.js refetches the page to
-	// swap the pills. Zero on a site with no Gatus, where the script does not
-	// ship at all.
+	// StatusPoll is how often, in seconds, status.js refetches the page to swap
+	// the pills. Zero on a site with no monitor, where the script never ships.
 	StatusPoll        int
 	VerLabel, VerHref string
 	Locales           []string
 	Links             []linkView
 	Footer            []linkView
 	S                 uiStrings
-	// Leave ships the dialog and its script, and it is set per page rather
-	// than per site: a page with nothing to guard gets neither, so a detail
-	// page for a service the operator runs stays exactly the page it was.
-	// LeaveBlank makes the dialog's own continue link agree with new_tab.
+	// Leave ships the dialog and its script, per page rather than per site: a
+	// page with nothing to guard gets neither. LeaveBlank makes the dialog's own
+	// continue link agree with new_tab.
 	Leave, LeaveBlank bool
 }
 
 type cardView struct {
 	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
-	// IconClass carries the dark variant of a themed icon, empty otherwise.
-	// The class names the pair rather than the service, so cards sharing an
-	// icon share the one rule in the page's stylesheet.
+	// IconClass carries the dark variant of a themed icon, empty otherwise. The
+	// class names the pair rather than the service, so cards sharing an icon
+	// share the one rule in the page's stylesheet.
 	IconClass string
 	// MoreA11y names the detail link for a screen reader. The link is a glyph,
-	// which says nothing on its own, and a page of identical "Learn more"
-	// links is a link list nobody can navigate: it names the service too.
+	// which says nothing on its own, and a page of identical "Learn more" links
+	// is a link list nobody can navigate: it names the service too.
 	MoreA11y            string
 	Name, Desc          locText
 	StatusA11y          string // set only when the pill is a link
-	StatusID            string // names the pill's slot, empty without a Gatus
+	StatusID            string // names the pill's slot, empty without a monitor
 	HostKind, HostLabel string // "self"/"external"/"" and its localized label
-	// State is the declared word, `soon` and friends, used as a class; the
-	// label is that word in the page's language. Beware the name: `state` is
-	// already this file's local for a status level, which is the other thing
-	// entirely. See statusMeta.
+	// State is the declared word, `soon` and friends, used as a class, and
+	// StateLabel is that word in the page's language. Neither has anything to do
+	// with a status level.
 	State, StateLabel string
-	// Off is the two disabling states, hoisted onto the view so the template
-	// asks one question instead of comparing strings in three places.
+	// Off is the two disabling states, hoisted onto the view so the template asks
+	// one question instead of comparing strings in three places.
 	Off bool
-	// HostHref is where the flag leads, empty when it leads nowhere and the
-	// flag stays the plain text it has always been. HostBlank is set for a
-	// target that is not this site.
+	// HostHref is where the flag leads, empty when it leads nowhere and the flag
+	// stays plain text. HostBlank is set for a target that is not this site.
 	HostHref  string
 	HostBlank bool
-	// Blank and Leave describe the link on the service's own name. Both are
-	// set from service_links and both only ever apply to a url that leaves
-	// the site, which is why they live on the card rather than on the config:
-	// a service whose url is a page cairn serves gets neither.
+	// Blank and Leave describe the link on the service's own name. Both come from
+	// service_links and both only apply to a url that leaves the site, so a
+	// service whose url is a page cairn serves gets neither.
 	Blank, Leave bool
 }
 
-// serviceLink decides how one service url behaves. hostKind is the card's own
-// flag, which is what lets a site warn about other people's services without
-// warning about its own.
-//
-// Everything here is gated on leaving the site. A url that is a path cairn
-// serves is not a departure, and treating it as one would put a "you are
-// leaving" dialog in front of the operator's own page.
-// hostKindOf is the card's flag, read off the service rather than off the
-// built card, so the detail page can reach the same verdict without one.
+// hostKindOf reads the card's flag off the service rather than off the built
+// card, so the detail page can reach the same verdict without one.
 func hostKindOf(s config.Service) string {
 	if s.Selfhosted == nil {
 		return ""
@@ -344,6 +313,11 @@ func hostKindOf(s config.Service) string {
 	return "external"
 }
 
+// serviceLink decides how one service url behaves, gated throughout on leaving
+// the site: a url that is a path cairn serves is not a departure, and a "you are
+// leaving" dialog in front of the operator's own page is not a warning. hostKind
+// is the card's own flag, which is what lets a site warn about other people's
+// services without warning about its own.
 func serviceLink(cfg *config.Config, url, hostKind string) (blank, leave bool) {
 	if config.IsLocalPath(url) {
 		return false, false
@@ -415,9 +389,9 @@ type sectionView struct {
 }
 
 // hostTarget resolves where a hosting flag leads, and whether that is off this
-// site. A page id becomes the path to that page in the language being read,
-// which is why the key takes an id rather than a path: writing /en/hosting/
-// would pin one language for every visitor. Anything else is used as written.
+// site. The key is a page id rather than a path because the path is built in the
+// language being read: writing /en/hosting/ would pin one language for every
+// visitor. Anything else is used as written.
 func hostTarget(cfg *config.Config, loc, ref string) (href string, blank bool) {
 	if ref == "" {
 		return "", false
@@ -432,10 +406,9 @@ func hostTarget(cfg *config.Config, loc, ref string) (href string, blank bool) {
 
 // statusBase is the page a pill points into, without a trailing slash.
 //
-// The link is for the visitor's browser, so status.page wins: the address
-// cairn polls may be internal and poll-only, and only the operator knows.
-// Failing that, Kuma's published status page is derivable, since /status/{slug}
-// is the URL Kuma itself serves it at, and landing on a status page beats
+// The link is for the visitor's browser, so status.page wins: the address cairn
+// polls may be internal and poll-only, and only the operator knows. Failing
+// that, Kuma serves its published page at /status/{slug}, which at least beats
 // landing on an API root that redirects to a login.
 func statusBase(cfg *config.Config) string {
 	if p := cfg.Site.Status.Page; p != "" {
@@ -450,13 +423,13 @@ func statusBase(cfg *config.Config) string {
 
 // statusMeta fills a pill: its label, where it links, and the label a screen
 // reader reads instead. An empty href makes it display-only, which is what
-// status.linked: false asks for and the only shape the templates need to
-// tell the two apart.
-func statusMeta(cfg *config.Config, loc, state string, s config.Service, key string) (label, href, a11y string) {
-	if state == "" {
+// status.linked: false asks for and the only shape the templates need to tell
+// the two apart.
+func statusMeta(cfg *config.Config, loc, level string, s config.Service, key string) (label, href, a11y string) {
+	if level == "" {
 		return "", "", ""
 	}
-	label = cfg.Str(loc, "status."+state)
+	label = cfg.Str(loc, "status."+level)
 	if !cfg.StatusLinked() {
 		return label, "", ""
 	}
@@ -465,39 +438,33 @@ func statusMeta(cfg *config.Config, loc, state string, s config.Service, key str
 	// page for the whole set, and pointing at a per-service path it does not
 	// serve is the bug v1.13.2 fixed for Gatus, made again from the other end.
 	if cfg.Site.StatusProvider() == "gatus" {
-		// Gatus names its own endpoint pages. Deriving that name from cairn's
-		// categories only ever matched an operator who ran -emit-gatus and kept its
-		// grouping; everyone else got a link to a page their Gatus does not serve.
-		// The derived key stays as the fallback for the pills that render before
-		// Gatus has answered, and for a Gatus too old to report one.
+		// Gatus reports the key of its own endpoint page. Deriving one from
+		// cairn's categories only matched an operator who ran -emit-gatus and kept
+		// its grouping, so it stays as the fallback for the pills that render
+		// before Gatus has answered, and for a Gatus too old to report one.
 		if key == "" {
 			key = status.Key(s.Category, s.ID)
 		}
-		// The key comes off the network, from whatever answers on the poll address.
-		// PathEscape leaves every key Gatus can produce alone and keeps a hostile
-		// one inside the path segment it was written into.
+		// The key comes off the network, from whatever answers on the poll
+		// address. PathEscape leaves every key Gatus can produce alone and keeps a
+		// hostile one inside the path segment it was written into.
 		base += "/endpoints/" + url.PathEscape(key)
 	}
 	href = base
 	// A link has to name its target on its own: read out of the card, "Online"
-	// alone says nothing about which service, nor that it leads anywhere.
-	//
-	// The service name here may be a fallback in another language, and this one
-	// cannot be marked: an aria-label is text inside an attribute, so there is
-	// no element to hang lang and dir on, and the name is glued to two strings
-	// in the page's own language besides. The visible pill next to it carries
-	// the marking the label cannot.
+	// alone says nothing about which service, nor that it leads anywhere. The
+	// service name may be a fallback in another language and cannot be marked
+	// here, an aria-label being text inside an attribute; the visible pill next
+	// to it carries the marking.
 	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
 }
 
 // statusOf returns "", "unknown", "up", "degraded", "maintenance" or "down".
 // While the monitor has not answered yet (boot, outage) every pill is unknown;
-// once it has, services it does not monitor show no pill at all.
-//
-// Only two of them are reachable from Gatus, whose results carry a success
-// bool and nothing else. The other two arrive from monitors that say more.
+// once it has, services it does not monitor show no pill at all. Gatus reaches
+// only up and down, its results carrying a success bool and nothing else.
 func statusOf(cfg *config.Config, statuses map[string]status.State, id string) string {
-	if cfg.Site.StatusAddress() == "" {
+	if !hasMonitor(cfg) {
 		return ""
 	}
 	if len(statuses) == 0 {
@@ -514,29 +481,28 @@ func statusOf(cfg *config.Config, statuses map[string]status.State, id string) s
 	case st.Level == status.LevelUp:
 		return "up"
 	default:
-		// Every other level, including one no version of cairn has heard of,
-		// reads as down. That is the safe direction: a source that grows a word
-		// must not be able to paint a broken service green.
+		// Every other level, one no version of cairn has heard of included, reads
+		// as down: a source that grows a word must not be able to paint a broken
+		// service green.
 		return "down"
 	}
 }
 
-// statusSlot names the pill's slot, which is in the markup on every service of
-// a site that has a Gatus, pill or no pill. status.js swaps what is inside it,
-// and one of the states it has to be able to reach is "nothing": a service the
-// status page stops monitoring loses its pill rather than keeping a stale one.
+// statusSlot names the pill's slot, which is in the markup on every service of a
+// monitored site, pill or no pill. status.js swaps what is inside it, and one of
+// the states it has to reach is nothing at all: a service the status page stops
+// monitoring loses its pill rather than keeping a stale one.
 func statusSlot(cfg *config.Config, id string) string {
-	if cfg.Site.StatusAddress() == "" {
+	if !hasMonitor(cfg) {
 		return ""
 	}
 	return id
 }
 
-// statusPoll is how often status.js refetches the page, in seconds. It is the
-// interval cairn polls Gatus on: asking cairn more often than cairn can learn
-// anything new would only cost requests.
+// statusPoll is the interval cairn polls the monitor on: asking cairn more often
+// than cairn can learn anything new would only cost requests.
 func statusPoll(cfg *config.Config) int {
-	if cfg.Site.StatusAddress() == "" {
+	if !hasMonitor(cfg) {
 		return 0
 	}
 	return int(cfg.StatusInterval().Seconds())
@@ -545,9 +511,9 @@ func statusPoll(cfg *config.Config) int {
 func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, error) {
 	def := cfg.DefaultLocale()
 	media := func(src string) (string, int, int) {
-		// MediaDims is keyed by the name under media/. The /media/… spelling
-		// reaches the same file and used to miss the lookup, so the width and
-		// height that exist to stop the page jumping were dropped for it.
+		// MediaDims is keyed by the bare name under media/, so the /media/…
+		// spelling has to be cut back to it or the width and height that stop the
+		// page jumping are dropped.
 		key := src
 		if rel, ok := strings.CutPrefix(src, "/media/"); ok {
 			key = rel
@@ -555,10 +521,9 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		d := cfg.MediaDims[key]
 		return AppURL(mediaURL(src)), d[0], d[1]
 	}
-	// Built once here rather than per locale: the set is a property of the
-	// config, not of the language. themeStyle builds its own from the same
-	// function to write the rules, which is why that function has to stay
-	// deterministic.
+	// Built once rather than per locale: the set is a property of the config, not
+	// of the language. themeStyle calls themedFor too and its output lands inside
+	// the CSP hash, so the function has to stay deterministic.
 	themed := themedFor(cfg)
 	pages := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
@@ -581,9 +546,9 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				return ""
 			}(),
 			TouchIcon: AppURL(TouchIcon(cfg)),
-			// AppURL has already added BasePath to a local logo, so the base
-			// passed here must not carry it again: it used to, and every
-			// og:image under -base-path pointed at /cairn/cairn/… and 404ed.
+			// AppURL has already added BasePath to a local logo, so the base passed
+			// here is the bare site url: carrying it twice points every og:image
+			// under -base-path at /cairn/cairn/… and 404s.
 			OGImage:   ogImage(cfg.Site.URL, AppURL(cfg.Site.Logo.Light)),
 			Noindex:   cfg.Noindex(),
 			AboutHash: aboutHash(cfg.Site.About),
@@ -656,9 +621,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					card.State = string(s.State)
 					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
 				}
-				// A disabling state means nothing is monitored, so there is no
-				// slot for a pill to be swapped into. The other three are live
-				// and keep theirs.
+				// A disabling state means nothing is monitored, so there is no slot
+				// for a pill to be swapped into.
 				if !card.Off {
 					card.Status = statusOf(cfg, statuses, s.ID)
 					card.StatusID = statusSlot(cfg, s.ID)
@@ -677,8 +641,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
-				// After the flag, since the scope reads it. A disabling state
-				// has no link at all, so neither key can mean anything.
+				// After the flag: the confirm scope reads HostKind. A disabling
+				// state has no link at all, so neither key can mean anything.
 				if !card.Off {
 					card.Blank, card.Leave = serviceLink(cfg, s.URL, card.HostKind)
 					hv.Leave = hv.Leave || card.Leave
@@ -719,9 +683,9 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				}
 				if !dv.Off {
 					dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
-					// The detail page has to reach the same verdict as the card
-					// for the same service, or a visitor meets the dialog on one
-					// route and not the other.
+					// The detail page has to reach the same verdict as the card for
+					// the same service, or a visitor meets the dialog on one route
+					// and not the other.
 					dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
 					dv.pageView.Leave = dv.Leave
 				}
@@ -784,12 +748,11 @@ func paragraphs(s string) []string {
 	return out
 }
 
-// defaultTouchIcon is cairn's own, the one shipped in assets/.
 const defaultTouchIcon = "/static/touch-icon.png"
 
-// widestSize reads the largest width out of a manifest `sizes` value, which
-// may list several ("48x48 96x96") or be "any". Anything unreadable is 0, so
-// it loses to any real number without needing a separate case.
+// widestSize reads the largest width out of a manifest `sizes` value, which may
+// list several ("48x48 96x96") or be "any". Anything unreadable is 0, so it
+// loses to any real number without needing a separate case.
 func widestSize(sizes string) int {
 	best := 0
 	for _, token := range strings.Fields(sizes) {
@@ -806,12 +769,11 @@ func widestSize(sizes string) int {
 
 // TouchIcon picks the add-to-home-screen icon.
 //
-// iOS never reads the manifest for this: it reads the apple-touch-icon link
-// and nothing else. So an operator who listed their own icons has to be
-// honoured here too, or their list would take effect on Android while an
-// iPhone home screen showed cairn's mark, which is the one thing supplying
-// your own icons is meant to prevent. The largest is picked, since iOS
-// downsamples and only a too-small icon shows.
+// iOS never reads the manifest for this: it reads the apple-touch-icon link and
+// nothing else. An operator who listed their own icons has to be honoured here
+// too, or their list would take effect on Android while an iPhone home screen
+// showed cairn's mark. The largest is picked, since iOS downsamples and only a
+// too-small icon shows.
 func TouchIcon(cfg *config.Config) string {
 	if own := cfg.Site.Icons; len(own) > 0 {
 		best, bestPx := own[0].Src, widestSize(own[0].Sizes)
@@ -828,8 +790,8 @@ func TouchIcon(cfg *config.Config) string {
 	return defaultTouchIcon
 }
 
-// AppIcon is one entry of the web app manifest's icon list. Everything but
-// the source is omitted when unknown, rather than filled with a guess.
+// AppIcon is one entry of the web app manifest's icon list. Everything but the
+// source is omitted when unknown, rather than filled with a guess.
 type AppIcon struct {
 	Src     string `json:"src"`
 	Sizes   string `json:"sizes,omitempty"`
@@ -837,9 +799,8 @@ type AppIcon struct {
 	Purpose string `json:"purpose,omitempty"`
 }
 
-// iconType maps a file reference to the mime type the manifest wants. An empty
-// result means we do not recognise it, and the entry then omits the field
-// rather than asserting a format.
+// iconType is empty for a reference cairn does not recognise, and the manifest
+// entry then omits the field rather than asserting a format.
 func iconType(ref string) string {
 	i := strings.LastIndex(ref, ".")
 	if i < 0 {
@@ -864,26 +825,23 @@ func iconType(ref string) string {
 
 // AppIcons lists what a phone should use once the site is on a home screen.
 //
-// The rule throughout is that every field is either true or absent. Sizes are
-// never invented: an entry whose size we cannot establish simply carries no
-// `sizes`, which the manifest spec allows, and the browser decides. The old
-// behaviour was to stamp "180x180" on whatever the operator supplied, which
-// was a guess published as a fact.
+// Every field is either true or absent. Sizes are never invented: an entry whose
+// size cairn cannot establish carries no `sizes`, which the manifest spec
+// allows, and the browser decides.
 //
 // Three cases, in order:
 //
-//   - The operator listed `icons` themselves. That wins outright, sizes and
-//     all, because they are the only one who can know them.
-//   - They set a `favicon`. An svg is scalable, so it is declared "any" and
-//     serves every size the way cairn's own does; a raster in the mounted
-//     assets dir is measured at load and declared truthfully; a raster behind
-//     a URL is offered with no size, since measuring it means an outbound
-//     request and cairn makes none.
+//   - The operator listed `icons` themselves. That wins outright, sizes and all,
+//     since they are the only one who can know them.
+//   - They set a `favicon`. An svg is scalable, so it is declared "any"; a raster
+//     in the mounted assets dir is measured at load; a raster behind a URL is
+//     offered with no size, since measuring it means an outbound request and
+//     cairn makes none.
 //   - Neither. cairn's own set, which ships the 192 and the 512 that Chromium
 //     insists on before it will offer to install a site, both declared
-//     "any maskable": the usual reason for a separate padded maskable file is
-//     that a full-bleed icon loses its edges to Android's crop, and this mark
-//     is a narrow stack that clears that circle with room to spare.
+//     "any maskable": a separate padded maskable file exists for full-bleed
+//     icons that lose their edges to Android's crop, and this mark is a narrow
+//     stack that clears that circle with room to spare.
 func AppIcons(cfg *config.Config) []AppIcon {
 	if own := cfg.Site.Icons; len(own) > 0 {
 		out := make([]AppIcon, 0, len(own))
@@ -913,13 +871,10 @@ func AppIcons(cfg *config.Config) []AppIcon {
 	}
 }
 
-// ogImage derives a social preview image from the logo: only when the site
-// has a public URL to make it absolute, and only raster formats, which is
-// what the preview crawlers accept.
-// IsRaster reports a format a link previewer can actually display. svg is
-// deliberately out: og:image with a vector is ignored by most platforms, which
-// is why a vector logo quietly means no preview picture at all. -check says so
-// rather than leaving it to be discovered on a shared link.
+// IsRaster reports a format a link previewer can display. svg is out: og:image
+// with a vector is ignored by most platforms, so a vector logo means no preview
+// picture at all, and -check says so rather than leaving it to be discovered on
+// a shared link.
 func IsRaster(path string) bool {
 	l := strings.ToLower(path)
 	for _, ext := range []string{".png", ".jpg", ".jpeg", ".webp", ".gif"} {
@@ -930,11 +885,10 @@ func IsRaster(path string) bool {
 	return false
 }
 
-// absBase is the public origin every self-referencing link is built from, and
-// it is empty unless the operator gave one. Adding BasePath to an empty url
-// left a bare "/cairn", which is truthy in the template and made cairn emit
-// relative canonical, og:url and hreflang links: worse than emitting none,
-// which is what the absence of a url is supposed to mean.
+// absBase is the public origin every self-referencing link is built from. It
+// stays empty without a site url: BasePath alone is a truthy "/cairn" in the
+// template, and canonical, og:url and hreflang would go out relative instead of
+// not at all.
 func absBase(cfg *config.Config) string {
 	if cfg.Site.URL == "" {
 		return ""
@@ -955,9 +909,9 @@ func ogImage(base, logo string) string {
 	return logo
 }
 
-// mediaURL resolves a bare image name against the /media/ route, which
-// serves the config dir's media/ folder; URLs and absolute paths pass
-// through, same convention as icons.
+// mediaURL resolves a bare image name against the /media/ route, which serves
+// the config dir's media/ folder. URLs and absolute paths pass through, same
+// convention as icons.
 func mediaURL(src string) string {
 	if config.IsURLOrAbs(src) {
 		return src
@@ -965,8 +919,8 @@ func mediaURL(src string) string {
 	return "/media/" + src
 }
 
-// Version is what the footer shows when show_version is on. Package main
-// carries the -ldflags stamp and assigns it here at startup.
+// Version is what the footer shows when show_version is on. Package main carries
+// the -ldflags stamp and assigns it here at startup.
 var Version = "dev"
 
 // The repository the credit and the version stamp point at.
@@ -977,11 +931,10 @@ var (
 	commitRe = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
 )
 
-// versionInfo turns the build stamp into what the footer shows and where it
-// points, which depends on where the binary came from: a tagged release links
-// to its release notes, a build off main links to the commit it was cut from,
-// and anything else (a local `go build`, which stamps nothing) is named but
-// not linked, since there is no public page for it.
+// versionInfo turns the build stamp into a footer label and a link: a tagged
+// release points at its release notes, a build off main at the commit it was cut
+// from, and anything else (a local `go build`, which stamps nothing) is named
+// but not linked, there being no public page for it.
 func versionInfo(v string) (label, href string) {
 	switch {
 	case semverRe.MatchString(v):

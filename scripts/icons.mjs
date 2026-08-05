@@ -14,14 +14,13 @@
 //     cairn-light.svg         cropped to its own edges the way they require.
 //     cairn-dark.svg
 //
-// The suffix names the ink, so -light is the pale one and belongs on a dark
-// background, -dark the deep one and belongs on a light background. It reads
-// backwards to anyone who parses "-light" as "for the light theme", which is
-// why it is the mistake those collections reject most often.
+// The suffix names the ink: -light is the pale one, for a dark background,
+// -dark the deep one, for a light background. Reading it as "for the light
+// theme" is the mistake those collections reject most often.
 //
 // The mark is also inlined in templates/layout.tmpl, as the icon a service
 // falls back to when it declares none. That copy is pinned to favicon.svg by
-// TestTheMarkIsDrawnTheSameInBothPlaces, which is what keeps the two honest.
+// TestTheMarkIsDrawnTheSameInBothPlaces.
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -32,9 +31,8 @@ const ASSETS = join(ROOT, 'src', 'internal', 'render', 'assets');
 const BRAND = join(ROOT, 'docs', 'assets', 'brand');
 mkdirSync(BRAND, { recursive: true });
 
-// The mark: four stones of the same gauge, the top one set down at nine
-// degrees. Four rather than five because five merge into a cone at 16px, and
-// the tilt because a stack built by hand is not square to anything.
+// Four stones of the same gauge, the top one set down at nine degrees. Four
+// rather than five: five merge into a cone at 16px.
 const MARK =
   '<rect x="3.2" y="23.6" width="25" height="5.4" rx="2.4"/>' +
   '<rect x="7.8" y="16.2" width="17.4" height="5.8" rx="2.6"/>' +
@@ -42,12 +40,12 @@ const MARK =
   '<rect x="12.4" y="3" width="9.4" height="4.8" rx="2.2" transform="rotate(-9 17.1 5.4)"/>';
 
 const BRAND_INK = '#247b7b'; // the accent, and the only ink the product uses
-const ON_DARK = '#5fc4c0';   // -light: light ink, for dark backgrounds
-const ON_LIGHT = '#1a5c5c';  // -dark: dark ink, for light backgrounds
+const ON_DARK = '#5fc4c0';   // ships as cairn-light.svg
+const ON_LIGHT = '#1a5c5c';  // ships as cairn-dark.svg
 const PAGE = '#eef0ea';      // the light page colour, under every app icon
 
-// How much of the square the mark covers in the app icons: as full as it can
-// be while its far corners still clear Android's crop circle. Checked below.
+// How much of the square the mark covers in an app icon: as full as it can be
+// while its far corners still clear Android's crop circle. Checked below.
 const FILL = 0.69;
 
 const doc = (viewBox, fill) =>
@@ -55,8 +53,8 @@ const doc = (viewBox, fill) =>
 
 const browser = await chromium.launch();
 
-// Renders the mark to a png. A null background leaves it transparent, which is
-// what a favicon wants and what a home-screen icon must never be.
+// A null background leaves the png transparent: what a favicon wants, and what
+// a home-screen icon must never be.
 async function png(size, fill, bg) {
   const p = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>
@@ -69,7 +67,7 @@ async function png(size, fill, bg) {
   return buf;
 }
 
-// An ICO is a small header plus, since Vista, plain pngs. No dependency needed.
+// An ICO is a small header plus, since Vista, plain pngs.
 function ico(images) {
   const dir = Buffer.alloc(6);
   dir.writeUInt16LE(1, 2); // type: icon
@@ -89,10 +87,10 @@ function ico(images) {
   return Buffer.concat([dir, ...entries, ...images.map((i) => i.data)]);
 }
 
-// Measures the ink in viewBox units, so the brand files can be cropped to the
-// mark rather than to its padded square. Measured off a raster rather than
-// computed: the tilted stone and its rounded corners put the analytic box out
-// by about a third of a unit.
+// The ink's own box in viewBox units, so the brand files can be cropped to the
+// mark rather than to its padded square. Off a raster rather than computed:
+// the tilted stone and its rounded corners put an analytic box out by about a
+// third of a unit.
 const probe = await browser.newPage({ viewport: { width: 600, height: 600 } });
 const inkBox = async (markup) => probe.evaluate(async (svg) => {
   const S = 512;
@@ -136,9 +134,9 @@ writeFileSync(join(BRAND, 'cairn-light.svg'), doc(tight, ON_DARK));
 writeFileSync(join(BRAND, 'cairn-dark.svg'), doc(tight, ON_LIGHT));
 
 // --- and the guarantee the manifest makes ---------------------------------
-// The app icons are declared "any maskable", which promises Android that
-// nothing lives outside a circle of 80% of the canvas. That is a property of
-// FILL and of the mark's proportions, so a redrawn mark could quietly break it.
+// The app icons are declared "any maskable", which promises Android that no
+// ink lives outside a circle of 80% of the canvas. That holds by FILL and the
+// mark's proportions, so a redrawn mark can break it silently.
 let failed = false;
 for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['touch-icon.png', 180]]) {
   const far = await probe.evaluate(async ([src, S]) => {

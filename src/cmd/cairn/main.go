@@ -56,8 +56,6 @@ func main() {
 	}
 
 	cfg, err := config.Load(*cfgDir)
-	// A flag that quietly does nothing is the thing -check spends its life
-	// reporting; the program itself should not ship one.
 	if *hide && !*emit {
 		log.Fatal("-hide-targets only means something with -emit-gatus: it writes into the Gatus config, not into cairn's own")
 	}
@@ -73,8 +71,8 @@ func main() {
 		return
 	}
 	if err != nil {
-		// A dead container helps nobody: serve the getting-started page and
-		// let the watcher swap the real config in the moment it is valid.
+		// Serving beats exiting: the getting-started page goes up and the
+		// watcher swaps the real config in the moment it is valid.
 		log.Print(err)
 		log.Printf("no valid config yet: serving the getting-started page, watching %s", *cfgDir)
 		server.Store(render.StarterModel())
@@ -95,8 +93,6 @@ func main() {
 	log.Fatal(server.Serve(*addr, *cfgDir, *assetsDir))
 }
 
-// oneShot answers -emit-gatus and -emit-icons, which both print a derived file
-// and exit without ever serving anything.
 func oneShot(cfg *config.Config, gatus, hide bool) ([]byte, error) {
 	if gatus {
 		return status.Emit(cfg, hide)

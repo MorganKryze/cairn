@@ -8,10 +8,9 @@ import (
 )
 
 // State is where a service stands, as the operator declares it. It is not the
-// status: the status is what a monitor measured a moment ago and it changes on
-// its own, while this changes when somebody edits a file. The two live side by
-// side on a card, so the docs draw that line in one sentence and this comment
-// repeats it for whoever reads the code first.
+// status: the status is what a monitor measured a moment ago and changes on
+// its own, while this changes when somebody edits a file. The two sit side by
+// side on a card.
 type State string
 
 const (
@@ -24,7 +23,7 @@ const (
 )
 
 // states is the closed set, in the order the refusal prints them: the two that
-// disable first, since they are the ones that change more than a label.
+// disable come first, being the ones that change more than a label.
 var states = []State{StateSoon, StateRetired, StateBeta, StateDeprecated, StateNew}
 
 // Disables reports whether the state takes the destination away. Those two are
