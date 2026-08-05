@@ -255,3 +255,26 @@ func TestUnmonitored(t *testing.T) {
 		t.Errorf("Unmonitored = %q, want empty when all endpoints exist", got)
 	}
 }
+
+func TestEmitGatusSkipsDisabledServices(t *testing.T) {
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "locales: [en]\n",
+		"services.yaml": "- {id: live, url: 'https://live.example.org', name: Live}\n" +
+			"- {id: beta, url: 'https://beta.example.org', name: Beta, state: beta}\n" +
+			"- {id: gone, url: 'https://gone.example.org', name: Gone, state: retired}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := status.Emit(cfg, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(out)
+	if !strings.Contains(got, "name: live") || !strings.Contains(got, "name: beta") {
+		t.Error("a live or a beta service lost its endpoint: both are monitored")
+	}
+	if strings.Contains(got, "name: gone") {
+		t.Error("a retired service got an endpoint, so somebody has to maintain a monitor for nothing")
+	}
+}
