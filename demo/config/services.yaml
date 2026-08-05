@@ -131,6 +131,7 @@
 
 - id: ghost
   icon: docker
+  state: deprecated
   url: http://localhost:8086
   category: tools
   name: { fr: Service fantôme, en: Ghost service }
@@ -144,10 +145,18 @@
       Ce service n'existe pas : aucun conteneur n'écoute derrière. Gatus le
       constate et cairn affiche la pastille rouge : c'est exactement ce que
       verraient vos visiteurs si un vrai service tombait.
+
+      Son badge est décoratif, comme `beta` et `new` : le lien fonctionne
+      toujours, Gatus continue de le surveiller et la pastille continue de
+      dire ce qu'elle mesure. Seuls `soon` et `retired` retirent le lien.
     en: |
       This service does not exist: no container listens behind it. Gatus
       notices and cairn shows the red dot: exactly what your visitors would
       see if a real service went down.
+
+      Its badge is decorative, like `beta` and `new`: the link still works,
+      Gatus still watches it, and the pill still reports what it measures.
+      Only `soon` and `retired` take the link away.
   tags: [status, down, panne]
   selfhosted: true
 
