@@ -90,6 +90,11 @@
       "selfhosted": {
         "type": "boolean",
         "description": "true if you host this service yourself, false if it is hosted elsewhere. Shows a small flag on the card that unfurls its label on hover; omit for no flag."
+      },
+      "state": {
+        "type": "string",
+        "enum": ["soon", "retired", "beta", "deprecated", "new"],
+        "description": "Where the service stands, as you declare it. soon and retired take the link away entirely and mute the card; beta, deprecated and new only add the badge. url is optional with soon and retired."
       }
     }
   },

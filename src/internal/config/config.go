@@ -269,6 +269,9 @@ type Service struct {
 	// Selfhosted flags where the service runs: true self-hosted, false hosted
 	// elsewhere, nil no flag at all.
 	Selfhosted *bool `yaml:"selfhosted"`
+	// State is where the service stands, declared rather than measured. Empty
+	// is the whole of what cairn rendered before this key existed.
+	State State `yaml:"state"`
 }
 
 // ServiceImage is a preview shown on the detail page. A plain YAML string is
@@ -808,8 +811,12 @@ func parseServices(file string, data []byte) ([]Service, error) {
 			return nil, fmt.Errorf("config: %s line %d: service missing id (expected: id: my-tool)", file, item.Line)
 		case !idRe.MatchString(s.ID):
 			return nil, fmt.Errorf("config: %s line %d: invalid id %q, ids become URLs (expected lowercase letters, digits and dashes, e.g. my-tool)", file, item.Line, s.ID)
-		case !IsURLOrAbs(s.URL):
-			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…)", file, item.Line, s.ID)
+		// The two disabling states have no destination worth naming, so the url
+		// stops being required for them and only for them. Retiring a service
+		// has to be adding a line rather than deleting one, so a url left
+		// beside `state: retired` is kept and simply not linked.
+		case !IsURLOrAbs(s.URL) && !s.State.Disables():
+			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…, or state: soon / state: retired, which do not need one)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
 			// A slug becomes a path segment on the icon CDN and a filename in the
