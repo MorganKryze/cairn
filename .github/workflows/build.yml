@@ -139,6 +139,8 @@ jobs:
             --set ingress.tls.enabled=true >/dev/null
           helm template cairn charts/cairn \
             --set 'imagePullSecrets[0].name=harbor' >/dev/null
+          grep -qF 'kubeVersion: ">=1.19.0-0"' charts/cairn/Chart.yaml \
+            || { echo "kubeVersion is the Kubernetes floor, not cairn's version: it does not move with a release"; exit 1; }
 
   image:
     runs-on: ubuntu-latest

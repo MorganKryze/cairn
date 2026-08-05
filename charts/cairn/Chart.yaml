@@ -7,12 +7,12 @@ type: application
 # the chart, so a published chart always carries the cairn it installs. What
 # is written here only matters to someone running `helm install ./charts/cairn`
 # from a checkout.
-version: 1.19.1
-appVersion: "1.19.1"
+version: 1.19.2
+appVersion: "1.19.2"
 
 # networking.k8s.io/v1 Ingress, which is 1.19 and later. Declaring it here
 # means the templates can use one API version instead of sniffing .Capabilities.
-kubeVersion: ">=1.19.1-0"
+kubeVersion: ">=1.19.0-0"
 
 home: https://cairn.libresoftware.cloud
 sources:

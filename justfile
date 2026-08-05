@@ -16,6 +16,7 @@ chart:
     helm template cairn charts/cairn >/dev/null
     helm template cairn charts/cairn --set ingress.enabled=true --set ingress.host=cairn.example.org --set ingress.tls.enabled=true >/dev/null
     helm template cairn charts/cairn --set 'imagePullSecrets[0].name=harbor' >/dev/null
+    grep -qF 'kubeVersion: ">=1.19.0-0"' charts/cairn/Chart.yaml || { echo "kubeVersion is the Kubernetes floor, not cairn's version: it does not move with a release"; exit 1; }
     echo "chart ok"
 
 # run vet + tests
@@ -46,9 +47,9 @@ demo:
 
 # rebuild the image and recreate the demo
 demo-rebuild:
-    docker compose -f demo/compose.yaml up -d --build
+    docker compose -f demo/compose.yaml up -d --build --remove-orphans
 
-# save a release to dist/ for an air-gapped move: just save 1.19.1 [linux/amd64]
+# save a release to dist/ for an air-gapped move: just save 1.19.2 [linux/amd64]
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
