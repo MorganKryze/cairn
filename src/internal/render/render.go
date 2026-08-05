@@ -391,7 +391,9 @@ type detailView struct {
 	StatusA11y                                 string
 	Body                                       prose
 	Images                                     []imageView
-	Blank, Leave                               bool // see cardView
+	Blank, Leave                               bool   // see cardView
+	State, StateLabel                          string // see cardView
+	Off                                        bool   // see cardView
 }
 
 type imageView struct {
@@ -700,20 +702,29 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Icon:      AppURL(config.IconURL(cfg, s.Icon.Light)),
 					IconClass: themed.classFor(cfg, s.Icon),
 					URL:       s.URL,
-					Status:    statusOf(cfg, statuses, s.ID),
-					StatusID:  statusSlot(cfg, s.ID),
 					Body:      proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
+					Off:       s.State.Disables(),
+				}
+				if s.State != config.StateNone {
+					dv.State = string(s.State)
+					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
+				}
+				if !dv.Off {
+					dv.Status = statusOf(cfg, statuses, s.ID)
+					dv.StatusID = statusSlot(cfg, s.ID)
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
 					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
 				}
-				dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
-				// The detail page has to reach the same verdict as the card
-				// for the same service, or a visitor meets the dialog on one
-				// route and not the other.
-				dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
-				dv.pageView.Leave = dv.Leave
+				if !dv.Off {
+					dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)
+					// The detail page has to reach the same verdict as the card
+					// for the same service, or a visitor meets the dialog on one
+					// route and not the other.
+					dv.Blank, dv.Leave = serviceLink(cfg, s.URL, hostKindOf(s))
+					dv.pageView.Leave = dv.Leave
+				}
 				dv.PageTitle = dv.Name.Text + " · " + base.SiteTitle.Text
 				dv.MetaDesc = dv.Desc.Text
 				dv.SwitchPath = s.ID + "/"

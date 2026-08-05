@@ -114,3 +114,52 @@ func TestADisabledCardIsStillSearchable(t *testing.T) {
 		t.Error("a retired service left the page entirely: it is still information")
 	}
 }
+
+func TestTheDetailPageShowsTheStateBesideThePill(t *testing.T) {
+	// a decorative state on a service with a detail page: both must appear,
+	// the state first, and inside one row
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\nstatus:\n  gatus: https://status.example.org\n",
+		"services.yaml": "- {id: beta, url: 'https://beta.example.org', name: Beta one, state: beta, details: Long.}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := render.BuildModel(cfg, map[string]status.State{"beta": {Level: status.LevelUp}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(m.Pages["en/beta"].HTML)
+	i := strings.Index(page, `class="detail-state`)
+	j := strings.Index(page, `class="status-slot`)
+	if i < 0 {
+		t.Fatal("the detail page does not name the state at all")
+	}
+	if j >= 0 && i > j {
+		t.Error("the state is written after the pill: what it is comes before whether it answers")
+	}
+}
+
+func TestADisabledDetailPageHasNoOpenButton(t *testing.T) {
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [en]\n",
+		"services.yaml": "- {id: gone, url: 'https://gone.example.org', name: Gone one, state: retired, details: Moved.}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := render.BuildModel(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(m.Pages["en/gone"].HTML)
+	if strings.Contains(page, `class="btn`) {
+		t.Error("a retired service still offers a button, which is a promise not kept")
+	}
+	if strings.Contains(page, "https://gone.example.org") {
+		t.Error("the dead address is still in the page")
+	}
+	if !strings.Contains(page, "Moved.") {
+		t.Error("the prose is gone, and that page is the only place left to say where to go instead")
+	}
+}

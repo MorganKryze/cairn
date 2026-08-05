@@ -5,11 +5,14 @@
     <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
     <div class="detail-title">
       <h1{{.Name.Attrs}}>{{.Name}}</h1>
-      {{template "statuspill" .}}
+      {{/* One row, and the state first: what it is, then whether it answers.
+           On its own line under the pill it read as an orphan. The else branch
+           is not a duplicate for tidiness: wrapping the pill on every page
+           moved 43 bytes on a site that declares no state at all. */}}{{if .State}}<div class="detail-state-row"><span class="detail-state detail-state-{{.State}}">{{.StateLabel}}</span>{{template "statuspill" .}}</div>{{else}}{{template "statuspill" .}}{{end}}
     </div>
   </div>
   {{if .Desc.Text}}<p class="lead"{{.Desc.Attrs}}>{{.Desc}}</p>
   {{end}}{{template "prose" .Body}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}</figure>
-  {{end}}<p><a class="btn" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}>{{.S.Open}}<svg class="btn-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></p>
+  {{end}}{{if not .Off}}<p><a class="btn" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}>{{.S.Open}}<svg class="btn-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></p>{{end}}
 </article>
 {{template "bottom" .}}
