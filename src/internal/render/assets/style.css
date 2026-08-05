@@ -276,14 +276,29 @@ header { padding-block: 1.4rem; }
 }
 .about p { line-height: 1.7; margin: 0 0 .85rem; }
 .about p:last-of-type { margin-bottom: 0; }
+/* The same fold as the host flag, and deliberately the same: a glyph at rest,
+   the word unfurled beside it on hover or focus. It used to swap display
+   between the two, which is the one way of writing this that cannot be
+   animated, since display does not interpolate; and it took the cross away at
+   the instant the pointer landed on it, so the button emptied itself to show
+   its own label. Clipping a nowrap row keeps both parts on screen and gives
+   the width something to travel. */
 .about-x {
   position: absolute;
   top: .8rem;
   inset-inline-end: .8rem;
   display: inline-flex;
   align-items: center;
+  gap: .32rem;
   height: 1.9rem;
-  padding: 0 .55rem;
+  /* Folded it is a disc, not a pill: the same 1.9rem across as it is tall.
+     Which forces the padding, since the border, the glyph and two paddings
+     have to add up to exactly that: .8rem of glyph and 2px of border leave
+     .55rem a side minus the pixel the border took. Round it up and the box
+     goes oval; leave the pixel in and the cross sits 1px shy of centre. */
+  max-width: 1.9rem;
+  overflow: hidden;
+  padding: 0 calc(.55rem - 1px);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--faint);
@@ -291,15 +306,26 @@ header { padding-block: 1.4rem; }
   font: inherit;
   font-size: .78rem;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
-  transition: color .16s, border-color .16s;
+  transition: max-width .3s cubic-bezier(.2, .7, .3, 1), color .16s, border-color .16s;
 }
-.about-x svg { width: .8rem; height: .8rem; }
-.about-x span { display: none; }
-.about-x:hover, .about-x:focus-visible { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
-.about-x:hover svg, .about-x:focus-visible svg { display: none; }
-.about-x:hover span, .about-x:focus-visible span { display: inline; }
+/* flex: none, or the glyph is what gives way when the box is clipped */
+.about-x svg { width: .8rem; height: .8rem; flex: none; }
+.about-x span { opacity: 0; transition: opacity .18s; }
+.about-x:hover, .about-x:focus-visible {
+  max-width: 14rem;
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+}
+.about-x:hover span, .about-x:focus-visible span { opacity: 1; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* No (hover: none) rule here, and that is the one place this parts company
+   with the flag. The flag sits in the card foot, in flow, so a permanently
+   unfurled label costs nothing. This button is absolute over the note, which
+   reserves 3.4rem of end padding for it folded: unfurled on every phone it
+   would lay its own label across the first line of the welcome text. A touch
+   visitor gets the cross, which is what the button means anyway. */
 /* width lives on the wrapper: as a flex item it would otherwise size to the
    box's max-content and leave the box shy of the right edge */
 .search {
@@ -590,6 +616,9 @@ a.flag { min-height: 1.5rem; }
 @media (prefers-reduced-motion: reduce) {
   .flag { transition: none; max-width: 14rem; }
   .flag-label { transition: none; opacity: 1; }
+  /* the dismiss button loses the travel but keeps the fold, unlike the flag
+     just above: see the note on why it does not unfurl on touch either */
+  .about-x, .about-x span { transition: none; }
   header, .nav-links { transition: none; }
 }
 .card-name {

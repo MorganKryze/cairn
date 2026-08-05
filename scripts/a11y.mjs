@@ -94,6 +94,79 @@ await check("and it flips with the theme, in both directions", async () => {
     );
 });
 
+// ---- A2: the welcome note's dismiss button folds like the host flag ----
+
+// Two controls on this page wear the same fold: a glyph at rest, the word
+// unfurled beside it on hover. Nothing of that survives a look at the markup,
+// and it has to run here rather than on `home` below, which asks for reduced
+// motion and so measures every transition already finished.
+//
+// A display swap satisfies neither half. It cannot be animated, since display
+// does not interpolate, and it takes the glyph away at the instant the pointer
+// lands on it, which is the one moment the visitor is looking at it. So both
+// states are held: faded and clipped at rest, both parts painted once open.
+await check("the welcome note's dismiss button unfurls its label", async () => {
+  const x = page.locator("#about-x");
+  await x.waitFor({ state: "visible" });
+  const read = () =>
+    x.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const g = el.querySelector("svg").getBoundingClientRect();
+      return {
+        w: box.width,
+        h: box.height,
+        // the glyph's own rect ignores the clip, so a negative side is a
+        // cross with a leg cut off rather than one merely sitting off centre
+        sides: [g.left - box.left, box.right - g.right],
+        glyph: el.querySelector("svg").getClientRects().length > 0,
+        // a span that is display:none still reports opacity 1, so this reads as
+        // "faded" only when it really is faded
+        label: parseFloat(getComputedStyle(el.querySelector("span")).opacity),
+      };
+    });
+
+  const rest = await read();
+  if (rest.label !== 0)
+    throw new Error(
+      `the label sits at opacity ${rest.label} before anyone hovers, so there is nothing to fade in`,
+    );
+  if (!rest.glyph)
+    throw new Error("no glyph at rest: the button reads as empty");
+  // Folded, it is a disc rather than a pill. The border radius is already past
+  // half of either side, so any difference between the two reads as a circle
+  // squashed flat top and bottom, and the eye catches it at a glance.
+  if (Math.abs(rest.w - rest.h) > 1)
+    throw new Error(
+      `${Math.round(rest.w)} by ${Math.round(rest.h)} folded, so the pill is not round`,
+    );
+  // and the cross sits in the middle of it, whole: a clip tight enough to
+  // square the box must not be tight enough to take a leg off the glyph
+  const [near, far] = rest.sides;
+  if (Math.min(near, far) < 0 || Math.abs(near - far) > 1)
+    throw new Error(
+      `the glyph leaves ${near.toFixed(1)}px on one side and ${far.toFixed(1)}px on the other`,
+    );
+  if (rest.w < 24)
+    throw new Error(
+      `${Math.round(rest.w)}px wide folded, and WCAG 2.2 asks 24 by 24 of a target`,
+    );
+
+  await x.hover();
+  await page.waitForTimeout(450);
+  const open = await read();
+  if (open.label !== 1)
+    throw new Error(`hovered, the label is still at opacity ${open.label}`);
+  if (!open.glyph)
+    throw new Error(
+      "the glyph left as the pointer arrived: the button empties itself to show the word",
+    );
+  if (open.w <= rest.w + 8)
+    throw new Error(
+      `${Math.round(rest.w)}px folded and ${Math.round(open.w)}px hovered: the label is not unfurling`,
+    );
+  await page.mouse.move(2, 2);
+});
+
 // ---- A3: 3:1 for the boundary of a control someone can operate (1.4.11) ----
 
 // The border and both of its neighbours, straight out of the browser: the
