@@ -348,7 +348,31 @@ jobs:
           # warns that tag input is on its way out, and a digest cannot drift.
           digest=$(awk '/^Digest: /{print $2}' push.log)
           [ -n "$digest" ] || { echo "::error::helm push printed no digest"; exit 1; }
-          cosign sign --yes "ghcr.io/${ns}/charts/cairn@${digest}"
+          verify() {
+            cosign verify "ghcr.io/${ns}/charts/cairn@${digest}" \
+              --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          }
+
+          # ghcr took the chart and then timed out on the signature's own blob
+          # upload, three minutes in, which is cosign's default deadline: 1.19.1
+          # went out installable and unsigned until this job was re-run by hand.
+          # The image and the binaries, signed by the same OIDC step in the same
+          # run, were fine, so it is the registry and not the code. A longer
+          # deadline first, then attempts.
+          #
+          # The verify is the arbiter rather than cosign's exit code, and that
+          # is the whole reason this is a loop and not a `--retry` flag: an
+          # upload that landed and lost its answer is a success nobody was told
+          # about, and signing again over it would add a second signature for
+          # nothing. Asking the registry what it actually holds is the only
+          # question worth asking between attempts.
+          for attempt in 1 2 3; do
+            cosign sign --yes --timeout 5m "ghcr.io/${ns}/charts/cairn@${digest}" || true
+            verify >/dev/null 2>&1 && break
+            echo "::warning::attempt ${attempt}: ghcr does not hold a readable signature for the chart yet"
+            sleep 15
+          done
 
           # The image job publishes immutable tags and only then moves `stable`
           # onto a verified digest. There is no equivalent to move here: a
@@ -357,6 +381,7 @@ jobs:
           # version unsigned, at a number nobody has been pointed at yet, which
           # re-running the tag republishes and signs. What is worth doing is
           # proving the signature is usable, with the command the docs give.
-          cosign verify "ghcr.io/${ns}/charts/cairn@${digest}" \
-            --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+          #
+          # Unsilenced on purpose: a run that never managed it has to fail with
+          # cosign's own message, not with a bare exit code.
+          verify >/dev/null
