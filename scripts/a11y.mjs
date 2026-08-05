@@ -581,6 +581,46 @@ const phone = await browser.newContext({ viewport: PHONE });
 const m = await phone.newPage();
 await m.goto(MANY);
 
+// A phone raises the dismiss button to 44px for the thumb, and that rule is
+// older than the fold. The fold caps the width from the desktop block, so
+// raising only the height leaves an oval with the cross pressed against the
+// clip: 30 by 44 with 3px of air on one side, measured on a shipped release.
+// Held at 320 as well, where a rem is no smaller but the note is tightest.
+for (const width of [390, 320]) {
+  await check(`the dismiss button is a disc at ${width}px`, async () => {
+    const p = await browser.newPage({ viewport: { width, height: 780 } });
+    await p.goto(SITE);
+    const x = p.locator("#about-x");
+    await x.waitFor({ state: "visible" });
+    const g = await x.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const svg = el.querySelector("svg").getBoundingClientRect();
+      return {
+        w: r.width,
+        h: r.height,
+        near: svg.left - r.left,
+        far: r.right - svg.right,
+      };
+    });
+    await p.close();
+    if (Math.abs(g.w - g.h) > 1) {
+      throw new Error(
+        `${Math.round(g.w)} by ${Math.round(g.h)}, so the pill is not round`,
+      );
+    }
+    if (g.h < 44) {
+      throw new Error(
+        `${Math.round(g.h)}px tall, and the rule that raises it exists to give a thumb 44`,
+      );
+    }
+    if (Math.min(g.near, g.far) < 0 || Math.abs(g.near - g.far) > 1) {
+      throw new Error(
+        `the cross leaves ${g.near.toFixed(1)}px on one side and ${g.far.toFixed(1)}px on the other`,
+      );
+    }
+  });
+}
+
 // Measured still as well, and at phone width, which is the only place this
 // control is painted at all.
 const stillPhone = await browser.newContext({

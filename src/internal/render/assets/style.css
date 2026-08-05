@@ -1382,7 +1382,14 @@ footer {
   .theme-toggle { width: 2.75rem; height: 2.75rem; }
   .langs a { display: inline-flex; align-items: center; min-height: 2.75rem; }
   .search-box input { padding-block: .55rem; }
-  .about-x { height: 2.75rem; padding-inline: .85rem; }
+  /* 44px for the thumb, and still a disc: the width is capped by the fold, so
+     raising the height alone left a 30 by 44 oval with the cross 3px from the
+     clip. Same arithmetic as the desktop rule, at this height. */
+  .about-x {
+    height: 2.75rem;
+    max-width: 2.75rem;
+    padding-inline: calc(.975rem - 1px);
+  }
 
   /* the category trail becomes a wrapping chip row under the intro */
   .toc { display: block; margin: 1.5rem 0 .3rem; }
