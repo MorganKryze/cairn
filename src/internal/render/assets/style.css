@@ -60,6 +60,13 @@
      browser test holds all four. */
   --degraded: light-dark(#a86a00, #cf9020);
   --maintenance: light-dark(#2f6fb5, #5aa0e0);
+  /* A status token paints a dot, a graphic that needs 3:1. Used raw as a word
+     it fails: green measured 4.10:1 and amber 4.29:1 against a card. Each is
+     pushed until it can carry text, the way --accent-ink is the accent pushed.
+     Measured after: beta 8.20:1, deprecated 8.07:1, soon 7.69:1. */
+  --ink-beta: light-dark(color-mix(in oklab, var(--up) 72%, #000), color-mix(in oklab, var(--up) 82%, #fff));
+  --ink-deprecated: light-dark(color-mix(in oklab, var(--degraded) 74%, #000), color-mix(in oklab, var(--degraded) 88%, #fff));
+  --ink-soon: light-dark(color-mix(in oklab, var(--maintenance) 78%, #000), color-mix(in oklab, var(--maintenance) 85%, #fff));
 
   --shadow: 0 1px 2px light-dark(rgba(20, 30, 28, .04), rgba(0, 0, 0, .2)), 0 10px 26px -14px light-dark(rgba(20, 30, 28, .14), rgba(0, 0, 0, .5));
   --shadow-lift: 0 2px 4px light-dark(rgba(20, 30, 28, .05), rgba(0, 0, 0, .25)), 0 18px 42px -16px light-dark(rgba(20, 30, 28, .24), rgba(0, 0, 0, .62));
@@ -621,6 +628,84 @@ a.flag { min-height: 1.5rem; }
   .about-x, .about-x span { transition: none; }
   header, .nav-links { transition: none; }
 }
+/* Where a service stands, declared and not measured, which is why it carries
+   no dot: the dot in the foot is what says a machine looked. It hangs on the
+   top border rather than taking a row inside the card, because the grid
+   stretches a row to its tallest card and a row inside would charge 27px to
+   every card beside it, measured. Out here it lives in the gap between rows,
+   which existed already. .card declares no overflow, so nothing has to be
+   opened for it. */
+.card-badge {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0;
+  inset-inline-start: 1rem;
+  transform: translateY(-50%);
+  padding: .12rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  /* the card's own fill, or the border it sits on shows through */
+  background: inherit;
+  color: var(--muted);
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.card-badge-beta { color: var(--ink-beta); border-color: color-mix(in oklab, var(--up) 40%, var(--border)); }
+.card-badge-new { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.card-badge-deprecated { color: var(--ink-deprecated); border-color: color-mix(in oklab, var(--degraded) 40%, var(--border)); }
+.card-badge-soon { color: var(--ink-soon); border-color: color-mix(in oklab, var(--maintenance) 40%, var(--border)); }
+/* .card-badge-retired needs no rule: --muted above is already its colour. */
+
+/* The two disabling states. A film over the card rather than a lighter text:
+   the card, the icon and the two chips recede together, which is what makes it
+   read as gone at a glance.
+   Nothing readable goes under the film. Measured: at 45% no text reaches
+   4.5:1, not even painted near black, because the veil lifts ink and
+   background together. So the words stay above it and the film is what is
+   behind them. */
+.card-off {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--card) 30%, var(--bg));
+  /* not a link any more, so not a pointer and nothing to lift */
+  cursor: default;
+}
+.card-off:hover { transform: none; border-color: var(--border); }
+.card-off .card-name,
+.card-off .card-desc { color: var(--muted); }
+.card-off .tile { filter: grayscale(1); }
+.card-off::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--bg) 45%, transparent);
+}
+.card-off .card-text { position: relative; z-index: 2; }
+/* The flag and the glyph kept their full-strength fill and ring while the card
+   behind them dropped away, and a bright chip on a receded card is what read
+   as wrong. They lose their own surfaces instead. Both measure 5.39:1 after. */
+.card-off .flag {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  border-color: color-mix(in oklab, var(--border) 55%, transparent);
+  color: var(--muted);
+}
+/* z-index alone. .card-more is already absolutely positioned and adding
+   position:relative overrides that: the glyph leaves the card through the
+   inline start and adds a line to its height. Done twice while drawing this,
+   an hour apart, which is why a browser check holds it. */
+.card-off .card-more {
+  z-index: 2;
+  background: transparent;
+  border-color: color-mix(in oklab, var(--border) 55%, transparent);
+  color: var(--muted);
+}
+
 .card-name {
   min-width: 0;
   font-weight: 600;
@@ -761,6 +846,20 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .detail-head .tile img { width: 2.3rem; height: 2.3rem; }
 .detail-head .tile svg { width: 2rem; height: 2rem; }
 .detail-title { display: flex; flex-direction: column; gap: .6rem; align-items: flex-start; }
+/* No card here, so no badge: the state sits under the title where the pill
+   lives, and shares its row. On a line of its own it read as an orphan. */
+.detail-state-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.detail-state {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.detail-state-beta { color: var(--ink-beta); }
+.detail-state-new { color: var(--accent-ink); }
+.detail-state-deprecated { color: var(--ink-deprecated); }
+.detail-state-soon { color: var(--ink-soon); }
 .detail-head h1 {
   margin: 0;
   font-family: var(--font-display);
