@@ -10,7 +10,7 @@ The new image validates your existing config without touching anything you are
 running. Do this first, every time:
 
 ```sh
-docker run --rm -v ./config:/config morgankryze/cairn:1.18.2 -check
+docker run --rm -v ./config:/config morgankryze/cairn:1.18.3 -check
 ```
 
 Exit code 0 means the upgrade will load. Exit 1 prints the exact message and
