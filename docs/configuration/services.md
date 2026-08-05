@@ -12,7 +12,7 @@ Any text field accepts a plain string or a per-locale map; see
 | Key          | Required | Default       | What it is                                                                                                                                                   |
 | ------------ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `id`         | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                                                                 |
-| `url`        | yes      | n/a           | Where the card links. `https://…` or an absolute path.                                                                                                       |
+| `url`        | yes\*    | n/a           | Where the card links. `https://…` or an absolute path. Optional with `state: soon` or `state: retired`, which link nowhere.                                  |
 | `name`       | yes      | n/a           | The card title.                                                                                                                                              |
 | `desc`       | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor.                                                                                  |
 | `details`    | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and [CommonMark, minus raw HTML](text.md).                                                      |
@@ -21,6 +21,7 @@ Any text field accepts a plain string or a per-locale map; see
 | `icon`       | no       | neutral glyph | Slug, URL or `/assets` path, or `{light, dark}` for a [monochrome mark](theming.md#artwork-that-cannot-serve-both-themes); see [Icons](../recipes/icons.md). |
 | `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                                                                   |
 | `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag).                                     |
+| `state`      | no       | none          | `soon`, `retired`, `beta`, `deprecated` or `new`; a badge on the card. See [Where a service stands](#where-a-service-stands).                                |
 
 ## Full example
 
@@ -106,6 +107,47 @@ strings:
   host.self: { fr: Chez moi, en: On my server }
   host.external: { fr: Cloud tiers, en: Third-party }
 ```
+
+## Where a service stands
+
+`state` puts a word on the card, above the name:
+
+```yaml
+- id: forge
+  name: Forge
+  state: soon
+```
+
+**The state is what you declare, the status is what the monitor measures.** They
+sit on the same card and answer different questions: the pill in the corner
+says whether the service answered a moment ago, the badge on the top edge says
+whether it is worth going at all.
+
+Five words, in two groups.
+
+`beta`, `deprecated` and `new` change nothing but the badge. The link works, the
+service is monitored as before, and its pill keeps reporting.
+
+`soon` and `retired` take the destination away. The card stops being a link and
+leaves the tab order, its status pill is gone since there is nothing to
+monitor, and `-emit-gatus` writes no endpoint for it. The card is muted so it
+reads as gone at a glance.
+
+`url` becomes optional for those two: a service that does not exist yet has no
+address, and one you retire keeps the address it had, in your file, no longer
+linked. **Retiring a service is adding a line, never deleting one.**
+
+A [detail page](#detail-pages) still works for both, and it is worth writing:
+it is the one place left to say where people should go instead. It loses its
+Open button and nothing else.
+
+One honest word about `new`: it is the only state that goes stale on its own,
+because nobody comes back to remove it. cairn will not chase it for you and
+there is no date field to make it expire. That is deliberate: a directory that
+needs a calendar is a different program.
+
+The five words come from the strings table, so they read in the page's
+language. See [Languages](i18n.md).
 
 ## Preview images
 
