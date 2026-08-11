@@ -100,7 +100,7 @@ jobs:
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
-      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -239,7 +239,7 @@ jobs:
 
       # ghcr serves this package publicly, so the read would work without a
       # token. Logging in anyway keeps the copy off the anonymous rate limit.
-      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -248,7 +248,7 @@ jobs:
       # No registry key: docker/login-action defaults to Docker Hub. The
       # account name is public, so only the token is a secret. It carries
       # Read & Write and not Delete, which is why nothing here removes a tag.
-      - uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           username: morgankryze
           password: ${{ secrets.DOCKERHUB_TOKEN }}
