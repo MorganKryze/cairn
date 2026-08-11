@@ -8,6 +8,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # CodeQL refuses a workflow whose codeql-action steps sit on different
+    # versions, and init and analyze are two steps of the same action.
+    # Ungrouped, Dependabot opens one pull request per step, and neither can
+    # pass its own checks: #91 and #93 both failed with "configuration error".
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: docker
     directory: /docker
     schedule:
