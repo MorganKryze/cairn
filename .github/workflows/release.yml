@@ -96,7 +96,7 @@ jobs:
           # (dependabot-core#5541), so a pin here would rot in silence.
           # The buildkit-pin job in security.yml is what stops that: it
           # runs weekly and says when buildx-stable-1 has moved past it.
-          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec # buildx-stable-1
+          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8 # buildx-stable-1
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
