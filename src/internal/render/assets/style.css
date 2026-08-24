@@ -68,6 +68,15 @@
   --maxw: 66rem;
   /* the sticky header on narrow screens; .skip has to paint one above it */
   --z-header: 40;
+  /* How far a waypoint diamond drops from the centre of its line box, as a
+     fraction of the label's font size. A line box carries descender space no
+     lowercase letter reaches, so a mark centred in it reads high beside a word
+     that is mostly lowercase. Measured against the x-height centre: 1.5px at
+     the rail's 13px and 2.86px at a heading's 24px. Unitless, because a mark
+     does not inherit the font size of the label it sits beside, so each site
+     multiplies by the size it is aligning to. */
+  --mark-drop: .115;
+  --way-font: 1.5rem;
 }
 
 :root[data-theme="light"] { color-scheme: light; }
@@ -189,7 +198,8 @@ header { padding-block: 1.4rem; }
 :root[data-theme="dark"] .theme-toggle .sun { display: block; }
 
 .langs { display: flex; gap: .2rem; }
-.langs a {
+.langs a,
+.langs [aria-current] {
   padding: .3rem .6rem;
   border: 1px solid transparent;
   border-radius: .5rem;
@@ -199,7 +209,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
   color: var(--muted);
 }
-.langs a[aria-current] {
+.langs [aria-current] {
   color: var(--fg);
   background: var(--card);
   border-color: var(--border);
@@ -243,7 +253,8 @@ header { padding-block: 1.4rem; }
   box-shadow: var(--shadow-lift);
   z-index: 10;
 }
-.langs-menu nav a {
+.langs-menu nav a,
+.langs-menu nav [aria-current] {
   padding: .35rem .6rem;
   border-radius: .45rem;
   font-size: .8rem;
@@ -252,7 +263,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
   color: var(--muted);
 }
-.langs-menu nav a[aria-current] { color: var(--fg); background: var(--faint); }
+.langs-menu nav [aria-current] { color: var(--fg); background: var(--faint); }
 .langs-menu nav a:hover { color: var(--fg); background: var(--faint); }
 .langs-menu nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -405,14 +416,29 @@ header { padding-block: 1.4rem; }
   border-radius: 2px;
   background: var(--accent);
   transform: rotate(45deg);
+  position: relative;
+  top: calc(var(--way-font) * var(--mark-drop));
 }
 .way-name {
   margin: 0;
   font-family: var(--font-display);
   font-variation-settings: "opsz" 60;
   font-weight: 540;
-  font-size: 1.5rem;
+  font-size: var(--way-font);
   letter-spacing: -.012em;
+}
+/* The whole heading is the anchor, the way its entry in the rail is. It takes
+   neither colour nor underline: a heading that changed weight or colour on
+   hover would read as a different heading. The pointer says it is a target,
+   and the focus ring says so to a keyboard. */
+.way-name a {
+  color: inherit;
+  text-decoration: none;
+}
+.way-name a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 .way-rule {
   flex: 1;
@@ -469,6 +495,8 @@ header { padding-block: 1.4rem; }
   transform: rotate(45deg);
   transition: background .16s;
   position: relative;
+  /* 1em here: the rail's mark does inherit its label's size. */
+  top: calc(1em * var(--mark-drop));
 }
 .toc-name {
   overflow: hidden;
@@ -481,7 +509,19 @@ header { padding-block: 1.4rem; }
 .toc a[aria-current] .toc-mark { background: var(--accent); }
 .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
-.cat { scroll-margin-top: 1.2rem; }
+/* On the heading and not on .cat: every #cat- link, the rail's and the jump
+   select's and now the heading's own, targets the h2, so the section's margin
+   was never the one the browser read. 2.6rem is the gap above a heading, and
+   anything past it brings the previous section's last card into view; this
+   keeps 9px of that gap in hand.
+
+   One value, phones included. The 4.5rem a narrow screen used to carry was
+   meant to clear the sticky header, but it sat on .cat and so never applied,
+   and it cannot do that job anyway: the header is 132px, which is past the gap
+   by a long way. nav.js hides it on the way down, which is the direction a
+   trail link travels, so a jump downward lands clear of it. A jump upward
+   brings the header back over the heading, and that is not new. */
+.way-name { scroll-margin-top: 2rem; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
@@ -1255,7 +1295,6 @@ footer {
     transition: transform .3s ease;
   }
   header.header-hidden { transform: translateY(-100%); }
-  .cat { scroll-margin-top: 4.5rem; }
 
   /* the header links fold behind a burger, the search stays beside it, and the
      desktop divider goes so the row sits centered */
@@ -1309,7 +1348,8 @@ footer {
 
   /* finger-sized controls (44px) */
   .theme-toggle { width: 2.75rem; height: 2.75rem; }
-  .langs a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+  .langs a,
+  .langs [aria-current] { display: inline-flex; align-items: center; min-height: 2.75rem; }
   .search-box input { padding-block: .55rem; }
   /* 44px for the thumb, and still a disc: the fold caps the width, so raising
      the height alone left a 30 by 44 oval with the cross 3px from the clip. */

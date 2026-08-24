@@ -49,11 +49,16 @@
     {{$v := .}}{{if gt (len .Locales) 3}}<details class="langs langs-menu">
       <summary aria-label="{{.S.Languages}}">{{upper .Locale}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
       <nav aria-label="{{.S.Languages}}">{{range .Locales}}
-        <a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
+        {{if eq . $v.Locale}}<span aria-current="page">{{upper .}}</span>{{else}}<a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose">{{upper .}}</a>{{end}}{{end}}
       </nav>
     </details>
-    {{else}}<nav class="langs" aria-label="{{.S.Languages}}">{{range .Locales}}
-      <a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose"{{if eq . $v.Locale}} aria-current="page"{{end}}>{{upper .}}</a>{{end}}
+    {{else}}{{/* The language you are reading is a label, not a control: a link
+         there only ever led back to the same page. It keeps aria-current so the
+         switcher still says which one is live, and leaves the tab order.
+         Pinning a language against browser negotiation is what ?choose does,
+         and that is still reachable, on every language you are not reading.
+    */}}<nav class="langs" aria-label="{{.S.Languages}}">{{range .Locales}}
+      {{if eq . $v.Locale}}<span aria-current="page">{{upper .}}</span>{{else}}<a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose">{{upper .}}</a>{{end}}{{end}}
     </nav>{{end}}
   </div>
 </div>

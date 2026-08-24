@@ -21,7 +21,7 @@
 {{end}}{{range .Cats}}<section class="cat" aria-labelledby="cat-{{.ID}}">
   <div class="way">
     <span class="way-mark" aria-hidden="true"></span>
-    <h2 id="cat-{{.ID}}" class="way-name"{{.Name.Attrs}}>{{.Name}}</h2>
+    <h2 id="cat-{{.ID}}" class="way-name"{{.Name.Attrs}}><a href="#cat-{{.ID}}">{{.Name}}</a></h2>
     <span class="way-rule" aria-hidden="true"></span>
   </div>
   <ul class="cards">

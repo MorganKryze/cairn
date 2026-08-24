@@ -1362,6 +1362,181 @@ await check(
   await st.close();
 }
 
+// ---- A12: the trail, the headings that answer it, and where a jump lands ----
+
+{
+  const wp = await browser.newContext();
+
+  // The centre a small mark should sit on beside a word is the middle of its
+  // x-height, not the middle of its line box: a line box carries descender
+  // space that no lowercase letter reaches. Half a pixel is the tolerance, an
+  // order below what the eye caught at 1.5px and 2.86px.
+  const offXCentre = (page, markSel, nameSel) =>
+    page.evaluate(
+      ([m, n]) => {
+        const mark = document.querySelector(m),
+          name = document.querySelector(n);
+        if (!mark || !name || !mark.getClientRects().length) return null;
+        const mr = mark.getBoundingClientRect(),
+          nr = name.getBoundingClientRect();
+        const cs = getComputedStyle(name);
+        const cv = document.createElement("canvas").getContext("2d");
+        cv.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const fm = cv.measureText("x");
+        const lead =
+          (nr.height - (fm.fontBoundingBoxAscent + fm.fontBoundingBoxDescent)) /
+          2;
+        const baseline = nr.top + lead + fm.fontBoundingBoxAscent;
+        const xCentre = baseline - fm.actualBoundingBoxAscent / 2;
+        return mr.top + mr.height / 2 - xCentre;
+      },
+      [markSel, nameSel],
+    );
+
+  await check(
+    "a waypoint diamond sits on the x-height of its label",
+    async () => {
+      const wide = await wp.newPage();
+      await wide.setViewportSize({ width: 1440, height: 900 });
+      await wide.goto(MANY);
+      const rail = await offXCentre(wide, ".toc-mark", ".toc-name");
+      const heading = await offXCentre(wide, ".way-mark", ".way-name");
+      await wide.close();
+      if (rail === null) throw new Error("the rail is not painted at 1440px");
+      if (heading === null) throw new Error("no diamond beside a heading");
+      for (const [what, off] of [
+        ["the rail's", rail],
+        ["a heading's", heading],
+      ]) {
+        if (Math.abs(off) > 0.5) {
+          throw new Error(
+            `${what} diamond is ${off.toFixed(2)}px off the x-height centre`,
+          );
+        }
+      }
+    },
+  );
+
+  await check("a category heading is a link to its own anchor", async () => {
+    const page = await wp.newPage();
+    await page.goto(MANY);
+    const pairs = await page.$$eval(".way-name", (hs) =>
+      hs.map((h) => ({
+        id: h.id,
+        href: h.querySelector("a")?.getAttribute("href"),
+      })),
+    );
+    await page.close();
+    if (!pairs.length) throw new Error("no category heading on the page");
+    for (const { id, href } of pairs) {
+      if (href !== `#${id}`) {
+        throw new Error(`heading ${id} links to ${href} rather than to itself`);
+      }
+    }
+  });
+
+  // The gap above a heading is 2.6rem, so a margin past it pulls the previous
+  // section's last card back into view. Both edges are asserted: a margin of
+  // zero would satisfy the second on its own.
+  for (const [label, size] of [
+    ["a wide screen", { width: 1440, height: 900 }],
+    ["a phone", PHONE],
+  ]) {
+    await check(
+      `clicking a heading lands it clear of the top on ${label}`,
+      async () => {
+        const page = await wp.newPage();
+        await page.setViewportSize(size);
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.goto(MANY);
+        const m = await page.evaluate(async () => {
+          const cats = [...document.querySelectorAll(".cat")];
+          const target = cats[2];
+          scrollTo(0, 0);
+          await new Promise((r) => setTimeout(r, 250));
+          target.querySelector(".way-name a").click();
+          await new Promise((r) => setTimeout(r, 700));
+          const prev = [...cats[1].querySelectorAll(".card")].pop();
+          return {
+            hash: location.hash,
+            top: target.querySelector(".way-name").getBoundingClientRect().top,
+            prevBottom: prev.getBoundingClientRect().bottom,
+          };
+        });
+        await page.close();
+        if (m.hash !== "#cat-charlie") {
+          throw new Error(`the click set ${m.hash || "no hash at all"}`);
+        }
+        if (m.top < 24) {
+          throw new Error(
+            `the heading lands ${m.top.toFixed(1)}px from the top, too tight`,
+          );
+        }
+        if (m.prevBottom > 0) {
+          throw new Error(
+            `${m.prevBottom.toFixed(1)}px of the previous section's last card is in view`,
+          );
+        }
+      },
+    );
+  }
+
+  // Reading a language is not an action. The link led back to the page it was
+  // on, and on a site with one language it was the only thing there to click.
+  for (const [label, url] of [
+    ["among several", SITE],
+    ["when it is the only one", MANY],
+  ]) {
+    await check(
+      `the language you are reading is not a control, ${label}`,
+      async () => {
+        const page = await wp.newPage();
+        await page.goto(url);
+        const m = await page.evaluate(() => {
+          const el = document.querySelector(".langs [aria-current]");
+          if (!el) return null;
+          el.focus?.();
+          return {
+            tag: el.tagName.toLowerCase(),
+            href: el.getAttribute("href"),
+            tookFocus: document.activeElement === el,
+            others: document.querySelectorAll(".langs a[href]").length,
+          };
+        });
+        await page.close();
+        if (!m) throw new Error("nothing in the switcher is marked as current");
+        if (m.tag === "a" || m.href !== null) {
+          throw new Error(
+            `the current language is still a <${m.tag} href=${m.href}>`,
+          );
+        }
+        if (m.tookFocus)
+          throw new Error("the current language still takes focus");
+      },
+    );
+  }
+
+  await check("every other language is still one click away", async () => {
+    const page = await wp.newPage();
+    await page.goto(SITE);
+    const hrefs = await page.$$eval(".langs a[href]", (as) =>
+      as.map((a) => a.getAttribute("href")),
+    );
+    await page.close();
+    // example/ carries fr and en, so exactly one link is left beside the label
+    if (hrefs.length !== 1) {
+      throw new Error(
+        `expected one switchable language, found ${hrefs.length}`,
+      );
+    }
+    if (!hrefs[0].includes("?choose")) {
+      throw new Error(`${hrefs[0]} does not carry ?choose, so it cannot pin`);
+    }
+  });
+
+  await wp.close();
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);
