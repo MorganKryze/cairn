@@ -964,11 +964,27 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .back:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.detail-head { display: flex; align-items: center; gap: 1rem; margin-top: 1.6rem; }
-.detail-head .tile { width: 3.6rem; height: 3.6rem; }
-.detail-head .tile img { width: 2.3rem; height: 2.3rem; }
-.detail-head .tile svg { width: 2rem; height: 2rem; }
-.detail-title { display: flex; flex-direction: column; gap: .6rem; align-items: flex-start; }
+/* Back, name and action in one grid, so the action can sit in two places
+   without a second copy of it: beside the name where there is room, and up on
+   the back link's row where there is not. Both the back link and the action
+   span every column on their row and are justified to opposite ends, so
+   neither of them decides how wide the tile's column is. */
+.detail-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 1.1rem;
+  margin-top: 1.6rem;
+}
+.detail-top .back { grid-area: 1 / 1 / 2 / -1; justify-self: start; }
+.detail-top .tile { grid-area: 2 / 1; width: 3.6rem; height: 3.6rem; }
+.detail-top .tile img { width: 2.3rem; height: 2.3rem; }
+.detail-top .tile svg { width: 2rem; height: 2rem; }
+.detail-top h1 { grid-area: 2 / 2; min-width: 0; }
+.detail-top .btn { grid-area: 2 / 3; justify-self: end; margin: 0; }
+.detail-top .detail-state-row { grid-area: 3 / 1 / 4 / -1; }
+.detail-top h1 { flex: 1 1 auto; min-width: 0; }
 /* No card here, so no badge: the state shares the pill's row under the title.
    On a line of its own it read as an orphan, and the pill leads as the heavier
    object. */
@@ -993,7 +1009,7 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .detail-state-new { color: var(--accent-ink); }
 .detail-state-deprecated { color: var(--ink-deprecated); }
 .detail-state-soon { color: var(--ink-soon); }
-.detail-head h1 {
+.detail-top h1 {
   margin: 0;
   font-family: var(--font-display);
   font-variation-settings: "opsz" 96;
@@ -1019,7 +1035,8 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   align-items: center;
   gap: .5rem;
   margin-top: 1.4rem;
-  padding: .8rem 1.7rem;
+  padding: .62rem 1.25rem;
+  font-size: .95rem;
   background: var(--accent);
   border-radius: 999px;
   color: #fff;
@@ -1104,6 +1121,17 @@ html:has(dialog[open]) {
    languages. The order stays: column-reverse would put the primary on top while
    the keyboard still tabs copy, stay, continue, trading 2.4.3 for a layout. */
 @media (max-width: 44rem) {
+  /* No room beside a name at this width, and a full-width button under it read
+     as the loudest thing on the page. It goes up beside the back link instead,
+     the two of them at opposite ends of one row, and smaller. */
+  .detail-top { grid-template-columns: auto 1fr; row-gap: .9rem; }
+  .detail-top .btn {
+    grid-area: 1 / 1 / 2 / -1;
+    justify-self: end;
+    padding: .42rem .85rem;
+    font-size: .88rem;
+  }
+  .detail-top .btn .btn-glyph { width: .95em; height: .95em; }
   .leave-acts { flex-direction: column; align-items: stretch; }
   .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
 }

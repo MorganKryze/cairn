@@ -1,22 +1,20 @@
 {{template "top" .}}
 <article class="detail">
-  <p><a class="back" href="{{.Prefix}}/{{.Locale}}/"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>{{.S.Back}}</a></p>
-  <div class="detail-head">
+  {{/* One grid for the whole head, because the action sits in two different
+       places and CSS cannot move an element between parents: beside the name
+       where there is room, and up on the back link's row where there is not.
+       Naming the areas says both without a second copy of the markup.
+
+       The state is a row of its own rather than a child of the name: inside
+       one it made that block taller, and centring the tile against the taller
+       box put the icon 18.4px below the name it belongs to. */}}<div class="detail-top">
+    <a class="back" href="{{.Prefix}}/{{.Locale}}/"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>{{.S.Back}}</a>
     <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" width="56" height="56">{{else}}{{template "glyph"}}{{end}}</span>
-    <div class="detail-title">
-      <h1{{.Name.Attrs}}>{{.Name}}</h1>
-      {{/* One row, the pill first. The state was written first at first, on
-           the reasoning that what a thing is comes before whether it answers;
-           seen on the page, the pill is the heavier object and the small caps
-           read better trailing it than leading it. On its own line under the
-           pill the state read as an orphan, which is why they share a row at
-           all. The else branch
-           is not a duplicate for tidiness: wrapping the pill on every page
-           moved 43 bytes on a site that declares no state at all. */}}{{if .State}}<div class="detail-state-row">{{template "statuspill" .}}<span class="detail-state detail-state-{{.State}}">{{.StateLabel}}</span></div>{{else}}{{template "statuspill" .}}{{end}}
-    </div>
+    <h1{{.Name.Attrs}}>{{.Name}}</h1>
+    {{if not .Off}}<a class="btn" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}>{{.S.Open}}<svg class="btn-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a>{{end}}
+    {{if or .State .StatusID}}<div class="detail-state-row">{{template "statuspill" .}}{{if .State}}<span class="detail-state detail-state-{{.State}}">{{.StateLabel}}</span>{{end}}</div>{{end}}
   </div>
   {{if .Desc.Text}}<p class="lead"{{.Desc.Attrs}}>{{.Desc}}</p>
   {{end}}{{template "prose" .Body}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}</figure>
-  {{end}}{{if not .Off}}<p><a class="btn" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}>{{.S.Open}}<svg class="btn-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></p>{{end}}
-</article>
+  {{end}}</article>
 {{template "bottom" .}}
