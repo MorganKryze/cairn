@@ -447,6 +447,107 @@ await check(
   },
 );
 
+// The icon belongs to the name, and nothing under the name may move it. The
+// state row used to live inside the title block, which made the block taller,
+// and align-items centred the tile against that: a pill pushed the icon 18.4px
+// below the name. Both pages are asserted, since only one of them has a state.
+await check(
+  "a state or a pill never shifts the icon off the name",
+  async () => {
+    for (const [path, what] of [
+      ["beta/", "a state and a pill"],
+      ["gone/", "a state and no pill"],
+    ]) {
+      const page = await desk.newPage();
+      await page.goto(new URL(path, STATES).href, { waitUntil: "networkidle" });
+      await page.waitForTimeout(400);
+      const m = await page.evaluate(() => {
+        const tile = document.querySelector(".detail-top .tile");
+        const h1 = document.querySelector(".detail-top h1");
+        if (!tile || !h1) return null;
+        const t = tile.getBoundingClientRect(),
+          n = h1.getBoundingClientRect();
+        return {
+          off: t.top + t.height / 2 - (n.top + n.height / 2),
+          row: !!document.querySelector(".detail-state-row"),
+        };
+      });
+      await page.close();
+      if (!m) throw new Error(`no tile or no name on ${path}`);
+      if (!m.row)
+        throw new Error(`${path} shows no state row, so this proves nothing`);
+      if (Math.abs(m.off) > 1) {
+        throw new Error(
+          `with ${what}, the icon sits ${m.off.toFixed(1)}px off the name`,
+        );
+      }
+    }
+  },
+);
+
+// The action sits beside the name where there is room, and goes up onto the
+// back link's row where there is not, rather than becoming the loudest thing
+// on a phone. It matches its neighbour there rather than the 44px the leaving
+// dialog's actions carry: the back chip has been 72x33 since the target-size
+// pass, and 24x24 is what the rule asks of either of them.
+await check(
+  "the action sits beside the name, and joins the back row on a phone",
+  async () => {
+    for (const [w, beside] of [
+      [1000, true],
+      [390, false],
+    ]) {
+      const page = await desk.newPage();
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.goto(new URL("beta/", STATES).href, {
+        waitUntil: "networkidle",
+      });
+      const m = await page.evaluate(() => {
+        const btn = document.querySelector(".detail-top .btn");
+        const h1 = document.querySelector(".detail-top h1");
+        const back = document.querySelector(".detail-top .back");
+        if (!btn) return null;
+        const b = btn.getBoundingClientRect(),
+          n = h1.getBoundingClientRect(),
+          a = back.getBoundingClientRect();
+        return {
+          w: b.width,
+          h: b.height,
+          onBackRow:
+            Math.abs(b.top + b.height / 2 - (a.top + a.height / 2)) < 3,
+          beside: Math.abs(b.top + b.height / 2 - (n.top + n.height / 2)) < 3,
+          clearsBack: b.left >= a.right,
+          lines: Math.round(
+            n.height / parseFloat(getComputedStyle(h1).lineHeight),
+          ),
+        };
+      });
+      await page.close();
+      if (!m) throw new Error(`no action in the head at ${w}px`);
+      if (m.w < 24 || m.h < 24) {
+        throw new Error(
+          `the action is ${m.w.toFixed(0)}x${m.h.toFixed(0)} at ${w}px, under 24x24`,
+        );
+      }
+      if (m.lines > 1)
+        throw new Error(`the name wrapped onto ${m.lines} lines at ${w}px`);
+      if (beside) {
+        if (!m.beside)
+          throw new Error(`at ${w}px the action left the name's row`);
+        if (m.h < 44)
+          throw new Error(
+            `beside the name it is ${m.h.toFixed(0)}px tall, want 44`,
+          );
+      } else {
+        if (!m.onBackRow)
+          throw new Error(`at ${w}px the action is not on the back link's row`);
+        if (!m.clearsBack)
+          throw new Error(`at ${w}px the action overlaps the back link`);
+      }
+    }
+  },
+);
+
 await check("the back link is a real target on a detail page", async () => {
   const m = await detail.$eval(".back", (el) => {
     const r = el.getBoundingClientRect();
