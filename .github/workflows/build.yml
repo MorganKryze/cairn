@@ -95,8 +95,8 @@ jobs:
       # markup that ships, not what happens once someone types, clicks, scrolls
       # or leaves a tab open. Deliberately not the demo stack, so this pulls
       # nothing from a registry and can be a required check. Same three
-      # instances as `just test-browser`: example/, the fixture with more than
-      # seven categories and a header burger, the one with a status page, and
+      # instances as `just test-browser`: example/, the fixture with nine
+      # categories and a header burger, the one with a status page, and
       # the one whose artwork differs between the two themes, none of which
       # example/ has, and the one that guards its external links with a dialog.
       # The two lists are written twice and have to be kept in
