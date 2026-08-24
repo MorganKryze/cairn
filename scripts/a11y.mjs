@@ -1427,6 +1427,88 @@ await check(
     },
   );
 
+  // The glyph hangs in the margin rather than in the row, so the two things
+  // worth pinning are that it appears and that nothing else moves when it
+  // does. It is also off below the breakpoint, where the margin cannot hold it.
+  await check(
+    "the link glyph appears in the margin, moving nothing",
+    async () => {
+      const page = await wp.newPage();
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(MANY);
+      const before = await page.evaluate(() => {
+        const way = [...document.querySelectorAll(".way")][1];
+        const g = way.querySelector(".way-link");
+        const n = way.querySelector(".way-name");
+        return {
+          opacity: +getComputedStyle(g).opacity,
+          name: n.getBoundingClientRect().left,
+          rowLeft: way.getBoundingClientRect().left,
+        };
+      });
+      if (before.opacity !== 0) {
+        throw new Error(
+          `the glyph shows at rest, at opacity ${before.opacity}`,
+        );
+      }
+      await (await page.$$(".way-name a"))[1].hover();
+      await page.waitForTimeout(300);
+      const after = await page.evaluate(() => {
+        const way = [...document.querySelectorAll(".way")][1];
+        const g = way.querySelector(".way-link");
+        const gr = g.getBoundingClientRect();
+        return {
+          opacity: +getComputedStyle(g).opacity,
+          name: way.querySelector(".way-name").getBoundingClientRect().left,
+          glyphRight: gr.right,
+          glyphLeft: gr.left,
+          rowLeft: way.getBoundingClientRect().left,
+        };
+      });
+      await page.close();
+      if (after.opacity < 1) {
+        throw new Error(`hovering left the glyph at opacity ${after.opacity}`);
+      }
+      if (Math.abs(after.name - before.name) > 0.5) {
+        throw new Error(
+          `the heading moved ${(after.name - before.name).toFixed(1)}px when the glyph appeared`,
+        );
+      }
+      if (after.glyphRight > before.rowLeft + 0.5) {
+        throw new Error(
+          "the glyph overlaps the row rather than sitting beside it",
+        );
+      }
+      if (after.glyphLeft < 0) {
+        throw new Error(
+          `the glyph is ${after.glyphLeft.toFixed(1)}px off the left edge`,
+        );
+      }
+    },
+  );
+
+  await check("and stays away where the margin cannot hold it", async () => {
+    const page = await wp.newPage();
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto(MANY);
+    await (await page.$$(".way-name a"))[1].hover();
+    await page.waitForTimeout(300);
+    // The glyph of the heading being hovered, not the first one in the
+    // document: reading that one leaves the check green whatever the rule
+    // does, since nothing is ever hovering it.
+    const o = await page.evaluate(() => {
+      const g = [...document.querySelectorAll(".way")][1].querySelector(
+        ".way-link",
+      );
+      if (!g) throw new Error("no glyph beside the heading at all");
+      return +getComputedStyle(g).opacity;
+    });
+    await page.close();
+    if (o !== 0) {
+      throw new Error(`at 1024px the glyph shows anyway, at opacity ${o}`);
+    }
+  });
+
   await check("the rail's spine runs through its diamonds", async () => {
     const wide = await wp.newPage();
     await wide.setViewportSize({ width: 1440, height: 900 });

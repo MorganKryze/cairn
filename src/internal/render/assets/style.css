@@ -419,6 +419,8 @@ header { padding-block: 1.4rem; }
   align-items: center;
   gap: .7rem;
   margin: 2.6rem 0 1.1rem;
+  /* the containing block for the link glyph, which hangs off the start edge */
+  position: relative;
 }
 .way-mark {
   width: .5rem;
@@ -445,6 +447,33 @@ header { padding-block: 1.4rem; }
 .way-name a {
   color: inherit;
   text-decoration: none;
+}
+/* The affordance a markdown renderer puts beside a heading. It sits in the
+   margin rather than in the row, so nothing shifts when it appears, and it is
+   inside the anchor, so clicking it does what it says. aria-hidden because the
+   heading beside it is that same link and would otherwise be announced twice. */
+.way-link {
+  position: absolute;
+  inset-inline-end: 100%;
+  margin-inline-end: .55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .14s;
+}
+/* Only where the margin can hold it. Below this the content sits against the
+   wrap's own padding and there is nothing to hang it in: measured, 32.5px of
+   margin at 68rem against the 26px the glyph and its gap need, and 24px at
+   64rem. And only where there is a pointer, since a tap has no hover to
+   reveal it with. */
+@media (hover: hover) and (min-width: 69rem) {
+  .way-name a:hover .way-link,
+  .way-name a:focus-visible .way-link {
+    opacity: 1;
+  }
 }
 .way-name a:focus-visible {
   outline: 2px solid var(--accent);
