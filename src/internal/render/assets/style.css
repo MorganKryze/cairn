@@ -1031,6 +1031,16 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   max-width: min(34rem, calc(100vw - 2rem));
   box-shadow: var(--shadow-lift);
 }
+/* A modal dialog takes the interaction but not the scroll: under a wheel or a
+   thumb the page still travels behind it. Keyed on the dialog's own open state
+   rather than on a class leave.js would have to add and remove, so Escape, the
+   backdrop and the stay button all undo it without anyone remembering to.
+   scrollbar-gutter holds the width the scrollbar had, or the page jumps
+   sideways by it as the bar goes. */
+html:has(dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
 .leave::backdrop { background: light-dark(rgba(20, 30, 28, .38), rgba(0, 0, 0, .62)); }
 .leave h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 .6rem; }
 .leave-body { margin: 0 0 1rem; color: var(--muted); }

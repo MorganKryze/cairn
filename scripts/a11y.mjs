@@ -1082,6 +1082,56 @@ await check(
     eq(await dialog.evaluate((d) => d.open), false, "dialog.open after stay");
   });
 
+  // A modal dialog takes the interaction but not the scroll. The control run
+  // with it shut is the point of this one: overflow:hidden stops a wheel and
+  // not scrollTo, so a test that scrolls by script measures nothing, and a
+  // page with no room to scroll passes it with the rule deleted.
+  await check("the page does not travel behind the open dialog", async () => {
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
+    await l.setViewportSize({ width: 1000, height: 400 });
+    const room = await l.evaluate(
+      () => document.documentElement.scrollHeight - innerHeight,
+    );
+    if (room < 40)
+      throw new Error(`only ${room}px of scroll room, this proves nothing`);
+
+    await l.mouse.move(500, 200);
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    const control = await l.evaluate(() => scrollY);
+    if (control === 0)
+      throw new Error("the wheel moved nothing with the dialog shut");
+
+    await l.evaluate(() => {
+      scrollTo(0, 0);
+      document.querySelector("a[data-leave]").click();
+    });
+    await l.waitForTimeout(350);
+    eq(
+      await l.locator("#leave").evaluate((d) => d.open),
+      true,
+      "the dialog opened",
+    );
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    const whileOpen = await l.evaluate(() => scrollY);
+    if (whileOpen !== 0) {
+      throw new Error(
+        `the page travelled ${whileOpen}px behind the open dialog`,
+      );
+    }
+
+    await l.evaluate(() => document.querySelector("#leave").close());
+    await l.waitForTimeout(300);
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    if ((await l.evaluate(() => scrollY)) === 0) {
+      throw new Error("closing the dialog left the page stuck");
+    }
+    await l.setViewportSize(PHONE);
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
+  });
+
   await check("the detail page carries the same guard", async () => {
     await l.goto(new URL("mail/", LEAVE).href, { waitUntil: "networkidle" });
     await l.locator("a.btn[data-leave]").click();
