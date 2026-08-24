@@ -1,13 +1,27 @@
 version: 2
+
+# cooldown holds a new version back for a week before it is ever proposed,
+# which is the window a compromised release is usually pulled in. It applies
+# to version updates only and never to a security update, so a real fix still
+# arrives the day it is published. That delay is what makes automerge.yml
+# defensible: nothing lands the day it is cut.
+#
+# github-actions and docker take default-days only; the per-semver variants
+# are gomod's.
 updates:
   - package-ecosystem: gomod
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     # CodeQL refuses a workflow whose codeql-action steps sit on different
     # versions, and init and analyze are two steps of the same action.
     # Ungrouped, Dependabot opens one pull request per step, and neither can
@@ -16,7 +30,10 @@ updates:
       codeql-action:
         patterns:
           - "github/codeql-action*"
+
   - package-ecosystem: docker
     directory: /docker
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
