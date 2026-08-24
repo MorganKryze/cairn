@@ -618,6 +618,43 @@ const stillPhone = await browser.newContext({
 const sm = await stillPhone.newPage();
 await sm.goto(MANY);
 
+// The chip block has to come after the rules it overrides. Placed before them
+// it lost padding-inline to the rail's `padding: .28rem 0` at equal
+// specificity, and every short category came out a 34px circle with the word
+// against its edges. Nothing else noticed: the row was still one line and
+// still scrolled, which is all the other checks were looking at.
+await check("a chip is a chip and not a squeezed circle", async () => {
+  for (const w of [320, 390, 970]) {
+    await sm.setViewportSize({ width: w, height: 780 });
+    const r = await sm.evaluate(() =>
+      [...document.querySelectorAll(".toc a")]
+        .filter((a) => a.getClientRects().length)
+        .map((a) => {
+          const cs = getComputedStyle(a);
+          const b = a.getBoundingClientRect();
+          return {
+            t: a.textContent.trim(),
+            pad: parseFloat(cs.paddingInlineStart),
+            w: b.width,
+            h: b.height,
+          };
+        }),
+    );
+    if (!r.length) throw new Error(`no chip painted at ${w}px`);
+    for (const c of r) {
+      if (c.pad < 10) {
+        throw new Error(`"${c.t}" has ${c.pad}px of side padding at ${w}px`);
+      }
+      if (c.w < c.h) {
+        throw new Error(
+          `"${c.t}" is ${Math.round(c.w)}x${Math.round(c.h)} at ${w}px, taller than it is wide`,
+        );
+      }
+    }
+  }
+  await sm.setViewportSize(PHONE);
+});
+
 await check(
   "the trail is one row that scrolls, never a wrapped block",
   async () => {
