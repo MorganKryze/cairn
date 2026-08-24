@@ -19,11 +19,11 @@ numbers, count there.
 
 **Does it need JavaScript?**
 No. Pages are fully server-rendered; small scripts add the search box, the
-theme toggle, the welcome note's dismiss button and the highlight that follows
-you down the category trail. Without them the directory is all still there,
-every category, every card, every link, in the system's theme. On a phone the
-trail stays a row of chips instead of folding into the compact jump-to select,
-which is a control only a script can drive.
+theme toggle, the welcome note's dismiss button and the mark that follows you
+down the category trail in the margin. Without them the directory is all still
+there, every category, every card, every link, in the system's theme. The
+category trail is a row of links at every width below that margin, so a phone
+keeps it in full with scripting off.
 
 **Can I put it behind authentication?**
 You can (any proxy auth works: Authelia, Tinyauth, basic auth), but cairn is
@@ -48,6 +48,21 @@ Headings derive from the `category` id unless you name them in
 One image: 4.3 MB to pull, about 10 MB unpacked, nearly all of that the static
 binary. One process, a few MB of RAM. `FROM scratch`, non-root, no shell
 inside.
+
+**Why does my browser console show CSP errors on cairn's pages?**
+Your extensions, and the policy doing what it is for. cairn serves exactly one
+inline script and one inline style per page, and the two hashes in the
+`Content-Security-Policy` header are theirs; everything else is an external
+file under `/static/`. Read the file each message names. If it is
+`autoconsent.js`, `content.js`, `utils.js` or a filename that is just a UUID,
+something outside the page tried to inject code into it and was refused.
+Firefox's own cookie-banner blocker is one of those, and it has nothing to
+block here. Letting them through would mean opening the policy to any script,
+which is the thing it exists to prevent. Nothing of cairn's is ever blocked, and it
+shows: that inline script is the one that applies a saved theme before the
+first paint and hides an already-dismissed welcome note. Refused, a visitor who
+picked the theme opposite their system would see the wrong one until the page
+finished loading, and a dismissed note would flash back.
 
 **Can visitors switch language permanently?**
 Yes: the header switcher sets a one-year cookie and `/` honors it from

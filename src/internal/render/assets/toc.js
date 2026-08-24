@@ -10,8 +10,10 @@
 
   const spy = () => {
     const visible = sections.filter(s => !s.hidden);
-    // the last section whose top has crossed, or the final one at page bottom
-    let active = visible[0];
+    // Nothing until a section has actually crossed: at the top of the page the
+    // reader is in the tagline and the note, not in the first category, and
+    // marking it there says they are somewhere they are not.
+    let active = null;
     for (const s of visible) {
       if (s.getBoundingClientRect().top <= innerHeight * 0.4) active = s;
     }

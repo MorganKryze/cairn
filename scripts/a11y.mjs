@@ -608,29 +608,153 @@ for (const width of [390, 320]) {
   });
 }
 
-// The jump-to select is painted only at phone width.
+// One control below the rail, at every width and every category count. It
+// used to split at seven into a wrapping chip row and a jump-to select, with
+// the swap gated on data-js because nav.js was the select's whole behaviour.
 const stillPhone = await browser.newContext({
   viewport: PHONE,
   reducedMotion: "reduce",
 });
 const sm = await stillPhone.newPage();
 await sm.goto(MANY);
-await check("the mobile jump-to select clears 3:1 too", async () => {
-  atLeast3(await boundary(sm, ".toc-select"), "the jump-to select");
+
+// The chip block has to come after the rules it overrides. Placed before them
+// it lost padding-inline to the rail's `padding: .28rem 0` at equal
+// specificity, and every short category came out a 34px circle with the word
+// against its edges. Nothing else noticed: the row was still one line and
+// still scrolled, which is all the other checks were looking at.
+await check("a chip is a chip and not a squeezed circle", async () => {
+  for (const w of [320, 390, 970]) {
+    await sm.setViewportSize({ width: w, height: 780 });
+    const r = await sm.evaluate(() =>
+      [...document.querySelectorAll(".toc a")]
+        .filter((a) => a.getClientRects().length)
+        .map((a) => {
+          const cs = getComputedStyle(a);
+          const b = a.getBoundingClientRect();
+          return {
+            t: a.textContent.trim(),
+            pad: parseFloat(cs.paddingInlineStart),
+            w: b.width,
+            h: b.height,
+          };
+        }),
+    );
+    if (!r.length) throw new Error(`no chip painted at ${w}px`);
+    for (const c of r) {
+      if (c.pad < 10) {
+        throw new Error(`"${c.t}" has ${c.pad}px of side padding at ${w}px`);
+      }
+      if (c.w < c.h) {
+        throw new Error(
+          `"${c.t}" is ${Math.round(c.w)}x${Math.round(c.h)} at ${w}px, taller than it is wide`,
+        );
+      }
+    }
+  }
+  await sm.setViewportSize(PHONE);
 });
 
 await check(
-  "a phone with JavaScript shows the jump-to select, not the chips",
+  "the trail is one row that scrolls, never a wrapped block",
   async () => {
-    eq((await painted(m, ".toc-select")).length, 1, "painted jump selects");
-    eq((await painted(m, ".toc.many a")).length, 0, "painted trail chips");
+    for (const w of [320, 390, 768, 1024]) {
+      await sm.setViewportSize({ width: w, height: 780 });
+      const r = await sm.evaluate(() => {
+        const toc = document.querySelector(".toc");
+        if (!toc || !toc.getClientRects().length) return null;
+        const ul = toc.querySelector("ul");
+        const links = [...ul.querySelectorAll("a")];
+        return {
+          rows: new Set(
+            links.map((a) => Math.round(a.getBoundingClientRect().top)),
+          ).size,
+          links: links.length,
+          selects: document.querySelectorAll(".toc-select, .toc-jump").length,
+        };
+      });
+      if (!r) throw new Error(`no category navigation painted at ${w}px`);
+      if (r.rows !== 1)
+        throw new Error(`the trail wraps onto ${r.rows} rows at ${w}px`);
+      if (r.selects) throw new Error(`a jump-to select came back at ${w}px`);
+      if (r.links < 9)
+        throw new Error(`${r.links} categories listed at ${w}px, want all 9`);
+    }
+    await sm.setViewportSize(PHONE);
   },
 );
 
-// The swap to a select is gated on JavaScript because nav.js is the select's
-// entire behaviour. Ungated, a phone with scripting off got no category
-// navigation at all, on the viewport where a nine-category list is least
-// scrollable.
+// A chip row is a set of buttons, so none of them is ever the selected one.
+// The rail above 88rem is what tracks the reader; a chip lighting up under a
+// thumb reported a place the reader had not chosen to be.
+await check("no chip is ever painted as the current one", async () => {
+  for (const w of [320, 390, 970]) {
+    await sm.setViewportSize({ width: w, height: 780 });
+    const r = await sm.evaluate(async () => {
+      const cats = [...document.querySelectorAll(".cat")];
+      scrollTo(0, cats[2].getBoundingClientRect().top + scrollY - 80);
+      await new Promise((r) => setTimeout(r, 600));
+      const marked = document.querySelector(".toc a[aria-current]");
+      if (!marked) return { marked: null };
+      const plain = [...document.querySelectorAll(".toc a")].find(
+        (a) => !a.hasAttribute("aria-current"),
+      );
+      const look = (el) => {
+        const c = getComputedStyle(el);
+        return `${c.color}|${c.backgroundColor}|${c.borderColor}|${c.fontWeight}`;
+      };
+      return {
+        marked: marked.textContent.trim(),
+        same: look(marked) === look(plain),
+        a: look(marked),
+        b: look(plain),
+      };
+    });
+    if (r.marked === null) continue; // nothing marked at all is also fine
+    if (!r.same) {
+      throw new Error(
+        `at ${w}px the chip "${r.marked}" is painted differently:\n        ${r.a}\n        against ${r.b}`,
+      );
+    }
+  }
+  await sm.setViewportSize(PHONE);
+});
+
+// The rail is the other half of that rule: it does track the reader, since it
+// is a trail down the margin rather than a row of buttons.
+await check("the rail above 88rem still says where the reader is", async () => {
+  const wide = await stillPhone.newPage();
+  await wide.setViewportSize({ width: 1500, height: 900 });
+  await wide.goto(MANY);
+  const r = await wide.evaluate(async () => {
+    const cats = [...document.querySelectorAll(".cat")];
+    scrollTo(0, cats[2].getBoundingClientRect().top + scrollY - 80);
+    await new Promise((r) => setTimeout(r, 600));
+    const a = document.querySelector(".toc a[aria-current]");
+    if (!a) return null;
+    const mark = a.querySelector(".toc-mark");
+    return {
+      text: a.textContent.trim(),
+      weight: getComputedStyle(a).fontWeight,
+      dot: getComputedStyle(mark).backgroundColor,
+      plainDot: getComputedStyle(
+        [...document.querySelectorAll(".toc a")]
+          .find((x) => !x.hasAttribute("aria-current"))
+          .querySelector(".toc-mark"),
+      ).backgroundColor,
+    };
+  });
+  await wide.close();
+  if (!r)
+    throw new Error("the rail marks nothing after scrolling into a section");
+  if (r.dot === r.plainDot) {
+    throw new Error(
+      `the rail's current diamond is the same colour as the rest: ${r.dot}`,
+    );
+  }
+});
+
+// The trail is plain markup now, so scripting off costs the chips nothing.
 const dumb = await browser.newContext({
   viewport: PHONE,
   javaScriptEnabled: false,
@@ -641,12 +765,9 @@ await nojs.goto(MANY);
 await check(
   "a phone without JavaScript still paints category navigation",
   async () => {
-    const chips = await painted(nojs, ".toc.many a");
+    const chips = await painted(nojs, ".toc a");
     if (chips.length === 0) {
-      const inert = (await painted(nojs, ".toc-select")).length;
-      throw new Error(
-        `no category link is painted, and ${inert} jump select(s) are, which nothing can drive`,
-      );
+      throw new Error("no category link is painted with scripting off");
     }
   },
 );
@@ -959,6 +1080,56 @@ await check(
     await guarded.click();
     await l.locator(".leave-stay").click();
     eq(await dialog.evaluate((d) => d.open), false, "dialog.open after stay");
+  });
+
+  // A modal dialog takes the interaction but not the scroll. The control run
+  // with it shut is the point of this one: overflow:hidden stops a wheel and
+  // not scrollTo, so a test that scrolls by script measures nothing, and a
+  // page with no room to scroll passes it with the rule deleted.
+  await check("the page does not travel behind the open dialog", async () => {
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
+    await l.setViewportSize({ width: 1000, height: 400 });
+    const room = await l.evaluate(
+      () => document.documentElement.scrollHeight - innerHeight,
+    );
+    if (room < 40)
+      throw new Error(`only ${room}px of scroll room, this proves nothing`);
+
+    await l.mouse.move(500, 200);
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    const control = await l.evaluate(() => scrollY);
+    if (control === 0)
+      throw new Error("the wheel moved nothing with the dialog shut");
+
+    await l.evaluate(() => {
+      scrollTo(0, 0);
+      document.querySelector("a[data-leave]").click();
+    });
+    await l.waitForTimeout(350);
+    eq(
+      await l.locator("#leave").evaluate((d) => d.open),
+      true,
+      "the dialog opened",
+    );
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    const whileOpen = await l.evaluate(() => scrollY);
+    if (whileOpen !== 0) {
+      throw new Error(
+        `the page travelled ${whileOpen}px behind the open dialog`,
+      );
+    }
+
+    await l.evaluate(() => document.querySelector("#leave").close());
+    await l.waitForTimeout(300);
+    await l.mouse.wheel(0, 200);
+    await l.waitForTimeout(250);
+    if ((await l.evaluate(() => scrollY)) === 0) {
+      throw new Error("closing the dialog left the page stuck");
+    }
+    await l.setViewportSize(PHONE);
+    await l.goto(LEAVE, { waitUntil: "networkidle" });
   });
 
   await check("the detail page carries the same guard", async () => {
