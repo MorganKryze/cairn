@@ -370,38 +370,79 @@ await check(
 );
 
 // The way back out of a detail page: the same two duties as the card glyph.
-// Every outlined control here moves its fill on hover, since 1.16.1 measured
-// that tinting a border alone reads as nothing: the pointer is already a hand
-// over any link. The back chip was the one left doing only that.
+// One hover rule, and the point is that it is one: an outlined control fills
+// with --accent-ink wherever it sits. The status pill used to do this inside a
+// card foot and only tint its border outside one, so the same pill behaved
+// differently between the home page and a detail page.
 await check(
-  "the back chip fills on hover, like the other outlined ones",
+  "every outlined control fills with the same ink on hover",
   async () => {
-    for (const scheme of ["light", "dark"]) {
+    const resolve = (css) => {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 1;
+      const x = cv.getContext("2d");
+      x.fillStyle = css;
+      x.fillRect(0, 0, 1, 1);
+      return [...x.getImageData(0, 0, 1, 1).data].slice(0, 3).join(",");
+    };
+    const seen = [];
+    const targets = [
+      [new URL("pdf/", SITE).href, ".back", null],
+      [SITE, ".card-more", null],
+      [STATUS, "a.status-pill", null],
+      [LEAVE, ".leave-stay", "open"],
+      [LEAVE, ".leave-copy", "open"],
+    ];
+    for (const [url, sel, setup] of targets) {
       const page = await desk.newPage();
-      await page.emulateMedia({ colorScheme: scheme });
-      await page.goto(new URL("pdf/", SITE).href, { waitUntil: "networkidle" });
-      const fill = () =>
-        page.evaluate(
-          () =>
-            getComputedStyle(document.querySelector(".back")).backgroundColor,
+      await page.goto(url, { waitUntil: "networkidle" });
+      if (setup === "open") {
+        await page.evaluate(() =>
+          document.querySelector("a[data-leave]").click(),
         );
-      const rest = await fill();
-      await page.locator(".back").hover();
+        await page.waitForTimeout(350);
+      }
+      const el = await page.$(sel);
+      if (!el) {
+        await page.close();
+        throw new Error(`${sel} is not on ${url}`);
+      }
+      await el.hover();
       await page.waitForTimeout(300);
-      const hovered = await fill();
-      const pageBg = await page.evaluate(
-        () => getComputedStyle(document.body).backgroundColor,
+      const fill = await page.evaluate(
+        ([s, r]) =>
+          eval(`(${r})`)(
+            getComputedStyle(document.querySelector(s)).backgroundColor,
+          ),
+        [sel, resolve.toString()],
       );
       await page.close();
-      if (rest === hovered) {
-        throw new Error(`in ${scheme} the fill stays ${rest} on hover`);
-      }
-      // and it has to leave the page behind rather than melt into it
-      if (hovered === pageBg) {
-        throw new Error(
-          `in ${scheme} the hovered chip is the page colour, ${pageBg}`,
-        );
-      }
+      seen.push([sel, fill]);
+    }
+    const first = seen[0][1];
+    const odd = seen.filter(([, f]) => f !== first);
+    if (odd.length) {
+      throw new Error(
+        `these do not share the hover fill rgb(${first}):\n        ` +
+          odd.map(([s, f]) => `${s} is rgb(${f})`).join("\n        "),
+      );
+    }
+    // and it has to be a real fill rather than every one of them staying put
+    const rest = await (async () => {
+      const page = await desk.newPage();
+      await page.goto(new URL("pdf/", SITE).href, { waitUntil: "networkidle" });
+      const c = await page.evaluate(
+        ([r]) =>
+          eval(`(${r})`)(
+            getComputedStyle(document.querySelector(".back")).backgroundColor,
+          ),
+        [resolve.toString()],
+      );
+      await page.close();
+      return c;
+    })();
+    if (rest === first) {
+      throw new Error(`the hover fill rgb(${first}) is the resting colour too`);
     }
   },
 );
