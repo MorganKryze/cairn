@@ -68,6 +68,26 @@
   --maxw: 66rem;
   /* the sticky header on narrow screens; .skip has to paint one above it */
   --z-header: 40;
+  /* How far a waypoint diamond drops from the centre of its line box, as a
+     fraction of the label's font size.
+
+     A line box carries descender space no lowercase letter reaches, so a mark
+     centred in it reads high beside a word that is mostly lowercase. Dropping
+     it all the way onto the middle of the lowercase then reads low, because
+     the capital and the ascenders carry mass above that band with nothing
+     under it to answer. This lands halfway between the two centres.
+
+     Measured against a baseline the layout reports, not one computed from the
+     font's own ascent: those differ by about 0.45px here, which is most of
+     what is being corrected. A zero-height inline-block sits on the baseline
+     and 1ex is the x-height, so both come from the browser. Read that way the
+     rail's sans and the heading's Fraunces want the same fraction, which is
+     why one number serves both. */
+  --mark-drop: .0356;
+  --way-font: 1.5rem;
+  /* The rail's diamond, named because the spine has to be centred on it and a
+     second literal would drift from the first. */
+  --toc-mark: .42rem;
 }
 
 :root[data-theme="light"] { color-scheme: light; }
@@ -189,7 +209,8 @@ header { padding-block: 1.4rem; }
 :root[data-theme="dark"] .theme-toggle .sun { display: block; }
 
 .langs { display: flex; gap: .2rem; }
-.langs a {
+.langs a,
+.langs [aria-current] {
   padding: .3rem .6rem;
   border: 1px solid transparent;
   border-radius: .5rem;
@@ -199,7 +220,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
   color: var(--muted);
 }
-.langs a[aria-current] {
+.langs [aria-current] {
   color: var(--fg);
   background: var(--card);
   border-color: var(--border);
@@ -243,7 +264,8 @@ header { padding-block: 1.4rem; }
   box-shadow: var(--shadow-lift);
   z-index: 10;
 }
-.langs-menu nav a {
+.langs-menu nav a,
+.langs-menu nav [aria-current] {
   padding: .35rem .6rem;
   border-radius: .45rem;
   font-size: .8rem;
@@ -252,7 +274,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
   color: var(--muted);
 }
-.langs-menu nav a[aria-current] { color: var(--fg); background: var(--faint); }
+.langs-menu nav [aria-current] { color: var(--fg); background: var(--faint); }
 .langs-menu nav a:hover { color: var(--fg); background: var(--faint); }
 .langs-menu nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -397,6 +419,8 @@ header { padding-block: 1.4rem; }
   align-items: center;
   gap: .7rem;
   margin: 2.6rem 0 1.1rem;
+  /* the containing block for the link glyph, which hangs off the start edge */
+  position: relative;
 }
 .way-mark {
   width: .5rem;
@@ -405,14 +429,61 @@ header { padding-block: 1.4rem; }
   border-radius: 2px;
   background: var(--accent);
   transform: rotate(45deg);
+  position: relative;
+  top: calc(var(--way-font) * var(--mark-drop));
 }
 .way-name {
   margin: 0;
   font-family: var(--font-display);
   font-variation-settings: "opsz" 60;
   font-weight: 540;
-  font-size: 1.5rem;
+  font-size: var(--way-font);
   letter-spacing: -.012em;
+}
+/* The whole heading is the anchor, the way its entry in the rail is. It takes
+   neither colour nor underline: a heading that changed weight or colour on
+   hover would read as a different heading. The pointer says it is a target,
+   and the focus ring says so to a keyboard. */
+.way-name a {
+  color: inherit;
+  text-decoration: none;
+}
+/* The affordance a markdown renderer puts beside a heading. It sits in the
+   margin rather than in the row, so nothing shifts when it appears, and it is
+   inside the anchor, so clicking it does what it says. aria-hidden because the
+   heading beside it is that same link and would otherwise be announced twice. */
+.way-link {
+  position: absolute;
+  inset-inline-end: 100%;
+  margin-inline-end: .55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.05rem;
+  height: 1.05rem;
+  /* --muted held back to .65 rather than --border at full strength. Tried at
+     the rule's weight first, which is tidier on paper since the rule closes
+     the same row, and it read as a smudge at real size: a glyph is line work
+     with gaps in it, not a solid 1px bar, so the same ink does not carry the
+     same distance. */
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .14s;
+}
+/* Only where the margin can hold it. Below this the content sits against the
+   wrap's own padding and there is nothing to hang it in: measured, 32.5px of
+   margin at 68rem against the 26px the glyph and its gap need, and 24px at
+   64rem. And only where there is a pointer, since a tap has no hover to
+   reveal it with. */
+@media (hover: hover) and (min-width: 69rem) {
+  .way-name a:hover .way-link,
+  .way-name a:focus-visible .way-link {
+    opacity: .65;
+  }
+}
+.way-name a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 .way-rule {
   flex: 1;
@@ -444,7 +515,10 @@ header { padding-block: 1.4rem; }
 .toc ul::before {
   content: "";
   position: absolute;
-  inset-inline-start: .2rem;
+  /* Centred on the diamonds rather than set near them: half the mark, less
+     half the line's own width. Written as .2rem it drew 0.34px to their right,
+     which is invisible until something moves and then is not. */
+  inset-inline-start: calc(var(--toc-mark) / 2 - .5px);
   top: .8rem;
   bottom: .8rem;
   width: 1px;
@@ -461,14 +535,16 @@ header { padding-block: 1.4rem; }
   transition: color .16s;
 }
 .toc-mark {
-  width: .42rem;
-  height: .42rem;
+  width: var(--toc-mark);
+  height: var(--toc-mark);
   flex: none;
   border-radius: 1.5px;
   background: var(--border);
   transform: rotate(45deg);
   transition: background .16s;
   position: relative;
+  /* em here: the rail's mark does inherit its label's size. */
+  top: calc(1em * var(--mark-drop));
 }
 .toc-name {
   overflow: hidden;
@@ -481,7 +557,19 @@ header { padding-block: 1.4rem; }
 .toc a[aria-current] .toc-mark { background: var(--accent); }
 .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
-.cat { scroll-margin-top: 1.2rem; }
+/* On the heading and not on .cat: every #cat- link, the rail's and the jump
+   select's and now the heading's own, targets the h2, so the section's margin
+   was never the one the browser read. 2.6rem is the gap above a heading, and
+   anything past it brings the previous section's last card into view; this
+   keeps 9px of that gap in hand.
+
+   One value, phones included. The 4.5rem a narrow screen used to carry was
+   meant to clear the sticky header, but it sat on .cat and so never applied,
+   and it cannot do that job anyway: the header is 132px, which is past the gap
+   by a long way. nav.js hides it on the way down, which is the direction a
+   trail link travels, so a jump downward lands clear of it. A jump upward
+   brings the header back over the heading, and that is not new. */
+.way-name { scroll-margin-top: 2rem; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
@@ -1255,7 +1343,6 @@ footer {
     transition: transform .3s ease;
   }
   header.header-hidden { transform: translateY(-100%); }
-  .cat { scroll-margin-top: 4.5rem; }
 
   /* the header links fold behind a burger, the search stays beside it, and the
      desktop divider goes so the row sits centered */
@@ -1309,7 +1396,8 @@ footer {
 
   /* finger-sized controls (44px) */
   .theme-toggle { width: 2.75rem; height: 2.75rem; }
-  .langs a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+  .langs a,
+  .langs [aria-current] { display: inline-flex; align-items: center; min-height: 2.75rem; }
   .search-box input { padding-block: .55rem; }
   /* 44px for the thumb, and still a disc: the fold caps the width, so raising
      the height alone left a 30 by 44 oval with the cross 3px from the clip. */

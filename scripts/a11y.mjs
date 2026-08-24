@@ -1362,6 +1362,302 @@ await check(
   await st.close();
 }
 
+// ---- A12: the trail, the headings that answer it, and where a jump lands ----
+
+{
+  const wp = await browser.newContext();
+
+  // Halfway between the middle of the lowercase and the middle of the
+  // capitals. Centred on the line box a mark reads high, since the box carries
+  // descender space no lowercase letter reaches; dropped onto the lowercase it
+  // reads low, since the capital and the ascenders have nothing under them to
+  // answer. Both references come from the layout and not from the font's own
+  // tables: a zero-height inline-block sits on the baseline and 1ex is the
+  // x-height. Computing the baseline from the font's ascent instead put it
+  // 0.45px out, which is most of what is being corrected here.
+  const offMark = (page, markSel, nameSel) =>
+    page.evaluate(
+      ([m, n]) => {
+        const mark = document.querySelector(m),
+          name = document.querySelector(n);
+        if (!mark || !name || !mark.getClientRects().length) return null;
+        const ex = document.createElement("span");
+        ex.style.cssText = "display:inline-block;width:0;height:1ex";
+        const base = document.createElement("span");
+        base.style.cssText = "display:inline-block;width:0;height:0";
+        name.appendChild(ex);
+        name.appendChild(base);
+        const xh = ex.getBoundingClientRect().height;
+        const baseline = base.getBoundingClientRect().bottom;
+        ex.remove();
+        base.remove();
+        const cs = getComputedStyle(name);
+        const cv = document.createElement("canvas").getContext("2d");
+        cv.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const cap = cv.measureText("H").actualBoundingBoxAscent;
+        const mr = mark.getBoundingClientRect();
+        const lower = baseline - xh / 2;
+        const caps = baseline - cap / 2;
+        return mr.top + mr.height / 2 - (lower + caps) / 2;
+      },
+      [markSel, nameSel],
+    );
+
+  await check(
+    "a waypoint diamond sits between the lowercase and the capitals",
+    async () => {
+      const wide = await wp.newPage();
+      await wide.setViewportSize({ width: 1440, height: 900 });
+      await wide.goto(MANY);
+      const rail = await offMark(wide, ".toc-mark", ".toc-name");
+      const heading = await offMark(wide, ".way-mark", ".way-name");
+      await wide.close();
+      if (rail === null) throw new Error("the rail is not painted at 1440px");
+      if (heading === null) throw new Error("no diamond beside a heading");
+      for (const [what, off] of [
+        ["the rail's", rail],
+        ["a heading's", heading],
+      ]) {
+        if (Math.abs(off) > 0.5) {
+          throw new Error(
+            `${what} diamond is ${off.toFixed(2)}px off that midpoint`,
+          );
+        }
+      }
+    },
+  );
+
+  // The glyph hangs in the margin rather than in the row, so the two things
+  // worth pinning are that it appears and that nothing else moves when it
+  // does. It is also off below the breakpoint, where the margin cannot hold it.
+  await check(
+    "the link glyph appears in the margin, moving nothing",
+    async () => {
+      const page = await wp.newPage();
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(MANY);
+      const before = await page.evaluate(() => {
+        const way = [...document.querySelectorAll(".way")][1];
+        const g = way.querySelector(".way-link");
+        const n = way.querySelector(".way-name");
+        return {
+          opacity: +getComputedStyle(g).opacity,
+          name: n.getBoundingClientRect().left,
+          rowLeft: way.getBoundingClientRect().left,
+        };
+      });
+      if (before.opacity !== 0) {
+        throw new Error(
+          `the glyph shows at rest, at opacity ${before.opacity}`,
+        );
+      }
+      await (await page.$$(".way-name a"))[1].hover();
+      await page.waitForTimeout(300);
+      const after = await page.evaluate(() => {
+        const way = [...document.querySelectorAll(".way")][1];
+        const g = way.querySelector(".way-link");
+        const gr = g.getBoundingClientRect();
+        return {
+          opacity: +getComputedStyle(g).opacity,
+          name: way.querySelector(".way-name").getBoundingClientRect().left,
+          glyphRight: gr.right,
+          glyphLeft: gr.left,
+          rowLeft: way.getBoundingClientRect().left,
+        };
+      });
+      await page.close();
+      // Visible, not opaque: it is deliberately held back, so this is a floor
+      // for "you can see it" and not the value the rule happens to carry.
+      if (after.opacity < 0.5) {
+        throw new Error(`hovering left the glyph at opacity ${after.opacity}`);
+      }
+      if (Math.abs(after.name - before.name) > 0.5) {
+        throw new Error(
+          `the heading moved ${(after.name - before.name).toFixed(1)}px when the glyph appeared`,
+        );
+      }
+      if (after.glyphRight > before.rowLeft + 0.5) {
+        throw new Error(
+          "the glyph overlaps the row rather than sitting beside it",
+        );
+      }
+      if (after.glyphLeft < 0) {
+        throw new Error(
+          `the glyph is ${after.glyphLeft.toFixed(1)}px off the left edge`,
+        );
+      }
+    },
+  );
+
+  await check("and stays away where the margin cannot hold it", async () => {
+    const page = await wp.newPage();
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto(MANY);
+    await (await page.$$(".way-name a"))[1].hover();
+    await page.waitForTimeout(300);
+    // The glyph of the heading being hovered, not the first one in the
+    // document: reading that one leaves the check green whatever the rule
+    // does, since nothing is ever hovering it.
+    const o = await page.evaluate(() => {
+      const g = [...document.querySelectorAll(".way")][1].querySelector(
+        ".way-link",
+      );
+      if (!g) throw new Error("no glyph beside the heading at all");
+      return +getComputedStyle(g).opacity;
+    });
+    await page.close();
+    if (o !== 0) {
+      throw new Error(`at 1024px the glyph shows anyway, at opacity ${o}`);
+    }
+  });
+
+  await check("the rail's spine runs through its diamonds", async () => {
+    const wide = await wp.newPage();
+    await wide.setViewportSize({ width: 1440, height: 900 });
+    await wide.goto(MANY);
+    const offs = await wide.evaluate(() => {
+      const ul = document.querySelector(".toc ul");
+      if (!ul || !ul.getClientRects().length) return null;
+      const cs = getComputedStyle(ul, "::before");
+      const start = parseFloat(cs.insetInlineStart || cs.left);
+      const centre =
+        ul.getBoundingClientRect().left + start + parseFloat(cs.width) / 2;
+      return [...document.querySelectorAll(".toc-mark")].map((m) => {
+        const r = m.getBoundingClientRect();
+        return r.left + r.width / 2 - centre;
+      });
+    });
+    await wide.close();
+    if (!offs) throw new Error("the rail is not painted at 1440px");
+    if (!offs.length) throw new Error("the rail carries no diamonds");
+    const worst = offs.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a));
+    if (Math.abs(worst) > 0.25) {
+      throw new Error(
+        `a diamond sits ${worst.toFixed(2)}px ${worst < 0 ? "left" : "right"} of the spine`,
+      );
+    }
+  });
+
+  await check("a category heading is a link to its own anchor", async () => {
+    const page = await wp.newPage();
+    await page.goto(MANY);
+    const pairs = await page.$$eval(".way-name", (hs) =>
+      hs.map((h) => ({
+        id: h.id,
+        href: h.querySelector("a")?.getAttribute("href"),
+      })),
+    );
+    await page.close();
+    if (!pairs.length) throw new Error("no category heading on the page");
+    for (const { id, href } of pairs) {
+      if (href !== `#${id}`) {
+        throw new Error(`heading ${id} links to ${href} rather than to itself`);
+      }
+    }
+  });
+
+  // The gap above a heading is 2.6rem, so a margin past it pulls the previous
+  // section's last card back into view. Both edges are asserted: a margin of
+  // zero would satisfy the second on its own.
+  for (const [label, size] of [
+    ["a wide screen", { width: 1440, height: 900 }],
+    ["a phone", PHONE],
+  ]) {
+    await check(
+      `clicking a heading lands it clear of the top on ${label}`,
+      async () => {
+        const page = await wp.newPage();
+        await page.setViewportSize(size);
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.goto(MANY);
+        const m = await page.evaluate(async () => {
+          const cats = [...document.querySelectorAll(".cat")];
+          const target = cats[2];
+          scrollTo(0, 0);
+          await new Promise((r) => setTimeout(r, 250));
+          target.querySelector(".way-name a").click();
+          await new Promise((r) => setTimeout(r, 700));
+          const prev = [...cats[1].querySelectorAll(".card")].pop();
+          return {
+            hash: location.hash,
+            top: target.querySelector(".way-name").getBoundingClientRect().top,
+            prevBottom: prev.getBoundingClientRect().bottom,
+          };
+        });
+        await page.close();
+        if (m.hash !== "#cat-charlie") {
+          throw new Error(`the click set ${m.hash || "no hash at all"}`);
+        }
+        if (m.top < 24) {
+          throw new Error(
+            `the heading lands ${m.top.toFixed(1)}px from the top, too tight`,
+          );
+        }
+        if (m.prevBottom > 0) {
+          throw new Error(
+            `${m.prevBottom.toFixed(1)}px of the previous section's last card is in view`,
+          );
+        }
+      },
+    );
+  }
+
+  // Reading a language is not an action. The link led back to the page it was
+  // on, and on a site with one language it was the only thing there to click.
+  for (const [label, url] of [
+    ["among several", SITE],
+    ["when it is the only one", MANY],
+  ]) {
+    await check(
+      `the language you are reading is not a control, ${label}`,
+      async () => {
+        const page = await wp.newPage();
+        await page.goto(url);
+        const m = await page.evaluate(() => {
+          const el = document.querySelector(".langs [aria-current]");
+          if (!el) return null;
+          el.focus?.();
+          return {
+            tag: el.tagName.toLowerCase(),
+            href: el.getAttribute("href"),
+            tookFocus: document.activeElement === el,
+            others: document.querySelectorAll(".langs a[href]").length,
+          };
+        });
+        await page.close();
+        if (!m) throw new Error("nothing in the switcher is marked as current");
+        if (m.tag === "a" || m.href !== null) {
+          throw new Error(
+            `the current language is still a <${m.tag} href=${m.href}>`,
+          );
+        }
+        if (m.tookFocus)
+          throw new Error("the current language still takes focus");
+      },
+    );
+  }
+
+  await check("every other language is still one click away", async () => {
+    const page = await wp.newPage();
+    await page.goto(SITE);
+    const hrefs = await page.$$eval(".langs a[href]", (as) =>
+      as.map((a) => a.getAttribute("href")),
+    );
+    await page.close();
+    // example/ carries fr and en, so exactly one link is left beside the label
+    if (hrefs.length !== 1) {
+      throw new Error(
+        `expected one switchable language, found ${hrefs.length}`,
+      );
+    }
+    if (!hrefs[0].includes("?choose")) {
+      throw new Error(`${hrefs[0]} does not carry ?choose, so it cannot pin`);
+    }
+  });
+
+  await wp.close();
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);
