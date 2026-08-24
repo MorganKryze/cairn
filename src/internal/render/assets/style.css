@@ -69,13 +69,21 @@
   /* the sticky header on narrow screens; .skip has to paint one above it */
   --z-header: 40;
   /* How far a waypoint diamond drops from the centre of its line box, as a
-     fraction of the label's font size. A line box carries descender space no
-     lowercase letter reaches, so a mark centred in it reads high beside a word
-     that is mostly lowercase. Measured against the x-height centre: 1.5px at
-     the rail's 13px and 2.86px at a heading's 24px. Unitless, because a mark
-     does not inherit the font size of the label it sits beside, so each site
-     multiplies by the size it is aligning to. */
-  --mark-drop: .115;
+     fraction of the label's font size.
+
+     A line box carries descender space no lowercase letter reaches, so a mark
+     centred in it reads high beside a word that is mostly lowercase. Dropping
+     it all the way onto the middle of the lowercase then reads low, because
+     the capital and the ascenders carry mass above that band with nothing
+     under it to answer. This lands halfway between the two centres.
+
+     Measured against a baseline the layout reports, not one computed from the
+     font's own ascent: those differ by about 0.45px here, which is most of
+     what is being corrected. A zero-height inline-block sits on the baseline
+     and 1ex is the x-height, so both come from the browser. Read that way the
+     rail's sans and the heading's Fraunces want the same fraction, which is
+     why one number serves both. */
+  --mark-drop: .0356;
   --way-font: 1.5rem;
 }
 
@@ -495,7 +503,7 @@ header { padding-block: 1.4rem; }
   transform: rotate(45deg);
   transition: background .16s;
   position: relative;
-  /* 1em here: the rail's mark does inherit its label's size. */
+  /* em here: the rail's mark does inherit its label's size. */
   top: calc(1em * var(--mark-drop));
 }
 .toc-name {

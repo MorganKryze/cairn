@@ -1367,40 +1367,50 @@ await check(
 {
   const wp = await browser.newContext();
 
-  // The centre a small mark should sit on beside a word is the middle of its
-  // x-height, not the middle of its line box: a line box carries descender
-  // space that no lowercase letter reaches. Half a pixel is the tolerance, an
-  // order below what the eye caught at 1.5px and 2.86px.
-  const offXCentre = (page, markSel, nameSel) =>
+  // Halfway between the middle of the lowercase and the middle of the
+  // capitals. Centred on the line box a mark reads high, since the box carries
+  // descender space no lowercase letter reaches; dropped onto the lowercase it
+  // reads low, since the capital and the ascenders have nothing under them to
+  // answer. Both references come from the layout and not from the font's own
+  // tables: a zero-height inline-block sits on the baseline and 1ex is the
+  // x-height. Computing the baseline from the font's ascent instead put it
+  // 0.45px out, which is most of what is being corrected here.
+  const offMark = (page, markSel, nameSel) =>
     page.evaluate(
       ([m, n]) => {
         const mark = document.querySelector(m),
           name = document.querySelector(n);
         if (!mark || !name || !mark.getClientRects().length) return null;
-        const mr = mark.getBoundingClientRect(),
-          nr = name.getBoundingClientRect();
+        const ex = document.createElement("span");
+        ex.style.cssText = "display:inline-block;width:0;height:1ex";
+        const base = document.createElement("span");
+        base.style.cssText = "display:inline-block;width:0;height:0";
+        name.appendChild(ex);
+        name.appendChild(base);
+        const xh = ex.getBoundingClientRect().height;
+        const baseline = base.getBoundingClientRect().bottom;
+        ex.remove();
+        base.remove();
         const cs = getComputedStyle(name);
         const cv = document.createElement("canvas").getContext("2d");
         cv.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        const fm = cv.measureText("x");
-        const lead =
-          (nr.height - (fm.fontBoundingBoxAscent + fm.fontBoundingBoxDescent)) /
-          2;
-        const baseline = nr.top + lead + fm.fontBoundingBoxAscent;
-        const xCentre = baseline - fm.actualBoundingBoxAscent / 2;
-        return mr.top + mr.height / 2 - xCentre;
+        const cap = cv.measureText("H").actualBoundingBoxAscent;
+        const mr = mark.getBoundingClientRect();
+        const lower = baseline - xh / 2;
+        const caps = baseline - cap / 2;
+        return mr.top + mr.height / 2 - (lower + caps) / 2;
       },
       [markSel, nameSel],
     );
 
   await check(
-    "a waypoint diamond sits on the x-height of its label",
+    "a waypoint diamond sits between the lowercase and the capitals",
     async () => {
       const wide = await wp.newPage();
       await wide.setViewportSize({ width: 1440, height: 900 });
       await wide.goto(MANY);
-      const rail = await offXCentre(wide, ".toc-mark", ".toc-name");
-      const heading = await offXCentre(wide, ".way-mark", ".way-name");
+      const rail = await offMark(wide, ".toc-mark", ".toc-name");
+      const heading = await offMark(wide, ".way-mark", ".way-name");
       await wide.close();
       if (rail === null) throw new Error("the rail is not painted at 1440px");
       if (heading === null) throw new Error("no diamond beside a heading");
@@ -1410,7 +1420,7 @@ await check(
       ]) {
         if (Math.abs(off) > 0.5) {
           throw new Error(
-            `${what} diamond is ${off.toFixed(2)}px off the x-height centre`,
+            `${what} diamond is ${off.toFixed(2)}px off that midpoint`,
           );
         }
       }
