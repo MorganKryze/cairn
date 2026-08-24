@@ -85,7 +85,7 @@ jobs:
       # step is exactly where the image job of the build on main died after
       # 1.13.2 shipped. Same mirror the base image and the demo already read
       # through, and the same object behind it, checked rather than assumed.
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
         with:
           # Pinned like every action above. This one executes during the
           # build with the context in reach, and it was the last moving
