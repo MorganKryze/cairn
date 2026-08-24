@@ -69,7 +69,7 @@ account or a manual, and boring for you to operate.
   themes, a skip link, named landmarks, search results announced through a
   live region, a theme toggle that says which way it is set, and
   right-to-left languages laid out the right way round. The controls a
-  visitor can operate, the search box and the phone's jump-to select, carry a
+  visitor can operate, the search box and the leaving dialog's buttons, carry a
   boundary that clears 3:1, remeasured in a real browser on every pull
   request. Tested with a browser, never audited as a whole, and not yet with a
   real screen reader: if you use one,

@@ -98,8 +98,8 @@ The stylesheet is built on custom properties; override those first:
 Two border colors, because they answer to different rules. `--border` draws
 decoration: the outline of a card, a rule, the trail's spine, all things the
 page would still be legible without. `--ui-border` draws the edge of something
-a visitor operates, the search box on the home page and the jump-to select a
-phone gets, where nothing else says where to type or tap. That edge is held at
+a visitor operates, the search box on the home page and the two buttons in the
+leaving dialog, where nothing else says where to type or tap. That edge is held at
 3:1 against the page and against its own fill, which is the floor
 [WCAG asks for a control's boundary](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html);
 if you override it, keep it there.
