@@ -39,13 +39,5 @@
     requestAnimationFrame(() => { update(); ticking = false; });
   }, { passive: true });
 
-  const sel = document.querySelector('.toc-select');
-  if (sel) {
-    sel.addEventListener('change', () => {
-      if (sel.value) location.hash = sel.value;
-      sel.selectedIndex = 0;
-    });
-  }
-
   update();
 })();

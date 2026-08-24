@@ -608,29 +608,79 @@ for (const width of [390, 320]) {
   });
 }
 
-// The jump-to select is painted only at phone width.
+// One control below the rail, at every width and every category count. It
+// used to split at seven into a wrapping chip row and a jump-to select, with
+// the swap gated on data-js because nav.js was the select's whole behaviour.
 const stillPhone = await browser.newContext({
   viewport: PHONE,
   reducedMotion: "reduce",
 });
 const sm = await stillPhone.newPage();
 await sm.goto(MANY);
-await check("the mobile jump-to select clears 3:1 too", async () => {
-  atLeast3(await boundary(sm, ".toc-select"), "the jump-to select");
-});
 
 await check(
-  "a phone with JavaScript shows the jump-to select, not the chips",
+  "the trail is one row that scrolls, never a wrapped block",
   async () => {
-    eq((await painted(m, ".toc-select")).length, 1, "painted jump selects");
-    eq((await painted(m, ".toc.many a")).length, 0, "painted trail chips");
+    for (const w of [320, 390, 768, 1024]) {
+      await sm.setViewportSize({ width: w, height: 780 });
+      const r = await sm.evaluate(() => {
+        const toc = document.querySelector(".toc");
+        if (!toc || !toc.getClientRects().length) return null;
+        const ul = toc.querySelector("ul");
+        const links = [...ul.querySelectorAll("a")];
+        return {
+          rows: new Set(
+            links.map((a) => Math.round(a.getBoundingClientRect().top)),
+          ).size,
+          links: links.length,
+          selects: document.querySelectorAll(".toc-select, .toc-jump").length,
+        };
+      });
+      if (!r) throw new Error(`no category navigation painted at ${w}px`);
+      if (r.rows !== 1)
+        throw new Error(`the trail wraps onto ${r.rows} rows at ${w}px`);
+      if (r.selects) throw new Error(`a jump-to select came back at ${w}px`);
+      if (r.links < 9)
+        throw new Error(`${r.links} categories listed at ${w}px, want all 9`);
+    }
+    await sm.setViewportSize(PHONE);
   },
 );
 
-// The swap to a select is gated on JavaScript because nav.js is the select's
-// entire behaviour. Ungated, a phone with scripting off got no category
-// navigation at all, on the viewport where a nine-category list is least
-// scrollable.
+// A row that scrolls hides entries, so the one it marks has to be brought
+// back. Asserted where the row genuinely overflows, since otherwise every
+// entry is in view and the check would pass with the scrolling deleted.
+await check("the marked entry is brought into the row", async () => {
+  await sm.setViewportSize({ width: 320, height: 780 });
+  const r = await sm.evaluate(async () => {
+    const ul = document.querySelector(".toc ul");
+    if (ul.scrollWidth <= ul.clientWidth + 1) return { overflows: false };
+    const cats = [...document.querySelectorAll(".cat")];
+    const last = cats[cats.length - 1];
+    scrollTo(0, last.getBoundingClientRect().top + scrollY - 100);
+    await new Promise((r) => setTimeout(r, 700));
+    const a = document.querySelector(".toc a[aria-current]");
+    if (!a) return { overflows: true, marked: null };
+    const e = a.getBoundingClientRect(),
+      u = ul.getBoundingClientRect();
+    return {
+      overflows: true,
+      marked: a.textContent.trim(),
+      inView: e.left >= u.left - 1 && e.right <= u.right + 1,
+    };
+  });
+  await sm.setViewportSize(PHONE);
+  if (!r.overflows)
+    throw new Error(
+      "the row does not overflow at 320px, so this proves nothing",
+    );
+  if (!r.marked)
+    throw new Error("scrolling to the last category marked nothing");
+  if (!r.inView)
+    throw new Error(`the marked entry "${r.marked}" sits outside the row`);
+});
+
+// The trail is plain markup now, so scripting off costs the chips nothing.
 const dumb = await browser.newContext({
   viewport: PHONE,
   javaScriptEnabled: false,
@@ -641,12 +691,9 @@ await nojs.goto(MANY);
 await check(
   "a phone without JavaScript still paints category navigation",
   async () => {
-    const chips = await painted(nojs, ".toc.many a");
+    const chips = await painted(nojs, ".toc a");
     if (chips.length === 0) {
-      const inert = (await painted(nojs, ".toc-select")).length;
-      throw new Error(
-        `no category link is painted, and ${inert} jump select(s) are, which nothing can drive`,
-      );
+      throw new Error("no category link is painted with scripting off");
     }
   },
 );

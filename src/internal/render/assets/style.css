@@ -496,7 +496,51 @@ header { padding-block: 1.4rem; }
 /* A fixed rail beside the content: one diamond per category on a vertical line.
    Shown only where the margin can hold it. */
 .toc { display: none; }
-.toc-jump { display: none; } /* shown in the mobile block */
+/* Below the rail the trail is a row of chips that scrolls sideways rather than
+   wrapping: one line at any category count, on a 320px phone as on a laptop
+   window. It replaces two controls that used to split at seven categories, a
+   wrapping row and a jump-to select, and it closes the band between 44rem and
+   88rem where a reader had no category navigation at all.
+
+   toc.js keeps the current chip in view. Without it the row is still a list
+   you can swipe, which the select it replaces was not: that one did nothing
+   without JavaScript, which is why it had to be swapped in behind data-js. */
+@media (max-width: 87.99rem) {
+  .toc {
+    display: block;
+    margin: 1.5rem 0 .3rem;
+  }
+  .toc ul {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: .5rem;
+    overflow-x: auto;
+    /* the row is the scroller, so its own focus ring must not be clipped */
+    padding-block-end: 2px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .toc ul::-webkit-scrollbar { display: none; }
+  .toc ul::before { display: none; }
+  .toc li { flex: none; scroll-snap-align: center; }
+  .toc a {
+    min-height: 2.5rem;
+    padding: 0 .85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+    font-size: .85rem;
+    white-space: nowrap;
+  }
+  .toc-mark { display: none; }
+  .toc a[aria-current] {
+    color: var(--fg);
+    font-weight: 500;
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+    background: color-mix(in oklab, var(--accent) 8%, var(--card));
+  }
+}
+
 @media (min-width: 88rem) {
   .toc {
     display: block;
@@ -1409,46 +1453,6 @@ footer {
   }
 
   /* the category trail becomes a wrapping chip row under the intro */
-  .toc { display: block; margin: 1.5rem 0 .3rem; }
-  .toc ul { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .toc ul::before { display: none; }
-  .toc a {
-    min-height: 2.5rem;
-    padding: 0 .85rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--card);
-    font-size: .85rem;
-  }
-  .toc-mark { display: none; }
-  .toc a[aria-current] {
-    color: var(--fg);
-    font-weight: 500;
-    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
-    background: color-mix(in oklab, var(--accent) 8%, var(--card));
-  }
-
-  /* Above ~7 categories the chips give way to a compact jump-to select, but
-     only where something can drive it: the select's behaviour lives entirely in
-     nav.js, so with JavaScript off this swap left a phone with no category
-     navigation at all. The pre-paint script in <head> stamps data-js before
-     first render, so gating on it costs no flash of the wrong one, and the
-     fallback needs no markup: .toc.many stays a chip row. */
-  [data-js] .toc.many { display: none; }
-  [data-js] .toc-jump { display: block; margin: 1.5rem 0 .3rem; }
-  .toc-select {
-    width: 100%;
-    max-width: 22rem;
-    min-height: 2.75rem;
-    padding: .3rem .9rem;
-    /* a form control, so --ui-border and its 3:1, like the search box */
-    border: 1px solid var(--ui-border);
-    border-radius: .7rem;
-    background: var(--card);
-    color: var(--fg);
-    font: inherit;
-    font-size: .9rem;
-  }
 
   .totop { display: grid; }
 

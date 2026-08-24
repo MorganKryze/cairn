@@ -26,18 +26,30 @@ func TestCategoryNavScales(t *testing.T) {
 		return string(m.Pages["en"].HTML)
 	}
 
-	// A handful of categories: the chip trail, no jump-to select.
-	if h := build(4); strings.Contains(h, "toc-select") {
-		t.Error("few categories should stay chips, not a select")
+	// One control at every count. The trail used to split at seven into a
+	// wrapping chip row and a jump-to select; the select drove nothing without
+	// JavaScript, so it had to be swapped in behind data-js, and it never said
+	// which category the reader was in. The row scrolls sideways instead.
+	for _, n := range []int{2, 4, 8, 20} {
+		h := build(n)
+		if strings.Contains(h, "toc-select") || strings.Contains(h, "toc-jump") {
+			t.Errorf("%d categories brought back the jump-to select", n)
+		}
+		if strings.Contains(h, "toc many") {
+			t.Errorf("%d categories still carry the .many modifier", n)
+		}
+		if got := strings.Count(h, `<nav class="toc"`); got != 1 {
+			t.Errorf("%d categories rendered %d trails, want exactly 1", n, got)
+		}
+		// every category reachable, since a row that scrolls hides some of them
+		// off screen and a missing entry would look like one scrolled away
+		if got := strings.Count(h, `<li><a href="#cat-`); got != n {
+			t.Errorf("%d categories listed %d entries in the trail", n, got)
+		}
 	}
 
-	// Above the threshold the compact jump-to select takes over on mobile, and
-	// the trail keeps its sidebar role tagged with the .many modifier.
-	h := build(8)
-	if !strings.Contains(h, `class="toc-select"`) {
-		t.Error("8 categories should render the jump-to select")
-	}
-	if !strings.Contains(h, `class="toc many"`) {
-		t.Error("8 categories should tag the trail as many")
+	// Nothing to navigate between with a single category.
+	if h := build(1); strings.Contains(h, `class="toc"`) {
+		t.Error("one category should render no trail at all")
 	}
 }
