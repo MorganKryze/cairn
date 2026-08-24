@@ -1,0 +1,42 @@
+name: automerge
+
+# Arms GitHub's own auto-merge on Dependabot's pull requests. It merges
+# nothing by itself: the required checks still gate the merge, and a red one
+# leaves the pull request open exactly as it does today.
+#
+# No update-type filter and no third-party action, deliberately. How large a
+# version bump is says nothing about whether it is safe, so gating on
+# semver-patch would buy nothing and would add `dependabot/fetch-metadata` to
+# the supply chain of the workflow meant to keep that chain short. The window
+# where a compromised release is still up is covered by `cooldown` in
+# dependabot.yml instead, which holds a version back for a week and never
+# applies to a security update.
+#
+# goldmark is the only dependency here that reaches a reader rather than the
+# build, and golden_test.go pins four rendered pages byte for byte: a change
+# in what it emits is a red check, not a merge.
+#
+# Needs "Allow auto-merge" on in the repository settings. Without it the step
+# below exits non-zero on every Dependabot pull request and says so, rather
+# than quietly leaving them all open.
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    # The pull request's author, which is GitHub's own condition for this, and
+    # a repository check so a fork inherits an inert workflow rather than one
+    # that merges on its behalf.
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'MorganKryze/cairn'
+    permissions:
+      contents: write # merges the pull request once the checks pass
+      pull-requests: write
+    steps:
+      - run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
