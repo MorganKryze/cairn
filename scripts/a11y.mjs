@@ -1466,7 +1466,9 @@ await check(
         };
       });
       await page.close();
-      if (after.opacity < 1) {
+      // Visible, not opaque: it is deliberately held back, so this is a floor
+      // for "you can see it" and not the value the rule happens to carry.
+      if (after.opacity < 0.5) {
         throw new Error(`hovering left the glyph at opacity ${after.opacity}`);
       }
       if (Math.abs(after.name - before.name) > 0.5) {

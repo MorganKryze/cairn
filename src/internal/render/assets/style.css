@@ -458,26 +458,26 @@ header { padding-block: 1.4rem; }
   margin-inline-end: .55rem;
   top: 50%;
   transform: translateY(-50%);
-  width: .9rem;
-  height: .9rem;
-  /* --border and not --muted: the rule that closes this same row is decoration
-     at that weight, and one row wants one weight. It is also the floor the
-     palette settles on, around 2:1, below which a hairline disappears on a
-     cheap screen in daylight. */
-  color: var(--border);
+  width: 1.05rem;
+  height: 1.05rem;
+  /* --muted held back to .65 rather than --border at full strength. Tried at
+     the rule's weight first, which is tidier on paper since the rule closes
+     the same row, and it read as a smudge at real size: a glyph is line work
+     with gaps in it, not a solid 1px bar, so the same ink does not carry the
+     same distance. */
+  color: var(--muted);
   opacity: 0;
   transition: opacity .14s;
 }
 /* Only where the margin can hold it. Below this the content sits against the
    wrap's own padding and there is nothing to hang it in: measured, 32.5px of
-   margin at 68rem against the 23px the glyph and its gap need, and 24px at
-   64rem, which clears it by less than a pixel and is not something to lean on.
-   And only where there is a pointer, since a tap has no hover to reveal it
-   with. */
+   margin at 68rem against the 26px the glyph and its gap need, and 24px at
+   64rem. And only where there is a pointer, since a tap has no hover to
+   reveal it with. */
 @media (hover: hover) and (min-width: 69rem) {
   .way-name a:hover .way-link,
   .way-name a:focus-visible .way-link {
-    opacity: 1;
+    opacity: .65;
   }
 }
 .way-name a:focus-visible {
