@@ -517,6 +517,7 @@ await check(
             Math.abs(b.top + b.height / 2 - (a.top + a.height / 2)) < 3,
           beside: Math.abs(b.top + b.height / 2 - (n.top + n.height / 2)) < 3,
           clearsBack: b.left >= a.right,
+          backH: a.height,
           lines: Math.round(
             n.height / parseFloat(getComputedStyle(h1).lineHeight),
           ),
@@ -543,6 +544,18 @@ await check(
           throw new Error(`at ${w}px the action is not on the back link's row`);
         if (!m.clearsBack)
           throw new Error(`at ${w}px the action overlaps the back link`);
+        // The same height, not merely both large: 33px against 36px read as a
+        // mistake rather than as a hierarchy.
+        if (Math.abs(m.h - m.backH) > 1) {
+          throw new Error(
+            `the action is ${m.h.toFixed(0)}px and the back link ${m.backH.toFixed(0)}px`,
+          );
+        }
+        if (m.h < 44) {
+          throw new Error(
+            `beside the back link it is ${m.h.toFixed(0)}px, want a thumb's 44`,
+          );
+        }
       }
     }
   },
@@ -801,6 +814,70 @@ await sm.goto(MANY);
 // specificity, and every short category came out a 34px circle with the word
 // against its edges. Nothing else noticed: the row was still one line and
 // still scrolled, which is all the other checks were looking at.
+// A row that scrolls has to say so, or it reads as a complete list: a chip cut
+// exactly at the edge looks like the last one. The side with chips behind it
+// fades, and the side without does not, so the cue follows the reader.
+await check("the trail says which way it still has chips", async () => {
+  await sm.setViewportSize({ width: 390, height: 780 });
+  const r = await sm.evaluate(async () => {
+    const ul = document.querySelector(".toc ul");
+    const max = ul.scrollWidth - ul.clientWidth;
+    if (max < 40) return { overflows: false };
+    const go = async (x) => {
+      ul.scrollTo({ left: x, behavior: "instant" });
+      await new Promise((res) => setTimeout(res, 250));
+      return {
+        more: ul.getAttribute("data-more"),
+        masked: getComputedStyle(ul).maskImage !== "none",
+      };
+    };
+    return {
+      overflows: true,
+      start: await go(0),
+      half: await go(max / 2),
+      end: await go(max),
+    };
+  });
+  await sm.setViewportSize(PHONE);
+  if (!r.overflows)
+    throw new Error(
+      "the row does not overflow at 390px, so this proves nothing",
+    );
+  const want = { start: "right", half: "left right", end: "left" };
+  for (const k of ["start", "half", "end"]) {
+    if (r[k].more !== want[k]) {
+      throw new Error(
+        `at the ${k} the row reports "${r[k].more}", want "${want[k]}"`,
+      );
+    }
+    if (!r[k].masked) throw new Error(`at the ${k} nothing is actually faded`);
+  }
+});
+
+// And a row that fits says nothing, since there is nothing behind either edge.
+await check("a trail that fits advertises no scrolling", async () => {
+  const page = await desk.newPage();
+  await page.setViewportSize({ width: 1000, height: 780 });
+  await page.goto(SITE, { waitUntil: "networkidle" });
+  const r = await page.evaluate(() => {
+    const ul = document.querySelector(".toc ul");
+    if (!ul || !ul.getClientRects().length) return null;
+    return {
+      overflows: ul.scrollWidth > ul.clientWidth + 1,
+      more: ul.getAttribute("data-more"),
+      masked: getComputedStyle(ul).maskImage !== "none",
+    };
+  });
+  await page.close();
+  if (!r) throw new Error("no trail painted at 1000px");
+  if (r.overflows)
+    throw new Error(
+      "the example trail overflows at 1000px, so this proves nothing",
+    );
+  if (r.more) throw new Error(`a row that fits still reports "${r.more}"`);
+  if (r.masked) throw new Error("a row that fits is faded anyway");
+});
+
 await check("a chip is a chip and not a squeezed circle", async () => {
   for (const w of [320, 390, 970]) {
     await sm.setViewportSize({ width: w, height: 780 });

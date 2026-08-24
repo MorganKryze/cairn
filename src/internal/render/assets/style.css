@@ -581,6 +581,18 @@ header { padding-block: 1.4rem; }
     scroll-snap-type: x proximity;
   }
   .toc ul::-webkit-scrollbar { display: none; }
+  /* The side with chips behind it fades, so the row cannot be mistaken for a
+     complete list. toc.js sets the attribute; without it the row still scrolls,
+     it just does not advertise it. */
+  .toc ul[data-more="right"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.2rem), transparent);
+  }
+  .toc ul[data-more="left"] {
+    mask-image: linear-gradient(to right, transparent, #000 2.2rem);
+  }
+  .toc ul[data-more="left right"] {
+    mask-image: linear-gradient(to right, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent);
+  }
   .toc ul::before { display: none; }
   .toc li { flex: none; scroll-snap-align: center; }
   .toc a {
@@ -1123,15 +1135,30 @@ html:has(dialog[open]) {
 @media (max-width: 44rem) {
   /* No room beside a name at this width, and a full-width button under it read
      as the loudest thing on the page. It goes up beside the back link instead,
-     the two of them at opposite ends of one row, and smaller. */
-  .detail-top { grid-template-columns: auto 1fr; row-gap: .9rem; }
+     the two of them at opposite ends of one row.
+
+     Both at 2.75rem, which is the thumb target the rest of the phone layout
+     uses, and both the same: 33px against 36px was close enough to look like a
+     mistake rather than a hierarchy. The article's own padding already parts
+     this row from the header, so the margin that stacked on top of it goes:
+     22.4px and 25.6px met as 48px of nothing. */
+  .detail-top { grid-template-columns: auto 1fr; row-gap: .9rem; margin-top: .4rem; }
+  .detail-top .back,
+  .detail-top .btn {
+    min-height: 2.75rem;
+    font-size: .9rem;
+  }
+  .detail-top .back { padding-inline: .95rem 1.05rem; }
   .detail-top .btn {
     grid-area: 1 / 1 / 2 / -1;
     justify-self: end;
-    padding: .42rem .85rem;
-    font-size: .88rem;
+    padding-inline: 1.15rem;
   }
-  .detail-top .btn .btn-glyph { width: .95em; height: .95em; }
+  .detail-top .btn .btn-glyph { width: 1em; height: 1em; }
+  /* The pill on a detail page stands alone and is a link to the status page, so
+     it takes a thumb's worth of height. The one in a card foot keeps its size:
+     that foot is dense, and raising it there would push every card down. */
+  .detail-top .status-pill { min-height: 2.25rem; padding-inline: .8rem .9rem; font-size: .82rem; }
   .leave-acts { flex-direction: column; align-items: stretch; }
   .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
 }
