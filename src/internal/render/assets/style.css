@@ -869,6 +869,15 @@ a.flag { min-height: 1.5rem; }
    theme to read against the card, so the fill measures 6.82:1 in light and
    5.47:1 in dark, and the card-coloured mark on it the same, whatever accent
    the operator chose. */
+/* THE HOVER RULE for outlined controls, and it holds everywhere rather than
+   per place: an outlined control fills with --accent-ink and takes --card for
+   its text. 1.16.1 established the fill, since tinting a border alone reads as
+   nothing when the pointer is already a hand; what was missing until now was
+   that the same control did it inside a card and not outside, so the status
+   pill changed behaviour between the home page and a detail page.
+
+   The primary button is --accent rather than --accent-ink and is filled at
+   rest, so it stays the loudest thing on any page it appears on. */
 .card-more:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .more-glyph { width: var(--ring-glyph); height: var(--ring-glyph); }
@@ -894,8 +903,12 @@ a.flag { min-height: 1.5rem; }
 }
 /* Only a pill that leads somewhere answers to a pointer: a display-only one
    (status.linked: false) is not a control. */
-.card-foot a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-a.status-pill:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
+/* The dot goes with the text rather than keeping its state colour: green on
+   the filled accent measures 1.30:1 in light and 1.12:1 in dark, which is a
+   smudge and not a dot. Nothing is lost, since the label beside it says
+   Online or Offline in words. */
+a.status-pill:hover .dot { background: var(--card); }
 a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card .status-pill { flex: none; }
 /* Raised above the card's stretched link so a click reaches the status page. A
@@ -940,10 +953,15 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
-  transition: color .16s, border-color .16s;
+  transition: color .16s, border-color .16s, background .16s;
 }
 .back-glyph { width: .85rem; height: .85rem; flex: none; }
-.back:hover { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+/* The fill moves, like every other outlined control here. Tinting the text and
+   the border alone was what 1.16.1 already found invisible on a card control:
+   the pointer is a hand over any link, so only a fill says this one is a
+   button. --faint darkens it against the page in light and lightens it in
+   dark, one step either way. */
+.back:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .detail-head { display: flex; align-items: center; gap: 1rem; margin-top: 1.6rem; }
@@ -1072,7 +1090,7 @@ html:has(dialog[open]) {
   color: var(--fg);
   cursor: pointer;
 }
-.leave-copy:hover, .leave-stay:hover { background: var(--bg); }
+.leave-copy:hover, .leave-stay:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .leave-copy:focus-visible, .leave-stay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* The continue link borrows .btn, which carries a 1.4rem top margin for the
    detail page; in a row of buttons that margin is a step. */
@@ -1377,7 +1395,7 @@ footer {
 }
 .totop.show { opacity: 1; visibility: visible; pointer-events: auto; }
 .totop svg { width: 1.15rem; height: 1.15rem; }
-.totop:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+.totop:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 .totop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: no-preference) {
