@@ -79,7 +79,7 @@ account or a manual, and boring for you to operate.
 
 <div align="center">
 
-<a href="https://cairn.libresoftware.cloud" title="Open the live demo"><img src="docs/assets/two-views.png" alt="Left: a service detail page, with the name, a live status pill, a paragraph explaining what the tool is for, a screenshot with its caption and a button opening the tool. Right: the same directory on a phone, category chips then cards each showing an icon, a sentence, a self-hosted flag and a status pill" width="100%"></a>
+<a href="https://cairn.libresoftware.cloud" title="Open the live demo"><img src="docs/assets/two-views.png" alt="Left: a service detail page, with the name beside its icon and a button opening the tool at the far end of the same row, then a live status pill, a paragraph explaining what the tool is for, and a screenshot with its caption. Right: the same directory on a phone, a row of category chips then cards each showing an icon, a sentence, a self-hosted flag and a status pill" width="100%"></a>
 
 <em>Behind a card when a visitor wants more than one sentence, and the same page in a hand.</em>
 
