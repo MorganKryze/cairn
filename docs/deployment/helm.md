@@ -26,8 +26,8 @@ kubectl port-forward svc/cairn 8080:80
 
 Add `--version` with the number from the
 [releases](https://github.com/MorganKryze/cairn/releases) to pin. Chart version
-and cairn version are the same number, always: chart `1.20.1` installs cairn
-`1.20.1`, so there is only ever one version to talk about, and `image.tag` is
+and cairn version are the same number, always: chart `1.20.2` installs cairn
+`1.20.2`, so there is only ever one version to talk about, and `image.tag` is
 there if you ever want to break the pair apart.
 
 ## Seeing it filled first
@@ -229,8 +229,8 @@ OCI artifact, so it can be mirrored into whatever registry you already keep, and
 driven from there:
 
 ```sh
-helm pull oci://ghcr.io/morgankryze/charts/cairn --version 1.20.1
-helm push cairn-1.20.1.tgz oci://harbor.internal/helm
+helm pull oci://ghcr.io/morgankryze/charts/cairn --version 1.20.2
+helm push cairn-1.20.2.tgz oci://harbor.internal/helm
 ```
 
 Argo CD needs the repository declared before an Application can name it. Note
@@ -266,7 +266,7 @@ spec:
   source:
     repoURL: harbor.internal/helm
     chart: cairn
-    targetRevision: 1.20.1
+    targetRevision: 1.20.2
     helm:
       valuesObject:
         ingress:
@@ -290,7 +290,7 @@ spec:
   sources:
     - repoURL: harbor.internal/helm
       chart: cairn
-      targetRevision: 1.20.1
+      targetRevision: 1.20.2
       helm:
         valueFiles:
           - $values/cairn/values.yaml
@@ -317,7 +317,7 @@ The chart is signed the same way the image is, keylessly, bound to the workflow
 that published it:
 
 ```sh
-cosign verify ghcr.io/morgankryze/charts/cairn:1.20.1 \
+cosign verify ghcr.io/morgankryze/charts/cairn:1.20.2 \
   --certificate-identity-regexp '^https://github.com/MorganKryze/cairn/' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
