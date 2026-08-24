@@ -8,6 +8,29 @@
   const sections = Array.from(document.querySelectorAll('.cat'));
   let current;
 
+  // A row that scrolls sideways has to say so. Left to itself it can cut a chip
+  // exactly at the edge and read as a complete list, which is how a reader
+  // misses two thirds of the categories. The edge with more behind it fades.
+  //
+  // Measured from the rectangles rather than from scrollLeft: that value is
+  // negative in a right-to-left page in some engines and positive in others,
+  // and what the fade needs is the physical side either way.
+  const rail = toc.querySelector('ul');
+  const edges = () => {
+    const r = rail.getBoundingClientRect();
+    let left = false, right = false;
+    for (const li of rail.children) {
+      const b = li.getBoundingClientRect();
+      if (b.right < r.left + 1) left = true;
+      if (b.left > r.right - 1) right = true;
+    }
+    const v = [left && 'left', right && 'right'].filter(Boolean).join(' ');
+    if (v) rail.setAttribute('data-more', v); else rail.removeAttribute('data-more');
+  };
+  rail.addEventListener('scroll', edges, { passive: true });
+  addEventListener('resize', edges, { passive: true });
+  edges();
+
   const spy = () => {
     const visible = sections.filter(s => !s.hidden);
     // Nothing until a section has actually crossed: at the top of the page the
