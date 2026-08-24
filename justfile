@@ -49,7 +49,7 @@ demo:
 demo-rebuild:
     docker compose -f demo/compose.yaml up -d --build --remove-orphans
 
-# save a release to dist/ for an air-gapped move: just save 1.19.3 [linux/amd64]
+# save a release to dist/ for an air-gapped move: just save 1.20.0 [linux/amd64]
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -137,8 +137,9 @@ test-browser:
     npm --silent install --no-save --no-package-lock playwright
     npx --yes playwright install --only-shell chromium
     go build -o /tmp/cairn-browser ./src/cmd/cairn
-    # 8090 is the example config; 8091 is the fixture with more than seven
-    # categories and a header burger, neither of which example/ has; 8092 is
+    # 8090 is the example config; 8091 is the fixture with nine categories,
+    # enough for the trail to overflow its row, and a header burger, neither of
+    # which example/ has; 8092 is
     # the one with a status page, which example/ has no business carrying;
     # 8093 is the one whose logo and icons differ between the two themes;
     # 8094 is the one that guards its external links with a dialog;
