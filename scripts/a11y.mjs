@@ -1427,6 +1427,33 @@ await check(
     },
   );
 
+  await check("the rail's spine runs through its diamonds", async () => {
+    const wide = await wp.newPage();
+    await wide.setViewportSize({ width: 1440, height: 900 });
+    await wide.goto(MANY);
+    const offs = await wide.evaluate(() => {
+      const ul = document.querySelector(".toc ul");
+      if (!ul || !ul.getClientRects().length) return null;
+      const cs = getComputedStyle(ul, "::before");
+      const start = parseFloat(cs.insetInlineStart || cs.left);
+      const centre =
+        ul.getBoundingClientRect().left + start + parseFloat(cs.width) / 2;
+      return [...document.querySelectorAll(".toc-mark")].map((m) => {
+        const r = m.getBoundingClientRect();
+        return r.left + r.width / 2 - centre;
+      });
+    });
+    await wide.close();
+    if (!offs) throw new Error("the rail is not painted at 1440px");
+    if (!offs.length) throw new Error("the rail carries no diamonds");
+    const worst = offs.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a));
+    if (Math.abs(worst) > 0.25) {
+      throw new Error(
+        `a diamond sits ${worst.toFixed(2)}px ${worst < 0 ? "left" : "right"} of the spine`,
+      );
+    }
+  });
+
   await check("a category heading is a link to its own anchor", async () => {
     const page = await wp.newPage();
     await page.goto(MANY);

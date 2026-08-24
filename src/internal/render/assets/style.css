@@ -85,6 +85,9 @@
      why one number serves both. */
   --mark-drop: .0356;
   --way-font: 1.5rem;
+  /* The rail's diamond, named because the spine has to be centred on it and a
+     second literal would drift from the first. */
+  --toc-mark: .42rem;
 }
 
 :root[data-theme="light"] { color-scheme: light; }
@@ -478,7 +481,10 @@ header { padding-block: 1.4rem; }
 .toc ul::before {
   content: "";
   position: absolute;
-  inset-inline-start: .2rem;
+  /* Centred on the diamonds rather than set near them: half the mark, less
+     half the line's own width. Written as .2rem it drew 0.34px to their right,
+     which is invisible until something moves and then is not. */
+  inset-inline-start: calc(var(--toc-mark) / 2 - .5px);
   top: .8rem;
   bottom: .8rem;
   width: 1px;
@@ -495,8 +501,8 @@ header { padding-block: 1.4rem; }
   transition: color .16s;
 }
 .toc-mark {
-  width: .42rem;
-  height: .42rem;
+  width: var(--toc-mark);
+  height: var(--toc-mark);
   flex: none;
   border-radius: 1.5px;
   background: var(--border);
