@@ -684,37 +684,74 @@ await check(
   },
 );
 
-// A row that scrolls hides entries, so the one it marks has to be brought
-// back. Asserted where the row genuinely overflows, since otherwise every
-// entry is in view and the check would pass with the scrolling deleted.
-await check("the marked entry is brought into the row", async () => {
-  await sm.setViewportSize({ width: 320, height: 780 });
-  const r = await sm.evaluate(async () => {
-    const ul = document.querySelector(".toc ul");
-    if (ul.scrollWidth <= ul.clientWidth + 1) return { overflows: false };
+// A chip row is a set of buttons, so none of them is ever the selected one.
+// The rail above 88rem is what tracks the reader; a chip lighting up under a
+// thumb reported a place the reader had not chosen to be.
+await check("no chip is ever painted as the current one", async () => {
+  for (const w of [320, 390, 970]) {
+    await sm.setViewportSize({ width: w, height: 780 });
+    const r = await sm.evaluate(async () => {
+      const cats = [...document.querySelectorAll(".cat")];
+      scrollTo(0, cats[2].getBoundingClientRect().top + scrollY - 80);
+      await new Promise((r) => setTimeout(r, 600));
+      const marked = document.querySelector(".toc a[aria-current]");
+      if (!marked) return { marked: null };
+      const plain = [...document.querySelectorAll(".toc a")].find(
+        (a) => !a.hasAttribute("aria-current"),
+      );
+      const look = (el) => {
+        const c = getComputedStyle(el);
+        return `${c.color}|${c.backgroundColor}|${c.borderColor}|${c.fontWeight}`;
+      };
+      return {
+        marked: marked.textContent.trim(),
+        same: look(marked) === look(plain),
+        a: look(marked),
+        b: look(plain),
+      };
+    });
+    if (r.marked === null) continue; // nothing marked at all is also fine
+    if (!r.same) {
+      throw new Error(
+        `at ${w}px the chip "${r.marked}" is painted differently:\n        ${r.a}\n        against ${r.b}`,
+      );
+    }
+  }
+  await sm.setViewportSize(PHONE);
+});
+
+// The rail is the other half of that rule: it does track the reader, since it
+// is a trail down the margin rather than a row of buttons.
+await check("the rail above 88rem still says where the reader is", async () => {
+  const wide = await stillPhone.newPage();
+  await wide.setViewportSize({ width: 1500, height: 900 });
+  await wide.goto(MANY);
+  const r = await wide.evaluate(async () => {
     const cats = [...document.querySelectorAll(".cat")];
-    const last = cats[cats.length - 1];
-    scrollTo(0, last.getBoundingClientRect().top + scrollY - 100);
-    await new Promise((r) => setTimeout(r, 700));
+    scrollTo(0, cats[2].getBoundingClientRect().top + scrollY - 80);
+    await new Promise((r) => setTimeout(r, 600));
     const a = document.querySelector(".toc a[aria-current]");
-    if (!a) return { overflows: true, marked: null };
-    const e = a.getBoundingClientRect(),
-      u = ul.getBoundingClientRect();
+    if (!a) return null;
+    const mark = a.querySelector(".toc-mark");
     return {
-      overflows: true,
-      marked: a.textContent.trim(),
-      inView: e.left >= u.left - 1 && e.right <= u.right + 1,
+      text: a.textContent.trim(),
+      weight: getComputedStyle(a).fontWeight,
+      dot: getComputedStyle(mark).backgroundColor,
+      plainDot: getComputedStyle(
+        [...document.querySelectorAll(".toc a")]
+          .find((x) => !x.hasAttribute("aria-current"))
+          .querySelector(".toc-mark"),
+      ).backgroundColor,
     };
   });
-  await sm.setViewportSize(PHONE);
-  if (!r.overflows)
+  await wide.close();
+  if (!r)
+    throw new Error("the rail marks nothing after scrolling into a section");
+  if (r.dot === r.plainDot) {
     throw new Error(
-      "the row does not overflow at 320px, so this proves nothing",
+      `the rail's current diamond is the same colour as the rest: ${r.dot}`,
     );
-  if (!r.marked)
-    throw new Error("scrolling to the last category marked nothing");
-  if (!r.inView)
-    throw new Error(`the marked entry "${r.marked}" sits outside the row`);
+  }
 });
 
 // The trail is plain markup now, so scripting off costs the chips nothing.

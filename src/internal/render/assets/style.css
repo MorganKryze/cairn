@@ -593,11 +593,16 @@ header { padding-block: 1.4rem; }
     white-space: nowrap;
   }
   .toc-mark { display: none; }
+  /* No current one. A chip row is a set of buttons that take you somewhere,
+     not a report of where you are: the rail above 88rem is the thing that
+     tracks the reader, and it has the room to say so without a chip having to
+     light up under their thumb. aria-current is still set, since it costs
+     nothing and a screen reader can use it. */
   .toc a[aria-current] {
-    color: var(--fg);
-    font-weight: 500;
-    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
-    background: color-mix(in oklab, var(--accent) 8%, var(--card));
+    color: var(--muted);
+    font-weight: inherit;
+    border-color: var(--border);
+    background: var(--card);
   }
 }
 
