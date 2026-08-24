@@ -370,6 +370,42 @@ await check(
 );
 
 // The way back out of a detail page: the same two duties as the card glyph.
+// Every outlined control here moves its fill on hover, since 1.16.1 measured
+// that tinting a border alone reads as nothing: the pointer is already a hand
+// over any link. The back chip was the one left doing only that.
+await check(
+  "the back chip fills on hover, like the other outlined ones",
+  async () => {
+    for (const scheme of ["light", "dark"]) {
+      const page = await desk.newPage();
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto(new URL("pdf/", SITE).href, { waitUntil: "networkidle" });
+      const fill = () =>
+        page.evaluate(
+          () =>
+            getComputedStyle(document.querySelector(".back")).backgroundColor,
+        );
+      const rest = await fill();
+      await page.locator(".back").hover();
+      await page.waitForTimeout(300);
+      const hovered = await fill();
+      const pageBg = await page.evaluate(
+        () => getComputedStyle(document.body).backgroundColor,
+      );
+      await page.close();
+      if (rest === hovered) {
+        throw new Error(`in ${scheme} the fill stays ${rest} on hover`);
+      }
+      // and it has to leave the page behind rather than melt into it
+      if (hovered === pageBg) {
+        throw new Error(
+          `in ${scheme} the hovered chip is the page colour, ${pageBg}`,
+        );
+      }
+    }
+  },
+);
+
 await check("the back link is a real target on a detail page", async () => {
   const m = await detail.$eval(".back", (el) => {
     const r = el.getBoundingClientRect();
