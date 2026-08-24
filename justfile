@@ -49,7 +49,7 @@ demo:
 demo-rebuild:
     docker compose -f demo/compose.yaml up -d --build --remove-orphans
 
-# save a release to dist/ for an air-gapped move: just save 1.20.1 [linux/amd64]
+# save a release to dist/ for an air-gapped move: just save 1.20.2 [linux/amd64]
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
