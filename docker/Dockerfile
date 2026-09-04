@@ -2,28 +2,28 @@
 # compiler that produces a released binary change under us between two builds
 # of the same commit.
 #
-# Nothing moves this pin automatically. Dependabot compares tags, and its log
-# reads "Latest version is 1.26-alpine" every week: the tag is already the
-# newest, so a digest sliding from one patch release to the next underneath it
-# is invisible to it. Left alone the pin holds the Go it was written with, and
-# on 2026-08-17 that was 1.26.5 against a released 1.26.6, eight HIGH stdlib
-# CVEs in the shipped binary.
+# Dependabot moves this pin, tag and digest both, after the seven-day cooldown
+# in .github/dependabot.yml, and automerge.yml lands it once the required
+# checks pass. It has done both: #110 took the tag from 1.26-alpine to
+# 1.27-alpine, #112 the digest underneath it. There is no update-type filter,
+# on purpose: a bump's size does not predict its safety, and the checks are the
+# gate either way.
 #
-# What catches it is the weekly Trivy scan, which reads the binary rather than
-# this line, and fires once the Go left behind carries a published CVE. That is
-# late by design: raising the pin on every golang rebuild would be a weekly red
-# build for nothing.
+# Left alone this pin cost a release once. On 2026-08-17 it still held go1.26.5
+# against a published 1.26.6: eight HIGH stdlib CVEs in the shipped binary, one
+# of them an html/template XSS, which is the package every cairn page is
+# rendered through. v1.19.3 was that and nothing else. The weekly Trivy scan
+# stays the net for the gap between two proposals, since it reads the binary
+# rather than this line.
 #
 # Read through mirror.gcr.io rather than straight from Docker Hub, for the same
 # reason demo/compose.yaml is: an anonymous Hub pull shares one rate limit with
 # every other GitHub-hosted runner on the planet, and it does not fail by
 # saying so. It times out. That is what took down the image job of the build on
-# main after 1.13.2 shipped.
-#
-# The digest is the same object either way, verified rather than assumed: both
-# registries answer sha256:3889b425… for this reference. A digest is what the
-# content hashes to, so the mirror cannot serve a different image under it; the
-# registry in front is only the road taken to reach it.
+# main after 1.13.2 shipped. The mirror serves the same object: a digest is
+# what the content hashes to, so the registry in front is only the road taken
+# to reach it. This comment names no digest of its own, since Dependabot
+# rewrites the one below and a copy up here went stale the first time it did.
 FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.27-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS build
 # The scratch image ships no CA bundle, so cairn cannot verify TLS on its own:
 # polling a public https Gatus fails with x509: unknown authority. Copy the
