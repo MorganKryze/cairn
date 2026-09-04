@@ -251,11 +251,13 @@ type pageView struct {
 	// the same string the template renders. template.CSS tells html/template this
 	// block needs no CSS-escaping: the accent is validated to a hex color and the
 	// font family to the characters a CSS font stack is made of.
-	Style                                       template.CSS
-	SiteTitle                                   locText
-	Prefix                                      string // "" or "/cairn", see BasePath
-	Dir                                         string // "ltr" or "rtl", from the locale
-	CustomCSS, Search, Credit, Noindex, ShowVer bool
+	Style     template.CSS
+	SiteTitle locText
+	Prefix    string // "" or "/cairn", see BasePath
+	Dir       string // "ltr" or "rtl", from the locale
+	// Search is the site's switch; SearchLive marks the one page that carries a
+	// working box rather than the disabled copy the others show for layout parity.
+	CustomCSS, Search, SearchLive, Credit, Noindex, ShowVer bool
 	// StatusPoll is how often, in seconds, status.js refetches the page to swap
 	// the pills. Zero on a site with no monitor, where the script never ships.
 	StatusPoll        int
@@ -534,6 +536,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			Base:       absBase(cfg),
 			Version:    Version,
 			Credit:     cfg.Site.Credit == nil || *cfg.Site.Credit,
+			Search:     cfg.Site.Search == nil || *cfg.Site.Search,
 			ShowVer:    cfg.Site.ShowVer,
 			StatusPoll: statusPoll(cfg),
 			SiteTitle:  tr(cfg.Site.Title, loc, def),
@@ -602,7 +605,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			Tagline:  tr(cfg.Site.Tagline, loc, def),
 			About:    proseOf(tr(cfg.Site.About, loc, def), mdCtx{media: media}),
 		}
-		hv.Search = true
+		hv.SearchLive = true
 		hv.PageTitle = hv.SiteTitle.Text
 		hv.MetaDesc = hv.Tagline.Text
 		for _, c := range cfg.Categories {

@@ -2084,6 +2084,95 @@ await check(
   await wp.close();
 }
 
+// ---- search turned off ----
+//
+// site.search: false has to take the whole control, not just the visible half.
+// The box, the disabled copy on every other page, the script and the Cmd+K it
+// binds: leaving the script behind gives a shortcut that focuses nothing, and
+// leaving the row behind gives the empty bordered strip #111 asked to be rid
+// of. The states fixture is the one that turns it off, and it has no header
+// links either, so its menu row has nothing at all left to hold.
+{
+  const off = await browser.newPage();
+  await off.goto(STATES, { waitUntil: "networkidle" });
+  const on = await browser.newPage();
+  await on.goto(SITE, { waitUntil: "networkidle" });
+  console.log("\nsearch turned off");
+
+  await check(
+    "no box, no script, and the shortcut focuses nothing",
+    async () => {
+      const r = await off.evaluate(() => ({
+        cards: document.querySelectorAll(".card").length,
+        box: !!document.querySelector(".search, #search, #q"),
+        script: [...document.scripts].some((s) =>
+          s.src.includes("/static/search."),
+        ),
+      }));
+      // A page that rendered nothing would satisfy every assertion below.
+      if (!r.cards)
+        throw new Error("no cards on the page, so this proves nothing");
+      if (r.box) throw new Error("search: false still painted a box");
+      if (r.script) throw new Error("search: false still shipped search.js");
+      await off.keyboard.press("Control+k");
+      const focused = await off.evaluate(() => document.activeElement.tagName);
+      if (focused === "INPUT") {
+        throw new Error("Cmd+K focused an input on a page that has no search");
+      }
+    },
+  );
+
+  // The control, and it is the whole reason the check above is worth running:
+  // the same keystroke on the same build, where search is on, must land.
+  await check(
+    "the same keystroke still opens the box where search is on",
+    async () => {
+      await on.keyboard.press("Control+k");
+      const id = await on.evaluate(() => document.activeElement.id);
+      if (id !== "q") {
+        throw new Error(
+          `Cmd+K left focus on "${id || "nothing"}" instead of the search input`,
+        );
+      }
+    },
+  );
+
+  await check(
+    "the row it lived in draws nothing once it is empty",
+    async () => {
+      const r = await off.evaluate(() => {
+        const m = document.querySelector(".menu");
+        if (!m) return null;
+        return {
+          kids: m.children.length,
+          display: getComputedStyle(m).display,
+          h: m.getBoundingClientRect().height,
+        };
+      });
+      if (!r) throw new Error("the template stopped emitting the row at all");
+      if (r.kids) throw new Error(`the row still holds ${r.kids} children`);
+      if (r.display !== "none" || r.h > 0) {
+        throw new Error(
+          `an empty row is ${r.display} and ${r.h}px tall, so its border still draws`,
+        );
+      }
+      // And the same rule must leave a row that has something in it alone.
+      const live = await on.evaluate(() => {
+        const m = document.querySelector(".menu");
+        return { kids: m.children.length, h: m.getBoundingClientRect().height };
+      });
+      if (!live.kids || live.h <= 0) {
+        throw new Error(
+          `the rule also collapsed a row holding ${live.kids} children`,
+        );
+      }
+    },
+  );
+
+  await off.close();
+  await on.close();
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

@@ -68,7 +68,7 @@
     <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}"{{.Label.Attrs}}>{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
     {{end}}</nav>
   </details>
-  {{end}}{{if .Search}}<div class="search" id="search">
+  {{end}}{{if .Search}}{{if .SearchLive}}<div class="search" id="search">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
       <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
@@ -82,7 +82,7 @@
       <input type="search" placeholder="{{.S.SearchPlaceholder}}" disabled tabindex="-1">
     </div>
   </div>
-  {{end}}</div>
+  {{end}}{{end}}</div>
 </header>
 <main id="main"><div class="wrap">
 {{end}}
@@ -112,8 +112,8 @@
   </div>
 </dialog>
 <script src="{{asset "leave.js"}}" defer></script>
-{{end}}<script src="{{asset "search.js"}}" defer></script>
-<script src="{{asset "toc.js"}}" defer></script>
+{{end}}{{if .Search}}<script src="{{asset "search.js"}}" defer></script>
+{{end}}<script src="{{asset "toc.js"}}" defer></script>
 <script src="{{asset "nav.js"}}" defer></script>
 <script src="{{asset "about.js"}}" defer></script>
 <script src="{{asset "theme.js"}}" defer></script>

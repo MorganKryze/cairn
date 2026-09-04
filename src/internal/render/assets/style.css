@@ -151,6 +151,10 @@ header { padding-block: 1.4rem; }
   padding-block: .5rem;
   border-top: 1px solid var(--border);
 }
+/* A site with no header links and no search box would leave this row as an
+   empty bordered strip. Children rather than :empty, because the template
+   indents and a text node is not content. Same shape as the card foot. */
+.menu:not(:has(> *)) { display: none; }
 .menu-link {
   display: inline-flex;
   align-items: center;

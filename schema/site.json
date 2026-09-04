@@ -93,6 +93,10 @@
       "type": "boolean",
       "description": "false asks search engines to stay away: robots.txt disallows, pages carry noindex, the sitemap turns off."
     },
+    "search": {
+      "type": "boolean",
+      "description": "false removes the header search box, its script and its Cmd+K shortcut. On by default."
+    },
     "locales": {
       "type": "array",
       "items": { "type": "string" },

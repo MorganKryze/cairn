@@ -5,5 +5,9 @@
 # sits in any height.
 title: States
 locales: [en]
+# Off here, and this is the only fixture that turns it off: with no header
+# links either, it is the shape issue #111 asked for, where the menu row
+# exists for the search box alone and has nothing left to hold.
+search: false
 status:
   gatus: https://status.example.org
