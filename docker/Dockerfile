@@ -24,7 +24,7 @@
 # registries answer sha256:3889b425… for this reference. A digest is what the
 # content hashes to, so the mirror cannot serve a different image under it; the
 # registry in front is only the road taken to reach it.
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.27-alpine@sha256:4c9fe60190a2a3350ddc51de80d0224b8a6698d12bdfc999fee45ea9d6c46dbc AS build
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.27-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS build
 # The scratch image ships no CA bundle, so cairn cannot verify TLS on its own:
 # polling a public https Gatus fails with x509: unknown authority. Copy the
 # bundle in (below); install it here so the build never depends on the base
