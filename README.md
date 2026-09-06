@@ -11,7 +11,7 @@
 [![Release](https://img.shields.io/github/v/release/MorganKryze/cairn?label=release&color=247b7b)](https://github.com/MorganKryze/cairn/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-[![Image](https://img.shields.io/badge/image-4.4%20MB-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/morgankryze/cairn/tags)
+[![Image](https://img.shields.io/badge/image-5%20MB-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/morgankryze/cairn/tags)
 [![Docker pulls](https://img.shields.io/docker/pulls/morgankryze/cairn?label=docker%20pulls&color=2496ED&logo=docker&logoColor=white&cacheSeconds=3600)](https://hub.docker.com/r/morgankryze/cairn)
 [![Go](https://img.shields.io/badge/Go-single%20static%20binary-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Helm](https://img.shields.io/badge/Helm-chart-0F1689?logo=helm&logoColor=white)](docs/deployment/helm.md)
@@ -46,36 +46,28 @@ account or a manual, and boring for you to operate.
 
 ### What your visitors get
 
-- 👋 **A welcome note in your words**: who hosts this, for whom, how to
-  reach you. Dismissable, remembered for a year (a plain cookie, no
-  tracking).
-- 🗂️ **Tools grouped by need**, one plain sentence each, with optional
-  "Learn more" pages for the curious.
-- 🚦 **Live status pills** fed by the monitor you already run, whichever it
-  is, each linking to its status page. Your server does the polling, never
-  the visitor's browser.
-- 🏷️ **Say where a service stands**: coming soon, no longer available, beta,
-  deprecated, new. A word on the card, in the visitor's language, and the two
-  that mean "do not go there" stop being links at all.
-- 🌍 **Their language**: the server picks it from the browser, a switcher
-  pins it. One config file, translations inline.
-- 🔍 **Search from anywhere**: just start typing, or ⌘K. A name finds that
-  one service, not everything that mentions it; keyword search still reaches
-  descriptions and hidden tags, accent-insensitive.
-- 📱 **At home on a phone**: the layout reflows to one hand, the header steps
-  aside as you scroll and returns the moment you head back up, and a burger
-  keeps search within thumb's reach.
-- ♿ **Built to stay readable**: text contrast measured against WCAG AA in both
-  themes, a skip link, named landmarks, search results announced through a
-  live region, a theme toggle that says which way it is set, and
-  right-to-left languages laid out the right way round. The controls a
-  visitor can operate, the search box and the leaving dialog's buttons, carry a
-  boundary that clears 3:1, remeasured in a real browser on every pull
-  request. Tested with a browser, never audited as a whole, and not yet with a
-  real screen reader: if you use one,
-  [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
-- 🌗 **Calm typography, light and dark, keyboard-friendly**, and every
-  feature degrades gracefully without JavaScript.
+- 👋 **A welcome note in your words**: who hosts this, for whom, how to reach
+  you. Dismissable, remembered for a year.
+- 🗂️ **Tools grouped by need**, one plain sentence each, with a "Learn more"
+  page for the curious.
+- 🚦 **Live status pills** fed by the monitor you already run. Your server does
+  the polling, never the visitor's browser.
+- 🏷️ **A word for where a service stands**: coming soon, beta, new, deprecated,
+  no longer available. The last two stop being links.
+- 🌍 **Their language**: the server reads it from the browser, a switcher pins
+  it. cairn ships [ten](docs/configuration/i18n.md), your own text goes inline.
+- 🔍 **Search from anywhere**: start typing, or ⌘K. A name finds that one
+  service, not everything that mentions it.
+- 📱 **At home on a phone**: one-handed layout, and a header that steps aside as
+  you scroll and returns the moment you head back up.
+- ♿ **Built to stay readable**: WCAG AA contrast in both themes, a skip link,
+  named landmarks, announced results, right-to-left the right way round.
+- 🌗 **Calm typography, light and dark**, and every feature still works with
+  JavaScript off.
+
+> CI measures the contrast in a real browser on every pull request. No audit
+> has covered cairn as a whole, and no screen reader user has tried it yet. If
+> you use one, [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
 
 <div align="center">
 
@@ -87,20 +79,16 @@ account or a manual, and boring for you to operate.
 
 ### What you get as the operator
 
-- 📦 **One static binary, about 10 MB**, zero runtime dependencies, no
-  database. The image around it is 4.4 MB to pull on amd64 and 4.0 on arm64,
-  since that binary compresses well.
-- 📝 **YAML mounted read-only**; edits apply live within seconds, and a config
-  error names the file, the line and the expected shape instead of taking the
-  site down.
-- 📜 **Legal pages served by cairn itself** (legal notice, privacy…): the
-  pages self-hosters never have anywhere to put. Written in ordinary
-  [markdown](docs/configuration/text.md), headings and lists and tables, with
-  raw HTML left as text so a config file can never reach the page as markup.
-- 🌐 **Wherever your domain has room**: a domain, a subdomain, or a sub-path of
-  one you already use (`example.org/cairn/`, one flag). cairn handles the
-  prefix itself, so the [proxy](docs/deployment/reverse-proxies.md) needs no
-  rewriting rule.
+- 📦 **One static binary, no database**, in an image of about 5 MB to pull.
+- 📝 **YAML mounted read-only**, and cairn picks up an edit within seconds. A
+  bad one names the file, the line and the shape it wanted, instead of taking
+  the site down.
+- 📜 **Legal pages served by cairn itself**, in ordinary
+  [markdown](docs/configuration/text.md): the notice and privacy pages
+  self-hosters never have anywhere to put.
+- 🌐 **A domain, a subdomain, or a sub-path** of one you already use. cairn
+  handles the prefix, so your
+  [proxy](docs/deployment/reverse-proxies.md) needs no rewriting rule.
 
 ## Status monitoring
 
@@ -124,9 +112,8 @@ pills come from your server, never from the visitor's browser.
 </td></tr>
 </table>
 
-Every one of those was read from a live instance rather than from a manual, and
-the mapping each needed is written down with the count that came back. Anything
-else publishing a list of names and states takes six lines of configuration:
+Every one was read from a live instance, not from a manual. Anything else
+publishing a list of names and states takes six lines of config, and
 [which monitors cairn reads](docs/recipes/status.md#which-monitors-cairn-reads)
 also says what cannot be read, and why.
 
@@ -149,36 +136,28 @@ no monitor yet, start there.
 
 ## Security
 
-**Secure by subtraction:** the safest surface is the one that isn't there. cairn stores nothing, signs no
-one in, and takes no input it has to trust. What little runs is kept
-deliberately tight, from the image down to the wire.
+**Secure by subtraction:** the safest surface is the one that isn't there.
+cairn stores nothing, signs no one in, and takes no input it has to trust.
 
-- 🪨 **`FROM scratch`, non-root**: no shell, no package manager, no libc in
-  the image, so a compromised process has nothing to pivot into.
+- 🪨 **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
+  image, so a compromised process has nothing to pivot into.
 - 🛡️ **Runs locked down**: `read_only`, `cap_drop: ALL` and a self-probing
-  healthcheck all work out of the box. See the [hardened compose](docs/deployment/docker-compose.md).
+  healthcheck work out of the box.
+  [Hardened compose](docs/deployment/docker-compose.md).
 - 🧱 **A strict Content-Security-Policy** (`default-src 'none'`, inline
-  fragments pinned by hash) and the hardening headers, with no third-party
-  script or font to trust.
-- 🔌 **No outbound requests of its own**: air-gap friendly, its only companions
-  optional and yours, a self-hosted [monitor](docs/recipes/status.md) for status
-  and icons you can [serve yourself](docs/recipes/icons.md#going-fully-self-hosted).
-  The [demo](demo/README.md) runs on a network with no route out and serves its
-  own icons, so the page it shows you makes no third-party request at all.
-- 🔬 **A watched supply chain**: every pull request runs `govulncheck`, a Trivy
-  image scan and CodeQL, and they run again on the pushes that change code and
-  weekly on a schedule. Dependabot follows the dependencies, and every CI action
-  is pinned to a commit rather than a movable tag, as is the buildkit image that
-  runs the build.
-- 🧪 **More test than product**: about 8 800 lines of tests against 6 000 of
-  code, 505 of them run on every pull request, and 92.9% of the statements are
-  covered with an 87% floor that fails the build. A browser suite drives what
-  markup cannot show, and every one of those tests was made to fail before the
-  fix it covers, by patching the fix out and reading the red.
-- ✍️ **Artifacts you can check**: the image is signed with cosign and ships SLSA
-  provenance and an SBOM; the release binaries carry their own attestation.
-  The [verification commands](SECURITY.md#verifying-what-you-pulled) are two
-  lines.
+  fragments pinned by hash), with no third-party script or font to trust.
+- 🔌 **No outbound requests of its own**, so it is air-gap friendly. The
+  [demo](demo/README.md) runs on a network with no route out and still makes no
+  third-party request.
+- 🔬 **A watched supply chain**: `govulncheck`, a Trivy image scan and CodeQL on
+  every pull request and weekly on a schedule, and every action pinned to a
+  commit rather than a movable tag.
+- 🧪 **More test than product**, and every check has to fail before it earns
+  trust: patch the fix out, read the red. The badges above carry the live
+  count.
+- ✍️ **Artifacts you can check**: cosign signature, SLSA provenance and an SBOM
+  on the image, an attestation on the binaries.
+  [Two lines to verify](SECURITY.md#verifying-what-you-pulled).
 
 ## Quickstart
 
@@ -234,10 +213,8 @@ docker compose up -d --build
 
 ## Documentation
 
-Everything lives in [docs/](docs/README.md), and it is written to be read, not
-just grepped: each page teaches the why before the how, in plain prose a
-developer can enjoy rather than a reference dump to endure. If you like
-understanding how a thing works, start anywhere below.
+Everything lives in [docs/](docs/README.md). Each page teaches the why before
+the how. Start anywhere.
 
 <table>
 <tr><td><strong>Start</strong></td><td>
@@ -291,12 +268,11 @@ socket, no admin UI. If the audience is _you_, the admin,
 
 ## Contributing
 
-cairn is young and opinionated, and other people's eyes make it better.
-Ideas and bug reports are welcome in the
-[issues](https://github.com/MorganKryze/cairn/issues), code and docs through
-[contributing](CONTRIBUTING.md), always within the scope above. And if cairn
-serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps its
-maintainer walking the trail.
+cairn is young and opinionated, and other people's eyes make it better. Ideas
+and bugs in the [issues](https://github.com/MorganKryze/cairn/issues), code and
+docs through [contributing](CONTRIBUTING.md), within the scope above. And if
+cairn serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps
+its maintainer walking the trail.
 
 ## Contributors
 
@@ -318,7 +294,7 @@ it, and a translation are all work.
 <td align="center" width="150">
 <a href="https://github.com/AntonPalmqvist"><img src="https://github.com/AntonPalmqvist.png?size=100" width="80" alt=""><br><sub><b>AntonPalmqvist</b></sub></a><br>
 <a href="https://github.com/MorganKryze/cairn/issues/33" title="Bug reports">🐛</a>
-<a href="https://github.com/MorganKryze/cairn/issues/33" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/issues?q=author%3AAntonPalmqvist" title="Ideas and planning">🤔</a>
 <a href="https://github.com/MorganKryze/cairn/pull/72" title="Translation">🌍</a>
 </td>
 <td align="center" width="150">
