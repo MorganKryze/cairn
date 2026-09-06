@@ -53,21 +53,21 @@ account or a manual, and boring for you to operate.
 - 🚦 **Live status pills** fed by the monitor you already run. Your server does
   the polling, never the visitor's browser.
 - 🏷️ **A word for where a service stands**: coming soon, beta, new, deprecated,
-  no longer available. The last two stop being links at all.
-- 🌍 **Their language**, picked from the browser and pinned by a switcher. Ten
-  are [built in](docs/configuration/i18n.md), your own text goes inline.
+  no longer available. The last two stop being links.
+- 🌍 **Their language**: the server reads it from the browser, a switcher pins
+  it. cairn ships [ten](docs/configuration/i18n.md), your own text goes inline.
 - 🔍 **Search from anywhere**: start typing, or ⌘K. A name finds that one
   service, not everything that mentions it.
 - 📱 **At home on a phone**: one-handed layout, and a header that steps aside as
   you scroll and returns the moment you head back up.
 - ♿ **Built to stay readable**: WCAG AA contrast in both themes, a skip link,
   named landmarks, announced results, right-to-left the right way round.
-- 🌗 **Calm typography, light and dark**, and every feature degrades gracefully
-  without JavaScript.
+- 🌗 **Calm typography, light and dark**, and every feature still works with
+  JavaScript off.
 
-> Accessibility is measured in a real browser on every pull request, never
-> audited as a whole, and not yet with a real screen reader. If you use one,
-> [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
+> CI measures the contrast in a real browser on every pull request. No audit
+> has covered cairn as a whole, and no screen reader user has tried it yet. If
+> you use one, [tell us what breaks](https://github.com/MorganKryze/cairn/issues).
 
 <div align="center">
 
@@ -80,8 +80,9 @@ account or a manual, and boring for you to operate.
 ### What you get as the operator
 
 - 📦 **One static binary, no database**, in an image of about 5 MB to pull.
-- 📝 **YAML mounted read-only**, applied live within seconds. A bad edit names
-  the file, the line and the shape expected, instead of taking the site down.
+- 📝 **YAML mounted read-only**, and cairn picks up an edit within seconds. A
+  bad one names the file, the line and the shape it wanted, instead of taking
+  the site down.
 - 📜 **Legal pages served by cairn itself**, in ordinary
   [markdown](docs/configuration/text.md): the notice and privacy pages
   self-hosters never have anywhere to put.
@@ -141,7 +142,7 @@ cairn stores nothing, signs no one in, and takes no input it has to trust.
 - 🪨 **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
   image, so a compromised process has nothing to pivot into.
 - 🛡️ **Runs locked down**: `read_only`, `cap_drop: ALL` and a self-probing
-  healthcheck all work out of the box.
+  healthcheck work out of the box.
   [Hardened compose](docs/deployment/docker-compose.md).
 - 🧱 **A strict Content-Security-Policy** (`default-src 'none'`, inline
   fragments pinned by hash), with no third-party script or font to trust.
@@ -151,9 +152,9 @@ cairn stores nothing, signs no one in, and takes no input it has to trust.
 - 🔬 **A watched supply chain**: `govulncheck`, a Trivy image scan and CodeQL on
   every pull request and weekly on a schedule, and every action pinned to a
   commit rather than a movable tag.
-- 🧪 **More test than product**, and every check was made to fail before it was
-  trusted, by patching the fix out and reading the red. The tests and coverage
-  badges above are the live count.
+- 🧪 **More test than product**, and every check has to fail before it earns
+  trust: patch the fix out, read the red. The badges above carry the live
+  count.
 - ✍️ **Artifacts you can check**: cosign signature, SLSA provenance and an SBOM
   on the image, an attestation on the binaries.
   [Two lines to verify](SECURITY.md#verifying-what-you-pulled).
@@ -212,8 +213,8 @@ docker compose up -d --build
 
 ## Documentation
 
-Everything lives in [docs/](docs/README.md), written to be read rather than
-grepped: each page teaches the why before the how. Start anywhere.
+Everything lives in [docs/](docs/README.md). Each page teaches the why before
+the how. Start anywhere.
 
 <table>
 <tr><td><strong>Start</strong></td><td>
@@ -293,7 +294,7 @@ it, and a translation are all work.
 <td align="center" width="150">
 <a href="https://github.com/AntonPalmqvist"><img src="https://github.com/AntonPalmqvist.png?size=100" width="80" alt=""><br><sub><b>AntonPalmqvist</b></sub></a><br>
 <a href="https://github.com/MorganKryze/cairn/issues/33" title="Bug reports">🐛</a>
-<a href="https://github.com/MorganKryze/cairn/issues/33" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/issues?q=author%3AAntonPalmqvist" title="Ideas and planning">🤔</a>
 <a href="https://github.com/MorganKryze/cairn/pull/72" title="Translation">🌍</a>
 </td>
 <td align="center" width="150">
