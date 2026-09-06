@@ -144,7 +144,13 @@ type Site struct {
 	Favicon ThemedRef  `yaml:"favicon"` // tab icon; URL or /assets path, cairn's own by default
 	Icons   []SiteIcon `yaml:"icons"`   // home-screen set; overrides everything derived from favicon
 	Index   *bool      `yaml:"index"`   // nil means true; false asks search engines to stay away
-	Locales []string   `yaml:"locales"`
+	// Search is the box in the header. nil means true. false drops the live one,
+	// the decorative copy every other page carries for layout parity, the script
+	// and the shortcut with it: a hidden box with search.js still bound would
+	// leave Cmd+K pointing at nothing to type into. Unrelated to the search.*
+	// entries in Strings, which are that box's wording.
+	Search  *bool    `yaml:"search"`
+	Locales []string `yaml:"locales"`
 	Theme   struct {
 		Accent string `yaml:"accent"`
 		Font   struct {
