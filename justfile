@@ -53,6 +53,12 @@ demo-rebuild:
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
+    # Checked before anything is fetched. A missing cosign fails the verify
+    # below exactly the way a bad signature does, and it used to fail there,
+    # after the pulls: the recipe printed "nothing here is trustworthy" about a
+    # release that was fine, and left unverified files in dist/, the directory
+    # that crosses the gap.
+    command -v cosign >/dev/null || { echo "cosign is not installed, and without it this recipe cannot check a signature: https://docs.sigstore.dev/cosign/system_config/installation/" >&2; exit 1; }
     # docker save exports the platform you pulled and nothing else, so this is
     # an argument rather than an assumption: preparing an amd64 cluster from
     # an arm64 laptop is the classic way to learn that at CrashLoopBackOff
