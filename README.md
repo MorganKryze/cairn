@@ -56,6 +56,8 @@ account or a manual, and boring for you to operate.
   no longer available. The last two stop being links.
 - 🌍 **Their language**: the server reads it from the browser, a switcher pins
   it. cairn ships [ten](docs/configuration/i18n.md), your own text goes inline.
+- 🔒 **A lock on what needs an account**, right after the name, and a note on
+  its page saying whom to ask for one.
 - 🔍 **Search from anywhere**: start typing, or ⌘K. A name finds that one
   service, not everything that mentions it.
 - 📱 **At home on a phone**: one-handed layout, and a header that steps aside as
