@@ -31,7 +31,7 @@
       {{end}}<div class="card-main">
         <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
-          {{if .Off}}<span class="card-name"{{.Name.Attrs}}>{{.Name}}</span>{{else}}<a class="card-name" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}{{.Name.Attrs}}>{{.Name}}</a>{{end}}
+          {{if .Off}}<span class="card-name"{{.Name.Attrs}}>{{if .SignIn}}{{.NameHead}}<span class="name-end">{{.NameTail}}<span class="card-lock" title="{{.SignInLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{.SignInLabel}}"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span>{{else}}{{.Name}}{{end}}</span>{{else}}<a class="card-name" href="{{.URL}}"{{if .Blank}} target="_blank" rel="noopener noreferrer"{{end}}{{if .Leave}} data-leave{{end}}{{.Name.Attrs}}>{{if .SignIn}}{{.NameHead}}<span class="name-end">{{.NameTail}}<span class="card-lock" title="{{.SignInLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{.SignInLabel}}"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span>{{else}}{{.Name}}{{end}}</a>{{end}}
           {{if .Desc.Text}}<span class="card-desc"{{.Desc.Attrs}}>{{.Desc}}</span>{{end}}
         </div>
       </div>

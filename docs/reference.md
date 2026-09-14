@@ -34,6 +34,7 @@ logs the same error.
 | `tags`       | no       | `[]`          | list of search words                                                                                                                                                                                                                             |
 | `selfhosted` | no       | none          | `true`/`false`: shows a self-hosted / hosted-elsewhere flag on the card ([details](configuration/services.md#hosting-flag))                                                                                                                      |
 | `state`      | no       | none          | `soon`, `retired`, `beta`, `deprecated` or `new`: a badge on the card, and for the first two no link at all ([details](configuration/services.md#where-a-service-stands))                                                                        |
+| `sign_in`    | no       | `false`       | `true`: a lock after the name on the card and a note on the detail page, for a service that needs an account ([details](configuration/services.md#behind-a-sign-in))                                                                             |
 
 ## `site.yaml`
 

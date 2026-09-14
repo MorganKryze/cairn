@@ -95,6 +95,10 @@
         "type": "string",
         "enum": ["soon", "retired", "beta", "deprecated", "new"],
         "description": "Where the service stands, as you declare it. soon and retired take the link away entirely and mute the card; beta, deprecated and new only add the badge. url is optional with soon and retired."
+      },
+      "sign_in": {
+        "type": "boolean",
+        "description": "true when a visitor will need an account: a lock after the name on the card, and a note on the detail page."
       }
     }
   },

@@ -301,6 +301,14 @@ type cardView struct {
 	// service_links and both only apply to a url that leaves the site, so a
 	// service whose url is a page cairn serves gets neither.
 	Blank, Leave bool
+	// SignIn puts a lock after the name. NameHead and NameTail are the name
+	// split at its last space, so the last word and the lock can be bound in one
+	// nowrap span: a lock alone on the second line of a wrapped name reads as
+	// nothing. The label names the lock for a screen reader; it is an aria-label
+	// on the glyph and not text, since search.js reads the name's text.
+	SignIn             bool
+	SignInLabel        string
+	NameHead, NameTail string
 }
 
 // hostKindOf reads the card's flag off the service rather than off the built
@@ -370,6 +378,8 @@ type detailView struct {
 	Blank, Leave                               bool   // see cardView
 	State, StateLabel                          string // see cardView
 	Off                                        bool   // see cardView
+	SignIn                                     bool   // see cardView
+	SignInLabel, SignInNote                    string
 }
 
 type imageView struct {
@@ -620,6 +630,11 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Tags:      strings.Join(s.Tags, " "),
 					Off:       s.State.Disables(),
 				}
+				if s.SignIn {
+					card.SignIn = true
+					card.SignInLabel = cfg.Str(loc, "signin.label")
+					card.NameHead, card.NameTail = splitLast(card.Name.Text)
+				}
 				if s.State != config.StateNone {
 					card.State = string(s.State)
 					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
@@ -671,6 +686,11 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					URL:       s.URL,
 					Body:      proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
 					Off:       s.State.Disables(),
+				}
+				if s.SignIn {
+					dv.SignIn = true
+					dv.SignInLabel = cfg.Str(loc, "signin.label")
+					dv.SignInNote = cfg.Str(loc, "signin.note")
 				}
 				if s.State != config.StateNone {
 					dv.State = string(s.State)
@@ -947,4 +967,11 @@ func versionInfo(v string) (label, href string) {
 	default:
 		return v, ""
 	}
+}
+
+// splitLast cuts a name at its last space, the space staying with the head. A
+// one-word name is all tail, which is what binds it to the lock.
+func splitLast(s string) (head, tail string) {
+	i := strings.LastIndexByte(s, ' ')
+	return s[:i+1], s[i+1:]
 }

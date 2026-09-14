@@ -22,6 +22,7 @@ Any text field accepts a plain string or a per-locale map; see
 | `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                                                                   |
 | `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag).                                     |
 | `state`      | no       | none          | `soon`, `retired`, `beta`, `deprecated` or `new`; a badge on the card. See [Where a service stands](#where-a-service-stands).                                |
+| `sign_in`    | no       | `false`       | `true` if a visitor will need an account; a lock after the name, a note on the detail page. See [Behind a sign-in](#behind-a-sign-in).                       |
 
 ## Full example
 
@@ -148,6 +149,30 @@ needs a calendar is a different program.
 
 The five words come from the strings table, so they read in the page's
 language. See [Languages](i18n.md).
+
+## Behind a sign-in
+
+```yaml
+sign_in: true
+```
+
+Tells the visitor they will need an account before they get anything out of
+this service. The card puts a lock right after the name, and the detail page
+opens with a short note saying so and suggesting whom to ask.
+
+It says nothing about how you protect the service: a login page, SSO or basic
+auth all read the same to someone arriving from here. To point people at your
+own sign-up or to your identity provider, override the note once for the whole
+site through `strings`:
+
+```yaml
+strings:
+  signin.note:
+    en: Sign in with your Libre account. No account yet? Write to me.
+    fr: Connectez-vous avec votre compte Libre. Pas encore de compte ? Écrivez-moi.
+```
+
+Anything specific to one service belongs in its `details`.
 
 ## Preview images
 

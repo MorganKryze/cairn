@@ -25,3 +25,14 @@
   details: |
     This one moved. The detail page still works, which is the point: it is the
     only place left to say where to go instead.
+
+# sign_in, on a name long enough to wrap on a card, which is the case the lock
+# has to survive: bound to the last word, never alone on a line.
+- id: vault
+  url: https://vault.example.org
+  name: Shared family vault for passwords and documents
+  desc: Needs an account.
+  sign_in: true
+  selfhosted: true
+  details: |
+    Here so the detail page has a sign-in note to measure.
