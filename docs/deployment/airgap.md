@@ -39,6 +39,10 @@ That pulls cairn's image for that one platform, saves it to `dist/`, pulls the
 packaged chart, and **verifies both signatures before anything moves**, which is
 the step you cannot repeat once the line is cut.
 
+It needs `docker`, `helm` and
+[`cosign`](https://docs.sigstore.dev/cosign/system_config/installation/) on the
+connected machine, and without cosign it stops before downloading anything.
+
 It deliberately stops there. **Gatus, its chart and the icons are still yours to
 fetch**, and the icons in particular are the step nothing downstream will remind
 you about. Read on: the sections below are what the recipe automates and what it
