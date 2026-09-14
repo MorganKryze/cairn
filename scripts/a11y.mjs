@@ -2173,6 +2173,130 @@ await check(
   await on.close();
 }
 
+// ---- sign_in ----
+//
+// A lock after the name, and a note on the detail page. The states fixture
+// carries one service with sign_in and a name long enough to wrap, since a
+// lock stranded alone on the last line of a wrapped name is the failure this
+// shape invites. The note is muted ink on the faint fill, which is a pair no
+// other text on the page uses, so it gets its own contrast measurement.
+{
+  const ctx = await browser.newContext({ reducedMotion: "reduce" });
+  const pg = await ctx.newPage();
+  console.log("\nsign_in");
+
+  await check(
+    "the lock stays on its last word's line at every width",
+    async () => {
+      await pg.goto(STATES, { waitUntil: "networkidle" });
+      let wrapped = 0;
+      for (let w = 300; w <= 1200; w += 10) {
+        await pg.setViewportSize({ width: w, height: 900 });
+        const m = await pg.evaluate(() => {
+          const lock = document.querySelector(".card-lock");
+          if (!lock) return null;
+          // The name is a flex item, so its own rects are one box however many
+          // lines it runs to: count the line boxes of its text instead.
+          const all = document.createRange();
+          all.selectNodeContents(lock.closest(".card-name"));
+          const lines = new Set(
+            [...all.getClientRects()]
+              .filter((r) => r.width > 0)
+              .map((r) => Math.round(r.top)),
+          ).size;
+          const word = document.createRange();
+          word.selectNodeContents(lock.closest(".name-end").firstChild);
+          const last = [...word.getClientRects()].pop();
+          const lk = lock.getBoundingClientRect();
+          return {
+            lines,
+            alone: !(lk.top < last.bottom && lk.bottom > last.top),
+          };
+        });
+        if (!m) throw new Error("no lock on the states fixture");
+        if (m.lines > 1) wrapped++;
+        if (m.alone)
+          throw new Error(
+            `at ${w}px the lock left its last word for a line of its own`,
+          );
+      }
+      if (!wrapped)
+        throw new Error("the name never wrapped, so this proves nothing");
+    },
+  );
+
+  await check(
+    "the lock is named for a screen reader and adds nothing to the name",
+    async () => {
+      await pg.setViewportSize({ width: 1100, height: 900 });
+      const named = await pg
+        .getByRole("link", { name: /Sign-in required/ })
+        .count();
+      if (!named)
+        throw new Error(
+          "no link on the page is announced with the lock's name",
+        );
+      const text = await pg.$eval(
+        ".card-lock",
+        (l) => l.closest(".card-name").textContent,
+      );
+      // search.js matches on this text: the lock's name in it would make every
+      // query for "sign" find this service by name.
+      if (/sign/i.test(text))
+        throw new Error(`the name's text reads "${text}"`);
+    },
+  );
+
+  for (const theme of ["light", "dark"]) {
+    await check(`the detail note's words clear 4.5:1 in ${theme}`, async () => {
+      await pg.goto(new URL("vault/", STATES).href, {
+        waitUntil: "networkidle",
+      });
+      const m = await pg.evaluate((t) => {
+        document.documentElement.dataset.theme = t;
+        const note = document.querySelector(".signin");
+        if (!note) return null;
+        // A color-mix computes to oklab(), whose numbers are not red, green and
+        // blue: resolve every colour through a canvas.
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 1;
+        const x = cv.getContext("2d");
+        const rgb = (c) => {
+          x.clearRect(0, 0, 1, 1);
+          x.fillStyle = c;
+          x.fillRect(0, 0, 1, 1);
+          const d = x.getImageData(0, 0, 1, 1).data;
+          return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+        };
+        return {
+          fill: rgb(getComputedStyle(note).backgroundColor),
+          body: rgb(getComputedStyle(note.querySelector("p")).color),
+          title: rgb(getComputedStyle(note.querySelector("strong")).color),
+        };
+      }, theme);
+      if (!m) throw new Error("no sign-in note on the detail page");
+      for (const k of ["body", "title"]) {
+        const r = ratio(m[k], m.fill);
+        if (r < 4.5)
+          throw new Error(
+            `the note's ${k} is ${m[k]} on ${m.fill}, ${r.toFixed(2)}:1`,
+          );
+      }
+    });
+  }
+
+  await check("a service without sign_in carries neither", async () => {
+    await pg.goto(new URL("beta/", STATES).href, { waitUntil: "networkidle" });
+    if (await pg.$(".signin"))
+      throw new Error("a detail page without sign_in shows the note");
+    await pg.goto(SITE, { waitUntil: "networkidle" });
+    if (await pg.$(".card-lock"))
+      throw new Error("the example config sets no sign_in and shows a lock");
+  });
+
+  await ctx.close();
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

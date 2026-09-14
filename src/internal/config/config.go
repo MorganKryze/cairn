@@ -253,6 +253,10 @@ type Service struct {
 	// elsewhere, nil no flag at all.
 	Selfhosted *bool `yaml:"selfhosted"`
 	State      State `yaml:"state"`
+	// SignIn says the visitor will need an account: a lock after the name on
+	// the card, a note on the detail page. It says nothing about how the site
+	// is protected, which is the operator's business and not the visitor's.
+	SignIn bool `yaml:"sign_in"`
 }
 
 // ServiceImage is a preview shown on the detail page. A plain YAML string is

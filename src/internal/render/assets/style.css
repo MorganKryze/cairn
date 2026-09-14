@@ -848,6 +848,21 @@ a.flag { min-height: 1.5rem; }
 .card-name::after { content: ""; position: absolute; inset: 0; z-index: 0; }
 .card:has(.card-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .card-desc { color: var(--muted); font-size: .95rem; }
+/* sign_in: a lock after the name, bound to its last word so a wrapped name
+   never strands it alone on a line. Raised above the stretched link only so
+   its title can show on hover; a click on it still opens the service. */
+.name-end { white-space: nowrap; }
+.card-lock {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  width: .8em;
+  height: .8em;
+  margin-inline-start: .35em;
+  vertical-align: -.05em;
+  color: var(--muted);
+}
+.card-lock svg { display: block; width: 100%; height: 100%; }
 
 /* The detail link: a glyph in the card's corner, raised above the stretched
    link like the status pill. Inline at the end of the description it measured
@@ -1034,6 +1049,23 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   letter-spacing: -.015em;
 }
 .detail .lead { font-size: 1.2rem; margin-top: 1.4rem; }
+/* The sign_in note. A tinted block and no colour of its own: it is
+   information, and the accent belongs to the Open button, the one action on
+   the page. */
+.signin {
+  display: flex;
+  gap: .8rem;
+  align-items: flex-start;
+  margin-top: 1.4rem;
+  padding: .9rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--faint);
+  color: var(--muted);
+  font-size: .95rem;
+}
+.signin svg { width: 1.15rem; height: 1.15rem; flex: none; margin-top: .15rem; }
+.signin p { margin: 0; }
+.signin strong { display: block; margin-bottom: .15rem; color: var(--fg); font-weight: 600; }
 .detail p { max-width: 40rem; }
 .shot { margin: 1.6rem 0 0; }
 .shot img {
