@@ -82,8 +82,11 @@ navigation row holding the `links` on the left and the search on the right.
 Each link takes an optional `icon`. Name one of the built-in glyphs, drawn
 inline so they cost no external request:
 
-`book` · `chat` · `github` · `globe` · `heart` · `home` · `key` · `mail` ·
-`portfolio` · `rss` · `status` · `user`
+`announce` · `book` · `calendar` · `chat` · `cloud` · `code` · `coffee` ·
+`community` · `download` · `file` · `github` · `globe` · `heart` · `help` ·
+`home` · `key` · `legal` · `location` · `lock` · `mail` · `news` · `photos` ·
+`portfolio` · `privacy` · `rss` · `social` · `status` · `support` · `user` ·
+`video`
 
 Or pass a URL or an `/assets` path for your own image. An unknown glyph name
 is a config error that lists the valid ones.

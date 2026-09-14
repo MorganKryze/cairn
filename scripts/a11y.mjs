@@ -2297,6 +2297,56 @@ await check(
   await ctx.close();
 }
 
+// ---- header glyphs ----
+//
+// Thirty glyphs pasted from one family, and the only way one of them fails is
+// silently: a path that draws nothing, or a dot, still passes every markup
+// test. Each is drawn in the wrapper the server puts around it and measured.
+// Read from glyphs.go, the same map the binary embeds.
+{
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(
+    new URL("../src/internal/config/glyphs.go", import.meta.url),
+    "utf8",
+  );
+  const glyphs = [...src.matchAll(/"([a-z0-9-]+)":\s*`([^`]*)`/g)].map((m) => [
+    m[1],
+    m[2],
+  ]);
+  console.log("\nheader glyphs");
+
+  await check(
+    "every header glyph draws something the size of a glyph",
+    async () => {
+      if (glyphs.length < 12)
+        throw new Error(
+          `read ${glyphs.length} glyphs from glyphs.go, so this proves nothing`,
+        );
+      const pg = await browser.newPage();
+      await pg.goto(SITE, { waitUntil: "networkidle" });
+      const bad = await pg.evaluate((list) => {
+        const out = [];
+        for (const [name, inner] of list) {
+          const host = document.createElement("span");
+          host.className = "menu-link";
+          host.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+          document.body.appendChild(host);
+          const b = host.querySelector("svg").getBBox();
+          // In viewBox units: a real glyph spans most of its 24-unit box. Half
+          // of it in both directions is the floor.
+          if (!(b.width >= 12 && b.height >= 12))
+            out.push(`${name} ${b.width.toFixed(1)}x${b.height.toFixed(1)}`);
+          host.remove();
+        }
+        return out;
+      }, glyphs);
+      await pg.close();
+      if (bad.length)
+        throw new Error(`these draw too small or nothing: ${bad.join(", ")}`);
+    },
+  );
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");
 process.exit(failures ? 1 : 0);

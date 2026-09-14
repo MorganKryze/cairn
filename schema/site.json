@@ -144,7 +144,7 @@
           "url": { "type": "string" },
           "icon": {
             "type": "string",
-            "description": "A built-in glyph (book, chat, github, globe, heart, home, key, mail, portfolio, rss, status, user), a URL, or an /assets path."
+            "description": "A built-in glyph (announce, book, calendar, chat, cloud, code, coffee, community, download, file, github, globe, heart, help, home, key, legal, location, lock, mail, news, photos, portfolio, privacy, rss, social, status, support, user, video), a URL, or an /assets path."
           }
         }
       }
