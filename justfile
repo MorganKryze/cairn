@@ -171,7 +171,7 @@ test-browser:
         done
         [ -n "$ready" ] || { echo "test-browser: cairn never came up on $port" >&2; exit 1; }
     done
-    node scripts/search.mjs http://127.0.0.1:8090/en/
+    node scripts/search.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
     node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
     node scripts/status.mjs http://127.0.0.1:8092/en/
 

@@ -8,6 +8,8 @@
 import { chromium } from 'playwright';
 
 const URL = process.argv[2] ?? process.env.CAIRN_URL ?? 'http://127.0.0.1:8090/en/';
+// example/ has no row a query reorders, so the order checks read this one.
+const ORDER_URL = process.argv[3] ?? process.env.CAIRN_MANY_URL ?? 'http://127.0.0.1:8091/en/';
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
@@ -192,6 +194,54 @@ await check('with nothing typed, Tab leaves the box at once', async () => {
   await q.focus();
   await page.keyboard.press('Tab');
   eq(await inBox(), false, 'focus in the box');
+});
+
+// Keyboard and screen-reader order is the DOM's. A match that moves to the
+// front of its row has to move there in the DOM, or Tab and a screen reader
+// walk a sequence the screen no longer shows: CSS order did exactly that.
+const op = await browser.newPage();
+await op.goto(ORDER_URL);
+const oq = op.locator('#q');
+const domAndScreen = () =>
+  op.$$eval('.card', els => {
+    const vis = els.filter(e => e.getClientRects().length > 0);
+    const name = e => e.querySelector('.card-name').textContent.trim();
+    const screen = [...vis].sort((a, b) => {
+      const x = a.getBoundingClientRect(), y = b.getBoundingClientRect();
+      return x.top - y.top || x.left - y.left;
+    });
+    return { dom: vis.map(name), screen: screen.map(name) };
+  });
+const original = (await domAndScreen()).dom;
+
+await check('after any one-letter query, Tab order is screen order', async () => {
+  let moved = 0;
+  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+    await oq.fill(letter);
+    const { dom, screen } = await domAndScreen();
+    eq(dom, screen, `DOM order against screen order for "${letter}"`);
+    // A card that now sits ahead of one it used to follow: the case at stake.
+    const rank = n => original.indexOf(n);
+    if (dom.some((n, i) => i > 0 && rank(n) < rank(dom[i - 1]))) moved++;
+  }
+  if (!moved) throw new Error('no letter reordered a row, so this proves nothing');
+});
+
+// Cleared from a query that actually moved a card. Clearing after one that
+// moved nothing finds the original order whether or not anything restores it:
+// the first version of this check typed a vowel last and stayed green with
+// the restore deleted.
+await check('clearing the box puts every card back where it was', async () => {
+  const rank = n => original.indexOf(n);
+  let moved = '';
+  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+    await oq.fill(letter);
+    const { dom } = await domAndScreen();
+    if (dom.some((n, i) => i > 0 && rank(n) < rank(dom[i - 1]))) { moved = letter; break; }
+  }
+  if (!moved) throw new Error('no letter reordered a row, so clearing proves nothing');
+  await oq.fill('');
+  eq((await domAndScreen()).dom, original, `DOM order after clearing "${moved}"`);
 });
 
 await browser.close();
