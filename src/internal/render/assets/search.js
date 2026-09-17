@@ -123,5 +123,14 @@
     if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(sel + 1, matches.length - 1)); announce(matches.length, matches[sel].label); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(sel - 1, 0)); announce(matches.length, matches[sel].label); }
     else if (e.key === 'Enter' && sel >= 0) { e.preventDefault(); matches[sel].el.querySelector('.card-name').click(); }
+    // Tab walks the matches the way the arrows do, focus staying in the box so
+    // the query can still be refined. At either end it does nothing here and
+    // the browser moves focus as usual: looping would leave a keyboard user no
+    // way out of the field short of Escape, which throws the query away.
+    else if (e.key === 'Tab' && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      const next = sel + (e.shiftKey ? -1 : 1);
+      if (next < 0 || next >= matches.length) return;
+      e.preventDefault(); setSel(next); announce(matches.length, matches[sel].label);
+    }
   });
 })();
