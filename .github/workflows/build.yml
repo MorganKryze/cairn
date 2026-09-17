@@ -207,6 +207,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # The README states the image's pull size twice, on the badge and in the
+      # operator list, and both are written by hand: they said 4.4 MB for
+      # releases that pulled 5.0. The size only exists once the layers are
+      # compressed for a registry, which a pull request never does, so this
+      # reads what main just pushed and fails if the README rounds differently.
+      - if: github.event_name == 'push'
+        name: the README's image size matches the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          ref="ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          amd64=$(docker buildx imagetools inspect --raw "$ref@$DIGEST" | python3 -c 'import json, sys; i = json.load(sys.stdin); print(next(m["digest"] for m in i["manifests"] if m.get("platform", {}).get("architecture") == "amd64"))')
+          mb=$(docker buildx imagetools inspect --raw "$ref@$amd64" | python3 -c 'import json, sys; m = json.load(sys.stdin); print(round((sum(l["size"] for l in m["layers"]) + m["config"]["size"]) / 1e6))')
+          badge=$(grep -oE 'badge/image-[0-9]+%20MB' README.md | sed -E 's/.*image-([0-9]+)%20MB/\1/' || true)
+          bullet=$(grep -oE 'about [0-9]+ MB to pull' README.md | grep -oE '[0-9]+' || true)
+          if [ "$badge" != "$mb" ] || [ "$bullet" != "$mb" ]; then
+            echo "the amd64 image pulls $mb MB; README.md says ${badge:-nothing} on the badge and ${bullet:-nothing} in the operator list" >&2
+            exit 1
+          fi
+          echo "README.md and the image agree: $mb MB"
+
   # `unstable` and the by-sha tag, on Docker Hub too, so the two registries
   # carry the same names rather than Hub holding releases alone.
   #
