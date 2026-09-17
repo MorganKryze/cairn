@@ -1,7 +1,11 @@
-# Nine categories, one service each, no icons and no status: the category count
-# is the only thing under test, and everything else would just be one more
-# reason for this file to need editing.
+# Nine categories, one service each but alpha, no icons and no status: the
+# category count is what the trail checks read, and everything else would just
+# be one more reason for this file to need editing. alpha holds two, for the
+# search order check below.
 - { id: one, url: https://one.example.org, name: One, category: alpha }
+# A second card in alpha, for the search order check: "n" is inside One and
+# starts Notes, so the better match has to move ahead of the one before it.
+- { id: notes, url: https://notes.example.org, name: Notes, category: alpha }
 - { id: two, url: https://two.example.org, name: Two, category: bravo }
 - { id: three, url: https://three.example.org, name: Three, category: charlie }
 - { id: four, url: https://four.example.org, name: Four, category: delta }
