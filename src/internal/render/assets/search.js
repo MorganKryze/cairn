@@ -52,6 +52,8 @@
     };
   });
   const empty = document.getElementById('empty');
+  const byEl = new Map(cards.map(c => [c.el, c]));
+  const lists = Array.from(new Set(cards.map(c => c.el.parentElement)));
 
   // the visible matches in on-screen order; sel is the one Enter opens, -1 none
   let matches = [];
@@ -84,17 +86,22 @@
       const ok = hit(c);
       c.el.hidden = !ok;
       c.el.classList.remove('sel');
-      if (ok && words.length) {
-        c.score = score(c);
-        c.el.style.order = String(-c.score); // the better the match, the earlier in its row
-        hits.push(c);
-      } else {
-        c.el.style.order = '';
-      }
+      c.score = ok && words.length ? score(c) : 0;
+      if (ok && words.length) hits.push(c);
     }
     // on-screen order: category, then score, then original position
     hits.sort((a, b) => a.cat - b.cat || b.score - a.score || a.pos - b.pos);
     matches = hits;
+    // The better match moves to the front of its row in the DOM itself, not with
+    // CSS order. order moved the card on screen and nowhere else, so Tab and a
+    // screen reader walked the old sequence: after "o" on the demo, Old forum
+    // read fourth and was reached last. With no query every card goes back to
+    // its original place, which is what pos records.
+    for (const list of lists) {
+      const sorted = Array.from(list.children, el => byEl.get(el))
+        .sort((a, b) => b.score - a.score || a.pos - b.pos);
+      if (sorted.some((c, i) => c.el !== list.children[i])) list.append(...sorted.map(c => c.el));
+    }
 
     for (const s of cats) s.hidden = !s.querySelector('.card:not([hidden])');
     // An empty box is not a search that found nothing: clearing the field

@@ -26,16 +26,29 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-        with:
-          go-version: stable
+      # Built inside the image the Dockerfile's build stage names, digest and
+      # all, rather than with setup-go. The image follows that pin and setup-go
+      # followed "stable", so one release shipped two compilers: go1.26.6 in
+      # the image, go1.27.0 in the tarballs, and Trivy scans only the image.
+      # One pin now builds both, and the loop checks it did.
       - name: Build the release binaries
         run: |
           version="${GITHUB_REF_NAME#v}"
+          goimg=$(awk '$1 == "FROM" && $NF == "build" {print $3}' docker/Dockerfile)
+          [ -n "$goimg" ] || { echo "no build stage FROM in docker/Dockerfile" >&2; exit 1; }
+          want=$(docker run --rm "$goimg" go env GOVERSION)
+          echo "building with $goimg ($want)"
           for target in linux/amd64 linux/arm64 darwin/arm64; do
             os="${target%/*}"; arch="${target#*/}"
-            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+            # The runner's own uid, so the binary is not left owned by root;
+            # with no home for that uid, the caches go to /tmp. -buildvcs=false
+            # as in the image build, whose context carries no .git either.
+            docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" -w /src \
+              -e CGO_ENABLED=0 -e GOOS="$os" -e GOARCH="$arch" -e GOFLAGS=-buildvcs=false \
+              -e GOCACHE=/tmp/gocache -e GOMODCACHE=/tmp/gomod "$goimg" \
               go build -trimpath -ldflags="-s -w -X main.version=$version" -o cairn ./src/cmd/cairn
+            got=$(docker run --rm -v "$PWD:/src:ro" "$goimg" go version /src/cairn | awk '{print $2}')
+            [ "$got" = "$want" ] || { echo "cairn for $target was built by $got, not $want" >&2; exit 1; }
             tar -czf "cairn_${version}_${os}_${arch}.tar.gz" cairn
           done
           sha256sum cairn_*.tar.gz > checksums.txt
