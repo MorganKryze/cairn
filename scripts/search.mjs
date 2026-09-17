@@ -127,6 +127,73 @@ await check('and falls silent when the box is cleared', async () => {
   eq((await page.locator('#count').textContent()).trim(), '', 'the live region');
 });
 
+// Tab walks the matches like the arrows, with focus kept in the box, and gives
+// focus back to the browser at either end. Looping would trap a keyboard user
+// in the field, so the two exits are checked as hard as the walk.
+const onScreen = () =>
+  page.$$eval('.card', els =>
+    els
+      .filter(e => e.getClientRects().length > 0)
+      .map(e => ({ r: e.getBoundingClientRect(), sel: e.classList.contains('sel'), n: e.querySelector('.card-name').textContent.trim() }))
+      .sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left)
+      .map(c => ({ n: c.n, sel: c.sel })),
+  );
+const selIndex = async () => (await onScreen()).findIndex(c => c.sel);
+const inBox = () => page.evaluate(() => document.activeElement?.id === 'q');
+let many = '';
+for (const cand of ['e', 'a', 'o', 'i']) {
+  await q.fill(cand);
+  if ((await visible()) >= 3) { many = cand; break; }
+}
+
+await check('Tab moves the pick to the next match, and the box keeps focus', async () => {
+  if (!many) throw new Error('no one-letter query matches three cards, so this proves nothing');
+  await q.fill(many);
+  const list = await onScreen();
+  let i = await selIndex();
+  if (i === list.length - 1) { await q.press('Shift+Tab'); i = await selIndex(); }
+  await q.press('Tab');
+  eq(await selIndex(), i + 1, 'the pick after Tab');
+  eq(await inBox(), true, 'focus in the box');
+  const said = (await page.locator('#count').textContent()).trim();
+  if (!said.endsWith(list[i + 1].n)) throw new Error(`the live region said ${JSON.stringify(said)}, not the new pick`);
+});
+
+await check('Shift+Tab moves it back', async () => {
+  await q.fill(many);
+  let i = await selIndex();
+  if (i === 0) { await q.press('Tab'); i = await selIndex(); }
+  await q.press('Shift+Tab');
+  eq(await selIndex(), i - 1, 'the pick after Shift+Tab');
+  eq(await inBox(), true, 'focus in the box');
+});
+
+await check('Tab on the last match leaves the box instead of looping', async () => {
+  await q.fill(many);
+  const n = (await onScreen()).length;
+  for (let i = await selIndex(); i < n - 1; i++) await q.press('Tab');
+  eq(await selIndex(), n - 1, 'the pick before the last Tab');
+  await page.keyboard.press('Tab');
+  eq(await inBox(), false, 'focus in the box after Tab on the last match');
+  await q.focus();
+});
+
+await check('Shift+Tab on the first match leaves the box backwards', async () => {
+  await q.fill(many);
+  for (let i = await selIndex(); i > 0; i--) await q.press('Shift+Tab');
+  eq(await selIndex(), 0, 'the pick before the last Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  eq(await inBox(), false, 'focus in the box after Shift+Tab on the first match');
+  await q.focus();
+});
+
+await check('with nothing typed, Tab leaves the box at once', async () => {
+  await q.fill('');
+  await q.focus();
+  await page.keyboard.press('Tab');
+  eq(await inBox(), false, 'focus in the box');
+});
+
 await browser.close();
 console.log(failures ? `\n${failures} failed` : '\nall passed');
 process.exit(failures ? 1 : 0);
