@@ -27,6 +27,7 @@ https://cairn.libresoftware.cloud
 - [Kubernetes](docs/deployment/kubernetes.md): ConfigMap, Deployment, Service, why the two probes differ
 - [Helm](docs/deployment/helm.md): chart at oci://ghcr.io/morgankryze/charts/cairn, config in values, Ingress
 - [Air-gapped](docs/deployment/airgap.md): offline install with and without a registry, -emit-icons, -check with both mounts
+- [Static hosting](docs/deployment/static.md): -export to a directory, zip or tar; what a static site gives up (status pills); Cloudflare Pages, Netlify, Apache/OVH; a CI pipeline
 - [Reverse proxies](docs/deployment/reverse-proxies.md): Caddy, Traefik, Nginx examples
 - [Status with Gatus](docs/recipes/gatus.md): -emit-gatus, polling, pill behavior
 - [Icons](docs/recipes/icons.md): slugs, URLs, self-hosted files

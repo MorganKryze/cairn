@@ -677,4 +677,4 @@ update, are both measured rather than reasoned.
 The registry push in step 3 is the one step taken on faith, since that part is
 your Harbor and not ours.
 
-Next: [Reverse proxies](reverse-proxies.md)
+Next: [Static hosting](static.md)

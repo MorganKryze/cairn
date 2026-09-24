@@ -91,6 +91,9 @@ account or a manual, and boring for you to operate.
 - 🌐 **A domain, a subdomain, or a sub-path** of one you already use. cairn
   handles the prefix, so your
   [proxy](docs/deployment/reverse-proxies.md) needs no rewriting rule.
+- 🗃️ **Or no server at all**: `cairn -export site.zip` writes the site as
+  [static files](docs/deployment/static.md) for Cloudflare Pages, Netlify or
+  an Apache host. The status pills are the one thing that stays behind.
 
 ## Status monitoring
 
@@ -237,6 +240,7 @@ the how. Start anywhere.
 <a href="docs/deployment/kubernetes.md">Kubernetes</a> ·
 <a href="docs/deployment/helm.md">Helm</a> ·
 <a href="docs/deployment/airgap.md">Air-gapped</a> ·
+<a href="docs/deployment/static.md">Static hosting</a> ·
 <a href="docs/deployment/reverse-proxies.md">Reverse proxies</a>
 </td></tr>
 <tr><td><strong>Recipes</strong></td><td>
