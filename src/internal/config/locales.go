@@ -51,6 +51,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "You will need an account to use this. No account yet? Ask the person who runs this site.",
 		"leave.go":           "Continue",
 		"leave.stay":         "Stay here",
+		"notfound.title":     "Page not found",
+		"notfound.body":      "Nothing lives at this address. The link may be out of date.",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -92,6 +94,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Il vous faudra un compte pour l'utiliser. Pas encore de compte ? Demandez à la personne qui gère ce site.",
 		"leave.go":           "Continuer",
 		"leave.stay":         "Rester ici",
+		"notfound.title":     "Page introuvable",
+		"notfound.body":      "Il n'y a rien à cette adresse. Le lien n'est peut-être plus à jour.",
 	},
 	"de": {
 		"nav.skip":           "Zum Inhalt springen",
@@ -133,6 +137,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Dafür brauchen Sie ein Konto. Noch keins? Fragen Sie die Person, die diese Seite betreibt.",
 		"leave.go":           "Fortfahren",
 		"leave.stay":         "Hier bleiben",
+		"notfound.title":     "Seite nicht gefunden",
+		"notfound.body":      "Unter dieser Adresse gibt es nichts. Der Link ist vielleicht veraltet.",
 	},
 	"es": {
 		"nav.skip":           "Saltar al contenido",
@@ -174,6 +180,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Necesitas una cuenta para usarlo. ¿Aún no tienes una? Pídesela a quien gestiona este sitio.",
 		"leave.go":           "Continuar",
 		"leave.stay":         "Quedarse aquí",
+		"notfound.title":     "Página no encontrada",
+		"notfound.body":      "No hay nada en esta dirección. Puede que el enlace esté desactualizado.",
 	},
 	"it": {
 		"nav.skip":           "Salta al contenuto",
@@ -215,6 +223,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Ti serve un account per usarlo. Non ne hai ancora uno? Chiedilo a chi gestisce questo sito.",
 		"leave.go":           "Continua",
 		"leave.stay":         "Resta qui",
+		"notfound.title":     "Pagina non trovata",
+		"notfound.body":      "Non c'è niente a questo indirizzo. Forse il link non è più aggiornato.",
 	},
 	"nl": {
 		"nav.skip":           "Naar inhoud",
@@ -256,6 +266,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Je hebt een account nodig om dit te gebruiken. Nog geen account? Vraag het aan wie deze site beheert.",
 		"leave.go":           "Doorgaan",
 		"leave.stay":         "Hier blijven",
+		"notfound.title":     "Pagina niet gevonden",
+		"notfound.body":      "Op dit adres staat niets. Misschien is de link verouderd.",
 	},
 	"pt": {
 		"nav.skip":           "Ir para o conteúdo",
@@ -297,6 +309,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Vai precisar de uma conta para o usar. Ainda não tem? Peça a quem gere este site.",
 		"leave.go":           "Continuar",
 		"leave.stay":         "Ficar aqui",
+		"notfound.title":     "Página não encontrada",
+		"notfound.body":      "Não há nada neste endereço. Talvez o link esteja desatualizado.",
 	},
 	"sv": {
 		"nav.skip":           "Hoppa till innehåll",
@@ -338,6 +352,8 @@ var builtinStrings = map[string]map[string]string{
 		"signin.note":        "Du behöver ett konto för att använda den här. Inget konto än? Fråga den som driver sidan.",
 		"leave.go":           "Fortsätt",
 		"leave.stay":         "Stanna här",
+		"notfound.title":     "Sidan hittades inte",
+		"notfound.body":      "Det finns inget på den här adressen. Länken kan vara inaktuell.",
 	},
 }
 

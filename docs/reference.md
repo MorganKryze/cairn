@@ -133,6 +133,12 @@ ids, alphabetically.
 | `/robots.txt`               | allow all + sitemap URL                                                                                   |
 | `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                                 |
 
+Any other address, and a file missing from `/static/`, `/assets/`, `/media/`
+or `/fonts/`, gets a `404` with cairn's own page: the header, the
+`notfound.title` heading, the `notfound.body` sentence and a link home. It
+speaks the language the path names, and the negotiated one when the path names
+none.
+
 Text responses are gzipped for clients that ask, which is most of them: every
 text response a first visit to the demo pulls, the page and its stylesheet, the
 five small scripts, the manifest and the svg icons the demo serves itself, goes

@@ -58,8 +58,11 @@ func Serve(addr, cfgDir, assetsDir string) error {
 // set no Content-Type, compress reads the header before net/http gets to sniff
 // one, and an empty type is not compressible, so "ok\n" goes out as three
 // bytes either way. The two wrappers add Vary and the hardening headers there.
+//
+// notFound sits outside mount for the same reason: a path outside the prefix
+// is answered by mount's own mux, and gets the page too.
 func handler(cfgDir, assetsDir string) http.Handler {
-	return secureHeaders(compress(mount(routes(cfgDir, assetsDir))))
+	return secureHeaders(compress(notFound(mount(routes(cfgDir, assetsDir)))))
 }
 
 func routes(cfgDir, assetsDir string) *http.ServeMux {
