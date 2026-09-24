@@ -33,17 +33,19 @@ behave differently.
 `site.url` is required: the sitemap, `robots.txt` and the canonical links need
 the address the files will be served at.
 
-With the binary from a [release](https://github.com/MorganKryze/cairn/releases):
+With the binary from a [release](https://github.com/MorganKryze/cairn/releases),
+here for Linux on amd64 (`linux_arm64` and `darwin_arm64` are there too):
 
 ```sh
-cairn -config ./config -assets ./assets -export site.zip
+curl -fsSL https://github.com/MorganKryze/cairn/releases/download/v1.24.0/cairn_1.24.0_linux_amd64.tar.gz | tar -xz cairn
+./cairn -config ./config -assets ./assets -export site.zip
 ```
 
 With the image, and nothing else installed:
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  morgankryze/cairn:latest -config /work/config -assets /work/assets -export /work/site.zip
+  morgankryze/cairn:1.24.0 -config /work/config -assets /work/assets -export /work/site.zip
 ```
 
 Keep `--user`. The image runs as `nobody`, and `nobody` cannot write into a
@@ -147,7 +149,7 @@ jobs:
       - name: export the site
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-            morgankryze/cairn:latest -config /work/config -assets /work/assets -export /work/site
+            morgankryze/cairn:1.24.0 -config /work/config -assets /work/assets -export /work/site
       - uses: actions/upload-artifact@v4
         with:
           name: site
@@ -156,8 +158,13 @@ jobs:
 ```
 
 `include-hidden-files` keeps `.htaccess` and `.well-known/` in the artifact.
-Pin the image to the version you tested rather than `latest`, so a release
-does not change your site between two pushes.
+The image stays pinned to one version, so a release does not change your site
+between two pushes: move the tag once you have tried the new one.
+
+The deploy steps below follow each host's own documentation, and have not yet
+run end to end in this project's CI. If one fails for you,
+[open an issue](https://github.com/MorganKryze/cairn/issues) with the step's
+log.
 
 Then add the step for your host. For Cloudflare Pages, with an API token and
 the account id as repository secrets:
