@@ -202,7 +202,21 @@ services:
 docker compose up -d
 ```
 
-Open <http://localhost:8080>: that is a finished page. Everything else
+Open <http://localhost:8080>: that is a finished page.
+
+No server to keep running? Add `url: https://tools.example.org` to a
+`config/site.yaml`, and the same config exports as static files for
+Cloudflare Pages, Netlify or any Apache host, OVH shared hosting included:
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
+  morgankryze/cairn:stable -config /work/config -export /work/site.zip
+```
+
+The status pills stay behind, since nothing polls. The rest, and a pipeline
+that exports on every push, is in [Static hosting](docs/deployment/static.md).
+
+Everything else
 (title, languages, categories, status, theming) is one optional key at a
 time, at your pace: follow [Getting started](docs/getting-started.md).
 
