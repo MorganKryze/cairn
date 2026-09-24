@@ -49,7 +49,7 @@ demo:
 demo-rebuild:
     docker compose -f demo/compose.yaml up -d --build --remove-orphans
 
-# save a release to dist/ for an air-gapped move: just save 1.23.0 [linux/amd64]
+# save a release to dist/ for an air-gapped move: just save 1.24.0 [linux/amd64]
 save version platform="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -172,7 +172,7 @@ sweep tag:
     echo "compared $total responses against {{ tag }}: $same identical once asset digests are blurred, $left different, $oneside on one side only"
     [ "$left" = 0 ] || exit 1
 
-# check what a release actually published, from the registries: just verify 1.23.0
+# check what a release actually published, from the registries: just verify 1.24.0
 verify version:
     #!/usr/bin/env bash
     set -uo pipefail
