@@ -66,7 +66,7 @@ func TestEveryAnswerCarriesTheHardeningHeaders(t *testing.T) {
 				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 			})
 			Store(mustModel(t, cfgDir))
-			h := handler(cfgDir, t.TempDir())
+			h := Handler(cfgDir, t.TempDir())
 
 			// The three the outer mux owns, plus a page to show the site itself
 			// never lost them.
@@ -105,7 +105,7 @@ func TestProbesAnswerAlikeInBothDeployments(t *testing.T) {
 				"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 			})
 			Store(mustModel(t, cfgDir))
-			srv := httptest.NewServer(handler(cfgDir, t.TempDir()))
+			srv := httptest.NewServer(Handler(cfgDir, t.TempDir()))
 			defer srv.Close()
 
 			// DisableCompression, or Go asks and unwraps behind our back and the

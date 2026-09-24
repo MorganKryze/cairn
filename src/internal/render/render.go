@@ -994,3 +994,17 @@ func splitLast(s string) (head, tail string) {
 	i := strings.LastIndexByte(s, ' ')
 	return s[:i+1], s[i+1:]
 }
+
+// RootPage is what a static export serves at /, where the server would
+// redirect to a negotiated language instead. lang.js makes that choice in the
+// browser; without a script the refresh lands on the first locale, which is
+// where the server sends a browser that names no language it knows.
+func RootPage(cfg *config.Config) ([]byte, error) {
+	def := cfg.DefaultLocale()
+	page, err := render("root.tmpl", struct {
+		Default, List, Prefix, Base, Title string
+		Locales                            []string
+		Noindex                            bool
+	}{def, strings.Join(cfg.Site.Locales, " "), BasePath, absBase(cfg), cfg.Site.Title.Get(def, def), cfg.Site.Locales, cfg.Noindex()})
+	return page.HTML, err
+}

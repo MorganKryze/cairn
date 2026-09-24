@@ -173,8 +173,9 @@ func robots(w http.ResponseWriter, r *http.Request) {
 // securityTxt answers RFC 9116, and only once an operator has given a contact.
 // Expires is computed per request rather than configured: a security.txt that
 // has quietly expired is worth less than none at all, and a file regenerated
-// on every read cannot. cairn fills Canonical and Preferred-Languages from
-// what it already knows.
+// on every read cannot. It moves once a day rather than every second, so two
+// static exports of one config on the same day are the same bytes. cairn fills
+// Canonical and Preferred-Languages from what it already knows.
 func securityTxt(w http.ResponseWriter, r *http.Request) {
 	sec := Current().Cfg.Site.Security
 	if sec.Contact == "" {
@@ -183,7 +184,7 @@ func securityTxt(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "Contact: %s\n", sec.Contact)
-	fmt.Fprintf(w, "Expires: %s\n", time.Now().AddDate(1, 0, 0).UTC().Format(time.RFC3339))
+	fmt.Fprintf(w, "Expires: %s\n", time.Now().UTC().Truncate(24*time.Hour).AddDate(1, 0, 0).Format(time.RFC3339))
 	if sec.Encryption != "" {
 		fmt.Fprintf(w, "Encryption: %s\n", sec.Encryption)
 	}

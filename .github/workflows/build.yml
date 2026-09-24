@@ -99,10 +99,11 @@ jobs:
       # categories and a header burger, the one with a status page, and
       # the one whose artwork differs between the two themes, none of which
       # example/ has, and the one that guards its external links with a dialog.
+      # Then a static export, served by the script itself.
       # The two lists are written twice and have to be kept in
       # step: a fixture added to the justfile alone leaves this job connecting
       # to a port nothing answers on.
-      - name: drive search, accessibility and the status pills in a browser
+      - name: drive search, accessibility, the status pills and the export in a browser
         run: |
           npm --silent install --no-save --no-package-lock playwright
           npx --yes playwright install --with-deps --only-shell chromium
@@ -119,6 +120,9 @@ jobs:
           node scripts/search.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
           node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
+          static=$(mktemp -d)
+          /tmp/cairn -config scripts/fixtures/static -base-path /tools -export "$static"
+          node scripts/export.mjs "$static"
 
   chart:
     runs-on: ubuntu-latest

@@ -1,0 +1,10 @@
+# A static export, for the browser suite. The Go tests hold what -export
+# writes; the root page choosing a language and the switcher pinning one only
+# happen once a browser runs lang.js and about.js against plain files.
+#
+# Two locales, the second one French, so a French browser has somewhere to go
+# that is not the default. The recipe exports it under -base-path /tools, so
+# every cookie and every redirect has to carry the prefix.
+title: Static
+url: https://static.example.org
+locales: [en, fr]

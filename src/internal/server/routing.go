@@ -28,31 +28,43 @@ func mount(h http.Handler) http.Handler {
 	return outer
 }
 
-// secureHeaders sets the hardening headers. The CSP whitelists exactly what
-// the pages use; see BuildCSP.
+// secureHeaders sets the hardening headers on every response.
 func secureHeaders(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hd := w.Header()
-		hd.Set("X-Content-Type-Options", "nosniff")
-		hd.Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		hd.Set("X-Frame-Options", "DENY")
-		hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-		hd.Set("Content-Security-Policy", Current().CSP)
-		// Severs window.opener on the links that leave for a service, so a page
-		// cairn opened cannot navigate the tab it came from. The template
-		// already carries rel="noopener"; this survives an edit that drops it.
-		hd.Set("Cross-Origin-Opener-Policy", "same-origin")
-		// same-site rather than same-origin: self-hosters put their services on
-		// sibling subdomains, and one of those pages may show a cairn icon. A
-		// genuine third party still cannot embed anything of ours.
-		hd.Set("Cross-Origin-Resource-Policy", "same-site")
-		// HSTS only once the visit is already https, like the cookies: sending
-		// it over plain http would strand the LAN deployments cairn also serves.
-		if secureRequest(r) {
-			hd.Set("Strict-Transport-Security", "max-age=31536000")
-		}
+		hardening(w.Header(), r)
 		h.ServeHTTP(w, r)
 	})
+}
+
+// Hardening is the set secureHeaders puts on a response to r, for a static
+// host that has to send it in cairn's place.
+func Hardening(r *http.Request) http.Header {
+	hd := http.Header{}
+	hardening(hd, r)
+	return hd
+}
+
+// hardening writes the headers themselves. The CSP whitelists exactly what the
+// pages use; see BuildCSP.
+func hardening(hd http.Header, r *http.Request) {
+	hd.Set("X-Content-Type-Options", "nosniff")
+	hd.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	hd.Set("X-Frame-Options", "DENY")
+	hd.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+	hd.Set("Content-Security-Policy", Current().CSP)
+	// Severs window.opener on the links that leave for a service, so a page
+	// cairn opened cannot navigate the tab it came from. The template
+	// already carries rel="noopener"; this survives an edit that drops it.
+	hd.Set("Cross-Origin-Opener-Policy", "same-origin")
+	// same-site rather than same-origin: self-hosters put their services on
+	// sibling subdomains, and one of those pages may show a cairn icon. A
+	// genuine third party still cannot embed anything of ours.
+	hd.Set("Cross-Origin-Resource-Policy", "same-site")
+	// HSTS only once the visit is already https, like the cookies: sending
+	// it over plain http would strand the LAN deployments cairn also serves.
+	if secureRequest(r) {
+		hd.Set("Strict-Transport-Security", "max-age=31536000")
+	}
 }
 
 // hasDotSegment covers a .. that survived the mux's cleaning as well as the

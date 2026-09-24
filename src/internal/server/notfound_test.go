@@ -14,7 +14,7 @@ func TestAMissingAddressGetsCairnsOwnPage(t *testing.T) {
 		"site.yaml":     "locales: [en, fr]\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 	})
-	h := handler(t.TempDir(), t.TempDir())
+	h := Handler(t.TempDir(), t.TempDir())
 
 	for _, c := range []struct {
 		path, accept, lang, title string
@@ -59,7 +59,7 @@ func TestAPathOutsideTheMountGetsThePageToo(t *testing.T) {
 		"site.yaml":     "locales: [en]\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 	})
-	h := handler(t.TempDir(), t.TempDir())
+	h := Handler(t.TempDir(), t.TempDir())
 
 	for _, path := range []string{"/elsewhere", "/cairn/en/nope/"} {
 		rec := httptest.NewRecorder()
@@ -78,7 +78,7 @@ func TestAPathOutsideTheMountGetsThePageToo(t *testing.T) {
 func TestTheGettingStartedPageHasOneToo(t *testing.T) {
 	current.Store(render.StarterModel())
 	rec := httptest.NewRecorder()
-	handler(t.TempDir(), t.TempDir()).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/en/nope/", nil))
+	Handler(t.TempDir(), t.TempDir()).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/en/nope/", nil))
 	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), "Page not found") {
 		t.Errorf("got %d, want cairn's 404 page", rec.Code)
 	}
@@ -89,7 +89,7 @@ func TestAnythingButA404PassesUntouched(t *testing.T) {
 		"site.yaml":     "locales: [en]\n",
 		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad}\n",
 	})
-	h := handler(t.TempDir(), t.TempDir())
+	h := Handler(t.TempDir(), t.TempDir())
 	for path, want := range map[string]int{"/en/": http.StatusOK, "/": http.StatusFound, "/healthz": http.StatusOK} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
