@@ -437,4 +437,8 @@ func TestSecurityTxtExpiresInTheFuture(t *testing.T) {
 	if !when.After(time.Now()) {
 		t.Errorf("Expires %s is already past", raw)
 	}
+	// To the day, or two static exports a second apart differ.
+	if !strings.HasSuffix(raw, "T00:00:00Z") {
+		t.Errorf("Expires %s moves with the clock, not with the day", raw)
+	}
 }

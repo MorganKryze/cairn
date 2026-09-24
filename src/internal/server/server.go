@@ -35,7 +35,7 @@ func Serve(addr, cfgDir, assetsDir string) error {
 	// generous.
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           handler(cfgDir, assetsDir),
+		Handler:           Handler(cfgDir, assetsDir),
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
@@ -43,7 +43,7 @@ func Serve(addr, cfgDir, assetsDir string) error {
 	return srv.ListenAndServe()
 }
 
-// handler is the whole chain, written outside in.
+// Handler is the whole chain, written outside in.
 //
 // secureHeaders is outermost because that is the only place nothing can answer
 // from underneath it. mount registers three things of its own at the domain
@@ -58,8 +58,11 @@ func Serve(addr, cfgDir, assetsDir string) error {
 // set no Content-Type, compress reads the header before net/http gets to sniff
 // one, and an empty type is not compressible, so "ok\n" goes out as three
 // bytes either way. The two wrappers add Vary and the hardening headers there.
-func handler(cfgDir, assetsDir string) http.Handler {
-	return secureHeaders(compress(mount(routes(cfgDir, assetsDir))))
+//
+// notFound sits outside mount for the same reason: a path outside the prefix
+// is answered by mount's own mux, and gets the page too.
+func Handler(cfgDir, assetsDir string) http.Handler {
+	return secureHeaders(compress(notFound(mount(routes(cfgDir, assetsDir)))))
 }
 
 func routes(cfgDir, assetsDir string) *http.ServeMux {

@@ -3,7 +3,8 @@
 // This file is wiring only: parse the flags, answer the one-shot commands,
 // build the first model, hand everything to the server. The work lives in
 // internal/config (read and validate the YAML), internal/render (turn it into
-// bytes), internal/status (Gatus) and internal/server (HTTP).
+// bytes), internal/status (Gatus), internal/server (HTTP) and internal/export
+// (the same site as static files).
 package main
 
 import (
@@ -14,6 +15,7 @@ import (
 
 	"github.com/MorganKryze/cairn/src/internal/check"
 	"github.com/MorganKryze/cairn/src/internal/config"
+	"github.com/MorganKryze/cairn/src/internal/export"
 	"github.com/MorganKryze/cairn/src/internal/render"
 	"github.com/MorganKryze/cairn/src/internal/server"
 	"github.com/MorganKryze/cairn/src/internal/status"
@@ -33,6 +35,7 @@ func main() {
 	hide := flag.Bool("hide-targets", false, "with -emit-gatus: add the ui block that keeps each endpoint's address off the Gatus dashboard")
 	emitIcons := flag.Bool("emit-icons", false, "print a shell script that downloads your icon slugs for self-hosting and exit")
 	initCfg := flag.Bool("init", false, "print a commented starter services.yaml and exit")
+	exportTo := flag.String("export", "", "write the site as static files to this directory, or to an archive ending in .zip, .tar or .tar.gz, and exit")
 	ver := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 
@@ -53,6 +56,14 @@ func main() {
 	}
 	if *validate {
 		os.Exit(check.RunCheck(*cfgDir))
+	}
+	if *exportTo != "" {
+		n, err := export.Run(*cfgDir, *assetsDir, *exportTo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("cairn %s: %d files written to %s", version, n, *exportTo)
+		return
 	}
 
 	cfg, err := config.Load(*cfgDir)

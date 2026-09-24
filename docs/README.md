@@ -24,6 +24,7 @@ reading anything: <https://cairn.libresoftware.cloud>.
 - [Kubernetes](deployment/kubernetes.md): a ConfigMap, a Deployment, no volume.
 - [Helm](deployment/helm.md): the same four objects, and your Ingress from values.
 - [Air-gapped](deployment/airgap.md): what crosses the white station, and the icons that catch everyone.
+- [Static hosting](deployment/static.md): `-export` writes the site as files for Cloudflare Pages, Netlify or Apache.
 - [Reverse proxies](deployment/reverse-proxies.md): Caddy, Traefik, Nginx, Pangolin.
 
 ## Recipes

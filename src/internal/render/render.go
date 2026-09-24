@@ -38,8 +38,10 @@ type Page struct {
 // change. Pages is keyed by URL path without surrounding slashes ("fr" for a
 // home, "fr/pdf" for a detail), Statuses by service id.
 type Model struct {
-	Cfg      *config.Config
-	Pages    map[string]Page
+	Cfg   *config.Config
+	Pages map[string]Page
+	// NotFound is the page a 404 answers with, keyed by locale.
+	NotFound map[string]Page
 	Statuses map[string]status.State
 	CSP      string
 	// Ready is false only while the getting-started page stands in for a config
@@ -538,6 +540,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 	// the CSP hash, so the function has to stay deterministic.
 	themed := themedFor(cfg)
 	pages := map[string]Page{}
+	notFound := map[string]Page{}
 	for _, loc := range cfg.Site.Locales {
 		base := pageView{
 			Locale:     loc,
@@ -748,8 +751,24 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			}
 			pages[loc+"/"+p.ID] = page
 		}
+
+		// No canonical and no alternates: the page answers any address that
+		// leads nowhere, so it has no address of its own to declare.
+		nf := staticView{
+			pageView: base,
+			Title:    locText{Text: cfg.Str(loc, "notfound.title")},
+			Intro:    proseOf(locText{Text: cfg.Str(loc, "notfound.body")}, mdCtx{pClass: "page-intro", media: media}),
+		}
+		nf.Base = ""
+		nf.Noindex = true
+		nf.PageTitle = nf.Title.Text + " · " + base.SiteTitle.Text
+		page, err = render("page.tmpl", nf)
+		if err != nil {
+			return nil, fmt.Errorf("render the %s 404 page: %w", loc, err)
+		}
+		notFound[loc] = page
 	}
-	return &Model{Cfg: cfg, Pages: pages, Statuses: statuses, CSP: BuildCSP(cfg), Ready: true}, nil
+	return &Model{Cfg: cfg, Pages: pages, NotFound: notFound, Statuses: statuses, CSP: BuildCSP(cfg), Ready: true}, nil
 }
 
 func render(name string, v any) (Page, error) {
@@ -974,4 +993,18 @@ func versionInfo(v string) (label, href string) {
 func splitLast(s string) (head, tail string) {
 	i := strings.LastIndexByte(s, ' ')
 	return s[:i+1], s[i+1:]
+}
+
+// RootPage is what a static export serves at /, where the server would
+// redirect to a negotiated language instead. lang.js makes that choice in the
+// browser; without a script the refresh lands on the first locale, which is
+// where the server sends a browser that names no language it knows.
+func RootPage(cfg *config.Config) ([]byte, error) {
+	def := cfg.DefaultLocale()
+	page, err := render("root.tmpl", struct {
+		Default, List, Prefix, Base, Title string
+		Locales                            []string
+		Noindex                            bool
+	}{def, strings.Join(cfg.Site.Locales, " "), BasePath, absBase(cfg), cfg.Site.Title.Get(def, def), cfg.Site.Locales, cfg.Noindex()})
+	return page.HTML, err
 }

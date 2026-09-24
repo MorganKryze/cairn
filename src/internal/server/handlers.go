@@ -173,8 +173,9 @@ func robots(w http.ResponseWriter, r *http.Request) {
 // securityTxt answers RFC 9116, and only once an operator has given a contact.
 // Expires is computed per request rather than configured: a security.txt that
 // has quietly expired is worth less than none at all, and a file regenerated
-// on every read cannot. cairn fills Canonical and Preferred-Languages from
-// what it already knows.
+// on every read cannot. It moves once a day rather than every second, so two
+// static exports of one config on the same day are the same bytes. cairn fills
+// Canonical and Preferred-Languages from what it already knows.
 func securityTxt(w http.ResponseWriter, r *http.Request) {
 	sec := Current().Cfg.Site.Security
 	if sec.Contact == "" {
@@ -183,7 +184,7 @@ func securityTxt(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "Contact: %s\n", sec.Contact)
-	fmt.Fprintf(w, "Expires: %s\n", time.Now().AddDate(1, 0, 0).UTC().Format(time.RFC3339))
+	fmt.Fprintf(w, "Expires: %s\n", time.Now().UTC().Truncate(24*time.Hour).AddDate(1, 0, 0).Format(time.RFC3339))
 	if sec.Encryption != "" {
 		fmt.Fprintf(w, "Encryption: %s\n", sec.Encryption)
 	}
@@ -223,4 +224,60 @@ func sitemap(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "  <url><loc>%s</loc></url>\n", xmlText(siteBase(r)+"/"+k+"/"))
 	}
 	io.WriteString(w, "</urlset>\n")
+}
+
+// notFound puts cairn's own page on every 404 the site answers: an unknown
+// page, a missing file in one of the trees, a path outside the mount point.
+// Go's handlers keep deciding what is missing; this only replaces the
+// plain-text body they would send.
+func notFound(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(&notFoundWriter{ResponseWriter: w, r: r}, r)
+	})
+}
+
+type notFoundWriter struct {
+	http.ResponseWriter
+	r        *http.Request
+	replaced bool
+}
+
+func (w *notFoundWriter) WriteHeader(code int) {
+	if code == http.StatusNotFound {
+		if page, ok := notFoundPage(w.r); ok {
+			w.replaced = true
+			h := w.Header()
+			// A length set for the body being replaced would cut this one short.
+			h.Del("Content-Length")
+			h.Set("Content-Type", "text/html; charset=utf-8")
+			h.Set("Cache-Control", "no-cache")
+			w.ResponseWriter.WriteHeader(code)
+			w.ResponseWriter.Write(page)
+			return
+		}
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *notFoundWriter) Write(b []byte) (int, error) {
+	if w.replaced {
+		return len(b), nil
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *notFoundWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+// notFoundPage speaks the language the path names, so /fr/typo answers in
+// French whatever the browser prefers, and negotiates when the path names none.
+func notFoundPage(r *http.Request) ([]byte, bool) {
+	m := Current()
+	if len(m.NotFound) == 0 {
+		return nil, false
+	}
+	first, _, _ := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, render.BasePath), "/"), "/")
+	if page, ok := m.NotFound[first]; ok {
+		return page.HTML, true
+	}
+	return m.NotFound[negotiate(r, m.Cfg.Site.Locales)].HTML, true
 }

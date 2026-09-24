@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="{{.Default}}" data-locales="{{.List}}"{{if .Prefix}} data-base="{{.Prefix}}"{{end}}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+{{if .Noindex}}<meta name="robots" content="noindex">
+{{end}}{{range .Locales}}<link rel="alternate" hreflang="{{.}}" href="{{$.Base}}/{{.}}/">
+{{end}}<script src="{{asset "lang.js"}}"></script>
+<noscript><meta http-equiv="refresh" content="0; url={{.Prefix}}/{{.Default}}/"></noscript>
+</head>
+<body>
+<ul>{{range .Locales}}
+<li><a href="{{$.Prefix}}/{{.}}/" hreflang="{{.}}">{{upper .}}</a></li>{{end}}
+</ul>
+</body>
+</html>

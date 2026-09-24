@@ -1,0 +1,5 @@
+- id: pad
+  url: https://pad.example.org
+  name: { en: Shared notepad, fr: Bloc-notes partagé }
+  desc: { en: Write together., fr: Écrire à plusieurs. }
+  details: { en: More about it., fr: Plus de détails. }

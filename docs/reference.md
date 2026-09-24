@@ -133,6 +133,12 @@ ids, alphabetically.
 | `/robots.txt`               | allow all + sitemap URL                                                                                   |
 | `/.well-known/security.txt` | RFC 9116, once `security.contact` is set; `404` otherwise                                                 |
 
+Any other address, and a file missing from `/static/`, `/assets/`, `/media/`
+or `/fonts/`, gets a `404` with cairn's own page: the header, the
+`notfound.title` heading, the `notfound.body` sentence and a link home. It
+speaks the language the path names, and the negotiated one when the path names
+none.
+
 Text responses are gzipped for clients that ask, which is most of them: every
 text response a first visit to the demo pulls, the page and its stylesheet, the
 five small scripts, the manifest and the svg icons the demo serves itself, goes
@@ -182,6 +188,7 @@ are never stamped: cairn has not read their bytes and has no digest to offer.
 | `-emit-gatus`   | off       | print a [Gatus endpoints config](recipes/status.md) derived from the services, then exit                                                                                                                                                                                                                                              |
 | `-hide-targets` | off       | with `-emit-gatus`: add the `ui` block that keeps each endpoint's [address off the Gatus dashboard](recipes/status.md#hide-what-gatus-probes)                                                                                                                                                                                         |
 | `-emit-icons`   | off       | print a shell script that downloads your icon slugs for [self-hosting](recipes/icons.md#going-fully-self-hosted), then exit                                                                                                                                                                                                           |
+| `-export`       | none      | write the site as [static files](deployment/static.md) to a directory, or to an archive ending in `.zip`, `.tar` or `.tar.gz`, then exit                                                                                                                                                                                              |
 | `-check`        | off       | validate the config directory, print warnings (partial translations, `strings` or `locales` covering part of the site, orphan or heavy media, references that resolve nowhere or name no file, icon sizes the file contradicts, ids that collide, keys that do nothing, a custom font that is not there, CDN icons), then exit 0 or 1 |
 | `-version`      | off       | print the version, then exit                                                                                                                                                                                                                                                                                                          |
 

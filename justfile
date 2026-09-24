@@ -310,6 +310,13 @@ test-browser:
     node scripts/search.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
     node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
     node scripts/status.mjs http://127.0.0.1:8092/en/
+    # The export is files and no server: the script serves them itself, on a
+    # port the system picks, so there is no leftover for the check above to
+    # find. mktemp gives the empty directory -export insists on.
+    static=$(mktemp -d)
+    trap 'kill $pids 2>/dev/null || true; rm -rf "$static"' EXIT INT TERM
+    /tmp/cairn-browser -config scripts/fixtures/static -base-path /tools -export "$static"
+    node scripts/export.mjs "$static"
 
 # regenerate every icon from the one drawing in the script; checks the
 # maskable safe zone the manifest promises Android
