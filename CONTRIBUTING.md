@@ -16,7 +16,9 @@ passed.
 
 With [just](https://just.systems) installed, `just` lists the shortcuts:
 `test`, `test-browser`, `coverage`, `lint`, `build`, `chart`, `demo`,
-`demo-rebuild`, `down`, `logs`, `shots`, `hooks`, `icons`.
+`demo-rebuild`, `down`, `logs`, `shots`, `hooks`, `icons`, and for a release
+`sweep <tag>`, which compares every response against that tag, and
+`verify <version>`, which reads back what the release actually published.
 Linting is [golangci-lint](https://golangci-lint.run) with a near-default
 config (`.golangci.yml`); CI runs it on every code push.
 
