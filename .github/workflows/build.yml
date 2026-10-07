@@ -174,7 +174,7 @@ jobs:
           # (dependabot-core#5541), so a pin here would rot in silence.
           # The buildkit-pin job in security.yml is what stops that: it
           # runs weekly and says when buildx-stable-1 has moved past it.
-          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8 # buildx-stable-1
+          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea # buildx-stable-1
 
       # A pull request builds the image but never publishes it, so a fork PR
       # needs no registry credentials.
