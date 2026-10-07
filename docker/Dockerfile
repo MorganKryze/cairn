@@ -24,7 +24,7 @@
 # what the content hashes to, so the registry in front is only the road taken
 # to reach it. This comment names no digest of its own, since Dependabot
 # rewrites the one below and a copy up here went stale the first time it did.
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.27-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS build
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.27-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS build
 # The scratch image ships no CA bundle, so cairn cannot verify TLS on its own:
 # polling a public https Gatus fails with x509: unknown authority. Copy the
 # bundle in (below); install it here so the build never depends on the base
