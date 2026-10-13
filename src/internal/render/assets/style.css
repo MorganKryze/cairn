@@ -499,7 +499,9 @@ header { padding-block: 1.4rem; }
   display: flex;
   align-items: center;
   gap: .7rem;
-  margin: 2.6rem 0 1.1rem;
+  /* The anchor in the heading is 44px high, 15px more than the name, so the
+     margins give the 7.5px a side back and the name keeps its place. */
+  margin-block: 2.1rem .65rem;
   /* the containing block for the link glyph, which hangs off the start edge */
   position: relative;
 }
@@ -526,6 +528,9 @@ header { padding-block: 1.4rem; }
    hover would read as a different heading. The pointer says it is a target,
    and the focus ring says so to a keyboard. */
 .way-name a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   color: inherit;
   text-decoration: none;
 }
@@ -599,16 +604,18 @@ header { padding-block: 1.4rem; }
      half the line's own width. Written as .2rem it drew 0.34px to their right,
      which is invisible until something moves and then is not. */
   inset-inline-start: calc(var(--toc-mark) / 2 - .5px);
-  top: .8rem;
-  bottom: .8rem;
+  top: 1.375rem;
+  bottom: 1.375rem;
   width: 1px;
   background: var(--border);
 }
+/* 44px each, a pointer's target like every other link: the rail is a column
+   of links and nothing else, so the height costs nothing beside the content. */
 .toc a {
   display: flex;
   align-items: center;
   gap: .6rem;
-  padding: .28rem 0;
+  min-height: 2.75rem;
   font-size: .82rem;
   color: var(--muted);
   text-decoration: none;
@@ -677,7 +684,6 @@ header { padding-block: 1.4rem; }
   .toc ul::before { display: none; }
   .toc li { flex: none; scroll-snap-align: center; }
   .toc a {
-    min-height: 2.5rem;
     padding: 0 .85rem;
     border: 1px solid var(--border);
     border-radius: 999px;
@@ -701,17 +707,19 @@ header { padding-block: 1.4rem; }
 
 /* On the heading and not on .cat: every #cat- link, the rail's and the jump
    select's and now the heading's own, targets the h2, so the section's margin
-   was never the one the browser read. 2.6rem is the gap above a heading, and
+   was never the one the browser read. 2.1rem is the gap above a heading, and
    anything past it brings the previous section's last card into view; this
-   keeps 9px of that gap in hand.
+   keeps 8px of that gap in hand, and the name, 7.5px down its 44px anchor,
+   lands 33px from the top.
 
-   One value, phones included. The 4.5rem a narrow screen used to carry was
-   meant to clear the sticky header, but it sat on .cat and so never applied,
-   and it cannot do that job anyway: the header is 132px, which is past the gap
-   by a long way. nav.js hides it on the way down, which is the direction a
-   trail link travels, so a jump downward lands clear of it. A jump upward
-   brings the header back over the heading, and that is not new. */
-.way-name { scroll-margin-top: 2rem; }
+   One value, phones included, where the gap is 2rem and 6.4px stays in hand.
+   The 4.5rem a narrow screen used to carry was meant to clear the sticky
+   header, but it sat on .cat and so never applied, and it cannot do that job
+   anyway: the header is 132px, which is past the gap by a long way. nav.js
+   hides it on the way down, which is the direction a trail link travels, so a
+   jump downward lands clear of it. A jump upward brings the header back over
+   the heading, and that is not new. */
+.way-name { scroll-margin-top: 1.6rem; }
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
@@ -1612,7 +1620,8 @@ footer { margin-top: 1rem; }
   align-items: center;
   gap: 1.2rem;
   flex-wrap: wrap;
-  padding-block: 1.6rem 2.6rem;
+  /* the links are 44px high and carry their own air above and below */
+  padding-block: 1rem 2rem;
 }
 .foot::before {
   content: "";
@@ -1622,12 +1631,27 @@ footer { margin-top: 1rem; }
   border-top: 1px solid var(--border);
 }
 .foot-mark { width: 1.1rem; height: 1.1rem; color: var(--muted); flex: none; }
-.foot-links { display: flex; flex-wrap: wrap; gap: 1.3rem; }
+/* Each link is a thumb's 44px high, so a wrapped row needs no gap of its own. */
+.foot-links { display: flex; flex-wrap: wrap; gap: 0 1.3rem; }
+.foot-links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
-.powered a { color: var(--accent-ink); font-weight: 500; }
+.powered a { position: relative; color: var(--accent-ink); font-weight: 500; }
+/* The credit keeps its place in the line and answers on 44 by 44 around it,
+   centred, the way the card's chips answer past their border. Beside the
+   version link the two would meet 7px apart and overlap, so there the credit's
+   area grows over the words before it and the version's away from the credit,
+   whatever the version's width. */
+.powered a::before {
+  content: "";
+  position: absolute;
+  inset-block: min(0px, calc(50% - 1.375rem));
+  inset-inline: min(0px, calc(50% - 1.375rem));
+}
+.powered a:has(+ a.foot-version)::before { inset-inline: min(0px, calc(100% - 2.75rem)) 0; }
+.powered a.foot-version::before { inset-inline: 0 min(0px, calc(100% - 2.75rem)); }
 /* the optional build stamp, quiet enough that the footer still reads as one line */
 .foot-version { font-size: .95em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .powered a.foot-version { color: var(--muted); font-weight: 400; }
@@ -1811,7 +1835,6 @@ footer { margin-top: 1rem; }
      view. The first category sits closer to what is above it; .cat:first-of-type
      never matches, since the welcome note is a <section> too. */
   .way { margin-block: 2rem .8rem; }
-  .way-name { scroll-margin-top: 1.6rem; }
   .cat:not(.cat ~ .cat) .way { margin-block-start: 1.3rem; }
 
   /* Denser cards: the foot's own row and the hosting word cost height, and
@@ -1833,8 +1856,8 @@ footer { margin-top: 1rem; }
 
   .totop { display: grid; }
 
-  .foot { flex-direction: column; align-items: flex-start; gap: 1.1rem; padding-block: 1.6rem 2rem; }
-  .foot-links { flex-direction: column; gap: .9rem; }
+  .foot { flex-direction: column; align-items: flex-start; gap: 1.1rem; }
+  .foot-links { flex-direction: column; }
   .powered { margin-inline-start: 0; }
 }
 

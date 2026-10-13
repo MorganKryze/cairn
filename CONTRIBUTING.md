@@ -154,13 +154,19 @@ a 44px back link); the screenshots (on a phone a wide one 272px high in a
 strip that scrolls and fades on the side it continues, right to left too, one
 that fits filling the column; nothing scrolling on a wide screen; a 44px link
 to the whole image under the caption; dimmed in dark until hovered; whole when
-printed); and the layouts that have to stay
-as they are (a bare header, a card with nothing at its foot, the detail head on
-a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
-without the demo stack, so every pill reads unknown), against
-`scripts/fixtures/longname/`, a site name too long for one header row, and
-against `scripts/fixtures/locales/`, every built-in language plus Arabic, which
-turns the page right to left. `foot-words.json` there lists every hosting and
+printed); every link and control on a home, detail, hosted and not-found page
+a 44 by 44px target that answers at the middle of each edge and overlaps no
+neighbour, the skip link focused, the leaving dialog, the open menus and the
+back-to-top button included (a link inside a sentence of the operator's text
+and the card name, whose link is the whole card, are the two exceptions); and
+the layouts that have to stay as they are (a bare header, a card with nothing
+at its foot, the detail head on a wide screen, a service that is not open). It
+runs against the demo's own config (`demo/config`, served without the demo
+stack, so every pill reads unknown), against `scripts/fixtures/longname/`, a
+site name too long for one header row, against `scripts/fixtures/locales/`,
+every built-in language plus Arabic, which turns the page right to left, and
+for the targets against `example/`, `scripts/fixtures/many-categories/` and
+`scripts/fixtures/leave/` too. `foot-words.json` there lists every hosting and
 status word, and a Go test holds it to the strings table.
 
 **Prove a browser check red before you trust it**, by deleting the thing it

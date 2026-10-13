@@ -6,9 +6,10 @@
 // and the phone's menu button say the words they show.
 //
 // Run it with `just test-browser`, which serves the demo config, the long site
-// name, every built-in locale, example/ and the states fixture first.
+// name, every built-in locale, example/, the states fixture, the nine
+// categories with a header burger and the leaving dialog first.
 //
-// Usage: node scripts/layout.mjs [demo] [longname] [locales] [example] [states]
+// Usage: node scripts/layout.mjs [demo] [longname] [locales] [example] [states] [many] [leave]
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
@@ -22,6 +23,8 @@ const LONG = arg(3, "CAIRN_LONGNAME_URL", 8101);
 const LOCALES = arg(4, "CAIRN_LOCALES_URL", 8102);
 const SITE = arg(5, "CAIRN_URL", 8090);
 const STATES = arg(6, "CAIRN_STATES_URL", 8095);
+const MANY = arg(7, "CAIRN_MANY_URL", 8091);
+const LEAVE = arg(8, "CAIRN_LEAVE_URL", 8094);
 
 // The widths the design is held to: two phones, two laptops. 44rem is the
 // line between them, so a phone here is anything at or under 704px.
@@ -1591,6 +1594,260 @@ await check("a printed screenshot is whole at 390px", async () => {
     );
   if (bad.length) throw new Error(bad.join("; "));
 });
+
+// ---- every link and control is a 44px target ----
+
+// Where a pointer or a thumb lands for a control: its border box, or the
+// absolute ::before drawn around it when that covers more. The pseudo's
+// offsets count from inside the control's border: a positioned box lays out
+// its absolute children from its padding box. Runs in the page.
+const hitRect = (el) => {
+  const r = el.getBoundingClientRect();
+  let box = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+  const s = getComputedStyle(el),
+    b = getComputedStyle(el, "::before");
+  if (
+    s.position !== "static" &&
+    b.content !== "none" &&
+    b.display !== "none" &&
+    b.position === "absolute"
+  ) {
+    const px = parseFloat;
+    const p = {
+      x0: r.left + px(s.borderLeftWidth) + px(b.left),
+      y0: r.top + px(s.borderTopWidth) + px(b.top),
+      x1: r.right - px(s.borderRightWidth) - px(b.right),
+      y1: r.bottom - px(s.borderBottomWidth) - px(b.bottom),
+    };
+    const area = (q) => (q.x1 - q.x0) * (q.y1 - q.y0);
+    if (Object.values(p).every(Number.isFinite) && area(p) > area(box)) box = p;
+  }
+  return { ...box, w: box.x1 - box.x0, h: box.y1 - box.y0 };
+};
+
+// Every painted link and control inside the scope, each with its hit area in
+// page coordinates, whether it is exempt, whether the four midpoints of its
+// edges (2px in, with the control scrolled to the middle of the screen) land
+// on it, and which of its neighbours its hit area overlaps by more than .5px.
+// Exempt are a link inside a sentence of the operator's prose, which WCAG
+// 2.5.8 lets keep its line, and the card name, whose link is the whole card;
+// they and a control nested in another sit out the overlap too. A hosted
+// page's back link sits in a paragraph of its own and is no prose. The skip link
+// is off screen until focused, so it is measured focused, at the end. Runs in
+// the page; the scope is a selector, the whole document by default.
+const pageTargets = (hitRect, scope) => {
+  const SEL =
+    'a, button, input, select, summary, [role=button], [tabindex]:not([tabindex="-1"])';
+  const PROSE =
+    ".about p, .detail > p, .detail > [lang] > p, .page p, .about li, .detail li, .page li";
+  const root = document.querySelector(scope ?? "body");
+  // A classless link is named by the nearest ancestor that has a class.
+  const name = (el) => {
+    const own = [...el.classList].map((c) => `.${c}`).join("");
+    const at = own
+      ? ""
+      : `.${el.parentElement.closest("[class]")?.classList[0]} `;
+    const words = (el.getAttribute("aria-label") ?? el.textContent ?? "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 28);
+    return `${at}${el.tagName.toLowerCase()}${own} "${words}"`;
+  };
+  const all = [
+    ...(root.matches(SEL) ? [root] : []),
+    ...root.querySelectorAll(SEL),
+  ].filter(
+    (el) =>
+      !el.matches(".skip") &&
+      !el.closest(".visually-hidden, dialog:not([open]), [inert]") &&
+      el.checkVisibility({ visibilityProperty: true }) &&
+      el.getClientRects().length > 0,
+  );
+  scrollTo(0, 0);
+  const list = all.map((el) => {
+    const r = hitRect(el);
+    return {
+      el,
+      name: name(el),
+      exempt:
+        el.matches(".card-name") ||
+        (el.matches("a:not(.back)") && !!el.closest(PROSE)),
+      fixed: getComputedStyle(el).position === "fixed",
+      x0: r.x0 + scrollX,
+      y0: r.y0 + scrollY,
+      x1: r.x1 + scrollX,
+      y1: r.y1 + scrollY,
+      w: r.w,
+      h: r.h,
+    };
+  });
+  for (const t of list) {
+    t.overlaps = [];
+    if (t.exempt || t.fixed) continue;
+    for (const u of list) {
+      if (u === t || u.exempt || u.fixed) continue;
+      if (t.el.contains(u.el) || u.el.contains(t.el)) continue;
+      const by = Math.min(
+        Math.min(t.x1, u.x1) - Math.max(t.x0, u.x0),
+        Math.min(t.y1, u.y1) - Math.max(t.y0, u.y0),
+      );
+      if (by > 0.5) t.overlaps.push(`${u.name} by ${by.toFixed(1)}px`);
+    }
+  }
+  const edges = (el) => {
+    el.scrollIntoView({
+      block: "center",
+      inline: "center",
+      behavior: "instant",
+    });
+    const r = hitRect(el),
+      mx = (r.x0 + r.x1) / 2,
+      my = (r.y0 + r.y1) / 2;
+    return [
+      ["top", mx, r.y0 + 2],
+      ["bottom", mx, r.y1 - 2],
+      ["left", r.x0 + 2, my],
+      ["right", r.x1 - 2, my],
+    ]
+      .filter(([, x, y]) => {
+        const hit = document.elementFromPoint(x, y);
+        return !hit || !(hit === el || el.contains(hit));
+      })
+      .map(([side]) => side);
+  };
+  for (const t of list) t.missed = t.exempt ? [] : edges(t.el);
+  let skip = null;
+  const s = scope ? null : document.querySelector(".skip");
+  if (s) {
+    scrollTo(0, 0);
+    s.focus();
+    const r = hitRect(s);
+    skip = { name: name(s), w: r.w, h: r.h, missed: edges(s) };
+    s.blur();
+  }
+  return {
+    skip,
+    list: list.map(({ el, ...t }) => t),
+  };
+};
+
+// The list a page answers with, measured as it stands.
+const targets = (page, scope = null) =>
+  page.evaluate(`(${pageTargets})(${hitRect}, ${JSON.stringify(scope)})`);
+
+// What is wrong with one page's targets, worded for the failure.
+const targetFaults = ({ skip, list }) => {
+  const bad = [];
+  for (const t of [...list, ...(skip ? [skip] : [])]) {
+    if (t.exempt) continue;
+    if (t.w < 43.5 || t.h < 43.5)
+      bad.push(`${t.name} is ${t.w.toFixed(1)}x${t.h.toFixed(1)}`);
+    if (t.missed.length)
+      bad.push(`${t.name} does not answer at its ${t.missed.join(", ")} edge`);
+    for (const o of t.overlaps ?? []) bad.push(`${t.name} overlaps ${o}`);
+  }
+  if (!list.some((t) => !t.exempt)) bad.push("no target found");
+  return bad;
+};
+
+// Every page shape of every site the suite serves: home, a detail page, a
+// hosted page and the page for an address that leads nowhere.
+const TARGET_PAGES = [
+  ...["", "whoami/", "hosting/", "nowhere/"].map((p) => `${DEMO}fr/${p}`),
+  ...["", "nowhere/"].map((p) => `${LONG}fr/${p}`),
+  ...["de", "ar"].flatMap((l) =>
+    ["", "pad/", "hosting/", "nowhere/"].map((p) => `${LOCALES}${l}/${p}`),
+  ),
+  ...["", "pdf/", "photos/", "hosting/", "nowhere/"].map(
+    (p) => `${SITE}en/${p}`,
+  ),
+  ...["", "nowhere/"].map((p) => `${MANY}en/${p}`),
+];
+// What only shows once opened: the leaving dialog, the phone's menu and the
+// language menu of a site with more than three. Each is measured on its own,
+// since the page behind a modal is inert and an open menu is drawn over it.
+const OPENED = [
+  {
+    what: "the leaving dialog",
+    url: `${LEAVE}en/`,
+    scope: "#leave",
+    open: (p) =>
+      p.evaluate(() => document.querySelector("a[data-leave]").click()),
+  },
+  {
+    what: "the open language menu",
+    url: `${LOCALES}de/`,
+    scope: ".langs-menu nav",
+    open: (p) => p.click(".langs-menu summary"),
+  },
+  {
+    what: "the open phone menu",
+    url: `${MANY}en/`,
+    scope: ".nav-links",
+    phone: true,
+    open: (p) => p.click(".nav-burger"),
+  },
+  // A stamped build links its version to the release, where this unstamped
+  // one writes a span; the markup is the Go tests' to hold, so the span is
+  // swapped for the link they pin, beside the credit it sits next to.
+  {
+    what: "the version link",
+    url: `${DEMO}fr/`,
+    scope: ".powered",
+    open: (p) =>
+      p.evaluate(() => {
+        const span = document.querySelector("span.foot-version"),
+          a = document.createElement("a");
+        a.className = "foot-version";
+        a.href = "https://github.com/MorganKryze/cairn/releases/tag/v1.0.0";
+        a.textContent = "1.0.0";
+        span.replaceWith(a);
+      }),
+  },
+  // nav.js shows it a screen down the page, and at the foot of the demo's
+  // home it is.
+  {
+    what: "the back-to-top button",
+    url: `${DEMO}fr/`,
+    scope: ".totop",
+    phone: true,
+    open: async (p) => {
+      await p.evaluate(() => scrollTo(0, document.body.scrollHeight));
+      await p.waitForSelector(".totop.show");
+    },
+  },
+];
+for (const theme of THEMES) {
+  for (const width of WIDTHS) {
+    await check(
+      `every link and control is a 44px target at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        // The toggle's dark is the demo's alone: the other dark has every
+        // page already, and the geometry under it is the same rules.
+        const urls = theme.stored ? TARGET_PAGES.slice(0, 4) : TARGET_PAGES;
+        for (const url of urls) {
+          const p = await open(url, width, theme);
+          for (const b of targetFaults(await targets(p)))
+            bad.push(`${url}: ${b}`);
+          await p.close();
+        }
+        if (!theme.stored) {
+          for (const o of OPENED) {
+            if (o.phone && width > 704) continue;
+            const p = await open(o.url, width, theme);
+            await o.open(p);
+            await p.waitForSelector(o.scope, { state: "visible" });
+            for (const b of targetFaults(await targets(p, o.scope)))
+              bad.push(`${o.what}: ${b}`);
+            await p.close();
+          }
+        }
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
 
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
