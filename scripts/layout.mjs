@@ -1849,6 +1849,64 @@ for (const theme of THEMES) {
   }
 }
 
+// The rail is fixed, so the page scrolling never brings its foot into view: at
+// 44px a link, nine categories under a 480px window put the last two below the
+// screen, out of a pointer's reach and focused where no one can see the ring.
+// The rail scrolls on its own instead, and focus scrolls it.
+await check(
+  "every rail link can be reached and its ring seen on a short screen",
+  async () => {
+    const p = await open(`${MANY}en/`, 1440, THEMES[0], {
+      viewport: { width: 1440, height: 480 },
+    });
+    const r = await p.evaluate(() => {
+      const toc = document.querySelector(".toc");
+      const box = toc.getBoundingClientRect();
+      const links = [...toc.querySelectorAll("a")];
+      const bad = [];
+      if (box.bottom > innerHeight + 0.5)
+        bad.push(`the rail ends at ${box.bottom.toFixed(1)}px`);
+      for (const a of links) {
+        a.focus();
+        // A rail that scrolls clips what it holds at its own box; one that
+        // does not clips nothing short of the screen.
+        const v =
+            getComputedStyle(toc).overflowY === "visible"
+              ? { top: 0, bottom: innerHeight, left: 0, right: innerWidth }
+              : toc.getBoundingClientRect(),
+          l = a.getBoundingClientRect();
+        // The ring is 2px wide and 2px out: 4px round the link must show.
+        const ring = {
+          top: l.top - 4,
+          bottom: l.bottom + 4,
+          left: l.left - 4,
+          right: l.right + 4,
+        };
+        const hit = document.elementFromPoint(
+          (l.left + l.right) / 2,
+          (l.top + l.bottom) / 2,
+        );
+        const word = a.textContent.trim();
+        if (!hit || !a.contains(hit))
+          bad.push(`"${word}" focused does not answer at its centre`);
+        if (
+          ring.top < Math.max(v.top, 0) - 0.5 ||
+          ring.bottom > Math.min(v.bottom, innerHeight) + 0.5 ||
+          ring.left < v.left - 0.5 ||
+          ring.right > v.right + 0.5
+        )
+          bad.push(
+            `"${word}" focused rings ${ring.top.toFixed(1)} to ${ring.bottom.toFixed(1)}px down, ${ring.left.toFixed(1)} to ${ring.right.toFixed(1)}px across, in a rail shown ${Math.max(v.top, 0).toFixed(1)} to ${Math.min(v.bottom, innerHeight).toFixed(1)} by ${v.left.toFixed(1)} to ${v.right.toFixed(1)}`,
+          );
+      }
+      return { n: links.length, bad };
+    });
+    await p.close();
+    if (r.n < 9) throw new Error(`${r.n} rail links, so this proves nothing`);
+    if (r.bad.length) throw new Error(r.bad.join("; "));
+  },
+);
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

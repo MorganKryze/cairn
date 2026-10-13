@@ -580,15 +580,28 @@ header { padding-block: 1.4rem; }
 /* ---- category trail ---- */
 
 /* A fixed rail beside the content: one diamond per category on a vertical line.
-   Shown only where the margin can hold it. */
+   Shown only where the margin can hold it.
+
+   Fixed, so scrolling the page never brings its foot into view: at 44px a
+   link, nine categories under a 480px window left the last two below the
+   screen, out of a pointer's reach and focused where no one saw the ring. It
+   stops 1rem above the bottom and scrolls on its own, and focus scrolls it.
+   A scroller clips what it holds at its padding box, so the .25rem all round,
+   given back to top and inset, is the room the focus ring and the turned
+   diamonds draw in. */
 .toc { display: none; }
 @media (min-width: 88rem) {
   .toc {
     display: block;
     position: fixed;
-    top: 8.6rem;
-    inset-inline-start: calc(50% + var(--maxw) / 2 + 1.6rem);
-    max-width: 10rem;
+    top: 8.35rem;
+    inset-inline-start: calc(50% + var(--maxw) / 2 + 1.35rem);
+    max-width: 10.5rem;
+    max-height: calc(100vh - 9.35rem);
+    padding: .25rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: .25rem;
   }
 }
 .toc ul {
