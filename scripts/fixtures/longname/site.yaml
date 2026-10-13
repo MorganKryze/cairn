@@ -1,0 +1,10 @@
+# A site name long enough to need more than one line beside the theme and
+# language buttons on a phone: 48 characters, with a hyphenated word a narrow
+# screen can split. scripts/layout.mjs holds that this header never pushes the
+# page sideways. The logo is the demo's, served by -assets demo/assets.
+title: Les services auto-hébergés de la famille Lefèvre
+locales: [fr, en]
+logo: /assets/logo.png
+tagline:
+  fr: Des outils libres, simples, pour tout le monde.
+  en: Free, simple tools for everyone.

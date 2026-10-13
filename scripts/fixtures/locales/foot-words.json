@@ -1,0 +1,40 @@
+{
+  "de": {
+    "host": ["Selbst gehostet", "Extern"],
+    "status": ["Online", "Offline", "Beeinträchtigt", "Wartung", "Unbekannt"]
+  },
+  "en": {
+    "host": ["Self-hosted", "External"],
+    "status": ["Online", "Offline", "Degraded", "Maintenance", "Unknown"]
+  },
+  "es": {
+    "host": ["Autoalojado", "Externo"],
+    "status": [
+      "En línea",
+      "Fuera de línea",
+      "Degradado",
+      "Mantenimiento",
+      "Desconocido"
+    ]
+  },
+  "fr": {
+    "host": ["Auto-hébergé", "Externe"],
+    "status": ["En ligne", "Hors ligne", "Dégradé", "Maintenance", "Inconnu"]
+  },
+  "it": {
+    "host": ["Auto-ospitato", "Esterno"],
+    "status": ["Online", "Offline", "Degradato", "Manutenzione", "Sconosciuto"]
+  },
+  "nl": {
+    "host": ["Zelf gehost", "Extern"],
+    "status": ["Online", "Offline", "Verminderd", "Onderhoud", "Onbekend"]
+  },
+  "pt": {
+    "host": ["Auto-hospedado", "Externo"],
+    "status": ["Online", "Offline", "Degradado", "Manutenção", "Desconhecido"]
+  },
+  "sv": {
+    "host": ["Självhostad", "Extern"],
+    "status": ["Online", "Offline", "Försämrad", "Underhåll", "Okänd"]
+  }
+}

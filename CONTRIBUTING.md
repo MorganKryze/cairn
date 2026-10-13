@@ -132,6 +132,17 @@ and answers the refresh itself with cairn's own markup, so the test needs no
 second server and cannot go green on HTML it wrote itself. It uses Playwright's
 fake clock, so a five-second poll costs no seconds.
 
+`scripts/layout.mjs` drives where things land: no page pushed sideways at
+360, 390, 1280 and 1440 px, in light, in dark from the system and in dark from
+the toggle, plus the layouts that have to stay as they are (a bare header, a
+card with nothing at its foot, the detail head on a wide screen, a service that
+is not open). It runs against the demo's own config (`demo/config`, served
+without the demo stack, so every pill reads unknown), against
+`scripts/fixtures/longname/`, a site name too long for one header row, and
+against `scripts/fixtures/locales/`, every built-in language plus Arabic, which
+turns the page right to left. `foot-words.json` there lists every hosting and
+status word, and a Go test holds it to the strings table.
+
 **Prove a browser check red before you trust it**, by deleting the thing it
 guards and watching it fail. This is not ceremony here, it is the single most
 common way a check in this file turns out to be worthless, and it has happened
@@ -152,8 +163,8 @@ The pattern in all three: the assertion was satisfied by the platform, or by
 the absence of the feature, rather than by the feature. If deleting the code
 leaves the check green, the check is decoration.
 
-**Do not leave a server behind.** The recipe serves all three configs, on 8090,
-8091 and 8092, and kills them on the way out, and the guard at the top refuses
+**Do not leave a server behind.** The recipe serves every config, on 8090 to
+8095 and 8100 to 8102, and kills them on the way out, and the guard at the top refuses
 to start if something already answers. Servers you start by hand while
 measuring have no such guard, and a leaked one is not merely untidy: one bound
 to `:8080` with no `-addr` shadowed the demo through IPv6 for ten minutes while
