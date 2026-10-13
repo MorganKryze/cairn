@@ -2553,14 +2553,14 @@ for (const scheme of ["light", "dark"]) {
         ? await p.evaluate(() => {
             const s = getComputedStyle(document.activeElement);
             const probe = document.createElement("i");
-            probe.style.color = "var(--accent)";
+            probe.style.color = "var(--accent-ink)";
             document.body.append(probe);
-            const accent = getComputedStyle(probe).color;
+            const ink = getComputedStyle(probe).color;
             probe.remove();
             return {
               ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
               colour: s.outlineColor,
-              accent,
+              ink,
             };
           })
         : null;
@@ -2568,8 +2568,8 @@ for (const scheme of ["light", "dark"]) {
       if (!m) throw new Error("Tab never reaches the row");
       if (m.ring !== "solid 2px")
         throw new Error(`the row wears ${m.ring}, want solid 2px`);
-      if (m.colour !== m.accent)
-        throw new Error(`the ring is ${m.colour}, want the accent ${m.accent}`);
+      if (m.colour !== m.ink)
+        throw new Error(`the ring is ${m.colour}, want --accent-ink ${m.ink}`);
     },
   );
 }
@@ -2641,14 +2641,14 @@ const ringOf = (p) =>
   p.evaluate(() => {
     const s = getComputedStyle(document.activeElement);
     const probe = document.createElement("i");
-    probe.style.color = "var(--accent)";
+    probe.style.color = "var(--accent-ink)";
     document.body.append(probe);
-    const accent = getComputedStyle(probe).color;
+    const ink = getComputedStyle(probe).color;
     probe.remove();
     return {
       ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
       colour: s.outlineColor,
-      accent,
+      ink,
       mask: s.maskImage,
     };
   });
@@ -2678,7 +2678,7 @@ for (const scheme of ["light", "dark"]) {
       if (!on) throw new Error("Tab never reaches the strip");
       if (after <= before)
         throw new Error(`ArrowRight left scrollLeft at ${after}`);
-      if (ring.ring !== "solid 2px" || ring.colour !== ring.accent)
+      if (ring.ring !== "solid 2px" || ring.colour !== ring.ink)
         throw new Error(`the strip wears ${ring.ring} ${ring.colour}`);
       if (ring.mask !== "none")
         throw new Error(`the fade still masks the ring: ${ring.mask}`);
@@ -2764,9 +2764,9 @@ for (const scheme of ["light", "dark"]) {
       const m = on ? await ringOf(p) : null;
       await done();
       if (!m) throw new Error("Tab never reaches the link");
-      if (m.ring !== "solid 2px" || m.colour !== m.accent)
+      if (m.ring !== "solid 2px" || m.colour !== m.ink)
         throw new Error(
-          `the link wears ${m.ring} ${m.colour}, want solid 2px ${m.accent}`,
+          `the link wears ${m.ring} ${m.colour}, want solid 2px ${m.ink}`,
         );
     },
   );
@@ -2810,117 +2810,11 @@ const sweepPage = async (url, width, theme = SWEEP_THEMES[0]) => {
   return { p, done: () => ctx.close() };
 };
 
-// What the focused element draws, against what cairn's ring is: 2px solid in
-// the accent. Two exceptions are the design's. The Open button is filled with
-// the accent, so its ring is --fg. The search field's box is what takes the
-// focus, its border turning to the accent, and the input itself draws nothing.
-// A card is one link, its name, stretched over the card, so the card wears
-// the ring. Runs in the page.
-const ringNow = () => {
-  const el = document.activeElement;
-  if (!el || el === document.body) return null;
-  const colour = (v) => {
-    const probe = document.createElement("i");
-    probe.style.color = v;
-    document.body.append(probe);
-    const c = getComputedStyle(probe).color;
-    probe.remove();
-    return c;
-  };
-  const own = [...el.classList].map((c) => `.${c}`).join("");
-  const name = `${el.tagName.toLowerCase()}${own || ` in .${el.parentElement.closest("[class]")?.classList[0]}`} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24)}"`;
-  if (el.matches(".search-box input")) {
-    const s = getComputedStyle(el),
-      box = getComputedStyle(el.closest(".search-box"));
-    const drawn = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
-    const accent = colour("var(--accent)");
-    return {
-      el,
-      name,
-      fault:
-        drawn || box.borderTopColor !== accent
-          ? `outline ${s.outlineStyle} ${parseFloat(s.outlineWidth)}px, box border ${box.borderTopColor}, want no outline and the box in ${accent}`
-          : null,
-    };
-  }
-  const target = el.matches(".card-name") ? el.closest(".card") : el;
-  const want = colour(el.matches(".btn") ? "var(--fg)" : "var(--accent)");
-  const s = getComputedStyle(target);
-  const got = `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px ${s.outlineColor}`;
-  return {
-    el,
-    name,
-    fault:
-      got === `solid 2px ${want}` ? null : `${got}, want solid 2px ${want}`,
-  };
-};
-
-// A build stamped with its version links the version to the release, where
-// the suite's unstamped one writes a span; the Go tests pin that link, so the
-// span is swapped for it here, as in layout.mjs.
-const stampVersion = (p) =>
-  p.evaluate(() => {
-    const span = document.querySelector("span.foot-version");
-    if (!span) return;
-    const a = document.createElement("a");
-    a.className = "foot-version";
-    a.href = "https://github.com/MorganKryze/cairn/releases/tag/v1.0.0";
-    a.textContent = "1.0.0";
-    span.replaceWith(a);
-  });
-
-for (const width of [390, 1280]) {
-  await check(
-    `every link and control wears cairn's ring on keyboard focus at ${width}px`,
-    async () => {
-      const bad = [];
-      const seen = new Set();
-      for (const url of SWEEP) {
-        const { p, done } = await sweepPage(url, width);
-        await stampVersion(p);
-        // Tab from the top until the focus leaves the page or comes round.
-        let first = null;
-        for (let i = 0; i < 200; i++) {
-          await p.keyboard.press("Tab");
-          const r = await p.evaluate(`(() => {
-            const r = (${ringNow})();
-            if (!r) return null;
-            const again = r.el.dataset.ringSeen === "1";
-            r.el.dataset.ringSeen = "1";
-            return { name: r.name, fault: r.fault, again };
-          })()`);
-          if (!r || r.again) break;
-          first ??= r.name;
-          seen.add(r.name.replace(/ ".*$/, ""));
-          if (r.fault) bad.push(`${url} ${r.name}: ${r.fault}`);
-        }
-        await done();
-        if (!first) bad.push(`${url}: Tab reaches nothing`);
-      }
-      // A sweep that never reached these proves nothing about them.
-      const want = [
-        "a.brand",
-        "a.skip",
-        "a.foot-version",
-        width > 704 ? "a.menu-link" : "summary.nav-burger",
-      ];
-      for (const w of want)
-        if (![...seen].some((n) => n.startsWith(w)))
-          bad.push(`Tab never reached ${w}`);
-      if (bad.length) throw new Error(bad.join("\n        "));
-    },
-  );
-}
-
-// Every text the page paints against what is really behind it: the first
-// ancestor with an opaque background, with any translucent fill between them
-// laid over it, and the text's own alpha and its ancestors' opacity laid over
-// that. Colours go through a canvas, which resolves color-mix() and oklab()
-// to sRGB where a regex on the computed string would read nonsense. Text in a
-// disabled control is exempt (WCAG 1.4.3 inactive components), and so is
-// text nobody can see: opacity 0, visibility hidden, a closed fold, clipped
-// to nothing. Runs in the page.
-const contrastFaults = () => {
+// Colours as the page paints them, for the ring and contrast sweeps. They go
+// through a canvas, which resolves color-mix() and oklab() to sRGB where a
+// regex on the computed string would read nonsense. Runs in the page, passed
+// in as source since a function cannot cross into it as an argument.
+const paintKit = () => {
   const cv = document.createElement("canvas");
   cv.width = cv.height = 1;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -2965,6 +2859,134 @@ const contrastFaults = () => {
     if (base[3] < 1) base = over(base, [255, 255, 255, 1]);
     return layers.reduceRight((acc, l) => over(l, acc), base);
   };
+  return { rgba, over, wcag, behind };
+};
+
+// What the focused element draws, against what cairn's ring is: 2px solid in
+// --accent-ink, the accent already adjusted for contrast. Two exceptions are
+// the design's. The Open button is filled with the accent, so its ring is
+// --fg. The search field's box is what takes the focus, its border turning to
+// --accent-ink, and the input itself draws nothing.
+// A card is one link, its name, stretched over the card, so the card wears
+// the ring. Whatever it is drawn in, a ring is the focus indicator and WCAG
+// 1.4.11 asks 3:1 of it against what it sits on: past its offset that is the
+// parent's ground, never the element's own fill, and the box's border sits
+// between its fill and the page. Runs in the page, handed paintKit.
+const ringNow = (kit) => {
+  const el = document.activeElement;
+  if (!el || el === document.body) return null;
+  const { rgba, over, wcag, behind } = kit();
+  const colour = (v) => {
+    const probe = document.createElement("i");
+    probe.style.color = v;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  };
+  const ratio = (line, ground) => wcag(over(rgba(line), ground), ground);
+  const own = [...el.classList].map((c) => `.${c}`).join("");
+  const name = `${el.tagName.toLowerCase()}${own || ` in .${el.parentElement.closest("[class]")?.classList[0]}`} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24)}"`;
+  const faults = [];
+  if (el.matches(".search-box input")) {
+    const frame = el.closest(".search-box");
+    const s = getComputedStyle(el),
+      box = getComputedStyle(frame);
+    const drawn = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
+    const want = colour("var(--accent-ink)");
+    if (drawn || box.borderTopColor !== want)
+      faults.push(
+        `outline ${s.outlineStyle} ${parseFloat(s.outlineWidth)}px, box border ${box.borderTopColor}, want no outline and the box in ${want}`,
+      );
+    for (const [where, ground] of [
+      ["the page", behind(frame.parentElement)],
+      ["its fill", behind(frame)],
+    ]) {
+      const r = ratio(box.borderTopColor, ground);
+      if (r < 3)
+        faults.push(`box border ${r.toFixed(2)}:1 against ${where}, want 3:1`);
+    }
+    return { el, name, fault: faults.join("; ") || null };
+  }
+  const target = el.matches(".card-name") ? el.closest(".card") : el;
+  const want = colour(el.matches(".btn") ? "var(--fg)" : "var(--accent-ink)");
+  const s = getComputedStyle(target);
+  const got = `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px ${s.outlineColor}`;
+  if (got !== `solid 2px ${want}`)
+    faults.push(`${got}, want solid 2px ${want}`);
+  const r = ratio(s.outlineColor, behind(target.parentElement));
+  if (r < 3)
+    faults.push(`ring ${r.toFixed(2)}:1 against what it sits on, want 3:1`);
+  return { el, name, fault: faults.join("; ") || null };
+};
+
+// A build stamped with its version links the version to the release, where
+// the suite's unstamped one writes a span; the Go tests pin that link, so the
+// span is swapped for it here, as in layout.mjs.
+const stampVersion = (p) =>
+  p.evaluate(() => {
+    const span = document.querySelector("span.foot-version");
+    if (!span) return;
+    const a = document.createElement("a");
+    a.className = "foot-version";
+    a.href = "https://github.com/MorganKryze/cairn/releases/tag/v1.0.0";
+    a.textContent = "1.0.0";
+    span.replaceWith(a);
+  });
+
+for (const width of [390, 1280]) {
+  for (const theme of SWEEP_THEMES) {
+    await check(
+      `every link and control wears cairn's ring at 3:1 on keyboard focus at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        const seen = new Set();
+        for (const url of SWEEP) {
+          const { p, done } = await sweepPage(url, width, theme);
+          await stampVersion(p);
+          // Tab from the top until the focus leaves the page or comes round.
+          let first = null;
+          for (let i = 0; i < 200; i++) {
+            await p.keyboard.press("Tab");
+            const r = await p.evaluate(`(() => {
+            const r = (${ringNow})(${paintKit});
+            if (!r) return null;
+            const again = r.el.dataset.ringSeen === "1";
+            r.el.dataset.ringSeen = "1";
+            return { name: r.name, fault: r.fault, again };
+          })()`);
+            if (!r || r.again) break;
+            first ??= r.name;
+            seen.add(r.name.replace(/ ".*$/, ""));
+            if (r.fault) bad.push(`${url} ${r.name}: ${r.fault}`);
+          }
+          await done();
+          if (!first) bad.push(`${url}: Tab reaches nothing`);
+        }
+        // A sweep that never reached these proves nothing about them.
+        const want = [
+          "a.brand",
+          "a.skip",
+          "a.foot-version",
+          width > 704 ? "a.menu-link" : "summary.nav-burger",
+        ];
+        for (const w of want)
+          if (![...seen].some((n) => n.startsWith(w)))
+            bad.push(`Tab never reached ${w}`);
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// Every text the page paints against what is really behind it: the first
+// ancestor with an opaque background, with any translucent fill between them
+// laid over it, and the text's own alpha and its ancestors' opacity laid over
+// that. Text in a disabled control is exempt (WCAG 1.4.3 inactive
+// components), and so is text nobody can see: opacity 0, visibility hidden, a
+// closed fold, clipped to nothing. Runs in the page, handed paintKit.
+const contrastFaults = (kit) => {
+  const { rgba, over, wcag, behind } = kit();
   const fade = (el) => {
     let o = 1;
     for (let e = el; e; e = e.parentElement)
@@ -3079,7 +3101,7 @@ for (const theme of SWEEP_THEMES) {
         for (const url of SWEEP) {
           const { p, done } = await sweepPage(url, width, theme);
           await stampVersion(p);
-          const r = await p.evaluate(contrastFaults);
+          const r = await p.evaluate(`(${contrastFaults})(${paintKit})`);
           await done();
           for (const b of r.bad) bad.push(`${url} at ${width}px: ${b}`);
           for (const c of r.measured) measured.add(c);

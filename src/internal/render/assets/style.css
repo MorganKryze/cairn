@@ -42,6 +42,13 @@
      3.31:1. */
   --ui-border: light-dark(#7f8482, #6b7270);
   --accent: #247b7b;                                       /* set inline from theme.accent */
+  /* The accent pushed toward black in light and toward white in dark, for
+     contrast. Every focus ring but the Open button's draws in it, not in the
+     accent: WCAG 1.4.11 asks a ring 3:1 against whatever it sits on, and
+     theme.accent is the operator's free pick. In dark, #8a4f7d measured
+     2.97:1 on --bg and 2.71:1 on --card raw, 5.30:1 and 4.83:1 through here.
+     A fixed mix, not a guarantee: an accent close to black still falls short
+     in dark. */
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
   --up: light-dark(#2e8b57, #4cb47c);
   --down: light-dark(#c0392b, #e0685b);
@@ -141,7 +148,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
 }
 .brand img { height: 2.125rem; width: auto; }
-.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.brand:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
 .foot-mark svg { display: block; width: 100%; height: 100%; }
 
 /* The rule over the menu row runs on the content column, not across the
@@ -195,7 +202,7 @@ header { padding-block: 1.4rem; }
   transition: color .16s;
 }
 .menu-link:hover { color: var(--fg); }
-.menu-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.menu-link:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
 .menu-link svg { width: .95rem; height: .95rem; opacity: .85; flex: none; }
 .menu-link img { width: 1rem; height: 1rem; flex: none; }
 
@@ -230,7 +237,7 @@ header { padding-block: 1.4rem; }
   transition: color .16s;
 }
 .theme-toggle:hover { color: var(--fg); }
-.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .theme-toggle svg { width: 1.05rem; height: 1.05rem; display: none; }
 /* offer the other theme: moon while light, sun while dark */
 .theme-toggle .moon { display: block; }
@@ -264,7 +271,7 @@ header { padding-block: 1.4rem; }
   border-color: var(--border);
 }
 .langs a:hover { color: var(--fg); }
-.langs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.langs a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
 /* Above three locales the switcher folds into a menu; <details> keeps it
    working without JavaScript. */
@@ -290,7 +297,7 @@ header { padding-block: 1.4rem; }
 .langs-menu summary::-webkit-details-marker { display: none; }
 .langs-menu summary svg { width: .85rem; height: .85rem; color: var(--muted); }
 .langs-menu[open] summary svg { transform: rotate(180deg); }
-.langs-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.langs-menu summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .langs-menu nav {
   position: absolute;
   inset-inline-end: 0;
@@ -317,7 +324,7 @@ header { padding-block: 1.4rem; }
 }
 .langs-menu nav [aria-current] { color: var(--fg); background: var(--faint); }
 .langs-menu nav a:hover { color: var(--fg); background: var(--faint); }
-.langs-menu nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.langs-menu nav a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
 /* ---- welcome note ---- */
 
@@ -357,7 +364,7 @@ header { padding-block: 1.4rem; }
   list-style: none;
 }
 .about-sum::-webkit-details-marker { display: none; }
-.about-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius); }
+.about-sum:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: var(--radius); }
 .about-info { width: 1.05rem; height: 1.05rem; flex: none; color: var(--accent-ink); }
 .about-chev { width: .9rem; height: .9rem; flex: none; color: var(--muted); transition: transform .16s; }
 .about-fold[open] .about-chev { transform: rotate(180deg); }
@@ -414,7 +421,7 @@ header { padding-block: 1.4rem; }
   }
   .about-x:hover span, .about-x:focus-visible span { opacity: 1; }
 }
-.about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.about-x:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
 /* Width on the wrapper: as a flex item the box would otherwise size to its own
    max-content and stop short of the inline end. A search field keeps room for
@@ -453,13 +460,14 @@ header { padding-block: 1.4rem; }
    every page but the home page, so the strong border goes where the control is
    awake and the quiet one stays where it is asleep.
    :where() holds this at .search-box's own specificity so :focus-within below
-   still gets to paint the border accent. */
+   still gets to paint the border that is the box's focus ring. That border
+   sits between the box's fill and the page, and holds 3:1 against both. */
 .search-box:where(:has(input:enabled)) { border-color: var(--ui-border); }
 @media (max-width: 44rem) {
   .search, .search:focus-within { flex: 1 1 100%; margin-inline-start: 0; width: 100%; }
 }
 .search-box:focus-within {
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   box-shadow: var(--shadow-lift);
 }
 .search-box svg { width: 1rem; height: 1rem; color: var(--muted); flex: none; }
@@ -568,7 +576,7 @@ header { padding-block: 1.4rem; }
   }
 }
 .way-name a:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-ink);
   outline-offset: 4px;
   border-radius: 3px;
 }
@@ -656,7 +664,7 @@ header { padding-block: 1.4rem; }
 .toc a:hover .toc-mark { background: var(--muted); }
 .toc a[aria-current] { color: inherit; font-weight: 600; }
 .toc a[aria-current] .toc-mark { background: var(--accent); }
-.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.toc a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
 
 /* Below the rail the trail is a row of chips that scrolls sideways rather than
    wrapping: one line at any category count, on a 320px phone as on a laptop
@@ -857,7 +865,7 @@ html { scrollbar-gutter: stable; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
 a.flag { position: relative; z-index: 1; text-decoration: none; }
 a.flag:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-a.flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a.flag:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 /* 28px drawn, 44px to a thumb: the card's controls answer 8px past their
    border above and below, the offsets counted from inside the 1px border.
    Sideways a chip stops at its border, being wider than 44px already, so the
@@ -964,7 +972,7 @@ a.flag::before,
 /* Stretched link: the whole card follows the service link. The pill and the
    detail glyph are raised above it and stay independently clickable. */
 .card-name::after { content: ""; position: absolute; inset: 0; z-index: 0; }
-.card:has(.card-name:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card:has(.card-name:focus-visible) { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .card-desc { color: var(--muted); font-size: .95rem; }
 /* sign_in: a lock after the name, bound to its last word so a wrapped name
    never strands it alone on a line. Raised above the stretched link only so
@@ -1028,7 +1036,7 @@ a.flag::before,
    The primary button is --accent rather than --accent-ink and is filled at
    rest, so it stays the loudest thing on any page it appears on. */
 .card-more:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-.card-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-more:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .more-glyph { width: var(--ring-glyph); height: var(--ring-glyph); }
 /* Room for it, so a long name does not run underneath. */
 .card:has(.card-more) .card-name { padding-inline-end: 2.2rem; }
@@ -1058,7 +1066,7 @@ a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-
    smudge and not a dot. Nothing is lost, since the label beside it says
    Online or Offline in words. */
 a.status-pill:hover .dot { background: var(--card); }
-a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a.status-pill:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .card .status-pill { flex: none; min-height: 1.75rem; }
 /* Raised above the card's stretched link so a click reaches the status page. A
    display-only pill stays underneath and the click opens the service. */
@@ -1111,7 +1119,7 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
    button. --faint darkens it against the page in light and lightens it in
    dark, one step either way. */
 .back:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.back:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 /* Drawn small on a wide screen and 44px to the pointer: the back chip measured
    72 by 33 and the detail pill 90 by 28, so each answers on a band its
    ::before draws around it. A phone and a touch screen draw them 44px tall
@@ -1224,7 +1232,7 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   text-underline-offset: .2em;
 }
 .shot-full-glyph { width: .95rem; height: .95rem; flex: none; }
-.shot-full:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shot-full:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 /* Shrunk to a phone column, the demo's 2000x700 screenshot came out 0.16 of its
    size, 120px high and unreadable. Below 44rem it keeps a readable 17rem and
    the strip scrolls sideways instead; one that fits the column at that height
@@ -1268,7 +1276,7 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   }
   /* A mask clips the element's own outline, so the fade gives way while the
      strip has the keyboard: with it the ring computed and never showed. */
-  .shot-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; mask-image: none; }
+  .shot-scroll:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; mask-image: none; }
 }
 /* A screenshot is usually a white page, which in the dark theme became the
    brightest thing on the screen. It steps down until the pointer is on it or
@@ -1359,7 +1367,7 @@ html:has(dialog[open]) {
   cursor: pointer;
 }
 .leave-copy:hover, .leave-stay:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-.leave-copy:focus-visible, .leave-stay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.leave-copy:focus-visible, .leave-stay:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 /* The continue link borrows .btn, which carries a 1.4rem top margin for the
    detail page; in a row of buttons that margin is a step. */
 .leave-acts .btn { margin-top: 0; margin-inline-start: auto; }
@@ -1491,7 +1499,7 @@ html:has(dialog[open]) {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-:is(.about, .detail) a:not(.btn, .back, .status-pill):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.about, .detail) a:not(.btn, .back, .status-pill):focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
 /* Headings. h2 keeps the small uppercase section label set further up, which is
    what ## has rendered as all along, and the rest of the scale sits around it.
@@ -1593,7 +1601,7 @@ html:has(dialog[open]) {
   overflow-x: auto;
   margin: 0 0 1rem;
 }
-:is(.about, .detail) .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.about, .detail) .table-wrap:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 :is(.about, .detail) table {
   border-collapse: collapse;
   font-size: .95em;
@@ -1652,7 +1660,7 @@ footer { margin-top: 1rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
 /* every footer link: the list, the credit and the version alike */
-.foot a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.foot a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { position: relative; color: var(--accent-ink); font-weight: 500; }
@@ -1692,7 +1700,7 @@ footer { margin-top: 1rem; }
   text-decoration: none;
 }
 .skip:focus { inset-inline-start: .5rem; }
-.skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skip:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -1733,7 +1741,7 @@ footer { margin-top: 1rem; }
 .totop.show { opacity: 1; visibility: visible; pointer-events: auto; }
 .totop svg { width: 1.15rem; height: 1.15rem; }
 .totop:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
-.totop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.totop:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
@@ -1803,7 +1811,7 @@ footer { margin-top: 1rem; }
     list-style: none;
   }
   .nav-burger::-webkit-details-marker { display: none; }
-  .nav-burger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .nav-burger:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
   .nav-burger svg { width: 1.15rem; height: 1.15rem; flex: none; }
   .nav[open] .nav-burger { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
   .nav-links {

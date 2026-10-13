@@ -124,13 +124,15 @@ need a site `example/` cannot provide, so they run against
 `scripts/fixtures/many-categories/`: more than seven categories, which is where
 the chip row gives way to a select, and enough header links to raise the
 burger. On the home, detail, hosted and not-found pages of the demo's config
-and of German, at 390 and 1280px, it also Tabs through every stop and asks
-each for cairn's ring, 2px solid in the accent (the Open button's is `--fg`,
-and the search field turns its box's border to the accent instead), holds
-every painted text to 4.5:1 against what is really behind it, and the glyph
-or the frame of a control that shows no words to 3:1, in light, dark and dark
-by the toggle, and checks
-that reduced motion stops the note's chevron and the screenshot's dimming.
+and of German, at 390 and 1280px, in light, dark and dark by the toggle, it
+also Tabs through every stop and asks each for cairn's ring, 2px solid in
+`--accent-ink` (the Open button's is `--fg`, and the search field turns its
+box's border to `--accent-ink` instead) at 3:1 against what the ring sits on.
+German runs on a darker accent, `#8a4f7d`, whose raw ring measured under 3:1
+in dark. On the same pages it holds every painted text to 4.5:1 against what
+is really behind it, and the glyph or the frame of a control that shows no
+words to 3:1, and it checks that reduced motion stops the note's chevron and
+the screenshot's dimming.
 
 `scripts/status.mjs` drives the one thing a static page cannot do on its own:
 a status pill changing in a tab nobody reloaded. It runs against
