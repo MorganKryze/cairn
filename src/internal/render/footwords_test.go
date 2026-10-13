@@ -16,7 +16,7 @@ import (
 // the file to the strings table, so a word added or reworded here cannot leave
 // the browser measuring an old one.
 func TestTheFootWordsTheBrowserMeasuresAreTheTablesOwn(t *testing.T) {
-	b, err := os.ReadFile("../../../scripts/fixtures/locales/foot-words.json")
+	b, err := os.ReadFile(localesFixture(t, "foot-words.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

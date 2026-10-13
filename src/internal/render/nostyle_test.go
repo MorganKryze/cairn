@@ -11,7 +11,7 @@ import (
 // attribute would be dropped by the browser, silently, on the page that needed
 // it. Every page of the fixture with the most shapes on it is read for one.
 func TestNoPageCarriesAStyleAttribute(t *testing.T) {
-	cfg, err := config.Load("../../../scripts/fixtures/locales")
+	cfg, err := config.Load(localesFixture(t, "."))
 	if err != nil {
 		t.Fatal(err)
 	}
