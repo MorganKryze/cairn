@@ -435,6 +435,9 @@ const brandLines = () => {
     toolsBelow: tr.top >= br.bottom - 1,
     beside: tr.top < br.bottom && tr.bottom > br.top && tr.left >= br.right - 1,
     header: document.querySelector("header").getBoundingClientRect().height,
+    over:
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
   };
 };
 for (const width of PHONES) {
@@ -465,10 +468,12 @@ const rename = (name) => {
   texts[0].data = name;
   for (const t of texts.slice(1)) t.remove();
   dispatchEvent(new Event("resize"));
-  return new Promise((done) =>
+};
+// The resize handler measures on the next frame.
+const settle = () =>
+  new Promise((done) =>
     requestAnimationFrame(() => requestAnimationFrame(done)),
   );
-};
 for (const width of PHONES) {
   await check(
     `a name with no break in it gets its own row at ${width}px`,
@@ -477,6 +482,7 @@ for (const width of PHONES) {
       for (const name of ["dash.morgankryze.com", "Familienselbsthosting"]) {
         const p = await open(`${LONG}fr/`, width);
         await p.evaluate(rename, name);
+        await p.evaluate(settle);
         const m = await p.evaluate(brandLines);
         await p.close();
         if (!m.clear) bad.push(`${name} runs under the tools`);
@@ -501,6 +507,50 @@ await check(
     if (m.header > 215) throw new Error(`the header is ${m.header}px high`);
   },
 );
+
+// A word wider than the whole phone row breaks inside the name rather than
+// pushing the page sideways, and without JavaScript, where nothing can give
+// the name its own row, any word too wide for its share breaks beside the
+// tools rather than running under them.
+const LONG_WORD = "Familiendienstverwaltungsportal Müller";
+for (const width of PHONES) {
+  await check(
+    `a word wider than the row breaks inside the name at ${width}px`,
+    async () => {
+      const p = await open(`${LONG}fr/`, width);
+      await p.evaluate(rename, LONG_WORD);
+      await p.evaluate(settle);
+      const m = await p.evaluate(brandLines);
+      await p.close();
+      const bad = [];
+      if (!m.clear) bad.push("the name runs out of its box");
+      if (!m.whole) bad.push("the name is cut");
+      if (m.over > 0) bad.push(`the page is pushed sideways by ${m.over}px`);
+      if (!m.toolsBelow) bad.push("the tools sit beside the name");
+      if (m.header > 215) bad.push(`the header is ${m.header}px high`);
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+  await check(
+    `without JavaScript a name with no break in it stays clear of the tools at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const name of ["dash.morgankryze.com", LONG_WORD]) {
+        const p = await open(`${LONG}fr/`, width, THEMES[0], {
+          javaScriptEnabled: false,
+        });
+        await p.evaluate(rename, name);
+        const m = await p.evaluate(brandLines);
+        await p.close();
+        if (!m.clear) bad.push(`${name} runs under the tools`);
+        if (!m.whole) bad.push(`${name} is cut`);
+        if (m.over > 0) bad.push(`${name} pushes the page by ${m.over}px`);
+        if (m.header > 215) bad.push(`${name} makes the header ${m.header}px`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
 
 // Every header control is a 44px target: the theme toggle, the language
 // links, the language menu and the header links or the menu button.

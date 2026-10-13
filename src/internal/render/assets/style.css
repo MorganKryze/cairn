@@ -1561,9 +1561,17 @@ footer { margin-top: 1rem; }
      there gets the whole row instead, and the tools a row under it, at its
      end: nav.js sets .topbar-split, since only a measure knows where a name
      breaks. Without it the name stays beside the tools, as many lines as it
-     takes, and the header is no taller than when the tools wrapped. */
+     takes, and the header is no taller than when the tools wrapped.
+     A word with no break in it keeps its own width however narrow the box:
+     a host name ran 90px under the tools at 360, and a 31-letter German
+     word pushed the page 3px sideways even with the whole row. Where nothing
+     can give the name more room, without JavaScript and on the split row, the
+     word breaks anywhere. Beside the tools with JavaScript it must not: nav.js
+     reads the overflow as the cue to split, and a name that fits the whole
+     row is not cut in the middle of a word. */
   .topbar { flex-wrap: nowrap; column-gap: .6rem; }
   .brand { flex: 1 1 0; min-width: 0; font-size: 1.3rem; line-height: 1.15; }
+  :root:not([data-js]) .brand, .topbar-split .brand { overflow-wrap: anywhere; }
   .topbar-tools { flex: none; gap: .25rem; }
   .topbar-split { flex-wrap: wrap; row-gap: .6rem; }
   .topbar-split .brand { flex-basis: 100%; }
