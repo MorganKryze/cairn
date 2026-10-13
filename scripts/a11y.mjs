@@ -2596,10 +2596,13 @@ for (const width of [360, 390, 1280, 1440]) {
 
 // ---- screenshots ----
 
-// On a phone a wide screenshot is a strip that scrolls sideways. Chromium makes
-// a scrolling region a keyboard stop of its own, so the strip carries no
-// tabindex: it is a stop exactly while it scrolls, and arrow keys move it. Its
-// name, in the page's language, says what it is and what to do with it.
+// On a phone a wide screenshot is a strip that scrolls sideways. Chromium and
+// Firefox make a scrolling region a keyboard stop of their own; WebKit does
+// not, and Tab went from the status pill straight to the link under the strip.
+// So toc.js gives the strip a tabindex while it scrolls and takes it back when
+// it does not: it is a stop exactly while it scrolls, in every engine, and
+// arrow keys move it. Its name, in the page's language, says what it is and
+// what to do with it.
 const shotPage = async (width, scheme = "light", path = "fr/pad/") => {
   const ctx = await browser.newContext({
     viewport: { width, height: 844 },
@@ -2707,6 +2710,36 @@ await check("every screenshot strip has a name of its own", async () => {
       );
   }
 });
+
+// The tabindex is what makes the strip a stop in WebKit, and this suite drives
+// Chromium, which stops on it either way: the attribute is what it can hold.
+await check(
+  "a strip carries a tabindex only while it scrolls, resize included",
+  async () => {
+    const { p, done } = await shotPage(390);
+    const read = () =>
+      p.$$eval(".shot-scroll", (all) =>
+        all.map((s) => [
+          s.scrollWidth > s.clientWidth,
+          s.getAttribute("tabindex"),
+        ]),
+      );
+    const phone = await read();
+    await p.setViewportSize({ width: 1280, height: 844 });
+    await p.waitForTimeout(100);
+    const wide = await read();
+    await done();
+    const wrong = [...phone, ...wide].filter(
+      ([scrolls, t]) => t !== (scrolls ? "0" : null),
+    );
+    if (!phone.some(([scrolls]) => scrolls))
+      throw new Error("no strip scrolls at 390px");
+    if (wrong.length)
+      throw new Error(
+        `scrolls/tabindex at 390 ${JSON.stringify(phone)}, at 1280 ${JSON.stringify(wide)}`,
+      );
+  },
+);
 
 await check(
   "a screenshot that does not scroll is no tab stop at 1280px",

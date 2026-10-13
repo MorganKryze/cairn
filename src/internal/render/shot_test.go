@@ -59,8 +59,9 @@ var fullLinkRe = regexp.MustCompile(`<a class="shot-full"[^>]*>`)
 
 // The strip is sized from the image's own ratio, which only the width and
 // height attributes give it: a contained image with no ratio collapses. So it
-// is only drawn where cairn knows both, and it is never given a tabindex, since
-// a browser makes a scrolling region a stop only while it scrolls.
+// is only drawn where cairn knows both. The markup carries no tabindex: a
+// strip that does not scroll is no stop, and the script adds one only while it
+// scrolls.
 func TestAScreenshotScrollsOnlyWhenItsSizeIsKnown(t *testing.T) {
 	m := shotPages(t, "locales: [en]\n", "[shot.png, /assets/logo.png]")
 	shots := figures(t, m, "en/pad")
