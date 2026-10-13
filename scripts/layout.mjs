@@ -1321,6 +1321,63 @@ for (const width of WIDTHS) {
   }
 }
 
+// The detail glyph's band stops short of the description's words: a tap on
+// the end of its first line opened the detail page instead of the service,
+// 33.1x7.1px of "Ancien forum" at 360. Measured against the line boxes of the
+// text itself, not the paragraph, which runs under the glyph by design.
+const descUnderBand = () => {
+  const out = [];
+  for (const card of document.querySelectorAll(".card")) {
+    const more = card.querySelector(".card-more"),
+      desc = card.querySelector(".card-desc");
+    if (!more || !desc) continue;
+    const r = more.getBoundingClientRect(),
+      s = getComputedStyle(more),
+      b = getComputedStyle(more, "::before");
+    const band = {
+      l: r.left + parseFloat(s.borderLeftWidth) + parseFloat(b.left),
+      t: r.top + parseFloat(s.borderTopWidth) + parseFloat(b.top),
+      r: r.right - parseFloat(s.borderRightWidth) - parseFloat(b.right),
+      b: r.bottom - parseFloat(s.borderBottomWidth) - parseFloat(b.bottom),
+    };
+    const range = document.createRange();
+    range.selectNodeContents(desc);
+    for (const line of range.getClientRects()) {
+      const x = Math.min(band.r, line.right) - Math.max(band.l, line.left),
+        y = Math.min(band.b, line.bottom) - Math.max(band.t, line.top);
+      if (x > 0.5 && y > 0.5) {
+        out.push(
+          `${x.toFixed(1)}x${y.toFixed(1)}px of ${card.querySelector(".card-name").textContent.trim()}`,
+        );
+        break;
+      }
+    }
+  }
+  return out;
+};
+for (const width of PHONES) {
+  await check(
+    `the detail glyph's band leaves the description's text alone at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of [
+        `${DEMO}en/`,
+        `${DEMO}fr/`,
+        ...["en", "de", "es", "pt", "sv", "fr", "it", "nl", "ar"].map(
+          (l) => `${LOCALES}${l}/`,
+        ),
+      ]) {
+        const p = await open(url, width);
+        bad.push(
+          ...(await p.evaluate(descUnderBand)).map((s) => `${s} on ${url}`),
+        );
+        await p.close();
+      }
+      if (bad.length) throw new Error(bad.slice(0, 6).join("; "));
+    },
+  );
+}
+
 // A thumb that lands anywhere in the 44px band centred on a linked flag
 // follows the flag, not the card around it, which leaves for the service.
 // The click is caught and cancelled, so nothing navigates. The centre is read
