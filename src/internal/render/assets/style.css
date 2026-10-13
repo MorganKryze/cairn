@@ -141,6 +141,7 @@ header { padding-block: 1.4rem; }
   text-decoration: none;
 }
 .brand img { height: 2.125rem; width: auto; }
+.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .foot-mark svg { display: block; width: 100%; height: 100%; }
 
 /* The rule over the menu row runs on the content column, not across the
@@ -1490,6 +1491,7 @@ html:has(dialog[open]) {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+:is(.about, .detail) a:not(.btn, .back, .status-pill):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Headings. h2 keeps the small uppercase section label set further up, which is
    what ## has rendered as all along, and the rest of the scale sits around it.
@@ -1649,6 +1651,8 @@ footer { margin-top: 1rem; }
 .foot-links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover, .foot a:focus-visible { color: var(--fg); }
+/* every footer link: the list, the credit and the version alike */
+.foot a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { position: relative; color: var(--accent-ink); font-weight: 500; }
@@ -1688,6 +1692,7 @@ footer { margin-top: 1rem; }
   text-decoration: none;
 }
 .skip:focus { inset-inline-start: .5rem; }
+.skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -1798,6 +1803,7 @@ footer { margin-top: 1rem; }
     list-style: none;
   }
   .nav-burger::-webkit-details-marker { display: none; }
+  .nav-burger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .nav-burger svg { width: 1.15rem; height: 1.15rem; flex: none; }
   .nav[open] .nav-burger { color: var(--fg); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
   .nav-links {

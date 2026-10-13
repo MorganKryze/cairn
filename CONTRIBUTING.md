@@ -116,14 +116,21 @@ in `search.js` belongs there, particularly the paths back to an empty query:
 clearing the field, Escape, and typing only spaces all have to return the full
 list rather than "no results".
 
-`scripts/a11y.mjs` drives four things no markup assertion can see: the theme
+`scripts/a11y.mjs` drives what no markup assertion can see: the theme
 toggle's `aria-pressed`, the 3:1 boundary on the controls a visitor can
 operate, the mobile category swap with JavaScript on and with it off, and the
 burger menu surviving a scroll while the keyboard is inside it. The last two
 need a site `example/` cannot provide, so they run against
 `scripts/fixtures/many-categories/`: more than seven categories, which is where
 the chip row gives way to a select, and enough header links to raise the
-burger.
+burger. On the home, detail, hosted and not-found pages of the demo's config
+and of German, at 390 and 1280px, it also Tabs through every stop and asks
+each for cairn's ring, 2px solid in the accent (the Open button's is `--fg`,
+and the search field turns its box's border to the accent instead), holds
+every painted text to 4.5:1 against what is really behind it, and the glyph
+or the frame of a control that shows no words to 3:1, in light, dark and dark
+by the toggle, and checks
+that reduced motion stops the note's chevron and the screenshot's dimming.
 
 `scripts/status.mjs` drives the one thing a static page cannot do on its own:
 a status pill changing in a tab nobody reloaded. It runs against
@@ -158,8 +165,12 @@ printed); every link and control on a home, detail, hosted and not-found page
 a 44 by 44px target that answers at the middle of each edge and overlaps no
 neighbour, the skip link focused, the leaving dialog, the open menus and the
 back-to-top button included (a link inside a sentence of the operator's text
-and the card name, whose link is the whole card, are the two exceptions); and
-the layouts that have to stay as they are (a bare header, a card with nothing
+and the card name, whose link is the whole card, are the two exceptions);
+Arabic mirrored (the header's diamond at the column's right edge, the hosting
+flag at the card's right with the pill at its left, the detail line reading
+Open, pill, state from the right); every page at 360 with JavaScript off
+(nothing pushed sideways, the note's row opening and folding, no link without
+an `href`); and the layouts that have to stay as they are (a bare header, a card with nothing
 at its foot, the detail head on a wide screen, a service that is not open). It
 runs against the demo's own config (`demo/config`, served without the demo
 stack, so every pill reads unknown), against `scripts/fixtures/longname/`, a

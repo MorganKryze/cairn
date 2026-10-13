@@ -6,9 +6,9 @@
 // Run it with `just test-browser`, which builds cairn and serves the example
 // config, scripts/fixtures/many-categories, scripts/fixtures/status,
 // scripts/fixtures/themed, scripts/fixtures/leave, scripts/fixtures/states and
-// scripts/fixtures/locales on scratch ports first.
+// scripts/fixtures/locales and the demo's config on scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url] [states-url] [locales-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url] [states-url] [locales-url] [demo-url]
 import { chromium } from "playwright";
 
 const SITE =
@@ -33,6 +33,10 @@ const STATES =
 // screenshots whose size cairn reads. test-browser serves it for layout.mjs.
 const LOCALES =
   process.argv[8] ?? process.env.CAIRN_LOCALES_URL ?? "http://127.0.0.1:8102/";
+// The demo's own config, which test-browser serves for layout.mjs: the ring and
+// contrast sweeps walk its pages beside the German ones.
+const DEMO =
+  process.argv[9] ?? process.env.CAIRN_DEMO_URL ?? "http://127.0.0.1:8100/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -2767,6 +2771,373 @@ for (const scheme of ["light", "dark"]) {
     },
   );
 }
+
+// ---- cairn's ring, contrast and motion on every page ----
+
+// Every page shape of the demo and of German, the longest interface words: a
+// home, a detail page, a hosted page and the page for an address that leads
+// nowhere. Dark twice, from the system and from the toggle over a light
+// system, since the stylesheet reaches dark by two selectors.
+const SWEEP = [
+  ...["", "whoami/", "hosting/", "nowhere/"].map((p) => `${DEMO}fr/${p}`),
+  ...["", "pad/", "hosting/", "nowhere/"].map((p) => `${LOCALES}de/${p}`),
+];
+const SWEEP_THEMES = [
+  { name: "light", scheme: "light" },
+  { name: "dark", scheme: "dark" },
+  { name: "dark by the toggle", scheme: "light", stored: "dark" },
+];
+const sweepPage = async (url, width, theme = SWEEP_THEMES[0]) => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: theme.scheme,
+    reducedMotion: "reduce",
+  });
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  if (theme.stored) {
+    await ctx.addInitScript((t) => {
+      try {
+        localStorage.setItem("theme", t);
+      } catch (e) {}
+    }, theme.stored);
+  }
+  const p = await ctx.newPage();
+  await p.goto(url);
+  await p.evaluate(() => document.fonts.ready);
+  return { p, done: () => ctx.close() };
+};
+
+// What the focused element draws, against what cairn's ring is: 2px solid in
+// the accent. Two exceptions are the design's. The Open button is filled with
+// the accent, so its ring is --fg. The search field's box is what takes the
+// focus, its border turning to the accent, and the input itself draws nothing.
+// A card is one link, its name, stretched over the card, so the card wears
+// the ring. Runs in the page.
+const ringNow = () => {
+  const el = document.activeElement;
+  if (!el || el === document.body) return null;
+  const colour = (v) => {
+    const probe = document.createElement("i");
+    probe.style.color = v;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  };
+  const own = [...el.classList].map((c) => `.${c}`).join("");
+  const name = `${el.tagName.toLowerCase()}${own || ` in .${el.parentElement.closest("[class]")?.classList[0]}`} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24)}"`;
+  if (el.matches(".search-box input")) {
+    const s = getComputedStyle(el),
+      box = getComputedStyle(el.closest(".search-box"));
+    const drawn = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
+    const accent = colour("var(--accent)");
+    return {
+      el,
+      name,
+      fault:
+        drawn || box.borderTopColor !== accent
+          ? `outline ${s.outlineStyle} ${parseFloat(s.outlineWidth)}px, box border ${box.borderTopColor}, want no outline and the box in ${accent}`
+          : null,
+    };
+  }
+  const target = el.matches(".card-name") ? el.closest(".card") : el;
+  const want = colour(el.matches(".btn") ? "var(--fg)" : "var(--accent)");
+  const s = getComputedStyle(target);
+  const got = `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px ${s.outlineColor}`;
+  return {
+    el,
+    name,
+    fault:
+      got === `solid 2px ${want}` ? null : `${got}, want solid 2px ${want}`,
+  };
+};
+
+// A build stamped with its version links the version to the release, where
+// the suite's unstamped one writes a span; the Go tests pin that link, so the
+// span is swapped for it here, as in layout.mjs.
+const stampVersion = (p) =>
+  p.evaluate(() => {
+    const span = document.querySelector("span.foot-version");
+    if (!span) return;
+    const a = document.createElement("a");
+    a.className = "foot-version";
+    a.href = "https://github.com/MorganKryze/cairn/releases/tag/v1.0.0";
+    a.textContent = "1.0.0";
+    span.replaceWith(a);
+  });
+
+for (const width of [390, 1280]) {
+  await check(
+    `every link and control wears cairn's ring on keyboard focus at ${width}px`,
+    async () => {
+      const bad = [];
+      const seen = new Set();
+      for (const url of SWEEP) {
+        const { p, done } = await sweepPage(url, width);
+        await stampVersion(p);
+        // Tab from the top until the focus leaves the page or comes round.
+        let first = null;
+        for (let i = 0; i < 200; i++) {
+          await p.keyboard.press("Tab");
+          const r = await p.evaluate(`(() => {
+            const r = (${ringNow})();
+            if (!r) return null;
+            const again = r.el.dataset.ringSeen === "1";
+            r.el.dataset.ringSeen = "1";
+            return { name: r.name, fault: r.fault, again };
+          })()`);
+          if (!r || r.again) break;
+          first ??= r.name;
+          seen.add(r.name.replace(/ ".*$/, ""));
+          if (r.fault) bad.push(`${url} ${r.name}: ${r.fault}`);
+        }
+        await done();
+        if (!first) bad.push(`${url}: Tab reaches nothing`);
+      }
+      // A sweep that never reached these proves nothing about them.
+      const want = [
+        "a.brand",
+        "a.skip",
+        "a.foot-version",
+        width > 704 ? "a.menu-link" : "summary.nav-burger",
+      ];
+      for (const w of want)
+        if (![...seen].some((n) => n.startsWith(w)))
+          bad.push(`Tab never reached ${w}`);
+      if (bad.length) throw new Error(bad.join("\n        "));
+    },
+  );
+}
+
+// Every text the page paints against what is really behind it: the first
+// ancestor with an opaque background, with any translucent fill between them
+// laid over it, and the text's own alpha and its ancestors' opacity laid over
+// that. Colours go through a canvas, which resolves color-mix() and oklab()
+// to sRGB where a regex on the computed string would read nonsense. Text in a
+// disabled control is exempt (WCAG 1.4.3 inactive components), and so is
+// text nobody can see: opacity 0, visibility hidden, a closed fold, clipped
+// to nothing. Runs in the page.
+const contrastFaults = () => {
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = 1;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  const rgba = (css) => {
+    cx.clearRect(0, 0, 1, 1);
+    cx.fillStyle = "#000";
+    cx.fillStyle = css;
+    cx.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cx.getImageData(0, 0, 1, 1).data;
+    return [r, g, b, a / 255];
+  };
+  const over = (top, under) => {
+    const a = top[3];
+    return [0, 1, 2].map((i) => top[i] * a + under[i] * (1 - a)).concat(1);
+  };
+  const lum = (c) =>
+    c
+      .slice(0, 3)
+      .map((v) =>
+        v / 255 <= 0.03928
+          ? v / 255 / 12.92
+          : ((v / 255 + 0.055) / 1.055) ** 2.4,
+      )
+      .reduce((acc, x, i) => acc + [0.2126, 0.7152, 0.0722][i] * x, 0);
+  const wcag = (a, b) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  // What an element is painted on: the first opaque background at or above
+  // it, with every translucent one below that laid on top.
+  const behind = (el) => {
+    const layers = [];
+    let base = rgba(getComputedStyle(document.documentElement).backgroundColor);
+    for (let e = el; e; e = e.parentElement) {
+      const c = rgba(getComputedStyle(e).backgroundColor);
+      if (c[3] >= 1) {
+        base = c;
+        break;
+      }
+      if (c[3] > 0) layers.push(c);
+    }
+    if (base[3] < 1) base = over(base, [255, 255, 255, 1]);
+    return layers.reduceRight((acc, l) => over(l, acc), base);
+  };
+  const fade = (el) => {
+    let o = 1;
+    for (let e = el; e; e = e.parentElement)
+      o *= Number(getComputedStyle(e).opacity);
+    return o;
+  };
+  const label = (el) => {
+    const own = [...el.classList].map((c) => `.${c}`).join("");
+    return own
+      ? `${el.tagName.toLowerCase()}${own}`
+      : `${el.tagName.toLowerCase()} in .${el.parentElement?.closest("[class]")?.classList[0]}`;
+  };
+  const bad = [];
+  const measured = new Set();
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+    const el = t.parentElement;
+    const words = t.textContent.trim();
+    if (!words || !el) continue;
+    if (el.closest("script, style, noscript, template, .visually-hidden"))
+      continue;
+    if (el.closest(":disabled, [aria-disabled=true]")) continue;
+    if (
+      !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+    )
+      continue;
+    const range = document.createRange();
+    range.selectNodeContents(t);
+    if (![...range.getClientRects()].some((r) => r.width > 0 && r.height > 0))
+      continue;
+    const o = fade(el);
+    if (o === 0) continue;
+    const bg = behind(el);
+    let fg = rgba(getComputedStyle(el).color);
+    fg = over([...fg.slice(0, 3), fg[3] * o], bg);
+    const r = wcag(fg, bg);
+    for (let e = el; e && e !== document.body; e = e.parentElement)
+      for (const c of e.classList) measured.add(`.${c}`);
+    if (r < 4.5)
+      bad.push(
+        `${label(el)} "${words.slice(0, 24)}" ${r.toFixed(2)}:1 (rgb ${fg.slice(0, 3).join(",")} on ${bg.slice(0, 3).join(",")})`,
+      );
+  }
+  // A control's boundary, held to 3:1 where it is what shows the control is
+  // there (WCAG 1.4.11). A control that paints words is found by its words,
+  // held to 4.5:1 above, and its outline is decoration on --border. One that
+  // paints a glyph alone is found by the glyph, 3:1 against its own fill. One
+  // that paints neither, the search input, is found by its frame, the box,
+  // whose border must clear 3:1 against both its fill and the page around it.
+  const CONTROLS =
+    'a, button, input, select, summary, [role=button], [tabindex]:not([tabindex="-1"])';
+  const words = (el) =>
+    [...el.querySelectorAll("*"), el].some(
+      (e) =>
+        !e.closest(".visually-hidden") &&
+        [...e.childNodes].some(
+          (n) => n.nodeType === 3 && n.textContent.trim(),
+        ) &&
+        e.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+    );
+  const named = (el) =>
+    `${label(el)} "${(el.getAttribute("aria-label") ?? el.textContent).trim().replace(/\s+/g, " ").slice(0, 24)}"`;
+  for (const el of document.body.querySelectorAll(CONTROLS)) {
+    if (el.closest(".visually-hidden, dialog:not([open]), :disabled")) continue;
+    if (
+      !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+    )
+      continue;
+    if (!el.getClientRects().length || words(el)) continue;
+    const glyph = [...el.querySelectorAll("svg, img")].find((g) =>
+      g.checkVisibility({ opacityProperty: true }),
+    );
+    if (glyph) {
+      // An image carries its own colours; an svg here draws in currentColor.
+      if (glyph.tagName === "IMG") continue;
+      const fill = behind(el),
+        ink = over(rgba(getComputedStyle(glyph).color), fill),
+        r = wcag(ink, fill);
+      if (r < 3) bad.push(`${named(el)} glyph ${r.toFixed(2)}:1`);
+      continue;
+    }
+    const frame = el.closest(".search-box") ?? el;
+    const s = getComputedStyle(frame);
+    const line = rgba(s.borderTopColor);
+    const outside = behind(frame.parentElement),
+      fill = behind(frame);
+    if (parseFloat(s.borderTopWidth) === 0 || line[3] === 0) {
+      if (wcag(fill, outside) < 3)
+        bad.push(`${named(el)} draws no boundary at all`);
+      continue;
+    }
+    const drawn = over(line, outside);
+    for (const [where, c] of [
+      ["the page behind it", outside],
+      ["its own fill", fill],
+    ]) {
+      const r = wcag(drawn, c);
+      if (r < 3)
+        bad.push(`${named(el)} boundary against ${where} ${r.toFixed(2)}:1`);
+    }
+  }
+  return { bad, measured: [...measured] };
+};
+
+for (const theme of SWEEP_THEMES) {
+  await check(
+    `every text clears 4.5:1 and every control boundary 3:1 in ${theme.name}`,
+    async () => {
+      const bad = [];
+      const measured = new Set();
+      for (const width of [390, 1280]) {
+        for (const url of SWEEP) {
+          const { p, done } = await sweepPage(url, width, theme);
+          await stampVersion(p);
+          const r = await p.evaluate(contrastFaults);
+          await done();
+          for (const b of r.bad) bad.push(`${url} at ${width}px: ${b}`);
+          for (const c of r.measured) measured.add(c);
+        }
+      }
+      // The note's row, the hosting word and the link to the whole screenshot
+      // are the words this design added; a sweep that missed them proves
+      // nothing about them.
+      for (const c of [".about-sum", ".flag-label", ".shot-full"])
+        if (!measured.has(c)) bad.push(`no text inside ${c} was measured`);
+      if (bad.length) throw new Error(bad.join("\n        "));
+    },
+  );
+}
+
+// The chevron of the note's row turns and a dark screenshot brightens, each
+// over a transition. Asked for less motion, both happen at once; asked for
+// nothing, both still move, or the reduced value above would hold of a
+// transition that no longer exists.
+await check(
+  "with reduced motion the note's chevron and a screenshot change at once",
+  async () => {
+    const read = async (motion) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        reducedMotion: motion,
+      });
+      await ctx.route(
+        (u) => u.hostname !== "127.0.0.1",
+        (r) => r.abort(),
+      );
+      const p = await ctx.newPage();
+      const got = {};
+      for (const [url, sel] of [
+        [`${DEMO}fr/`, ".about-chev"],
+        [`${DEMO}fr/whoami/`, ".shot img"],
+      ]) {
+        await p.goto(url);
+        got[sel] = await p.$eval(
+          sel,
+          (e) => getComputedStyle(e).transitionDuration,
+        );
+      }
+      await ctx.close();
+      return got;
+    };
+    const still = await read("reduce"),
+      moving = await read("no-preference");
+    const bad = [];
+    for (const sel of Object.keys(still)) {
+      if (still[sel].split(",").some((d) => parseFloat(d) !== 0))
+        bad.push(`${sel} transitions over ${still[sel]} with reduced motion`);
+      if (moving[sel].split(",").every((d) => parseFloat(d) === 0))
+        bad.push(`${sel} has no transition to reduce`);
+    }
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
 
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");

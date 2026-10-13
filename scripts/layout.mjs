@@ -1907,6 +1907,199 @@ await check(
   },
 );
 
+// ---- right to left ----
+
+// Arabic turns the page around through logical sides alone, so each of these
+// sits at the other end of its row from where English has it: a left or right
+// written where an inline side was meant keeps it where it was.
+for (const width of WIDE) {
+  await check(
+    `right to left, the header rule opens with its diamond at the column's right edge at ${width}px`,
+    async () => {
+      const p = await open(`${LOCALES}ar/`, width);
+      const m = await p.evaluate(() => {
+        const w = document.querySelector("main .wrap"),
+          wr = w.getBoundingClientRect();
+        const menu = document.querySelector(".menu"),
+          mr = menu.getBoundingClientRect();
+        const d = getComputedStyle(menu, "::after"),
+          r = getComputedStyle(menu, "::before");
+        return {
+          dir: getComputedStyle(document.documentElement).direction,
+          colEnd: wr.right - parseFloat(getComputedStyle(w).paddingRight),
+          diamond: {
+            left: mr.left + parseFloat(d.left),
+            right: mr.right - parseFloat(d.right),
+          },
+          rule: {
+            left: mr.left + parseFloat(r.left),
+            right: mr.right - parseFloat(r.right),
+          },
+        };
+      });
+      await p.close();
+      if (m.dir !== "rtl") throw new Error(`the page reads ${m.dir}`);
+      if (Math.abs(m.diamond.right - m.colEnd) > 1)
+        throw new Error(
+          `the diamond ends at ${m.diamond.right.toFixed(1)}px, the column at ${m.colEnd.toFixed(1)}px`,
+        );
+      if (m.rule.right > m.diamond.left + 0.5)
+        throw new Error(
+          `the rule runs to ${m.rule.right.toFixed(1)}px, under the diamond at ${m.diamond.left.toFixed(1)}px`,
+        );
+    },
+  );
+}
+
+for (const width of WIDTHS) {
+  await check(
+    `right to left, a card foot has the flag at the card's right and the pill at its left at ${width}px`,
+    async () => {
+      const p = await open(`${LOCALES}ar/`, width);
+      const m = await p.$$eval(".card", (cards) =>
+        cards
+          .filter((c) => c.querySelector(".card-foot .flag"))
+          .map((c) => {
+            const r = c.getBoundingClientRect(),
+              s = getComputedStyle(c);
+            const end =
+                r.right -
+                parseFloat(s.borderRightWidth) -
+                parseFloat(s.paddingRight),
+              start =
+                r.left +
+                parseFloat(s.borderLeftWidth) +
+                parseFloat(s.paddingLeft);
+            const flag = c
+                .querySelector(".card-foot .flag")
+                .getBoundingClientRect(),
+              pill = c
+                .querySelector(".card-foot .status-pill")
+                ?.getBoundingClientRect();
+            const name = c.querySelector(".card-name").textContent.trim();
+            const bad = [];
+            if (Math.abs(flag.right - end) > 0.5)
+              bad.push(
+                `the flag ends ${(end - flag.right).toFixed(1)}px short of the right`,
+              );
+            if (pill && pill.right > flag.left + 0.5)
+              bad.push("the pill is not left of the flag");
+            if (pill && Math.abs(pill.left - start) > 0.5)
+              bad.push(
+                `the pill starts ${(pill.left - start).toFixed(1)}px off the card's left`,
+              );
+            return {
+              pill: !!pill,
+              fault: bad.length ? `${name}: ${bad.join(", ")}` : null,
+            };
+          }),
+      );
+      await p.close();
+      if (!m.some((c) => c.pill))
+        throw new Error("no card carries both a flag and a pill");
+      const bad = m.map((c) => c.fault).filter(Boolean);
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+for (const width of PHONES) {
+  await check(
+    `right to left, the detail line reads Open, pill, state from the right at ${width}px`,
+    async () => {
+      const p = await open(`${LOCALES}ar/beta/`, width);
+      const m = await p.evaluate(() => {
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        const tile = r(".detail-top .tile"),
+          btn = r(".detail-top .btn"),
+          pill = r(".detail-top .status-pill"),
+          state = r(".detail-top .detail-state");
+        return {
+          start: tile.right - btn.right,
+          order: pill.right <= btn.left + 0.5 && state.right <= pill.left + 0.5,
+        };
+      });
+      await p.close();
+      const bad = [];
+      if (!m.order)
+        bad.push("the line does not read Open, pill, state from the right");
+      if (Math.abs(m.start) > 1)
+        bad.push(
+          `Open ends ${m.start.toFixed(1)}px from the tile's right edge`,
+        );
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+// ---- without JavaScript ----
+
+// A visitor with scripting off gets every page whole at a phone's 360: nothing
+// pushes it sideways, the welcome note's row opens and folds on its own, and
+// every link goes somewhere, since nothing will fill an empty href in later.
+// The leaving dialog's own link is the one leave.js fills, and without it the
+// dialog never opens, so a link in a closed dialog is out of reach.
+const BARE = [
+  ...["", "whoami/", "hosting/", "nowhere/"].map((p) => `${DEMO}fr/${p}`),
+  ...["", "nowhere/"].map((p) => `${LONG}fr/${p}`),
+  ...["", "pad/", "hosting/", "nowhere/"].map((p) => `${LOCALES}de/${p}`),
+];
+await check(
+  "without JavaScript every page at 360px fits, folds and links",
+  async () => {
+    const bad = [];
+    let folds = 0;
+    for (const url of BARE) {
+      const p = await open(url, 360, THEMES[0], { javaScriptEnabled: false });
+      const m = await p.evaluate(() => ({
+        over:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+        empty: [...document.querySelectorAll("a")]
+          .filter(
+            (a) =>
+              !a.closest("dialog:not([open])") &&
+              !a.getAttribute("href")?.trim(),
+          )
+          .map(
+            (a) =>
+              `${a.className || a.parentElement.className} "${a.textContent.trim().slice(0, 20)}"`,
+          ),
+        row: !!document.querySelector(".about-sum")?.checkVisibility(),
+      }));
+      if (m.over > 0) bad.push(`${url} overflows by ${m.over}px`);
+      for (const a of m.empty) bad.push(`${url}: ${a} has no href`);
+      if (m.row) {
+        folds++;
+        const state = () =>
+          p.evaluate(() => {
+            const d = document.querySelector(".about-sum").parentElement;
+            const text = d.querySelector(":scope > :not(summary)");
+            return [d.open, !!text?.checkVisibility()];
+          });
+        const before = await state();
+        await p.click(".about-sum");
+        const opened = await state();
+        await p.click(".about-sum");
+        const closed = await state();
+        const seen = JSON.stringify([before, opened, closed]);
+        if (
+          seen !==
+          JSON.stringify([
+            [false, false],
+            [true, true],
+            [false, false],
+          ])
+        )
+          bad.push(`${url}: the note's row went (open, shown) ${seen}`);
+      }
+      await p.close();
+    }
+    if (!folds) bad.push("no page showed the note's row");
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {
