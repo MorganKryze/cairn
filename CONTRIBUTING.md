@@ -139,7 +139,10 @@ content column, a long site name on a row of its own on a phone, 44px controls
 whose names contain the words they show); the welcome note folded to one row
 on a phone (it opens with or without JavaScript, remembers nothing, prints
 whole and shows whole on a wide screen, and the first card starts within 420px
-at 390 by 844); the card foot (the hosting word painted at rest, the foot on a
+at 390 by 844); the search field (the English and French placeholders whole
+on a wide screen, no language's field narrower than before, and on a phone no
+Cmd-K hint and an ellipsis where a placeholder is longer than the field); the
+card foot (the hosting word painted at rest, the foot on a
 row of its own under the icon and the text, every hosting and status word of a
 language on one row at 360, a second chip that wraps whole, a long name
 balanced with its lock after the last word, the demo's page and cards short at

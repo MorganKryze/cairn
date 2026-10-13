@@ -621,6 +621,91 @@ await check(
   },
 );
 
+// ---- the search field ----
+
+// The placeholder is the only word in the field, so it shows whole. It is
+// measured in the input's own font against the room inside its padding: a
+// field one pixel short clips the last letter with no ellipsis to say so.
+const searchField = () => {
+  const i = document.querySelector(".search-box input");
+  const s = getComputedStyle(i);
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+  return {
+    placeholder: i.placeholder,
+    room:
+      i.clientWidth -
+      parseFloat(s.paddingInlineStart) -
+      parseFloat(s.paddingInlineEnd),
+    text: ctx.measureText(i.placeholder).width,
+    ellipsis: s.textOverflow,
+    hint: [...document.querySelectorAll(".search-kbd")].some((k) =>
+      k.checkVisibility({ visibilityProperty: true }),
+    ),
+  };
+};
+const ENFR = ["en", "fr"];
+for (const width of WIDE) {
+  await check(
+    `the English and French placeholders show whole at ${width}px`,
+    async () => {
+      const cut = [];
+      for (const base of [DEMO, SITE]) {
+        for (const l of ENFR) {
+          const p = await open(`${base}${l}/`, width);
+          const f = await p.evaluate(searchField);
+          await p.close();
+          if (f.text > f.room)
+            cut.push(
+              `"${f.placeholder}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)} on ${base}${l}/`,
+            );
+        }
+      }
+      if (cut.length) throw new Error(cut.join("; "));
+    },
+  );
+  // 130.6px is what the field left the placeholder before it grew taller; no
+  // language may lose a letter it showed then.
+  await check(
+    `no language's search field has less room than before at ${width}px`,
+    async () => {
+      const short = [];
+      for (const l of ["en", "de", "es", "pt", "sv", "fr", "it", "nl", "ar"]) {
+        const p = await open(`${LOCALES}${l}/`, width);
+        const f = await p.evaluate(searchField);
+        await p.close();
+        if (f.room < 130.6) short.push(`${l} ${f.room.toFixed(1)}px`);
+      }
+      if (short.length) throw new Error(short.join(", "));
+    },
+  );
+}
+// On a phone the Cmd-K hint has no keyboard to answer to, and its 51px are
+// what "Chercher un outil…" was missing at 360 on the demo: 109px of room for
+// 123. A placeholder still longer than the field ends on an ellipsis rather
+// than in the middle of a letter.
+for (const width of PHONES) {
+  await check(
+    `a phone drops the Cmd-K hint and shows the placeholder whole or ellipsed at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const l of ENFR) {
+        const p = await open(`${DEMO}${l}/`, width);
+        const f = await p.evaluate(searchField);
+        await p.close();
+        if (f.hint) bad.push(`the Cmd-K hint is painted on ${l}/`);
+        if (f.ellipsis !== "ellipsis")
+          bad.push(`text-overflow is ${f.ellipsis} on ${l}/`);
+        if (width === 360 && f.text > f.room)
+          bad.push(
+            `"${f.placeholder}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)}`,
+          );
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
 // ---- the welcome note folds on a phone ----
 
 // A phone shows the note as one row and opens it on demand, so the first card

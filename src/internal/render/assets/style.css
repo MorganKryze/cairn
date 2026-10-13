@@ -437,7 +437,8 @@ header { padding-block: 1.4rem; }
   align-items: center;
   gap: .5rem;
   width: 100%;
-  padding: .05rem .3rem .05rem .85rem;
+  padding-block: 0;
+  padding-inline: .85rem .3rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -459,10 +460,13 @@ header { padding-block: 1.4rem; }
   box-shadow: var(--shadow-lift);
 }
 .search-box svg { width: 1rem; height: 1rem; color: var(--muted); flex: none; }
+/* The input is the 44px target, the box only its frame. */
 .search-box input {
   flex: 1;
   min-width: 0;
-  padding: .45rem .2rem;
+  min-height: 2.75rem;
+  padding-block: 0;
+  padding-inline: .2rem;
   border: 0;
   background: none;
   font: inherit;
@@ -482,7 +486,10 @@ header { padding-block: 1.4rem; }
   border: 1px solid var(--border);
   border-radius: .45rem;
 }
-@media (hover: none) { .search-kbd { display: none; } }
+/* The hint names a key a touch screen has none of, and on a phone its 51px are
+   what the placeholder needs: "Chercher un outil…" had 109px of the 123 it
+   takes at 360. */
+@media (hover: none), (max-width: 44rem) { .search-kbd { display: none; } }
 
 /* ---- category waypoints ---- */
 
@@ -1681,9 +1688,10 @@ footer { margin-top: 1rem; }
   .nav-links .menu-link:hover { background: var(--faint); }
   .search { flex: 1; min-width: 0; margin-inline-start: 0; width: auto; }
   .search:focus-within { width: auto; }
-
-  /* finger-sized controls (44px) */
-  .search-box input { padding-block: .55rem; }
+  /* A placeholder longer than the field ends on an ellipsis, not mid-letter:
+     "Procurar uma ferramenta…" takes 174px and has 160 at 360. A wide field
+     keeps the clip, which shows a letter more than an ellipsis would. */
+  .search-box input { text-overflow: ellipsis; }
 
   /* The welcome note folds to one 44px row with the dismiss cross at its end,
      so the first card shows without scrolling: on the demo at 390 by 844 it
