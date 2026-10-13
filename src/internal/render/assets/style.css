@@ -738,8 +738,8 @@ header { padding-block: 1.4rem; }
    select's and now the heading's own, targets the h2, so the section's margin
    was never the one the browser read. 2.1rem is the gap above a heading, and
    anything past it brings the previous section's last card into view; this
-   keeps 8px of that gap in hand, and the name, 7.5px down its 44px anchor,
-   lands 33px from the top.
+   keeps 8px of that gap in hand, and the name, 6.8px down its 44px anchor,
+   lands 32.2 to 32.8px from the top.
 
    One value, phones included, where the gap is 2rem and 6.4px stays in hand.
    The 4.5rem a narrow screen used to carry was meant to clear the sticky
@@ -1292,14 +1292,17 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent-ink); outline-offs
 /* A screenshot is usually a white page, which in the dark theme became the
    brightest thing on the screen. It steps down until the pointer is on it or
    the keyboard is in it. Dark arrives from the system or from the toggle, so
-   both selectors carry it; light never dims. */
+   both selectors carry it; light never dims. Screen only: paper is white
+   whatever the screen's theme. */
 .shot img { transition: filter .2s; }
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .shot img { filter: brightness(.78); }
   :root:not([data-theme="light"]) .shot:is(:hover, :focus-within) img { filter: none; }
 }
-:root[data-theme="dark"] .shot img { filter: brightness(.78); }
-:root[data-theme="dark"] .shot:is(:hover, :focus-within) img { filter: none; }
+@media screen {
+  :root[data-theme="dark"] .shot img { filter: brightness(.78); }
+  :root[data-theme="dark"] .shot:is(:hover, :focus-within) img { filter: none; }
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1670,7 +1673,8 @@ footer { margin-top: 1rem; }
 .foot-links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover { color: var(--fg); }
-/* A footer link reads muted until it is reached. The keyboard's also draws
+/* The list and the version link read muted until they are reached; the
+   credit keeps --accent-ink at rest. The keyboard's focus also draws
    cairn's ring, which the browser's own 1px one would otherwise stand in for:
    the list, the credit and the version link alike. */
 .foot a:focus-visible { color: var(--fg); outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
@@ -1930,9 +1934,6 @@ footer { margin-top: 1rem; }
     word-break: break-all;
   }
   .shot { break-inside: avoid; }
-  /* Paper is white whatever the screen's theme. The dark theme's dimming
-     outranks a plain selector here, since it is reached through :root. */
-  .shot img { filter: none !important; }
   /* Paper does not scroll either: the strip goes and the screenshot prints at
      the column's width, whole. */
   .shot-scroll, .shot-scroll[data-more] { display: block; overflow: visible; mask-image: none; }

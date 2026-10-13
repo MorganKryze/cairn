@@ -10,7 +10,7 @@ linters:
     - misspell
   exclusions:
     rules:
-      # locales.go is written in seven languages; misspell only knows one
+      # locales.go is written in eight languages; misspell only knows one
       - path: locales\.go
         linters:
           - misspell
