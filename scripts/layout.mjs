@@ -415,6 +415,19 @@ const brandLines = () => {
     tr = document.querySelector(".topbar-tools").getBoundingClientRect();
   return {
     lines,
+    // Every piece of the text inside the brand's box and off the tools: a
+    // word with no break in it can outgrow the box and run under them.
+    clear: [...r.getClientRects()].every(
+      (x) =>
+        x.left >= br.left - 1 &&
+        x.right <= br.right + 1 &&
+        !(
+          x.left < tr.right &&
+          x.right > tr.left &&
+          x.top < tr.bottom &&
+          x.bottom > tr.top
+        ),
+    ),
     whole:
       b.scrollWidth <= b.clientWidth &&
       b.scrollHeight <= b.clientHeight &&
@@ -436,6 +449,42 @@ for (const width of PHONES) {
       if (!m.toolsBelow)
         throw new Error("the tools are not on a row below the name");
       if (m.header > 215) throw new Error(`the header is ${m.header}px high`);
+    },
+  );
+}
+
+// A name with nowhere to break, a host name or a compound word, is wider than
+// its share of the row in two lines or one. It takes the whole row too, rather
+// than running under the tools. The title is swapped in the page and the
+// header measured again, as a resize would.
+const rename = (name) => {
+  const b = document.querySelector(".brand");
+  const texts = [...b.childNodes].filter(
+    (n) => n.nodeType === 3 && n.data.trim(),
+  );
+  texts[0].data = name;
+  for (const t of texts.slice(1)) t.remove();
+  dispatchEvent(new Event("resize"));
+  return new Promise((done) =>
+    requestAnimationFrame(() => requestAnimationFrame(done)),
+  );
+};
+for (const width of PHONES) {
+  await check(
+    `a name with no break in it gets its own row at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const name of ["dash.morgankryze.com", "Familienselbsthosting"]) {
+        const p = await open(`${LONG}fr/`, width);
+        await p.evaluate(rename, name);
+        const m = await p.evaluate(brandLines);
+        await p.close();
+        if (!m.clear) bad.push(`${name} runs under the tools`);
+        if (!m.whole) bad.push(`${name} is cut`);
+        if (m.lines > 1) bad.push(`${name} takes ${m.lines} lines`);
+        if (!m.toolsBelow) bad.push(`the tools sit beside ${name}`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
     },
   );
 }

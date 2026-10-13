@@ -43,33 +43,38 @@
   update();
 
   // On a phone the site name shares its row with the tools until it would
-  // take more than two lines there; then it gets the whole row and the tools
-  // one under it. CSS cannot count the lines a text takes, and a count of
-  // characters is wrong both ways: at 360px a 27-character name took five
-  // lines and a 31-character one two. So the name is laid out beside the
-  // tools, its line boxes counted, and the class set from that, all before
-  // the next paint. Nothing here observes the header, so setting the class
-  // cannot call this again.
+  // take more than two lines there, or holds a word wider than its share of
+  // the row; then it gets the whole row and the tools one under it. CSS cannot
+  // count the lines a text takes, and a count of characters is wrong both
+  // ways: at 360px a 27-character name took five lines and a 31-character one
+  // two. A word with no break in it, like dash.example.com, does not wrap at
+  // all: it keeps its width and runs under the tools. So the name is laid out
+  // beside the tools, its line boxes counted and held to the brand's box, and
+  // the class set from that, all before the next paint. Nothing here observes
+  // the header, so setting the class cannot call this again.
   const topbar = document.querySelector('.topbar');
   const brand = topbar && topbar.querySelector('.brand');
   const phone = matchMedia('(max-width: 44rem)');
-  const lines = () => {
+  const crowded = () => {
     const texts = [...brand.childNodes].filter((n) => n.nodeType === 3 && n.data.trim());
-    if (!texts.length) return 0;
+    if (!texts.length) return false;
     const range = document.createRange();
     range.setStart(texts[0], 0);
     const end = texts[texts.length - 1];
     range.setEnd(end, end.length);
+    const rects = [...range.getClientRects()];
+    const box = brand.getBoundingClientRect();
+    if (rects.some((r) => r.left < box.left - 1 || r.right > box.right + 1)) return true;
     let n = 0, prev = -Infinity;
-    for (const top of [...range.getClientRects()].map((r) => r.top).sort((a, b) => a - b)) {
+    for (const top of rects.map((r) => r.top).sort((a, b) => a - b)) {
       if (top - prev > 2) n++;
       prev = top;
     }
-    return n;
+    return n > 2;
   };
   const split = () => {
     topbar.classList.remove('topbar-split');
-    if (phone.matches && lines() > 2) topbar.classList.add('topbar-split');
+    if (phone.matches && crowded()) topbar.classList.add('topbar-split');
   };
   if (brand) {
     let measuring = false;
