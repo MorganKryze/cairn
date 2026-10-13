@@ -9,6 +9,7 @@
 // name, every built-in locale, example/ and the states fixture first.
 //
 // Usage: node scripts/layout.mjs [demo] [longname] [locales] [example] [states]
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
 const arg = (i, env, port) =>
@@ -814,6 +815,407 @@ await check(
       throw new Error(`the first card starts at ${top.toFixed(1)}px`);
   },
 );
+
+// ---- the card foot ----
+
+// The hosting word is the point of the flag, so it is painted at rest, with
+// no hover and with motion allowed: a word clipped behind a fold was invisible
+// on a phone until a tap, and a tap on a card leaves the page.
+const NO_FOLD = { reducedMotion: "no-preference" };
+const FOOTED = [`${DEMO}fr/`, `${LOCALES}en/`, `${LOCALES}ar/`];
+for (const width of WIDTHS) {
+  await check(`the hosting word shows at rest at ${width}px`, async () => {
+    const bad = [];
+    for (const url of FOOTED) {
+      const p = await open(url, width, THEMES[0], NO_FOLD);
+      bad.push(
+        ...(
+          await p.$$eval(".card .flag", (flags) =>
+            flags.map((f) => {
+              const l = f.querySelector(".flag-label");
+              const fr = f.getBoundingClientRect(),
+                lr = l.getBoundingClientRect();
+              const opacity = Number(getComputedStyle(l).opacity);
+              const inside =
+                lr.width > 0 &&
+                lr.left >= fr.left - 0.5 &&
+                lr.right <= fr.right + 0.5;
+              return opacity === 1 && inside
+                ? null
+                : `"${l.textContent}" opacity ${opacity}, ${inside ? "inside" : "clipped by"} its flag`;
+            }),
+          )
+        )
+          .filter(Boolean)
+          .map((s) => `${s} on ${url}`),
+      );
+      await p.close();
+    }
+    if (bad.length) throw new Error([...new Set(bad)].slice(0, 6).join("; "));
+  });
+}
+
+// The foot is a row of its own under the icon and the text, from the card's
+// content start to its content end: under the text alone it left the two
+// chips 54px short, and German no longer fitted one row at 360.
+const footBox = () =>
+  [...document.querySelectorAll(".card")]
+    .filter((c) => c.querySelector(".card-foot")?.getClientRects().length)
+    .map((c) => {
+      const box = (el) => {
+        const r = el.getBoundingClientRect(),
+          s = getComputedStyle(el);
+        return {
+          left:
+            r.left + parseFloat(s.borderLeftWidth) + parseFloat(s.paddingLeft),
+          right:
+            r.right -
+            parseFloat(s.borderRightWidth) -
+            parseFloat(s.paddingRight),
+          top: r.top,
+          bottom: r.bottom,
+        };
+      };
+      const card = box(c),
+        foot = box(c.querySelector(".card-foot")),
+        tile = c.querySelector(".tile").getBoundingClientRect(),
+        text = c.querySelector(".card-text").getBoundingClientRect();
+      const name = c.querySelector(".card-name").textContent.trim();
+      const bad = [];
+      if (Math.abs(foot.left - card.left) > 0.5)
+        bad.push(`starts ${(foot.left - card.left).toFixed(1)}px off`);
+      if (Math.abs(foot.right - card.right) > 0.5)
+        bad.push(`ends ${(card.right - foot.right).toFixed(1)}px off`);
+      if (foot.top < Math.max(tile.bottom, text.bottom) - 0.5)
+        bad.push("rises beside the icon or the text");
+      return bad.length ? `${name}: ${bad.join(", ")}` : null;
+    })
+    .filter(Boolean);
+for (const width of WIDTHS) {
+  await check(
+    `the card foot spans the card under the icon and the text at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of FOOTED) {
+        const p = await open(url, width);
+        bad.push(...(await p.evaluate(footBox)).map((s) => `${s} on ${url}`));
+        await p.close();
+      }
+      if (bad.length) throw new Error(bad.slice(0, 6).join("; "));
+    },
+  );
+}
+
+// Every hosting word beside every status word of the same language keeps the
+// foot on one row at 360: the longest pair, German's "Selbst gehostet" and
+// "Beeinträchtigt", is the one a narrower foot pushed onto two.
+const FOOT_WORDS = JSON.parse(
+  readFileSync(new URL("fixtures/locales/foot-words.json", import.meta.url)),
+);
+// The first card carrying both chips, its words swapped for the pair.
+const setFoot = ([host, status]) => {
+  const foot = [...document.querySelectorAll(".card-foot")].find(
+    (f) =>
+      f.querySelector(".flag .flag-label") && f.querySelector(".status-pill"),
+  );
+  foot.querySelector(".flag-label").textContent = host;
+  const pill = foot.querySelector(".status-pill");
+  pill.lastChild.data = status;
+  const f = foot.getBoundingClientRect(),
+    a = foot.querySelector(".flag").getBoundingClientRect(),
+    b = pill.getBoundingClientRect();
+  return {
+    oneRow: Math.abs(a.top - b.top) < 1,
+    inside:
+      Math.min(a.left, b.left) >= f.left - 0.5 &&
+      Math.max(a.right, b.right) <= f.right + 0.5,
+  };
+};
+await check(
+  "every hosting and status word of a language share one foot row at 360px",
+  async () => {
+    const bad = [];
+    for (const [loc, words] of Object.entries(FOOT_WORDS)) {
+      const p = await open(`${LOCALES}${loc}/`, 360);
+      for (const host of words.host) {
+        for (const status of words.status) {
+          const m = await p.evaluate(setFoot, [host, status]);
+          if (!m.oneRow || !m.inside)
+            bad.push(
+              `${loc} "${host}" + "${status}" ${m.oneRow ? "overflows" : "takes two rows"}`,
+            );
+        }
+      }
+      await p.close();
+    }
+    if (bad.length) throw new Error(bad.slice(0, 6).join("; "));
+  },
+);
+
+// Where the two chips do not fit, the second moves to a row of its own, whole:
+// each chip stays one line, its glyph beside its word. The foot is narrowed in
+// the page to just past its wider chip, which no real card is, so the wrap is
+// forced whatever the words; then to 40px, narrower than either chip, where
+// a chip free to break would put "Selbst gehostet" on two lines.
+const wrapFoot = () => {
+  const out = [];
+  for (const foot of document.querySelectorAll(".card-foot")) {
+    const flag = foot.querySelector(".flag"),
+      pill = foot.querySelector(".status-pill");
+    if (!flag || !pill) continue;
+    const h0 = [flag, pill].map((e) => e.getBoundingClientRect().height);
+    const w = Math.max(
+      ...[flag, pill].map((e) => e.getBoundingClientRect().width),
+    );
+    foot.style.maxWidth = `${w + 8}px`;
+    const a = flag.getBoundingClientRect(),
+      b = pill.getBoundingClientRect();
+    const together = (chip, glyph, word) => {
+      const r = document.createRange();
+      r.selectNodeContents(word);
+      const lines = new Set(
+        [...r.getClientRects()].map((x) => Math.round(x.top)),
+      );
+      const g = glyph.getBoundingClientRect(),
+        t = r.getBoundingClientRect(),
+        c = chip.getBoundingClientRect();
+      return (
+        lines.size === 1 &&
+        g.top < t.bottom &&
+        g.bottom > t.top &&
+        t.right <= c.right + 0.5 &&
+        t.left >= c.left - 0.5
+      );
+    };
+    const bad = [];
+    if (b.top < a.bottom - 0.5) bad.push("the second chip did not move down");
+    foot.style.maxWidth = "40px";
+    const grew = [flag, pill].some(
+      (e, i) => Math.abs(e.getBoundingClientRect().height - h0[i]) > 0.5,
+    );
+    if (Math.abs(a.height - h0[0]) > 0.5 || Math.abs(b.height - h0[1]) > 0.5)
+      bad.push("a chip grew a line");
+    else if (grew) bad.push("a chip grew a line once squeezed");
+    if (
+      !together(
+        flag,
+        flag.querySelector("svg"),
+        flag.querySelector(".flag-label"),
+      )
+    )
+      bad.push("the flag broke");
+    if (!together(pill, pill.querySelector(".dot"), pill.lastChild))
+      bad.push("the pill broke");
+    if (bad.length)
+      out.push(
+        `${foot.closest(".card").querySelector(".card-name").textContent.trim()}: ${bad.join(", ")}`,
+      );
+  }
+  return out;
+};
+for (const width of WIDTHS) {
+  await check(
+    `a foot too narrow for both chips moves the second whole at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of [`${LOCALES}de/`, `${LOCALES}ar/`]) {
+        const p = await open(url, width);
+        bad.push(...(await p.evaluate(wrapFoot)).map((s) => `${s} on ${url}`));
+        await p.close();
+      }
+      if (bad.length) throw new Error(bad.slice(0, 6).join("; "));
+    },
+  );
+}
+
+// A long name wraps over balanced lines, whole, and the sign-in lock follows
+// its last word on its last line. On a right-to-left page that is the line's
+// left end, whatever the direction of the name's own words.
+const longName = () => {
+  const lock = document.querySelector(".card-lock");
+  const name = lock.closest(".card-name");
+  const s = getComputedStyle(name);
+  const walk = document.createTreeWalker(name, NodeFilter.SHOW_TEXT);
+  const words = [];
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (lock.contains(n) || !n.data.trim()) continue;
+    const r = document.createRange();
+    r.selectNodeContents(n);
+    words.push(...[...r.getClientRects()].filter((x) => x.width > 0));
+  }
+  const bottom = Math.max(...words.map((x) => x.top));
+  const line = words.filter((x) => Math.abs(x.top - bottom) < 1);
+  const l = lock.getBoundingClientRect(),
+    card = name.closest(".card").getBoundingClientRect();
+  const gap =
+    s.direction === "rtl"
+      ? Math.min(...line.map((x) => x.left)) - l.right
+      : l.left - Math.max(...line.map((x) => x.right));
+  return {
+    wrap: s.textWrapStyle || s.textWrap,
+    lines: new Set(words.map((x) => Math.round(x.top))).size,
+    whole:
+      s.textOverflow !== "ellipsis" &&
+      s.webkitLineClamp === "none" &&
+      words.every((x) => x.left >= card.left && x.right <= card.right),
+    after:
+      l.top < line[0].bottom && l.bottom > line[0].top && gap >= 0 && gap < 10,
+  };
+};
+for (const width of WIDTHS) {
+  await check(
+    `a long card name wraps whole, balanced, with the lock after its last word at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of [`${LOCALES}en/`, `${LOCALES}ar/`]) {
+        const p = await open(url, width);
+        const m = await p.evaluate(longName);
+        await p.close();
+        if (!/balance/.test(m.wrap)) bad.push(`wraps "${m.wrap}" on ${url}`);
+        if (m.lines < 2) bad.push(`one line on ${url}`);
+        if (!m.whole) bad.push(`cut on ${url}`);
+        if (!m.after) bad.push(`the lock is not after the last word on ${url}`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+// What the foot row costs: the demo's page at 390 was 2,644px with no card
+// over 155px before the foot moved and the hosting word showed.
+await check("the demo's home page stays short at 390px", async () => {
+  const p = await open(`${DEMO}fr/`, 390);
+  const m = await p.evaluate(() => ({
+    page: document.documentElement.scrollHeight,
+    card: Math.max(
+      ...[...document.querySelectorAll(".card")].map(
+        (c) => c.getBoundingClientRect().height,
+      ),
+    ),
+  }));
+  await p.close();
+  const bad = [];
+  if (m.page > 2250) bad.push(`the page is ${m.page}px tall`);
+  if (m.card > 135) bad.push(`a card is ${m.card.toFixed(1)}px tall`);
+  if (bad.length) throw new Error(bad.join("; "));
+});
+
+// Each target in a card answers within its own hit area, the box or an
+// absolute ::before around it, and no two of them share a point: a tap there
+// would go to whichever was painted last. Wrapped too, where the foot's row
+// gap is all that parts the two chips' bands.
+const overlaps = (wrap) => {
+  const hit = (el) => {
+    const r = el.getBoundingClientRect(),
+      s = getComputedStyle(el),
+      b = getComputedStyle(el, "::before");
+    const box = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    if (b.content === "none" || b.position !== "absolute") return box;
+    const pad = {
+      l: r.left + parseFloat(s.borderLeftWidth),
+      t: r.top + parseFloat(s.borderTopWidth),
+      r: r.right - parseFloat(s.borderRightWidth),
+      b: r.bottom - parseFloat(s.borderBottomWidth),
+    };
+    return {
+      l: Math.min(box.l, pad.l + parseFloat(b.left)),
+      t: Math.min(box.t, pad.t + parseFloat(b.top)),
+      r: Math.max(box.r, pad.r - parseFloat(b.right)),
+      b: Math.max(box.b, pad.b - parseFloat(b.bottom)),
+    };
+  };
+  const out = [];
+  for (const card of document.querySelectorAll(".card")) {
+    const foot = card.querySelector(".card-foot");
+    if (wrap && foot) {
+      const w = Math.max(
+        ...[...foot.querySelectorAll(".flag, .status-pill")].map(
+          (e) => e.getBoundingClientRect().width,
+        ),
+      );
+      foot.style.maxWidth = `${w + 8}px`;
+    }
+    const els = [
+      ...card.querySelectorAll(".card-more, a.flag, a.status-pill"),
+    ].filter((e) => e.getClientRects().length);
+    for (let i = 0; i < els.length; i++) {
+      for (let j = i + 1; j < els.length; j++) {
+        const a = hit(els[i]),
+          b = hit(els[j]);
+        const x = Math.min(a.r, b.r) - Math.max(a.l, b.l),
+          y = Math.min(a.b, b.b) - Math.max(a.t, b.t);
+        if (x > 0.5 && y > 0.5)
+          out.push(
+            `${els[i].className} and ${els[j].className} share ${x.toFixed(1)}x${y.toFixed(1)}px on ${card.querySelector(".card-name").textContent.trim()}`,
+          );
+      }
+    }
+  }
+  return out;
+};
+for (const width of WIDTHS) {
+  for (const wrap of [false, true]) {
+    await check(
+      `no two hit areas in a card overlap at ${width}px${wrap ? ", the foot wrapped" : ""}`,
+      async () => {
+        const bad = [];
+        for (const url of [`${DEMO}fr/`, `${LOCALES}de/`, `${LOCALES}ar/`]) {
+          const p = await open(url, width);
+          bad.push(
+            ...(await p.evaluate(overlaps, wrap)).map((s) => `${s} on ${url}`),
+          );
+          await p.close();
+        }
+        if (bad.length) throw new Error(bad.slice(0, 6).join("; "));
+      },
+    );
+  }
+}
+
+// A thumb that lands anywhere in the 44px band centred on a linked flag
+// follows the flag, not the card around it, which leaves for the service.
+// The click is caught and cancelled, so nothing navigates. The centre is read
+// again before every tap: the scroll that brings the flag into view moves the
+// header, and a centre read once was 3px off by the first tap.
+const flagCentre = () => {
+  const r = document.querySelector(".card-foot a.flag").getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+};
+for (const width of PHONES) {
+  await check(
+    `a tap within 21px of a linked flag's centre follows the flag at ${width}px`,
+    async () => {
+      const ctx = await fresh(width, { hasTouch: true, isMobile: true });
+      const p = await ctx.newPage();
+      await p.goto(`${LOCALES}en/`);
+      await p.evaluate(() => {
+        addEventListener(
+          "click",
+          (e) => {
+            const a = e.target.closest("a");
+            window.tapped = a ? a.className : e.target.tagName;
+            e.preventDefault();
+          },
+          true,
+        );
+        document
+          .querySelector(".card-foot a.flag")
+          .scrollIntoView({ block: "center" });
+      });
+      await p.evaluate(settle);
+      const missed = [];
+      for (let dy = -21; dy <= 21; dy += 3) {
+        const c = await p.evaluate(flagCentre);
+        await p.evaluate(() => (window.tapped = null));
+        await p.touchscreen.tap(c.x, c.y + dy);
+        const got = await p.evaluate(() => window.tapped);
+        if (!/\bflag\b/.test(got ?? "")) missed.push(`${dy}px went to ${got}`);
+      }
+      await ctx.close();
+      if (missed.length) throw new Error(missed.join("; "));
+    },
+  );
+}
 
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();

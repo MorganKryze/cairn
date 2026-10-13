@@ -11,7 +11,7 @@
 }
 
 /* The browser's own [hidden] rule is display:none, and any author rule with a
-   display beats it: .card sets display:flex, so search marked non-matching
+   display beats it: .card sets display:grid, so search marked non-matching
    cards hidden and left them on screen while the live region announced
    "1 result". The same slip left the theme toggle and the dismiss button
    clickable and inert without JavaScript. !important restores the invariant so
@@ -367,11 +367,11 @@ header { padding-block: 1.4rem; }
   }
 }
 
-/* The same fold as the host flag: a glyph at rest, the word unfurled beside it
-   on hover or focus. Swapping display between the two cannot be animated, since
-   display does not interpolate, and it took the cross away at the instant the
-   pointer landed on it. Clipping a nowrap row keeps both parts on screen and
-   gives the width something to travel. */
+/* A glyph at rest, the word unfurled beside it on hover or focus. Swapping
+   display between the two cannot be animated, since display does not
+   interpolate, and it took the cross away at the instant the pointer landed on
+   it. Clipping a nowrap row keeps both parts on screen and gives the width
+   something to travel. */
 .about-x {
   position: absolute;
   top: .8rem;
@@ -403,10 +403,8 @@ header { padding-block: 1.4rem; }
 /* flex: none, or the glyph is what gives way when the box is clipped */
 .about-x svg { width: var(--x-glyph); height: var(--x-glyph); flex: none; }
 .about-x span { opacity: 0; transition: opacity .18s; }
-/* Wide only, unlike the flag. The flag sits in the card foot, in flow, so an
-   unfurled label costs nothing. This button is absolute at the end of the
-   folded row on a phone, and unfurled there it would lay its label across the
-   row's own words. */
+/* Wide only. This button is absolute at the end of the folded row on a phone,
+   and unfurled there it would lay its label across the row's own words. */
 @media (min-width: 44.01rem) {
   .about-x:hover, .about-x:focus-visible {
     max-width: 14rem;
@@ -720,10 +718,21 @@ html { scrollbar-gutter: stable; }
   grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
   gap: 1rem;
 }
+/* Two columns, the icon and the text, and the foot on a row of its own under
+   both, from the content's start to its end: under the text alone it lost the
+   icon's 54px, and German's two chips no longer fitted one row at 360. One
+   row is declared and the foot makes the second, so a card with no foot has
+   no gap under nothing, and the first row takes what the grid's stretch adds,
+   which keeps the feet of a row of cards on one line. */
 .card {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  column-gap: .9rem;
+  row-gap: .6rem;
+  padding-block: 1rem .9rem;
+  padding-inline: 1rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -748,12 +757,7 @@ html { scrollbar-gutter: stable; }
   from { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent), var(--shadow-lift); }
   to { box-shadow: 0 0 0 10px color-mix(in oklab, var(--accent) 0%, transparent), var(--shadow-lift); }
 }
-.card-main {
-  display: flex;
-  gap: .95rem;
-  flex: 1;
-  padding: 1.1rem;
-}
+.card-main { display: contents; }
 
 .tile {
   display: grid;
@@ -768,12 +772,19 @@ html { scrollbar-gutter: stable; }
 .tile img { width: 1.9rem; height: 1.9rem; object-fit: contain; }
 .tile svg { width: 1.7rem; height: 1.7rem; }
 
-.card-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; flex: 1; }
+/* .card scoped: the detail page's head is a grid of its own around a tile */
+.card .tile { grid-column: 1; grid-row: 1; align-self: start; }
+.card-text { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+/* Two chips that do not fit one row wrap whole, the second onto a row of its
+   own. The row gap is what parts the two chips' hit areas once wrapped: each
+   reaches 8px past its chip, so 16px and they meet without overlapping. */
 .card-foot {
+  grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: .5rem;
-  padding: 0 .85rem .8rem;
+  column-gap: .5rem;
+  row-gap: 1rem;
 }
 .card-foot .status-pill { margin-inline-start: auto; }
 /* status.js swaps what is inside the slot, so the slot has to be in the markup
@@ -785,9 +796,9 @@ html { scrollbar-gutter: stable; }
    nothing: a site with a status page, for a service it does not monitor. */
 .card-foot:not(:has(.flag, .status-pill)) { display: none; }
 
-/* Host flag: an icon at rest that unfurls its label on hover or focus. The
-   label stays in the DOM (clipped, not removed) for screen readers; on touch
-   and under reduced motion it shows expanded.
+/* Host flag: an icon and its word, both shown at every width, hover or not.
+   Folded to the icon at rest, the flag said nothing until a pointer found it,
+   and the house and the cloud alone were read as decoration.
    As a span it stays under the stretched-link overlay, so a click on it opens
    the service like the rest of the card. As a link, which it becomes when
    hosting_flag names a target, it is raised above: a third target inside the
@@ -796,40 +807,43 @@ html { scrollbar-gutter: stable; }
   display: inline-flex;
   align-items: center;
   gap: .32rem;
-  max-width: 2rem;
-  overflow: hidden;
-  padding: .18rem .44rem;
+  min-height: 1.75rem;
+  padding-block: .18rem;
+  padding-inline: .5rem .6rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--card);
   color: var(--muted);
-  font-size: .72rem;
+  font-size: .76rem;
   font-weight: 500;
   white-space: nowrap;
-  transition: max-width .3s cubic-bezier(.2, .7, .3, 1), color .2s, border-color .2s;
+  transition: color .2s, border-color .2s;
 }
 /* overflow visible: the cloud glyph reaches the viewBox edge and its stroke
    would be clipped flat; the flag's own padding absorbs the spill. */
 .flag svg { width: .9rem; height: .9rem; flex: none; overflow: visible; }
-.flag-label { opacity: 0; padding-inline-end: .14rem; transition: opacity .18s; }
+.flag-label { padding-inline-end: .14rem; }
 .flag-self { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); }
 a.flag { position: relative; z-index: 1; text-decoration: none; }
 a.flag:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 a.flag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* A link has to be reachable at rest, behind its own fold: the icon alone is
-   what a thumb arrives on, and 2rem by the padding and the glyph is the floor. */
-a.flag { min-height: 1.5rem; }
-.card:hover .flag, .card:focus-within .flag { max-width: 14rem; }
-.card:hover .flag-label, .card:focus-within .flag-label { opacity: 1; }
-@media (hover: none) {
-  .flag { max-width: 14rem; }
-  .flag-label { opacity: 1; }
+/* 28px drawn, 44px to a thumb: the card's controls answer 8px past their
+   border above and below, the offsets counted from inside the 1px border.
+   Sideways a chip stops at its border, being wider than 44px already, so the
+   gap between two chips stays dead. The detail glyph is 28px both ways and
+   takes the 8px all round. */
+a.flag::before,
+.card a.status-pill::before,
+.card-more::before {
+  content: "";
+  position: absolute;
+  inset-block: calc(-.5rem - 1px);
+  inset-inline: -1px;
 }
+.card-more::before { inset-inline: calc(-.5rem - 1px); }
 @media (prefers-reduced-motion: reduce) {
-  .flag { transition: none; max-width: 14rem; }
-  .flag-label { transition: none; opacity: 1; }
-  /* the dismiss button keeps the fold and loses only the travel, unlike the
-     flag above: it is absolute over the note and has no room to unfurl */
+  /* the dismiss button keeps the fold and loses only the travel: it is
+     absolute over the note and has no room to unfurl */
   .about-x, .about-x span { transition: none; }
   header, .nav-links { transition: none; }
 }
@@ -906,8 +920,11 @@ a.flag { min-height: 1.5rem; }
   color: var(--muted);
 }
 
+/* Balanced, so a long name does not leave one word alone on its last line,
+   which is also where the sign-in lock sits. */
 .card-name {
   min-width: 0;
+  text-wrap: balance;
   font-weight: 600;
   letter-spacing: -.005em;
   color: inherit;
@@ -1011,7 +1028,7 @@ a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-
    Online or Offline in words. */
 a.status-pill:hover .dot { background: var(--card); }
 a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.card .status-pill { flex: none; }
+.card .status-pill { flex: none; min-height: 1.75rem; }
 /* Raised above the card's stretched link so a click reaches the status page. A
    display-only pill stays underneath and the click opens the service. */
 .card a.status-pill { position: relative; z-index: 1; }
@@ -1262,8 +1279,9 @@ html:has(dialog[open]) {
   }
   .detail-top .btn .btn-glyph { width: 1em; height: 1em; }
   /* The pill on a detail page stands alone and is a link to the status page, so
-     it takes a thumb's worth of height. The one in a card foot keeps its size:
-     that foot is dense, and raising it there would push every card down. */
+     it takes a thumb's worth of height. The one in a card foot keeps its 28px
+     and answers on 44px through its ::before: drawn taller, it would push
+     every card down. */
   .detail-top .status-pill { min-height: 2.25rem; padding-inline: .8rem .9rem; font-size: .82rem; }
   .leave-acts { flex-direction: column; align-items: stretch; }
   .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
@@ -1686,6 +1704,21 @@ footer { margin-top: 1rem; }
   .way { margin-block: 2rem .8rem; }
   .way-name { scroll-margin-top: 1.6rem; }
   .cat:not(.cat ~ .cat) .way { margin-block-start: 1.3rem; }
+
+  /* Denser cards: the foot's own row and the hosting word cost height, and
+     this pays it back. On the demo at 390 no card is over 135px, against
+     155px with the foot under the text alone. */
+  .cards { gap: .9rem; }
+  .card { padding-block: .8rem .75rem; padding-inline: .85rem; column-gap: .8rem; row-gap: .5rem; }
+  .card-name { line-height: 1.35; }
+  .card-text { gap: .15rem; }
+  .card-desc { font-size: .92rem; line-height: 1.45; }
+  .card .tile { width: 2.6rem; height: 2.6rem; border-radius: .6rem; }
+  .card .tile img { width: 1.65rem; height: 1.65rem; }
+  .card-foot { column-gap: .4rem; }
+  .flag { padding-inline: .42rem .5rem; gap: .28rem; }
+  .card .status-pill { padding-inline: .45rem .55rem; }
+  .card-more { inset-block-start: .7rem; inset-inline-end: .7rem; }
 
   /* the category trail becomes a wrapping chip row under the intro */
 

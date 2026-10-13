@@ -97,7 +97,7 @@ await check("and it flips with the theme, in both directions", async () => {
     );
 });
 
-// ---- A2: the welcome note's dismiss button folds like the host flag ----
+// ---- A2: the welcome note's dismiss button folds to a glyph ----
 
 // The fold: a glyph at rest, the word unfurled beside it on hover. It runs on
 // `page` rather than on `home` below, which asks for reduced motion and so
@@ -585,22 +585,87 @@ await check("the back link is a real target on a detail page", async () => {
   }
 });
 
-// A hosting flag that leads somewhere is a control, and folded, before anyone
-// hovers, is what a thumb arrives on.
-await check(
-  "a linked hosting flag is a real target while still folded",
-  async () => {
-    const m = await home.$eval(".card-foot a.flag", (el) => {
-      const r = el.getBoundingClientRect();
-      return { w: r.width, h: r.height };
-    });
-    if (m.w < 24 || m.h < 24) {
-      throw new Error(
-        `${Math.round(m.w)} by ${Math.round(m.h)} at rest, WCAG 2.2 asks 24 by 24 of a target`,
+// A hosting flag that leads somewhere is a control: its word is painted before
+// anyone hovers, with motion allowed, and a thumb gets 44px to land on, the
+// chip or the band its ::before draws around it. Each flag on the page, light
+// and dark. The flag's colour eases over .2s when the theme turns, so it is
+// read once that has run.
+const atRest = await desk.newPage();
+await atRest.goto(SITE);
+for (const theme of ["light", "dark"]) {
+  await check(
+    `a linked hosting flag shows its word at rest and is a 44px target in ${theme}`,
+    async () => {
+      await atRest.evaluate(
+        (t) => (document.documentElement.dataset.theme = t),
+        theme,
       );
-    }
-  },
-);
+      await atRest.waitForTimeout(400);
+      const flags = await atRest.$$eval(".card-foot a.flag", (els) => {
+        const toRGB = (c) => {
+          const cv = document.createElement("canvas");
+          cv.width = cv.height = 1;
+          const x = cv.getContext("2d");
+          x.fillStyle = c;
+          x.fillRect(0, 0, 1, 1);
+          const d = x.getImageData(0, 0, 1, 1).data;
+          return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+        };
+        return els.map((el) => {
+          const r = el.getBoundingClientRect(),
+            s = getComputedStyle(el),
+            b = getComputedStyle(el, "::before"),
+            label = el.querySelector(".flag-label");
+          const lr = label.getBoundingClientRect();
+          let w = r.width,
+            h = r.height;
+          if (b.content !== "none" && b.position === "absolute") {
+            const bx = parseFloat(s.borderLeftWidth),
+              by = parseFloat(s.borderTopWidth);
+            w = Math.max(
+              w,
+              r.width - 2 * bx - parseFloat(b.left) - parseFloat(b.right),
+            );
+            h = Math.max(
+              h,
+              r.height - 2 * by - parseFloat(b.top) - parseFloat(b.bottom),
+            );
+          }
+          return {
+            word: label.textContent,
+            w,
+            h,
+            opacity: Number(getComputedStyle(label).opacity),
+            shown:
+              lr.width > 0 &&
+              lr.left >= r.left - 0.5 &&
+              lr.right <= r.right + 0.5,
+            ink: toRGB(getComputedStyle(label).color),
+            chip: toRGB(s.backgroundColor),
+          };
+        });
+      });
+      if (flags.length === 0)
+        throw new Error("no linked hosting flag on this page");
+      for (const f of flags) {
+        if (f.opacity !== 1 || !f.shown)
+          throw new Error(
+            `"${f.word}" is not painted at rest: opacity ${f.opacity}, ${f.shown ? "inside" : "clipped by"} its chip`,
+          );
+        if (f.w < 44 || f.h < 44)
+          throw new Error(
+            `"${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
+          );
+        const r = ratio(f.ink, f.chip);
+        if (r < 4.5)
+          throw new Error(
+            `"${f.word}" is ${r.toFixed(2)}:1 against its chip, and text asks 4.5:1`,
+          );
+      }
+    },
+  );
+}
+await atRest.close();
 
 // A card is one big link, so the pointer is a hand everywhere on it and says
 // nothing extra when it reaches a control. The fill is what tells a visitor

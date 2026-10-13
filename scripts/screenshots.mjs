@@ -29,10 +29,8 @@ for (const scheme of ['light', 'dark']) {
     colorScheme: scheme,
     viewport: SIZE,
     deviceScaleFactor: RETINA,
-    // Reduced motion holds every animation finished and renders the hosting
-    // flags with their labels out, the state the stylesheet gives reduced
-    // motion and touch visitors. The hero names the little house without
-    // staging a fake hover.
+    // Reduced motion holds every animation finished, so no shot catches a
+    // transition halfway.
     reducedMotion: 'reduce',
   });
   const page = await context.newPage();

@@ -139,7 +139,12 @@ content column, a long site name on a row of its own on a phone, 44px controls
 whose names contain the words they show); the welcome note folded to one row
 on a phone (it opens with or without JavaScript, remembers nothing, prints
 whole and shows whole on a wide screen, and the first card starts within 420px
-at 390 by 844); and the layouts that have to stay
+at 390 by 844); the card foot (the hosting word painted at rest, the foot on a
+row of its own under the icon and the text, every hosting and status word of a
+language on one row at 360, a second chip that wraps whole, a long name
+balanced with its lock after the last word, the demo's page and cards short at
+390, hit areas that never overlap, and a tap within 21px of a linked flag's
+centre that follows the flag); and the layouts that have to stay
 as they are (a bare header, a card with nothing at its foot, the detail head on
 a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
 without the demo stack, so every pill reads unknown), against
