@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -61,6 +62,42 @@ func TestTheFoldAndScreenshotKeysKeepTheirNames(t *testing.T) {
 		}
 		if got := builtinStrings["fr"][c.key]; got != c.fr {
 			t.Errorf("fr %q = %q, want %q", c.key, got, c.fr)
+		}
+	}
+}
+
+// French sets a no-break space before ? ! : ; so the mark never starts a line
+// of its own when the sentence wraps.
+func TestFrenchPunctuationKeepsItsNoBreakSpace(t *testing.T) {
+	for key, s := range builtinStrings["fr"] {
+		for i, r := range s {
+			if i > 0 && s[i-1] == ' ' && strings.ContainsRune("?!:;", r) {
+				t.Errorf("fr %q has a plain space before %q: %q", key, r, s)
+			}
+		}
+	}
+}
+
+// Each language addresses the visitor one way throughout, and the words are the
+// ones its own UIs use: the placeholder reads like the search label, and a
+// button never says something it does not do.
+func TestBuiltinStringsKeepOneRegisterAndTheUsualWords(t *testing.T) {
+	for _, c := range []struct{ lang, key, want string }{
+		{"es", "leave.title", "Estás saliendo de este directorio"},
+		{"es", "leave.body", "Esta dirección pertenece a otra persona. Léela antes de continuar."},
+		{"nl", "leave.title", "Je verlaat deze directory"},
+		{"nl", "leave.body", "Dit adres is van iemand anders. Lees het voordat je verdergaat."},
+		{"nl", "shot.scroll", "Schermafbeelding, scrol opzij"},
+		{"nl", "nav.skip", "Naar inhoud springen"},
+		{"sv", "about.dismiss", "Dölj"},
+		{"sv", "search.placeholder", "Sök efter verktyg…"},
+		{"pt", "nav.links", "Ligações"},
+		{"de", "nav.theme", "Design"},
+		{"it", "nav.skip", "Vai al contenuto"},
+		{"it", "host.self", "Self-hosted"},
+	} {
+		if got := builtinStrings[c.lang][c.key]; got != c.want {
+			t.Errorf("%s %q = %q, want %q", c.lang, c.key, got, c.want)
 		}
 	}
 }

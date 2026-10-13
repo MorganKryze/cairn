@@ -10,8 +10,9 @@ linters:
     - misspell
   exclusions:
     rules:
-      # locales.go is written in eight languages; misspell only knows one
-      - path: locales\.go
+      # locales.go and its test are written in eight languages; misspell only
+      # knows one
+      - path: locales(_test)?\.go
         linters:
           - misspell
   settings:
