@@ -1895,9 +1895,9 @@ footer { margin-top: 1rem; }
   .flag { padding-inline: .42rem .5rem; gap: .28rem; }
   .card .status-pill { padding-inline: .45rem .55rem; }
   .card-more { inset-block-start: .7rem; inset-inline-end: .7rem; }
-  /* The glyph's 44px band reaches 7px into the description's first line and
-     32.6px in from its end: a tap on the last letters opened the detail page.
-     A float one pixel tall shortens that line alone. Physical sides from the
+  /* The glyph's 44px band reaches about 7px into the description's first
+     line and up to 33px in from its end. A float one pixel tall shortens that
+     line alone, so its words stay clear of the band. Physical sides from the
      page's direction, since a fallback description carries its own dir. */
   .card:has(.card-more) .card-desc::before { content: ""; float: right; width: 2.2rem; height: 1px; }
   [dir="rtl"] .card:has(.card-more) .card-desc::before { float: left; }

@@ -28,11 +28,15 @@
   desc: Sign in first.
   selfhosted: true
   sign_in: true
-# Open, a pill and a state word, all on one detail page.
+# Open, a pill and a state word, all on one detail page. The Arabic
+# description wraps on a phone, so its first line runs into the detail glyph's
+# corner, which a right-to-left page puts on the left.
 - id: beta
   url: https://beta.example.org
   name: Beta tool
-  desc: Rough edges.
+  desc:
+    en: Rough edges.
+    ar: فيه حواف خشنة بعد، ويجرّبه بعضنا كل يوم قبل أن نفتحه للجميع.
   state: beta
   selfhosted: true
   details: |
