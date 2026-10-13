@@ -388,6 +388,7 @@ type imageView struct {
 	Src     string
 	Caption locText
 	W, H    int
+	N       int // place among the page's screenshots, from 1
 }
 
 type staticView struct {
@@ -708,7 +709,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				}
 				for _, img := range s.Images {
 					url, w, h := media(img.Src)
-					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h})
+					dv.Images = append(dv.Images, imageView{Src: url, Caption: tr(img.Caption, loc, def), W: w, H: h, N: len(dv.Images) + 1})
 				}
 				if !dv.Off {
 					dv.StatusLabel, dv.StatusHref, dv.StatusA11y = statusMeta(cfg, loc, dv.Status, s, statuses[s.ID].Key)

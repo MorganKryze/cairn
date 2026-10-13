@@ -67,7 +67,7 @@ func TestAScreenshotScrollsOnlyWhenItsSizeIsKnown(t *testing.T) {
 	if len(shots) != 2 {
 		t.Fatalf("want two screenshots, got %d", len(shots))
 	}
-	const strip = `<figure class="shot"><div class="shot-scroll" role="region" aria-label="Screenshot, scroll sideways">` +
+	const strip = `<figure class="shot"><div class="shot-scroll" role="region" aria-label="Screenshot, scroll sideways 1">` +
 		`<img src="/media/shot.png" alt="" loading="lazy" width="4" height="1"></div>`
 	if !strings.HasPrefix(shots[0], strip) {
 		t.Errorf("a screenshot of known size is not a named strip:\n%s", shots[0])
@@ -78,6 +78,33 @@ func TestAScreenshotScrollsOnlyWhenItsSizeIsKnown(t *testing.T) {
 	if !strings.HasPrefix(shots[1], `<figure class="shot"><img src="/assets/logo.png" alt="" loading="lazy">`) ||
 		strings.Contains(shots[1], "shot-scroll") {
 		t.Errorf("a screenshot of unknown size is not the bare image:\n%s", shots[1])
+	}
+}
+
+var regionRe = regexp.MustCompile(`<div class="shot-scroll" role="region" aria-label="([^"]*)"(?: aria-describedby="([^"]*)")?>`)
+
+// Every strip is a landmark, and a screen reader lists landmarks by name: three
+// strips all called "Screenshot, scroll sideways" could not be told apart. Each
+// carries its place among the page's screenshots, and the caption, where there
+// is one, describes it.
+func TestEveryScreenshotStripHasANameOfItsOwn(t *testing.T) {
+	m := shotPages(t, "locales: [en]\n", "[shot.png, {src: shot.png, caption: {en: The editor.}}, /assets/logo.png, shot.png]")
+	html := string(m.Pages["en/pad"].HTML)
+	regions := regionRe.FindAllStringSubmatch(html, -1)
+	if len(regions) != 3 {
+		t.Fatalf("want three named strips, got %d in:\n%s", len(regions), html)
+	}
+	want := []string{"Screenshot, scroll sideways 1", "Screenshot, scroll sideways 2", "Screenshot, scroll sideways 4"}
+	for i, r := range regions {
+		if r[1] != want[i] {
+			t.Errorf("strip %d is named %q, want %q", i+1, r[1], want[i])
+		}
+	}
+	if regions[0][2] != "" || regions[2][2] != "" {
+		t.Errorf("a strip with no caption points to a description: %q, %q", regions[0][2], regions[2][2])
+	}
+	if id := regions[1][2]; id == "" || !strings.Contains(html, `<figcaption id="`+id+`">The editor.</figcaption>`) {
+		t.Errorf("the captioned strip is not described by its caption (%q):\n%s", id, html)
 	}
 }
 
@@ -112,7 +139,7 @@ func TestTheFullScreenshotLinkOpensTheImageItself(t *testing.T) {
 func TestACaptionSitsAboveTheLinkAndMarksOnlyItself(t *testing.T) {
 	m := shotPages(t, "locales: [fr, en]\n", "[{src: shot.png, caption: {en: The editor.}}]")
 	shot := figures(t, m, "fr/pad")[0]
-	caption := strings.Index(shot, `<figcaption lang="en">The editor.</figcaption>`)
+	caption := strings.Index(shot, `<figcaption id="shot-1-caption" lang="en">The editor.</figcaption>`)
 	link := fullLinkRe.FindStringIndex(shot)
 	switch {
 	case caption < 0:
@@ -133,7 +160,7 @@ func TestTheScreenshotWordsComeFromTheTable(t *testing.T) {
 		"strings: {shot.scroll: {en: \"Swipe the picture\"}, shot.full: {en: \"Whole picture\"}}\n",
 		"[shot.png]")
 	shot := figures(t, m, "en/pad")[0]
-	if !strings.Contains(shot, `aria-label="Swipe the picture"`) {
+	if !strings.Contains(shot, `aria-label="Swipe the picture 1"`) {
 		t.Errorf("the strip does not read shot.scroll:\n%s", shot)
 	}
 	if !strings.Contains(shot, "Whole picture</a>") {

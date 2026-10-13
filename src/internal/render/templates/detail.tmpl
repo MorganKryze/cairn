@@ -20,9 +20,12 @@
   {{end}}{{template "prose" .Body}}{{/* On a phone a wide screenshot scrolls sideways at a readable height.
        The strip sizes the image from the ratio its width and height
        attributes give it, and a contained image with no ratio collapses to
-       nothing, so the strip is only drawn where cairn read both. It takes no
+       nothing, so the strip is only drawn where cairn read both. Each strip is
+       a landmark and a screen reader lists landmarks by name, so the name
+       carries the image's place on the page and the caption describes it. It
+       takes no
        tabindex: a browser makes a scrolling region a stop only while it
        scrolls. The link opens the file itself in the same tab, the one way
-       to the whole picture on a phone. */}}{{range .Images}}<figure class="shot">{{if and .W .H}}<div class="shot-scroll" role="region" aria-label="{{$.S.ShotScroll}}">{{end}}<img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if and .W .H}}</div>{{end}}{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}<a class="shot-full" href="{{.Src}}"><svg class="shot-full-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg>{{$.S.ShotFull}}</a></figure>
+       to the whole picture on a phone. */}}{{range .Images}}<figure class="shot">{{if and .W .H}}<div class="shot-scroll" role="region" aria-label="{{$.S.ShotScroll}} {{.N}}"{{if .Caption.Text}} aria-describedby="shot-{{.N}}-caption"{{end}}>{{end}}<img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if and .W .H}}</div>{{end}}{{if .Caption.Text}}<figcaption{{if and .W .H}} id="shot-{{.N}}-caption"{{end}}{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}<a class="shot-full" href="{{.Src}}"><svg class="shot-full-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg>{{$.S.ShotFull}}</a></figure>
   {{end}}</article>
 {{template "bottom" .}}

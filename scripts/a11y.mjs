@@ -2679,6 +2679,35 @@ for (const scheme of ["light", "dark"]) {
   );
 }
 
+// A screen reader lists landmarks by name, and every strip is one: a page of
+// three screenshots read out three regions called "Capture d'écran, faire
+// défiler" that nobody could tell apart. Each name carries the image's
+// place, and the caption, where there is one, describes the strip.
+await check("every screenshot strip has a name of its own", async () => {
+  const { p, done } = await shotPage(390);
+  const strips = await p.$$eval(".shot-scroll", (all) =>
+    all.map((s) => ({
+      name: s.getAttribute("aria-label"),
+      described: s.getAttribute("aria-describedby"),
+      caption: s.closest("figure").querySelector("figcaption")?.id || null,
+    })),
+  );
+  await done();
+  if (strips.length < 3)
+    throw new Error(`${strips.length} strips on the page, want 3`);
+  const names = strips.map((s) => s.name);
+  if (new Set(names).size !== names.length)
+    throw new Error(`two strips share a name: ${names.join(" | ")}`);
+  for (const s of strips) {
+    if (!s.name.startsWith("Capture d'écran, faire défiler"))
+      throw new Error(`a strip is named ${s.name}`);
+    if (s.described !== s.caption)
+      throw new Error(
+        `${s.name} is described by ${s.described}, its caption is ${s.caption}`,
+      );
+  }
+});
+
 await check(
   "a screenshot that does not scroll is no tab stop at 1280px",
   async () => {
