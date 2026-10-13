@@ -147,7 +147,10 @@ row of its own under the icon and the text, every hosting and status word of a
 language on one row at 360, a second chip that wraps whole, a long name
 balanced with its lock after the last word, the demo's page and cards short at
 390, hit areas that never overlap, and a tap within 21px of a linked flag's
-centre that follows the flag); and the layouts that have to stay
+centre that follows the flag); the detail head on a phone (Open under the
+name at the tile's edge, then the pill and the state on one line, no divider
+opening a wrapped line) and a hosted page on a phone (no rule after the title,
+a 44px back link); and the layouts that have to stay
 as they are (a bare header, a card with nothing at its foot, the detail head on
 a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
 without the demo stack, so every pill reads unknown), against

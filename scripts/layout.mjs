@@ -189,17 +189,19 @@ for (const width of WIDE) {
 }
 
 // A service that is not open has no button to open it, at every width, and
-// its state still sits on the line under the name.
+// its state still sits on the line under the name, from the tile's edge.
 await check("a service that is not open shows no Open button", async () => {
   for (const width of WIDTHS) {
     const p = await open(`${LOCALES}en/soon/`, width);
     const m = await p.evaluate(() => {
       const r = (s) => document.querySelector(s)?.getBoundingClientRect();
       const h1 = r(".detail-top h1"),
+        tile = r(".detail-top .tile"),
         state = r(".detail-state");
       return {
         btn: !!document.querySelector(".detail-top .btn"),
         below: !!state && state.top >= h1.bottom - 1,
+        start: state ? state.left - tile.left : NaN,
       };
     });
     await p.close();
@@ -210,6 +212,10 @@ await check("a service that is not open shows no Open button", async () => {
     if (!m.below)
       throw new Error(
         `the state is not on the line under the name at ${width}px`,
+      );
+    if (!(Math.abs(m.start) <= 1))
+      throw new Error(
+        `the state starts ${m.start}px from the tile's edge at ${width}px`,
       );
   }
 });
@@ -1304,6 +1310,109 @@ for (const width of PHONES) {
       }
       await ctx.close();
       if (missed.length) throw new Error(missed.join("; "));
+    },
+  );
+}
+
+// ---- the detail head and the hosted page on a phone ----
+
+// Open sits under the name, at the start of the line the tile starts, and the
+// pill and the state follow it on that one line, the way a store puts its Get
+// button under an app's name. Lifted onto the back link's row, Open sat a
+// whole row away from the name it acts on.
+const detailHead = () => {
+  const r = (s) => document.querySelector(s).getBoundingClientRect();
+  const tile = r(".detail-top .tile"),
+    h1 = r(".detail-top h1"),
+    btn = r(".detail-top .btn"),
+    pill = r(".detail-top .status-pill"),
+    state = r(".detail-top .detail-state");
+  const mid = (x) => x.top + x.height / 2;
+  return {
+    below: btn.top >= h1.bottom - 1,
+    start: btn.left - tile.left,
+    order: pill.left >= btn.right && state.left >= pill.right,
+    spread:
+      Math.max(mid(btn), mid(pill), mid(state)) -
+      Math.min(mid(btn), mid(pill), mid(state)),
+  };
+};
+// The state row narrowed until it wraps: whatever starts a line draws no
+// divider before it, since a stroke there separates the item from nothing.
+const wrappedRow = () => {
+  const row = document.querySelector(".detail-top .detail-state-row");
+  // The pill's slot is display: contents, so the pill itself is the flex item.
+  const items = [...row.querySelectorAll(".status-pill, .detail-state")];
+  row.style.maxWidth = `${items[0].getBoundingClientRect().width + 4}px`;
+  const start = Math.min(...items.map((e) => e.getBoundingClientRect().left));
+  const tops = new Set(
+    items.map((e) => Math.round(e.getBoundingClientRect().top)),
+  );
+  return {
+    lines: tops.size,
+    divided: items
+      .filter((e) => Math.abs(e.getBoundingClientRect().left - start) < 1)
+      .filter((e) => {
+        // A stroke on the start side only is a divider; the pill's outline
+        // goes all the way round.
+        const c = getComputedStyle(e);
+        return (
+          parseFloat(c.borderInlineStartWidth) >
+          parseFloat(c.borderInlineEndWidth)
+        );
+      })
+      .map((e) => e.className),
+  };
+};
+for (const width of PHONES) {
+  for (const url of [`${LOCALES}de/beta/`, `${DEMO}fr/whoami/`]) {
+    await check(
+      `Open leads the line under the name, then the pill and the state, at ${width}px on ${url}`,
+      async () => {
+        const p = await open(url, width);
+        const m = await p.evaluate(detailHead);
+        await p.close();
+        const bad = [];
+        if (!m.below) bad.push("Open is not below the name");
+        if (Math.abs(m.start) > 1)
+          bad.push(`Open starts ${m.start.toFixed(1)}px from the tile's edge`);
+        if (!m.order) bad.push("the line does not read Open, pill, state");
+        if (m.spread > 6)
+          bad.push(`their centres are ${m.spread.toFixed(1)}px apart`);
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+    await check(
+      `a wrapped state line draws no divider at a line start at ${width}px on ${url}`,
+      async () => {
+        const p = await open(url, width);
+        const m = await p.evaluate(wrappedRow);
+        await p.close();
+        if (m.lines < 2) throw new Error("the row did not wrap");
+        if (m.divided.length)
+          throw new Error(`a divider opens a line: ${m.divided.join(", ")}`);
+      },
+    );
+  }
+}
+
+// A hosted page on a phone: the title stands alone, with no rule running off
+// it into the margin, and the way back is a thumb's 44px high.
+for (const width of PHONES) {
+  await check(
+    `a hosted page paints no rule after its title and a 44px back link at ${width}px`,
+    async () => {
+      const p = await open(`${SITE}en/hosting/`, width);
+      const m = await p.evaluate(() => ({
+        rule: document.querySelector(".page-head .way-rule").getClientRects()
+          .length,
+        back: document.querySelector(".back").getBoundingClientRect().height,
+      }));
+      await p.close();
+      const bad = [];
+      if (m.rule) bad.push("a rule is painted after the title");
+      if (m.back < 44) bad.push(`the back link is ${m.back.toFixed(1)}px high`);
+      if (bad.length) throw new Error(bad.join("; "));
     },
   );
 }

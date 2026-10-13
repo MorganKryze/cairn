@@ -485,13 +485,11 @@ await check(
   },
 );
 
-// The action sits beside the name where there is room, and goes up onto the
-// back link's row where there is not, rather than becoming the loudest thing
-// on a phone. It matches its neighbour there rather than the 44px the leaving
-// dialog's actions carry: the back chip has been 72x33 since the target-size
-// pass, and 24x24 is what the rule asks of either of them.
+// The action sits beside the name where there is room, and on the line under
+// it on a phone, where it leads the pill and the state. A thumb's 44px either
+// way, the height the leaving dialog's actions carry.
 await check(
-  "the action sits beside the name, and joins the back row on a phone",
+  "the action sits beside the name, and under it on a phone",
   async () => {
     for (const [w, beside] of [
       [1000, true],
@@ -505,19 +503,14 @@ await check(
       const m = await page.evaluate(() => {
         const btn = document.querySelector(".detail-top .btn");
         const h1 = document.querySelector(".detail-top h1");
-        const back = document.querySelector(".detail-top .back");
         if (!btn) return null;
         const b = btn.getBoundingClientRect(),
-          n = h1.getBoundingClientRect(),
-          a = back.getBoundingClientRect();
+          n = h1.getBoundingClientRect();
         return {
           w: b.width,
           h: b.height,
-          onBackRow:
-            Math.abs(b.top + b.height / 2 - (a.top + a.height / 2)) < 3,
           beside: Math.abs(b.top + b.height / 2 - (n.top + n.height / 2)) < 3,
-          clearsBack: b.left >= a.right,
-          backH: a.height,
+          under: b.top >= n.bottom - 1,
           lines: Math.round(
             n.height / parseFloat(getComputedStyle(h1).lineHeight),
           ),
@@ -525,41 +518,116 @@ await check(
       });
       await page.close();
       if (!m) throw new Error(`no action in the head at ${w}px`);
-      if (m.w < 24 || m.h < 24) {
-        throw new Error(
-          `the action is ${m.w.toFixed(0)}x${m.h.toFixed(0)} at ${w}px, under 24x24`,
-        );
-      }
       if (m.lines > 1)
         throw new Error(`the name wrapped onto ${m.lines} lines at ${w}px`);
-      if (beside) {
-        if (!m.beside)
-          throw new Error(`at ${w}px the action left the name's row`);
-        if (m.h < 44)
-          throw new Error(
-            `beside the name it is ${m.h.toFixed(0)}px tall, want 44`,
-          );
-      } else {
-        if (!m.onBackRow)
-          throw new Error(`at ${w}px the action is not on the back link's row`);
-        if (!m.clearsBack)
-          throw new Error(`at ${w}px the action overlaps the back link`);
-        // The same height, not merely both large: 33px against 36px read as a
-        // mistake rather than as a hierarchy.
-        if (Math.abs(m.h - m.backH) > 1) {
-          throw new Error(
-            `the action is ${m.h.toFixed(0)}px and the back link ${m.backH.toFixed(0)}px`,
-          );
-        }
-        if (m.h < 44) {
-          throw new Error(
-            `beside the back link it is ${m.h.toFixed(0)}px, want a thumb's 44`,
-          );
-        }
-      }
+      if (beside && !m.beside)
+        throw new Error(`at ${w}px the action left the name's row`);
+      if (!beside && !m.under)
+        throw new Error(`at ${w}px the action is not under the name`);
+      if (m.h < 44)
+        throw new Error(
+          `the action is ${m.h.toFixed(0)}px tall at ${w}px, want a thumb's 44`,
+        );
     }
   },
 );
+
+// Tab walks the head in the order a phone shows it: back, Open, the pill, and
+// then whatever the page's content offers first. The grid moves Open around
+// between widths; the markup order is what keeps the keyboard with the eye.
+const WIDTHS = [360, 390, 1280, 1440];
+for (const w of WIDTHS) {
+  await check(
+    `Tab goes back, Open, the pill, then the content on a detail page at ${w}px`,
+    async () => {
+      const page = await desk.newPage();
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.goto(new URL("beta/", STATES).href, {
+        waitUntil: "networkidle",
+      });
+      const want = await page.evaluate(() => {
+        const head = document.querySelector(".detail-top");
+        const after = [
+          ...document.querySelectorAll(
+            "a[href], button, input, select, textarea, summary, [tabindex]",
+          ),
+        ].find(
+          (e) =>
+            head.compareDocumentPosition(e) &
+              Node.DOCUMENT_POSITION_FOLLOWING &&
+            !head.contains(e) &&
+            e.tabIndex >= 0 &&
+            e.getClientRects().length,
+        );
+        return ["back", "btn", "status-pill", after?.outerHTML.slice(0, 60)];
+      });
+      await page.focus(".detail-top .back");
+      const got = ["back"];
+      for (let i = 0; i < 3; i++) {
+        await page.keyboard.press("Tab");
+        got.push(
+          await page.evaluate(() => {
+            const a = document.activeElement;
+            for (const c of ["btn", "status-pill"])
+              if (a.closest(".detail-top") && a.classList.contains(c)) return c;
+            return a.outerHTML.slice(0, 60);
+          }),
+        );
+      }
+      await page.close();
+      eq(got, want, "Tab from the back link");
+    },
+  );
+}
+
+// The back link and a detail page's pill answer on 44px at every width: drawn
+// small on a wide screen, through a ::before band around them; drawn 44px tall
+// on a phone and on touch. Measured where the pointer lands, so a band that
+// the layout clips or covers counts for nothing.
+const hitBand = (sel) => {
+  const el = document.querySelector(sel);
+  el.scrollIntoView({ block: "center" });
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2,
+    cy = r.top + r.height / 2;
+  const on = (x, y) => document.elementFromPoint(x, y)?.closest(sel) === el;
+  const span = (f) => {
+    let lo = 0,
+      hi = 0;
+    while (lo < 80 && f(-(lo + 0.5))) lo += 0.5;
+    while (hi < 80 && f(hi + 0.5)) hi += 0.5;
+    return lo + hi + 0.5;
+  };
+  return {
+    h: span((d) => on(cx, cy + d)),
+    w: span((d) => on(cx + d, cy)),
+  };
+};
+for (const w of WIDTHS) {
+  await check(
+    `the back link and the detail pill are 44px targets at ${w}px`,
+    async () => {
+      const bad = [];
+      for (const [path, base, sel] of [
+        ["beta/", STATES, ".detail-top .back"],
+        ["beta/", STATES, ".detail-top a.status-pill"],
+        ["hosting/", SITE, ".back"],
+      ]) {
+        const page = await desk.newPage();
+        await page.setViewportSize({ width: w, height: 900 });
+        await page.goto(new URL(path, base).href, { waitUntil: "networkidle" });
+        const m = await page.evaluate(
+          ([s, f]) => eval(`(${f})`)(s),
+          [sel, hitBand.toString()],
+        );
+        await page.close();
+        if (m.w < 44 || m.h < 44)
+          bad.push(`${sel} on ${path} answers on ${m.w}x${m.h}px`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
 
 await check("the back link is a real target on a detail page", async () => {
   const m = await detail.$eval(".back", (el) => {
