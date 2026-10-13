@@ -2859,7 +2859,17 @@ const paintKit = () => {
     if (base[3] < 1) base = over(base, [255, 255, 255, 1]);
     return layers.reduceRight((acc, l) => over(l, acc), base);
   };
-  return { rgba, over, wcag, behind };
+  // A colour as the stylesheet resolves it, var() and all, in the form
+  // getComputedStyle reports, to compare with what an element draws.
+  const colour = (v) => {
+    const probe = document.createElement("i");
+    probe.style.color = v;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  };
+  return { rgba, over, wcag, behind, colour };
 };
 
 // What the focused element draws, against what cairn's ring is: 2px solid in
@@ -2875,15 +2885,7 @@ const paintKit = () => {
 const ringNow = (kit) => {
   const el = document.activeElement;
   if (!el || el === document.body) return null;
-  const { rgba, over, wcag, behind } = kit();
-  const colour = (v) => {
-    const probe = document.createElement("i");
-    probe.style.color = v;
-    document.body.append(probe);
-    const c = getComputedStyle(probe).color;
-    probe.remove();
-    return c;
-  };
+  const { rgba, over, wcag, behind, colour } = kit();
   const ratio = (line, ground) => wcag(over(rgba(line), ground), ground);
   const own = [...el.classList].map((c) => `.${c}`).join("");
   const name = `${el.tagName.toLowerCase()}${own || ` in .${el.parentElement.closest("[class]")?.classList[0]}`} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24)}"`;
@@ -2977,6 +2979,49 @@ for (const width of [390, 1280]) {
       },
     );
   }
+}
+
+// While the search field has the focus, Tab and the arrows move the match
+// Enter opens, and that card's border is the only sign of where the keyboard
+// is: a focus indicator like the ring, so in --accent-ink and at 3:1 against
+// the card's own fill and the page around it. Runs in the page, handed
+// paintKit.
+const selFaults = (kit) => {
+  const card = document.querySelector(".card.sel");
+  if (!card) return ["typing in the field selected no card"];
+  const { rgba, over, wcag, behind, colour } = kit();
+  const line = getComputedStyle(card).borderTopColor;
+  const want = colour("var(--accent-ink)");
+  const faults = line === want ? [] : [`border ${line}, want ${want}`];
+  for (const [where, ground] of [
+    ["its fill", behind(card)],
+    ["the page", behind(card.parentElement)],
+  ]) {
+    const r = wcag(over(rgba(line), ground), ground);
+    if (r < 3)
+      faults.push(`border ${r.toFixed(2)}:1 against ${where}, want 3:1`);
+  }
+  return faults;
+};
+
+for (const theme of SWEEP_THEMES) {
+  await check(
+    `the search match the keyboard selects is marked at 3:1 in ${theme.name}`,
+    async () => {
+      const bad = [];
+      for (const url of [`${DEMO}fr/`, `${LOCALES}de/`]) {
+        const { p, done } = await sweepPage(url, 390, theme);
+        const name = await p.$eval(".card .card-name", (e) =>
+          e.textContent.trim(),
+        );
+        await p.locator("#q").pressSequentially(name.slice(0, 3));
+        for (const f of await p.evaluate(`(${selFaults})(${paintKit})`))
+          bad.push(`${url} .card.sel after "${name.slice(0, 3)}": ${f}`);
+        await done();
+      }
+      if (bad.length) throw new Error(bad.join("\n        "));
+    },
+  );
 }
 
 // Every text the page paints against what is really behind it: the first

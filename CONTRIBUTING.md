@@ -129,10 +129,13 @@ also Tabs through every stop and asks each for cairn's ring, 2px solid in
 `--accent-ink` (the Open button's is `--fg`, and the search field turns its
 box's border to `--accent-ink` instead) at 3:1 against what the ring sits on.
 German runs on a darker accent, `#8a4f7d`, whose raw ring measured under 3:1
-in dark. On the same pages it holds every painted text to 4.5:1 against what
-is really behind it, and the glyph or the frame of a control that shows no
-words to 3:1, and it checks that reduced motion stops the note's chevron and
-the screenshot's dimming.
+in dark. It types into the search field on both homes and holds the border
+of the match the keyboard selects, the only sign of the focus while it stays
+in the field, to the same: `--accent-ink`, 3:1 against the card and the page.
+On the same pages it holds every painted text to 4.5:1 against what is
+really behind it, and the glyph or the frame of a control that shows no words
+to 3:1, and it checks that reduced motion stops the note's chevron and the
+screenshot's dimming.
 
 `scripts/status.mjs` drives the one thing a static page cannot do on its own:
 a status pill changing in a tab nobody reloaded. It runs against

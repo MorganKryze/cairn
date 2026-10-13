@@ -44,9 +44,10 @@
   --accent: #247b7b;                                       /* set inline from theme.accent */
   /* The accent pushed toward black in light and toward white in dark, for
      contrast. Every focus ring but the Open button's draws in it, not in the
-     accent: WCAG 1.4.11 asks a ring 3:1 against whatever it sits on, and
-     theme.accent is the operator's free pick. In dark, #8a4f7d measured
-     2.97:1 on --bg and 2.71:1 on --card raw, 5.30:1 and 4.83:1 through here.
+     accent, and so does the selected search match's border: WCAG 1.4.11 asks
+     a focus indicator 3:1 against whatever it sits on, and theme.accent is
+     the operator's free pick. In dark, #8a4f7d measured 2.97:1 on --bg and
+     2.71:1 on --card raw, 5.30:1 and 4.83:1 through here.
      A fixed mix, not a guarantee: an accent close to black still falls short
      in dark. */
   --accent-ink: light-dark(color-mix(in oklab, var(--accent) 85%, #000), color-mix(in oklab, var(--accent) 72%, #fff));
@@ -783,10 +784,13 @@ html { scrollbar-gutter: stable; }
   transform: translateY(-3px);
   box-shadow: var(--shadow-lift);
 }
-/* The keyboard-selected match, the card Enter opens. The accent border keeps
-   the selection legible between beacon pulses and when motion is reduced. */
+/* The keyboard-selected match, the card Enter opens. The focus stays in the
+   search field, so this border is the only sign of where the keyboard is: a
+   focus indicator like the ring, in --accent-ink and at 3:1 against the card
+   and the page. It keeps the selection legible between beacon pulses and when
+   motion is reduced. */
 .card.sel {
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent), var(--shadow-lift);
 }
 @media (prefers-reduced-motion: no-preference) {
