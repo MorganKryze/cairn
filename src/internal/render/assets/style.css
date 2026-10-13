@@ -509,8 +509,9 @@ header { padding-block: 1.4rem; }
   display: flex;
   align-items: center;
   gap: .7rem;
-  /* The anchor in the heading is 44px high, 15px more than the name, so the
-     margins give the 7.5px a side back and the name keeps its place. */
+  /* The anchor in the heading is 44px high, 2.8px past the heading's 38.4px
+     line on each side, so these margins count from the anchor's box and not
+     from the line of the name. */
   margin-block: 2.1rem .65rem;
   /* the containing block for the link glyph, which hangs off the start edge */
   position: relative;
@@ -835,8 +836,9 @@ html { scrollbar-gutter: stable; }
    direct flex item of the foot, so the margin above still pushes it to the
    end. */
 .status-slot { display: contents; }
-/* A foot holding neither a flag nor a pill would draw its bottom padding around
-   nothing: a site with a status page, for a service it does not monitor. */
+/* A foot holding neither a flag nor a pill, as on a site with a status page for
+   a service it does not monitor, is still a grid item: it would open the card's
+   second row and the row gap above it, under nothing. */
 .card-foot:not(:has(.flag, .status-pill)) { display: none; }
 
 /* Host flag: an icon and its word, both shown at every width, hover or not.

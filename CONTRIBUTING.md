@@ -107,9 +107,9 @@ and after that yours run on their own.
 
 A handful of behaviours are what `go test` cannot reach: the Go tests assert
 the markup that ships, not what happens once someone types, clicks or scrolls.
-`just test-browser` drives them in a real browser and CI runs the same two
-scripts. They pull nothing from a registry, so unlike the demo job they are
-safe to make a required check.
+`just test-browser` drives them in a real browser and CI runs the same scripts.
+They pull nothing from a registry, so unlike the demo job they are safe to make
+a required check.
 
 `scripts/search.mjs` drives the search against `example/`. Anything you change
 in `search.js` belongs there, particularly the paths back to an empty query:
@@ -128,14 +128,14 @@ and of German, at 390 and 1280px, in light, dark and dark by the toggle, it
 also Tabs through every stop and asks each for cairn's ring, 2px solid in
 `--accent-ink` (the Open button's is `--fg`, and the search field turns its
 box's border to `--accent-ink` instead) at 3:1 against what the ring sits on.
-German runs on a darker accent, `#8a4f7d`, whose raw ring measured under 3:1
-in dark. It types into the search field on both homes and holds the border
-of the match the keyboard selects, the only sign of the focus while it stays
-in the field, to the same: `--accent-ink`, 3:1 against the card and the page.
-On the same pages it holds every painted text to 4.5:1 against what is
-really behind it, and the glyph or the frame of a control that shows no words
-to 3:1, and it checks that reduced motion stops the note's chevron and the
-screenshot's dimming.
+German runs on a darker accent, `#8a4f7d`, whose raw ring measured under 3:1 in
+dark. It types into the search field on both homes and holds the border of the
+match the keyboard selects, the only sign of the focus while it stays in the
+field, to the same: `--accent-ink`, 3:1 against the card and the page. On the
+same pages it holds every painted text to 4.5:1 against what is really behind
+it, and the glyph or the frame of a control that shows no words to 3:1, and it
+checks that reduced motion stops the note's chevron and the screenshot's
+dimming.
 
 `scripts/status.mjs` drives the one thing a static page cannot do on its own:
 a status pill changing in a tab nobody reloaded. It runs against
@@ -154,34 +154,34 @@ whole and shows whole on a wide screen, and the first card starts within 420px
 at 390 by 844); the search field (the English and French placeholders whole
 on a wide screen, no language's field narrower than before, and on a phone no
 Cmd-K hint and an ellipsis where a placeholder is longer than the field); the
-card foot (the hosting word painted at rest, the foot on a
-row of its own under the icon and the text, every hosting and status word of a
-language on one row at 360, a second chip that wraps whole, a long name
-balanced with its lock after the last word, the demo's page and cards short at
-390, hit areas that never overlap, and a tap within 21px of a linked flag's
-centre that follows the flag); the detail head on a phone (Open under the
-name at the tile's edge, then the pill and the state on one line, no divider
-opening a wrapped line) and a hosted page on a phone (no rule after the title,
-a 44px back link); the screenshots (on a phone a wide one 272px high in a
-strip that scrolls and fades on the side it continues, right to left too, one
-that fits filling the column; nothing scrolling on a wide screen; a 44px link
-to the whole image under the caption; dimmed in dark until hovered; whole when
-printed); every link and control on a home, detail, hosted and not-found page
-a 44 by 44px target that answers at the middle of each edge and overlaps no
-neighbour, the skip link focused, the leaving dialog, the open menus and the
-back-to-top button included (a link inside a sentence of the operator's text
-and the card name, whose link is the whole card, are the two exceptions);
-Arabic mirrored (the header's diamond at the column's right edge, the hosting
-flag at the card's right with the pill at its left, the detail line reading
-Open, pill, state from the right); every page at 360 with JavaScript off
-(nothing pushed sideways, the note's row opening and folding, no link without
-an `href`); and the layouts that have to stay as they are (a bare header, a card with nothing
-at its foot, the detail head on a wide screen, a service that is not open). It
-runs against the demo's own config (`demo/config`, served without the demo
-stack, so every pill reads unknown), against `scripts/fixtures/longname/`, a
-site name too long for one header row, against `scripts/fixtures/locales/`,
-every built-in language plus Arabic, which turns the page right to left, and
-for the targets against `example/`, `scripts/fixtures/many-categories/` and
+card foot (the hosting word painted at rest, the foot on a row of its own under
+the icon and the text, every hosting and status word of a language on one row
+at 360, a second chip that wraps whole, a long name balanced with its lock
+after the last word, the demo's page and cards short at 390, hit areas that
+never overlap, and a tap within 21px of a linked flag's centre that follows the
+flag); the detail head on a phone (Open under the name at the tile's edge, then
+the pill and the state on one line, no divider opening a wrapped line) and a
+hosted page on a phone (no rule after the title, a 44px back link); the
+screenshots (on a phone a wide one 272px high in a strip that scrolls and fades
+on the side it continues, right to left too, one that fits filling the column;
+nothing scrolling on a wide screen; a 44px link to the whole image under the
+caption; dimmed in dark until hovered; whole when printed); every link and
+control on a home, detail, hosted and not-found page a 44 by 44px target that
+answers at the middle of each edge and overlaps no neighbour, the skip link
+focused, the leaving dialog, the open menus and the back-to-top button included
+(a link inside a sentence of the operator's text and the card name, whose link
+is the whole card, are the two exceptions); Arabic mirrored (the header's
+diamond at the column's right edge, the hosting flag at the card's right with
+the pill at its left, the detail line reading Open, pill, state from the
+right); every page at 360 with JavaScript off (nothing pushed sideways, the
+note's row opening and folding, no link without an `href`); and the layouts
+that have to stay as they are (a bare header, a card with nothing at its foot,
+the detail head on a wide screen, a service that is not open). It runs against
+the demo's own config (`demo/config`, served without the demo stack, so every
+pill reads unknown), against `scripts/fixtures/longname/`, a site name too long
+for one header row, against `scripts/fixtures/locales/`, every built-in
+language plus Arabic, which turns the page right to left, and for the targets
+against `example/`, `scripts/fixtures/many-categories/` and
 `scripts/fixtures/leave/` too. `foot-words.json` there lists every hosting and
 status word, and a Go test holds it to the strings table.
 
@@ -206,16 +206,16 @@ the absence of the feature, rather than by the feature. If deleting the code
 leaves the check green, the check is decoration.
 
 **Do not leave a server behind.** The recipe serves every config, on 8090 to
-8095 and 8100 to 8102, and kills them on the way out, and the guard at the top refuses
-to start if something already answers. Servers you start by hand while
+8095 and 8100 to 8102, and kills them on the way out, and the guard at the top
+refuses to start if something already answers. Servers you start by hand while
 measuring have no such guard, and a leaked one is not merely untidy: one bound
 to `:8080` with no `-addr` shadowed the demo through IPv6 for ten minutes while
 `127.0.0.1` reached the real thing, and a second that failed to take a port
 left the first answering, which quietly invalidated a measurement. Give every
-ad-hoc instance its own port and kill it in the same command. The CI job stays named `search` whatever else it grows to run: it
-is a required check on a protected branch, and a required check under a new
-name never runs, which leaves every pull request waiting for a job that no
-longer exists.
+ad-hoc instance its own port and kill it in the same command. The CI job stays
+named `search` whatever else it grows to run: it is a required check on a
+protected branch, and a required check under a new name never runs, which
+leaves every pull request waiting for a job that no longer exists.
 
 ## The icons
 

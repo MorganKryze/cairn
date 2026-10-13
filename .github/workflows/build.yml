@@ -105,7 +105,7 @@ jobs:
       # The two lists are written twice and have to be kept in
       # step: a fixture added to the justfile alone leaves this job connecting
       # to a port nothing answers on.
-      - name: drive search, accessibility, the status pills and the export in a browser
+      - name: drive search, accessibility, the status pills, the layout and the export in a browser
         run: |
           npm --silent install --no-save --no-package-lock playwright
           npx --yes playwright install --with-deps --only-shell chromium
