@@ -46,3 +46,21 @@ func TestLocaleTablesComplete(t *testing.T) {
 		}
 	}
 }
+
+// An operator overrides a built-in string under its key in site.strings, so a
+// renamed key would drop that override without a word. These three name the
+// welcome note's folded row and the screenshot strip.
+func TestTheFoldAndScreenshotKeysKeepTheirNames(t *testing.T) {
+	for _, c := range []struct{ key, en, fr string }{
+		{"about.summary", "About this site", "À propos de ce site"},
+		{"shot.scroll", "Screenshot, scroll sideways", "Capture d'écran, faire défiler"},
+		{"shot.full", "See the full screenshot", "Voir la capture entière"},
+	} {
+		if got := builtinStrings["en"][c.key]; got != c.en {
+			t.Errorf("en %q = %q, want %q", c.key, got, c.en)
+		}
+		if got := builtinStrings["fr"][c.key]; got != c.fr {
+			t.Errorf("fr %q = %q, want %q", c.key, got, c.fr)
+		}
+	}
+}

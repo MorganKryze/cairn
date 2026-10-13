@@ -56,10 +56,10 @@ start from a situation, not from features.
 ## Hosting flag
 
 Set `selfhosted: true` on a service you run yourself, or `selfhosted: false`
-on one hosted by someone else. The card gains a small flag, bottom-left, that
-shows an icon at rest and unfurls its label ("Self-hosted" / "External") on
-hover or keyboard focus; on touch it stays open. Omit the key and the card
-carries no flag.
+on one hosted by someone else. The card gains a small flag at the start of its
+foot, the row under the icon and the text, that shows an icon and its word
+("Self-hosted" / "External") at every width. Omit the key and the card carries
+no flag.
 
 It is a data-location cue for your guests: which tools keep their data on your
 server, and which send them to a third party.
@@ -96,8 +96,9 @@ A name that matches no page stops the load and lists the pages that do exist.
 flag, since the flag it points from is then never drawn.
 
 One thing worth knowing before you set it: the card is one big link to the
-service, and a linked flag is a second target inside it, next to the pill. On a
-touch screen the flag is unfurled, so it is a wide one. That is the trade, and
+service, and a linked flag is a second target inside it, next to the pill. The
+flag shows its word, so it is a wide one, and a thumb that lands within 8px
+above or below it follows the flag rather than the card. That is the trade, and
 it is why the flag stays plain text unless you ask.
 
 The labels are translated in every built-in language and, like all UI text,
@@ -189,9 +190,19 @@ name; each entry is a plain path or a `{src, caption}` pair:
       caption: { fr: La vue albums., en: The albums view. }
 ```
 
-They appear on the detail page, in order, between the text and the button.
-cairn serves `media/` itself at `/media/`, so previews stay self-hosted like
-everything else; a full URL or an `/assets/…` path passes through unchanged.
+They appear on the detail page, in order, after the text. Each one has a
+"See the full screenshot" link under it, and under its caption if it has one,
+which opens the image file itself in the same tab. cairn serves `media/` itself
+at `/media/`, so previews stay self-hosted like everything else; a full URL or
+an `/assets/…` path passes through unchanged.
+
+On a phone, a screenshot wider than the column keeps a readable height of
+17rem and scrolls sideways, with a fade on the side it continues; one that fits
+the column at that height simply fills it. This needs the image's width and
+height, which cairn reads from the files in `media/` only: a full URL or an
+`/assets/…` image shrinks to the column width instead. In the dark theme
+screenshots are dimmed a little, and come back to full brightness when the
+pointer is on them or the keyboard is in them.
 
 `screen.png` and `/media/screen.png` are two spellings of the same file, and
 cairn opens the file behind either one before it serves the page. A name that

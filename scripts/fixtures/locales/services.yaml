@@ -1,0 +1,47 @@
+# One card per shape the detail and home layouts have to hold in every
+# language. The screenshots on pad are one wider than a phone column at a
+# readable height, one about twice as wide as tall, one portrait, and the
+# demo's logo, whose size cairn does not read.
+- id: pad
+  url: https://pad.example.org
+  name: Shared notepad
+  desc: Write together.
+  selfhosted: true
+  details: |
+    A page with every kind of screenshot.
+  images:
+    - src: wide.png
+      caption: { en: Wider than a phone column at the readable height. }
+    - src: half.png
+      caption: { en: About twice as wide as it is tall. }
+    - tall.png
+    - /assets/logo.png
+- id: cloud
+  url: https://cloud.example.org
+  name: Hosted elsewhere
+  desc: Someone else runs it.
+  selfhosted: false
+# A name long enough to wrap on a card, with the sign-in lock after it.
+- id: long
+  url: https://long.example.org
+  name: A rather long service name that wraps over lines
+  desc: Sign in first.
+  selfhosted: true
+  sign_in: true
+# Open, a pill and a state word, all on one detail page.
+- id: beta
+  url: https://beta.example.org
+  name: Beta tool
+  desc: Rough edges.
+  state: beta
+  selfhosted: true
+  details: |
+    Still being tried out, and open all the same.
+# Not open yet, but it has a page, which therefore carries no Open button.
+- id: soon
+  name: Not open yet
+  desc: Coming later.
+  state: soon
+  selfhosted: true
+  details: |
+    This one is not open yet, and its page says so.

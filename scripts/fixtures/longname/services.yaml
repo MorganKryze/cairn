@@ -1,0 +1,6 @@
+# One card is enough: what is under test here is the header above it.
+- id: pad
+  url: https://pad.example.org
+  name: { fr: Bloc-notes partagé, en: Shared notepad }
+  desc: { fr: Écrire à plusieurs., en: Write together. }
+  selfhosted: true

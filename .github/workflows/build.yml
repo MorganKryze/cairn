@@ -99,11 +99,13 @@ jobs:
       # categories and a header burger, the one with a status page, and
       # the one whose artwork differs between the two themes, none of which
       # example/ has, and the one that guards its external links with a dialog.
+      # Then the demo's own config, the long site name and every built-in
+      # language, which layout.mjs measures at four widths.
       # Then a static export, served by the script itself.
       # The two lists are written twice and have to be kept in
       # step: a fixture added to the justfile alone leaves this job connecting
       # to a port nothing answers on.
-      - name: drive search, accessibility, the status pills and the export in a browser
+      - name: drive search, accessibility, the status pills, the layout and the export in a browser
         run: |
           npm --silent install --no-save --no-package-lock playwright
           npx --yes playwright install --with-deps --only-shell chromium
@@ -114,12 +116,16 @@ jobs:
           /tmp/cairn -config scripts/fixtures/themed -addr 127.0.0.1:8093 &
           /tmp/cairn -config scripts/fixtures/leave -addr 127.0.0.1:8094 &
           /tmp/cairn -config scripts/fixtures/states -addr 127.0.0.1:8095 &
-          for port in 8090 8091 8092 8093 8094 8095; do
+          /tmp/cairn -config demo/config -assets demo/assets -addr 127.0.0.1:8100 &
+          /tmp/cairn -config scripts/fixtures/longname -assets demo/assets -addr 127.0.0.1:8101 &
+          /tmp/cairn -config scripts/fixtures/locales -assets demo/assets -addr 127.0.0.1:8102 &
+          for port in 8090 8091 8092 8093 8094 8095 8100 8101 8102; do
             for _ in $(seq 1 20); do curl -fsS http://127.0.0.1:$port/healthz >/dev/null && break; sleep 1; done
           done
           node scripts/search.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/
           node scripts/a11y.mjs http://127.0.0.1:8090/en/ http://127.0.0.1:8091/en/ http://127.0.0.1:8092/en/ http://127.0.0.1:8093/en/ http://127.0.0.1:8094/en/ http://127.0.0.1:8095/en/
           node scripts/status.mjs http://127.0.0.1:8092/en/
+          node scripts/layout.mjs http://127.0.0.1:8100/ http://127.0.0.1:8101/ http://127.0.0.1:8102/ http://127.0.0.1:8090/ http://127.0.0.1:8095/
           static=$(mktemp -d)
           /tmp/cairn -config scripts/fixtures/static -base-path /tools -export "$static"
           node scripts/export.mjs "$static"

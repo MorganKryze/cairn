@@ -1,6 +1,10 @@
 package render
 
 import (
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/MorganKryze/cairn/src/internal/config"
@@ -35,4 +39,20 @@ func sample(t *testing.T) *config.Config {
 		t.Fatal(err)
 	}
 	return cfg
+}
+
+// localesFixture is the path of a file under scripts/fixtures/locales, the
+// fixture the browser suite serves. The image build runs this suite with only
+// src/ and schema/ copied in, so there the fixture is genuinely absent and the
+// test skips; every checkout, CI's included, still runs it. Only a missing
+// file skips: anything else is a real failure.
+func localesFixture(t *testing.T, name string) string {
+	t.Helper()
+	p := filepath.Join("..", "..", "..", "scripts", "fixtures", "locales", name)
+	if _, err := os.Stat(p); errors.Is(err, fs.ErrNotExist) {
+		t.Skip("no scripts/fixtures in this build context, which is what the image build looks like")
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	return p
 }

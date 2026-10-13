@@ -1,0 +1,40 @@
+# Every built-in language plus a right-to-left one, for scripts/layout.mjs:
+# German, Spanish, Portuguese and Swedish carry the longest interface words,
+# and Arabic, which has no built-in strings, turns the layout around. Nine
+# locales also fold the language switcher into its menu.
+#
+# The rest is the shapes a phone layout has to survive: an accent that is not
+# the default; header links beside the search box; both hosting flags as
+# links; a monitor that never answers, so every monitored card carries a pill
+# that reads unknown; and a hosted page.
+#
+# The welcome note and the captions are English only, so every other page
+# marks them as a fallback. foot-words.json beside this file lists every
+# hosting and status word of each built-in language; a Go test holds it to
+# the strings table.
+title: Locales
+locales: [en, de, es, pt, sv, fr, it, nl, ar]
+theme:
+  accent: "#8a4f7d"
+about:
+  en: |
+    A welcome note, long enough to fold on a phone and to read in full on a
+    wide screen, with a [link](https://example.org) inside a sentence.
+links:
+  - label: Help
+    url: https://help.example.org
+  - label: Contact
+    url: https://contact.example.org
+hosting_flag:
+  self: hosting
+  external: https://example.org/why
+status:
+  gatus: http://127.0.0.1:9/api
+footer:
+  - label: Status
+    url: https://status.example.org
+pages:
+  - id: hosting
+    title: How we host
+    body: |
+      These tools run on our own machines.

@@ -5,9 +5,10 @@
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
 // config, scripts/fixtures/many-categories, scripts/fixtures/status,
-// scripts/fixtures/themed and scripts/fixtures/leave on scratch ports first.
+// scripts/fixtures/themed, scripts/fixtures/leave, scripts/fixtures/states and
+// scripts/fixtures/locales and the demo's config on scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url] [states-url] [locales-url] [demo-url]
 import { chromium } from "playwright";
 
 const SITE =
@@ -28,6 +29,14 @@ const STATES =
   process.argv[7] ??
   process.env.CAIRN_STATES_URL ??
   "http://127.0.0.1:8095/en/";
+// Every built-in language plus a right-to-left one; its pad page carries
+// screenshots whose size cairn reads. test-browser serves it for layout.mjs.
+const LOCALES =
+  process.argv[8] ?? process.env.CAIRN_LOCALES_URL ?? "http://127.0.0.1:8102/";
+// The demo's own config, which test-browser serves for layout.mjs: the ring and
+// contrast sweeps walk its pages beside the German ones.
+const DEMO =
+  process.argv[9] ?? process.env.CAIRN_DEMO_URL ?? "http://127.0.0.1:8100/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -97,7 +106,7 @@ await check("and it flips with the theme, in both directions", async () => {
     );
 });
 
-// ---- A2: the welcome note's dismiss button folds like the host flag ----
+// ---- A2: the welcome note's dismiss button folds to a glyph ----
 
 // The fold: a glyph at rest, the word unfurled beside it on hover. It runs on
 // `page` rather than on `home` below, which asks for reduced motion and so
@@ -485,13 +494,11 @@ await check(
   },
 );
 
-// The action sits beside the name where there is room, and goes up onto the
-// back link's row where there is not, rather than becoming the loudest thing
-// on a phone. It matches its neighbour there rather than the 44px the leaving
-// dialog's actions carry: the back chip has been 72x33 since the target-size
-// pass, and 24x24 is what the rule asks of either of them.
+// The action sits beside the name where there is room, and on the line under
+// it on a phone, where it leads the pill and the state. A thumb's 44px either
+// way, the height the leaving dialog's actions carry.
 await check(
-  "the action sits beside the name, and joins the back row on a phone",
+  "the action sits beside the name, and under it on a phone",
   async () => {
     for (const [w, beside] of [
       [1000, true],
@@ -505,19 +512,14 @@ await check(
       const m = await page.evaluate(() => {
         const btn = document.querySelector(".detail-top .btn");
         const h1 = document.querySelector(".detail-top h1");
-        const back = document.querySelector(".detail-top .back");
         if (!btn) return null;
         const b = btn.getBoundingClientRect(),
-          n = h1.getBoundingClientRect(),
-          a = back.getBoundingClientRect();
+          n = h1.getBoundingClientRect();
         return {
           w: b.width,
           h: b.height,
-          onBackRow:
-            Math.abs(b.top + b.height / 2 - (a.top + a.height / 2)) < 3,
           beside: Math.abs(b.top + b.height / 2 - (n.top + n.height / 2)) < 3,
-          clearsBack: b.left >= a.right,
-          backH: a.height,
+          under: b.top >= n.bottom - 1,
           lines: Math.round(
             n.height / parseFloat(getComputedStyle(h1).lineHeight),
           ),
@@ -525,41 +527,116 @@ await check(
       });
       await page.close();
       if (!m) throw new Error(`no action in the head at ${w}px`);
-      if (m.w < 24 || m.h < 24) {
-        throw new Error(
-          `the action is ${m.w.toFixed(0)}x${m.h.toFixed(0)} at ${w}px, under 24x24`,
-        );
-      }
       if (m.lines > 1)
         throw new Error(`the name wrapped onto ${m.lines} lines at ${w}px`);
-      if (beside) {
-        if (!m.beside)
-          throw new Error(`at ${w}px the action left the name's row`);
-        if (m.h < 44)
-          throw new Error(
-            `beside the name it is ${m.h.toFixed(0)}px tall, want 44`,
-          );
-      } else {
-        if (!m.onBackRow)
-          throw new Error(`at ${w}px the action is not on the back link's row`);
-        if (!m.clearsBack)
-          throw new Error(`at ${w}px the action overlaps the back link`);
-        // The same height, not merely both large: 33px against 36px read as a
-        // mistake rather than as a hierarchy.
-        if (Math.abs(m.h - m.backH) > 1) {
-          throw new Error(
-            `the action is ${m.h.toFixed(0)}px and the back link ${m.backH.toFixed(0)}px`,
-          );
-        }
-        if (m.h < 44) {
-          throw new Error(
-            `beside the back link it is ${m.h.toFixed(0)}px, want a thumb's 44`,
-          );
-        }
-      }
+      if (beside && !m.beside)
+        throw new Error(`at ${w}px the action left the name's row`);
+      if (!beside && !m.under)
+        throw new Error(`at ${w}px the action is not under the name`);
+      if (m.h < 44)
+        throw new Error(
+          `the action is ${m.h.toFixed(0)}px tall at ${w}px, want a thumb's 44`,
+        );
     }
   },
 );
+
+// Tab walks the head in the order a phone shows it: back, Open, the pill, and
+// then whatever the page's content offers first. The grid moves Open around
+// between widths; the markup order is what keeps the keyboard with the eye.
+const WIDTHS = [360, 390, 1280, 1440];
+for (const w of WIDTHS) {
+  await check(
+    `Tab goes back, Open, the pill, then the content on a detail page at ${w}px`,
+    async () => {
+      const page = await desk.newPage();
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.goto(new URL("beta/", STATES).href, {
+        waitUntil: "networkidle",
+      });
+      const want = await page.evaluate(() => {
+        const head = document.querySelector(".detail-top");
+        const after = [
+          ...document.querySelectorAll(
+            "a[href], button, input, select, textarea, summary, [tabindex]",
+          ),
+        ].find(
+          (e) =>
+            head.compareDocumentPosition(e) &
+              Node.DOCUMENT_POSITION_FOLLOWING &&
+            !head.contains(e) &&
+            e.tabIndex >= 0 &&
+            e.getClientRects().length,
+        );
+        return ["back", "btn", "status-pill", after?.outerHTML.slice(0, 60)];
+      });
+      await page.focus(".detail-top .back");
+      const got = ["back"];
+      for (let i = 0; i < 3; i++) {
+        await page.keyboard.press("Tab");
+        got.push(
+          await page.evaluate(() => {
+            const a = document.activeElement;
+            for (const c of ["btn", "status-pill"])
+              if (a.closest(".detail-top") && a.classList.contains(c)) return c;
+            return a.outerHTML.slice(0, 60);
+          }),
+        );
+      }
+      await page.close();
+      eq(got, want, "Tab from the back link");
+    },
+  );
+}
+
+// The back link and a detail page's pill answer on 44px at every width: drawn
+// small on a wide screen, through a ::before band around them; drawn 44px tall
+// on a phone and on touch. Measured where the pointer lands, so a band that
+// the layout clips or covers counts for nothing.
+const hitBand = (sel) => {
+  const el = document.querySelector(sel);
+  el.scrollIntoView({ block: "center" });
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2,
+    cy = r.top + r.height / 2;
+  const on = (x, y) => document.elementFromPoint(x, y)?.closest(sel) === el;
+  const span = (f) => {
+    let lo = 0,
+      hi = 0;
+    while (lo < 80 && f(-(lo + 0.5))) lo += 0.5;
+    while (hi < 80 && f(hi + 0.5)) hi += 0.5;
+    return lo + hi + 0.5;
+  };
+  return {
+    h: span((d) => on(cx, cy + d)),
+    w: span((d) => on(cx + d, cy)),
+  };
+};
+for (const w of WIDTHS) {
+  await check(
+    `the back link and the detail pill are 44px targets at ${w}px`,
+    async () => {
+      const bad = [];
+      for (const [path, base, sel] of [
+        ["beta/", STATES, ".detail-top .back"],
+        ["beta/", STATES, ".detail-top a.status-pill"],
+        ["hosting/", SITE, ".back"],
+      ]) {
+        const page = await desk.newPage();
+        await page.setViewportSize({ width: w, height: 900 });
+        await page.goto(new URL(path, base).href, { waitUntil: "networkidle" });
+        const m = await page.evaluate(
+          ([s, f]) => eval(`(${f})`)(s),
+          [sel, hitBand.toString()],
+        );
+        await page.close();
+        if (m.w < 44 || m.h < 44)
+          bad.push(`${sel} on ${path} answers on ${m.w}x${m.h}px`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
 
 await check("the back link is a real target on a detail page", async () => {
   const m = await detail.$eval(".back", (el) => {
@@ -585,22 +662,87 @@ await check("the back link is a real target on a detail page", async () => {
   }
 });
 
-// A hosting flag that leads somewhere is a control, and folded, before anyone
-// hovers, is what a thumb arrives on.
-await check(
-  "a linked hosting flag is a real target while still folded",
-  async () => {
-    const m = await home.$eval(".card-foot a.flag", (el) => {
-      const r = el.getBoundingClientRect();
-      return { w: r.width, h: r.height };
-    });
-    if (m.w < 24 || m.h < 24) {
-      throw new Error(
-        `${Math.round(m.w)} by ${Math.round(m.h)} at rest, WCAG 2.2 asks 24 by 24 of a target`,
+// A hosting flag that leads somewhere is a control: its word is painted before
+// anyone hovers, with motion allowed, and a thumb gets 44px to land on, the
+// chip or the band its ::before draws around it. Each flag on the page, light
+// and dark. The flag's colour eases over .2s when the theme turns, so it is
+// read once that has run.
+const atRest = await desk.newPage();
+await atRest.goto(SITE);
+for (const theme of ["light", "dark"]) {
+  await check(
+    `a linked hosting flag shows its word at rest and is a 44px target in ${theme}`,
+    async () => {
+      await atRest.evaluate(
+        (t) => (document.documentElement.dataset.theme = t),
+        theme,
       );
-    }
-  },
-);
+      await atRest.waitForTimeout(400);
+      const flags = await atRest.$$eval(".card-foot a.flag", (els) => {
+        const toRGB = (c) => {
+          const cv = document.createElement("canvas");
+          cv.width = cv.height = 1;
+          const x = cv.getContext("2d");
+          x.fillStyle = c;
+          x.fillRect(0, 0, 1, 1);
+          const d = x.getImageData(0, 0, 1, 1).data;
+          return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+        };
+        return els.map((el) => {
+          const r = el.getBoundingClientRect(),
+            s = getComputedStyle(el),
+            b = getComputedStyle(el, "::before"),
+            label = el.querySelector(".flag-label");
+          const lr = label.getBoundingClientRect();
+          let w = r.width,
+            h = r.height;
+          if (b.content !== "none" && b.position === "absolute") {
+            const bx = parseFloat(s.borderLeftWidth),
+              by = parseFloat(s.borderTopWidth);
+            w = Math.max(
+              w,
+              r.width - 2 * bx - parseFloat(b.left) - parseFloat(b.right),
+            );
+            h = Math.max(
+              h,
+              r.height - 2 * by - parseFloat(b.top) - parseFloat(b.bottom),
+            );
+          }
+          return {
+            word: label.textContent,
+            w,
+            h,
+            opacity: Number(getComputedStyle(label).opacity),
+            shown:
+              lr.width > 0 &&
+              lr.left >= r.left - 0.5 &&
+              lr.right <= r.right + 0.5,
+            ink: toRGB(getComputedStyle(label).color),
+            chip: toRGB(s.backgroundColor),
+          };
+        });
+      });
+      if (flags.length === 0)
+        throw new Error("no linked hosting flag on this page");
+      for (const f of flags) {
+        if (f.opacity !== 1 || !f.shown)
+          throw new Error(
+            `"${f.word}" is not painted at rest: opacity ${f.opacity}, ${f.shown ? "inside" : "clipped by"} its chip`,
+          );
+        if (f.w < 44 || f.h < 44)
+          throw new Error(
+            `"${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
+          );
+        const r = ratio(f.ink, f.chip);
+        if (r < 4.5)
+          throw new Error(
+            `"${f.word}" is ${r.toFixed(2)}:1 against its chip, and text asks 4.5:1`,
+          );
+      }
+    },
+  );
+}
+await atRest.close();
 
 // A card is one big link, so the pointer is a hand everywhere on it and says
 // nothing extra when it reaches a control. The fill is what tells a visitor
@@ -759,11 +901,11 @@ const phone = await browser.newContext({ viewport: PHONE });
 const m = await phone.newPage();
 await m.goto(MANY);
 
-// A phone raises the dismiss button to 44px for the thumb, and that rule is
-// older than the fold. The fold caps the width from the desktop block, so
-// raising only the height leaves an oval with the cross pressed against the
-// clip: 30 by 44 with 3px of air on one side, on a shipped release. Held at
-// 320 as well, where a rem is no smaller but the note is tightest.
+// The dismiss button is 44px for the thumb, and that size is older than the
+// fold. The fold caps the width, so raising only the height leaves an oval
+// with the cross pressed against the clip: 30 by 44 with 3px of air on one
+// side, on a shipped release. Held at 320 as well, where a rem is no smaller
+// but the note is tightest.
 for (const width of [390, 320]) {
   await check(`the dismiss button is a disc at ${width}px`, async () => {
     const p = await browser.newPage({ viewport: { width, height: 780 } });
@@ -2346,6 +2488,723 @@ await check(
     },
   );
 }
+
+// ---- the welcome note's fold ----
+
+// On a phone the note is one row, a <summary>. It has to be announced as a
+// disclosure that says whether it is open, which only the accessibility tree
+// can tell: a click handler on a div would look the same on screen.
+const foldPage = async (width, scheme = "light") => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: scheme,
+    reducedMotion: "reduce",
+  });
+  // the icons come from a CDN, and none of these checks looks at them
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  const p = await ctx.newPage();
+  await p.goto(SITE);
+  return { p, done: () => ctx.close() };
+};
+
+await check(
+  "the note's row is a disclosure that states its state",
+  async () => {
+    const { p, done } = await foldPage(390);
+    const cdp = await p.context().newCDPSession(p);
+    const row = async () => {
+      const { nodes } = await cdp.send("Accessibility.getFullAXTree");
+      const n = nodes.find((x) => x.role?.value === "DisclosureTriangle");
+      if (!n) return null;
+      const expanded = n.properties?.find((q) => q.name === "expanded");
+      return { name: n.name?.value, expanded: expanded?.value?.value };
+    };
+    const before = await row();
+    await p.click(".about-sum");
+    const after = await row();
+    await done();
+    if (!before) throw new Error("no disclosure in the accessibility tree");
+    if (!before.name) throw new Error("the disclosure has no name");
+    if (before.expanded !== false)
+      throw new Error(`folded, it reports expanded ${before.expanded}`);
+    if (after?.expanded !== true)
+      throw new Error(`opened, it reports expanded ${after?.expanded}`);
+  },
+);
+
+// The designed ring, not Chromium's own: with the rule gone the row still
+// gets an outline, style auto at 1px in the browser's blue.
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `the note's row wears cairn's ring on keyboard focus in ${scheme}`,
+    async () => {
+      const { p, done } = await foldPage(390, scheme);
+      let on = false;
+      for (let i = 0; i < 40 && !on; i++) {
+        await p.keyboard.press("Tab");
+        on = await p.evaluate(() =>
+          document.activeElement?.classList.contains("about-sum"),
+        );
+      }
+      const m = on
+        ? await p.evaluate(() => {
+            const s = getComputedStyle(document.activeElement);
+            const probe = document.createElement("i");
+            probe.style.color = "var(--accent-ink)";
+            document.body.append(probe);
+            const ink = getComputedStyle(probe).color;
+            probe.remove();
+            return {
+              ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
+              colour: s.outlineColor,
+              ink,
+            };
+          })
+        : null;
+      await done();
+      if (!m) throw new Error("Tab never reaches the row");
+      if (m.ring !== "solid 2px")
+        throw new Error(`the row wears ${m.ring}, want solid 2px`);
+      if (m.colour !== m.ink)
+        throw new Error(`the ring is ${m.colour}, want --accent-ink ${m.ink}`);
+    },
+  );
+}
+
+// A thumb's 44px for the row and the cross alike. The row only shows on a
+// phone; a wide screen has the note whole and the cross alone.
+for (const width of [360, 390, 1280, 1440]) {
+  await check(
+    `the note's row and dismiss button are 44px at ${width}px`,
+    async () => {
+      const { p, done } = await foldPage(width);
+      await p.locator("#about-x").waitFor({ state: "visible" });
+      const small = await p.$$eval(".about-sum, #about-x", (els) =>
+        els
+          .filter((e) => e.checkVisibility())
+          .map((e) => [e.className || e.id, e.getBoundingClientRect()])
+          .filter(([, r]) => r.width < 44 || r.height < 44)
+          .map(([n, r]) => `${n} ${r.width.toFixed(1)}x${r.height.toFixed(1)}`),
+      );
+      const row = await p.$eval(".about-sum", (e) => e.checkVisibility());
+      await done();
+      if (width <= 704 && !row)
+        throw new Error("the row is not shown on a phone");
+      if (small.length) throw new Error(small.join(", "));
+    },
+  );
+}
+
+// ---- screenshots ----
+
+// On a phone a wide screenshot is a strip that scrolls sideways. Chromium and
+// Firefox make a scrolling region a keyboard stop of their own; WebKit does
+// not, and Tab went from the status pill straight to the link under the strip.
+// So toc.js gives the strip a tabindex while it scrolls and takes it back when
+// it does not: it is a stop exactly while it scrolls, in every engine, and
+// arrow keys move it. Its name, in the page's language, says what it is and
+// what to do with it.
+const shotPage = async (width, scheme = "light", path = "fr/pad/") => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: scheme,
+    reducedMotion: "reduce",
+  });
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  const p = await ctx.newPage();
+  await p.goto(LOCALES + path);
+  return { p, done: () => ctx.close() };
+};
+// Tabs until the focus lands on sel or the page runs out of stops.
+const tabTo = async (p, sel) => {
+  for (let i = 0; i < 80; i++) {
+    await p.keyboard.press("Tab");
+    const at = await p.evaluate(
+      (s) => [
+        document.activeElement?.matches(s),
+        document.activeElement?.tagName,
+      ],
+      sel,
+    );
+    if (at[0]) return true;
+    if (i > 0 && at[1] === "BODY") return false;
+  }
+  return false;
+};
+const ringOf = (p) =>
+  p.evaluate(() => {
+    const s = getComputedStyle(document.activeElement);
+    const probe = document.createElement("i");
+    probe.style.color = "var(--accent-ink)";
+    document.body.append(probe);
+    const ink = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
+      colour: s.outlineColor,
+      ink,
+      mask: s.maskImage,
+    };
+  });
+
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `a screenshot strip is a named stop arrow keys scroll at 390px in ${scheme}`,
+    async () => {
+      const { p, done } = await shotPage(390, scheme);
+      const named = await p
+        .getByRole("region", { name: "Capture d'écran, faire défiler" })
+        .count();
+      const on = await tabTo(p, ".shot-scroll");
+      let before = 0,
+        after = 0,
+        ring = null;
+      if (on) {
+        ring = await ringOf(p);
+        before = await p.evaluate(() => document.activeElement.scrollLeft);
+        await p.keyboard.press("ArrowRight");
+        await p.waitForTimeout(100);
+        after = await p.evaluate(() => document.activeElement.scrollLeft);
+      }
+      await done();
+      if (!named)
+        throw new Error("no region named with the page's shot.scroll word");
+      if (!on) throw new Error("Tab never reaches the strip");
+      if (after <= before)
+        throw new Error(`ArrowRight left scrollLeft at ${after}`);
+      if (ring.ring !== "solid 2px" || ring.colour !== ring.ink)
+        throw new Error(`the strip wears ${ring.ring} ${ring.colour}`);
+      if (ring.mask !== "none")
+        throw new Error(`the fade still masks the ring: ${ring.mask}`);
+    },
+  );
+}
+
+// A screen reader lists landmarks by name, and every strip is one: a page of
+// three screenshots read out three regions called "Capture d'écran, faire
+// défiler" that nobody could tell apart. Each name carries the image's
+// place, and the caption, where there is one, describes the strip.
+await check("every screenshot strip has a name of its own", async () => {
+  const { p, done } = await shotPage(390);
+  const strips = await p.$$eval(".shot-scroll", (all) =>
+    all.map((s) => ({
+      name: s.getAttribute("aria-label"),
+      described: s.getAttribute("aria-describedby"),
+      caption: s.closest("figure").querySelector("figcaption")?.id || null,
+    })),
+  );
+  await done();
+  if (strips.length < 3)
+    throw new Error(`${strips.length} strips on the page, want 3`);
+  const names = strips.map((s) => s.name);
+  if (new Set(names).size !== names.length)
+    throw new Error(`two strips share a name: ${names.join(" | ")}`);
+  for (const s of strips) {
+    if (!s.name.startsWith("Capture d'écran, faire défiler"))
+      throw new Error(`a strip is named ${s.name}`);
+    if (s.described !== s.caption)
+      throw new Error(
+        `${s.name} is described by ${s.described}, its caption is ${s.caption}`,
+      );
+  }
+});
+
+// The tabindex is what makes the strip a stop in WebKit, and this suite drives
+// Chromium, which stops on it either way: the attribute is what it can hold.
+await check(
+  "a strip carries a tabindex only while it scrolls, resize included",
+  async () => {
+    const { p, done } = await shotPage(390);
+    const read = () =>
+      p.$$eval(".shot-scroll", (all) =>
+        all.map((s) => [
+          s.scrollWidth > s.clientWidth,
+          s.getAttribute("tabindex"),
+        ]),
+      );
+    const phone = await read();
+    await p.setViewportSize({ width: 1280, height: 844 });
+    await p.waitForTimeout(100);
+    const wide = await read();
+    await done();
+    const wrong = [...phone, ...wide].filter(
+      ([scrolls, t]) => t !== (scrolls ? "0" : null),
+    );
+    if (!phone.some(([scrolls]) => scrolls))
+      throw new Error("no strip scrolls at 390px");
+    if (wrong.length)
+      throw new Error(
+        `scrolls/tabindex at 390 ${JSON.stringify(phone)}, at 1280 ${JSON.stringify(wide)}`,
+      );
+  },
+);
+
+await check(
+  "a screenshot that does not scroll is no tab stop at 1280px",
+  async () => {
+    const { p, done } = await shotPage(1280);
+    const on = await tabTo(p, ".shot-scroll");
+    await done();
+    if (on) throw new Error("Tab stops on a strip that does not scroll");
+  },
+);
+
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `the link to the whole screenshot wears cairn's ring in ${scheme}`,
+    async () => {
+      const { p, done } = await shotPage(390, scheme);
+      const on = await tabTo(p, ".shot-full");
+      const m = on ? await ringOf(p) : null;
+      await done();
+      if (!m) throw new Error("Tab never reaches the link");
+      if (m.ring !== "solid 2px" || m.colour !== m.ink)
+        throw new Error(
+          `the link wears ${m.ring} ${m.colour}, want solid 2px ${m.ink}`,
+        );
+    },
+  );
+}
+
+// ---- cairn's ring, contrast and motion on every page ----
+
+// Every page shape of the demo and of German, the longest interface words: a
+// home, a detail page, a hosted page and the page for an address that leads
+// nowhere. Dark twice, from the system and from the toggle over a light
+// system, since the stylesheet reaches dark by two selectors.
+const SWEEP = [
+  ...["", "whoami/", "hosting/", "nowhere/"].map((p) => `${DEMO}fr/${p}`),
+  ...["", "pad/", "hosting/", "nowhere/"].map((p) => `${LOCALES}de/${p}`),
+];
+const SWEEP_THEMES = [
+  { name: "light", scheme: "light" },
+  { name: "dark", scheme: "dark" },
+  { name: "dark by the toggle", scheme: "light", stored: "dark" },
+];
+const sweepPage = async (url, width, theme = SWEEP_THEMES[0]) => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: theme.scheme,
+    reducedMotion: "reduce",
+  });
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  if (theme.stored) {
+    await ctx.addInitScript((t) => {
+      try {
+        localStorage.setItem("theme", t);
+      } catch (e) {}
+    }, theme.stored);
+  }
+  const p = await ctx.newPage();
+  await p.goto(url);
+  await p.evaluate(() => document.fonts.ready);
+  return { p, done: () => ctx.close() };
+};
+
+// Colours as the page paints them, for the ring and contrast sweeps. They go
+// through a canvas, which resolves color-mix() and oklab() to sRGB where a
+// regex on the computed string would read nonsense. Runs in the page, passed
+// in as source since a function cannot cross into it as an argument.
+const paintKit = () => {
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = 1;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  const rgba = (css) => {
+    cx.clearRect(0, 0, 1, 1);
+    cx.fillStyle = "#000";
+    cx.fillStyle = css;
+    cx.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = cx.getImageData(0, 0, 1, 1).data;
+    return [r, g, b, a / 255];
+  };
+  const over = (top, under) => {
+    const a = top[3];
+    return [0, 1, 2].map((i) => top[i] * a + under[i] * (1 - a)).concat(1);
+  };
+  const lum = (c) =>
+    c
+      .slice(0, 3)
+      .map((v) =>
+        v / 255 <= 0.03928
+          ? v / 255 / 12.92
+          : ((v / 255 + 0.055) / 1.055) ** 2.4,
+      )
+      .reduce((acc, x, i) => acc + [0.2126, 0.7152, 0.0722][i] * x, 0);
+  const wcag = (a, b) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  // What an element is painted on: the first opaque background at or above
+  // it, with every translucent one below that laid on top.
+  const behind = (el) => {
+    const layers = [];
+    let base = rgba(getComputedStyle(document.documentElement).backgroundColor);
+    for (let e = el; e; e = e.parentElement) {
+      const c = rgba(getComputedStyle(e).backgroundColor);
+      if (c[3] >= 1) {
+        base = c;
+        break;
+      }
+      if (c[3] > 0) layers.push(c);
+    }
+    if (base[3] < 1) base = over(base, [255, 255, 255, 1]);
+    return layers.reduceRight((acc, l) => over(l, acc), base);
+  };
+  // A colour as the stylesheet resolves it, var() and all, in the form
+  // getComputedStyle reports, to compare with what an element draws.
+  const colour = (v) => {
+    const probe = document.createElement("i");
+    probe.style.color = v;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  };
+  return { rgba, over, wcag, behind, colour };
+};
+
+// What the focused element draws, against what cairn's ring is: 2px solid in
+// --accent-ink, the accent already adjusted for contrast. Two exceptions are
+// the design's. The Open button is filled with the accent, so its ring is
+// --fg. The search field's box is what takes the focus, its border turning to
+// --accent-ink, and the input itself draws nothing.
+// A card is one link, its name, stretched over the card, so the card wears
+// the ring. Whatever it is drawn in, a ring is the focus indicator and WCAG
+// 1.4.11 asks 3:1 of it against what it sits on: past its offset that is the
+// parent's ground, never the element's own fill, and the box's border sits
+// between its fill and the page. Runs in the page, handed paintKit.
+const ringNow = (kit) => {
+  const el = document.activeElement;
+  if (!el || el === document.body) return null;
+  const { rgba, over, wcag, behind, colour } = kit();
+  const ratio = (line, ground) => wcag(over(rgba(line), ground), ground);
+  const own = [...el.classList].map((c) => `.${c}`).join("");
+  const name = `${el.tagName.toLowerCase()}${own || ` in .${el.parentElement.closest("[class]")?.classList[0]}`} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 24)}"`;
+  const faults = [];
+  if (el.matches(".search-box input")) {
+    const frame = el.closest(".search-box");
+    const s = getComputedStyle(el),
+      box = getComputedStyle(frame);
+    const drawn = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0;
+    const want = colour("var(--accent-ink)");
+    if (drawn || box.borderTopColor !== want)
+      faults.push(
+        `outline ${s.outlineStyle} ${parseFloat(s.outlineWidth)}px, box border ${box.borderTopColor}, want no outline and the box in ${want}`,
+      );
+    for (const [where, ground] of [
+      ["the page", behind(frame.parentElement)],
+      ["its fill", behind(frame)],
+    ]) {
+      const r = ratio(box.borderTopColor, ground);
+      if (r < 3)
+        faults.push(`box border ${r.toFixed(2)}:1 against ${where}, want 3:1`);
+    }
+    return { el, name, fault: faults.join("; ") || null };
+  }
+  const target = el.matches(".card-name") ? el.closest(".card") : el;
+  const want = colour(el.matches(".btn") ? "var(--fg)" : "var(--accent-ink)");
+  const s = getComputedStyle(target);
+  const got = `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px ${s.outlineColor}`;
+  if (got !== `solid 2px ${want}`)
+    faults.push(`${got}, want solid 2px ${want}`);
+  const r = ratio(s.outlineColor, behind(target.parentElement));
+  if (r < 3)
+    faults.push(`ring ${r.toFixed(2)}:1 against what it sits on, want 3:1`);
+  return { el, name, fault: faults.join("; ") || null };
+};
+
+// A build stamped with its version links the version to the release, where
+// the suite's unstamped one writes a span; the Go tests pin that link, so the
+// span is swapped for it here, as in layout.mjs.
+const stampVersion = (p) =>
+  p.evaluate(() => {
+    const span = document.querySelector("span.foot-version");
+    if (!span) return;
+    const a = document.createElement("a");
+    a.className = "foot-version";
+    a.href = "https://github.com/MorganKryze/cairn/releases/tag/v1.0.0";
+    a.textContent = "1.0.0";
+    span.replaceWith(a);
+  });
+
+for (const width of [390, 1280]) {
+  for (const theme of SWEEP_THEMES) {
+    await check(
+      `every link and control wears cairn's ring at 3:1 on keyboard focus at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        const seen = new Set();
+        for (const url of SWEEP) {
+          const { p, done } = await sweepPage(url, width, theme);
+          await stampVersion(p);
+          // Tab from the top until the focus leaves the page or comes round.
+          let first = null;
+          for (let i = 0; i < 200; i++) {
+            await p.keyboard.press("Tab");
+            const r = await p.evaluate(`(() => {
+            const r = (${ringNow})(${paintKit});
+            if (!r) return null;
+            const again = r.el.dataset.ringSeen === "1";
+            r.el.dataset.ringSeen = "1";
+            return { name: r.name, fault: r.fault, again };
+          })()`);
+            if (!r || r.again) break;
+            first ??= r.name;
+            seen.add(r.name.replace(/ ".*$/, ""));
+            if (r.fault) bad.push(`${url} ${r.name}: ${r.fault}`);
+          }
+          await done();
+          if (!first) bad.push(`${url}: Tab reaches nothing`);
+        }
+        // A sweep that never reached these proves nothing about them.
+        const want = [
+          "a.brand",
+          "a.skip",
+          "a.foot-version",
+          width > 704 ? "a.menu-link" : "summary.nav-burger",
+        ];
+        for (const w of want)
+          if (![...seen].some((n) => n.startsWith(w)))
+            bad.push(`Tab never reached ${w}`);
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// While the search field has the focus, Tab and the arrows move the match
+// Enter opens, and that card's border is the only sign of where the keyboard
+// is: a focus indicator like the ring, so in --accent-ink and at 3:1 against
+// the card's own fill and the page around it. Runs in the page, handed
+// paintKit.
+const selFaults = (kit) => {
+  const card = document.querySelector(".card.sel");
+  if (!card) return ["typing in the field selected no card"];
+  const { rgba, over, wcag, behind, colour } = kit();
+  const line = getComputedStyle(card).borderTopColor;
+  const want = colour("var(--accent-ink)");
+  const faults = line === want ? [] : [`border ${line}, want ${want}`];
+  for (const [where, ground] of [
+    ["its fill", behind(card)],
+    ["the page", behind(card.parentElement)],
+  ]) {
+    const r = wcag(over(rgba(line), ground), ground);
+    if (r < 3)
+      faults.push(`border ${r.toFixed(2)}:1 against ${where}, want 3:1`);
+  }
+  return faults;
+};
+
+for (const theme of SWEEP_THEMES) {
+  await check(
+    `the search match the keyboard selects is marked at 3:1 in ${theme.name}`,
+    async () => {
+      const bad = [];
+      for (const url of [`${DEMO}fr/`, `${LOCALES}de/`]) {
+        const { p, done } = await sweepPage(url, 390, theme);
+        const name = await p.$eval(".card .card-name", (e) =>
+          e.textContent.trim(),
+        );
+        await p.locator("#q").pressSequentially(name.slice(0, 3));
+        for (const f of await p.evaluate(`(${selFaults})(${paintKit})`))
+          bad.push(`${url} .card.sel after "${name.slice(0, 3)}": ${f}`);
+        await done();
+      }
+      if (bad.length) throw new Error(bad.join("\n        "));
+    },
+  );
+}
+
+// Every text the page paints against what is really behind it: the first
+// ancestor with an opaque background, with any translucent fill between them
+// laid over it, and the text's own alpha and its ancestors' opacity laid over
+// that. Text in a disabled control is exempt (WCAG 1.4.3 inactive
+// components), and so is text nobody can see: opacity 0, visibility hidden, a
+// closed fold, clipped to nothing. Runs in the page, handed paintKit.
+const contrastFaults = (kit) => {
+  const { rgba, over, wcag, behind } = kit();
+  const fade = (el) => {
+    let o = 1;
+    for (let e = el; e; e = e.parentElement)
+      o *= Number(getComputedStyle(e).opacity);
+    return o;
+  };
+  const label = (el) => {
+    const own = [...el.classList].map((c) => `.${c}`).join("");
+    return own
+      ? `${el.tagName.toLowerCase()}${own}`
+      : `${el.tagName.toLowerCase()} in .${el.parentElement?.closest("[class]")?.classList[0]}`;
+  };
+  const bad = [];
+  const measured = new Set();
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+    const el = t.parentElement;
+    const words = t.textContent.trim();
+    if (!words || !el) continue;
+    if (el.closest("script, style, noscript, template, .visually-hidden"))
+      continue;
+    if (el.closest(":disabled, [aria-disabled=true]")) continue;
+    if (
+      !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+    )
+      continue;
+    const range = document.createRange();
+    range.selectNodeContents(t);
+    if (![...range.getClientRects()].some((r) => r.width > 0 && r.height > 0))
+      continue;
+    const o = fade(el);
+    if (o === 0) continue;
+    const bg = behind(el);
+    let fg = rgba(getComputedStyle(el).color);
+    fg = over([...fg.slice(0, 3), fg[3] * o], bg);
+    const r = wcag(fg, bg);
+    for (let e = el; e && e !== document.body; e = e.parentElement)
+      for (const c of e.classList) measured.add(`.${c}`);
+    if (r < 4.5)
+      bad.push(
+        `${label(el)} "${words.slice(0, 24)}" ${r.toFixed(2)}:1 (rgb ${fg.slice(0, 3).join(",")} on ${bg.slice(0, 3).join(",")})`,
+      );
+  }
+  // A control's boundary, held to 3:1 where it is what shows the control is
+  // there (WCAG 1.4.11). A control that paints words is found by its words,
+  // held to 4.5:1 above, and its outline is decoration on --border. One that
+  // paints a glyph alone is found by the glyph, 3:1 against its own fill. One
+  // that paints neither, the search input, is found by its frame, the box,
+  // whose border must clear 3:1 against both its fill and the page around it.
+  const CONTROLS =
+    'a, button, input, select, summary, [role=button], [tabindex]:not([tabindex="-1"])';
+  const words = (el) =>
+    [...el.querySelectorAll("*"), el].some(
+      (e) =>
+        !e.closest(".visually-hidden") &&
+        [...e.childNodes].some(
+          (n) => n.nodeType === 3 && n.textContent.trim(),
+        ) &&
+        e.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+    );
+  const named = (el) =>
+    `${label(el)} "${(el.getAttribute("aria-label") ?? el.textContent).trim().replace(/\s+/g, " ").slice(0, 24)}"`;
+  for (const el of document.body.querySelectorAll(CONTROLS)) {
+    if (el.closest(".visually-hidden, dialog:not([open]), :disabled")) continue;
+    if (
+      !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+    )
+      continue;
+    if (!el.getClientRects().length || words(el)) continue;
+    const glyph = [...el.querySelectorAll("svg, img")].find((g) =>
+      g.checkVisibility({ opacityProperty: true }),
+    );
+    if (glyph) {
+      // An image carries its own colours; an svg here draws in currentColor.
+      if (glyph.tagName === "IMG") continue;
+      const fill = behind(el),
+        ink = over(rgba(getComputedStyle(glyph).color), fill),
+        r = wcag(ink, fill);
+      if (r < 3) bad.push(`${named(el)} glyph ${r.toFixed(2)}:1`);
+      continue;
+    }
+    const frame = el.closest(".search-box") ?? el;
+    const s = getComputedStyle(frame);
+    const line = rgba(s.borderTopColor);
+    const outside = behind(frame.parentElement),
+      fill = behind(frame);
+    if (parseFloat(s.borderTopWidth) === 0 || line[3] === 0) {
+      if (wcag(fill, outside) < 3)
+        bad.push(`${named(el)} draws no boundary at all`);
+      continue;
+    }
+    const drawn = over(line, outside);
+    for (const [where, c] of [
+      ["the page behind it", outside],
+      ["its own fill", fill],
+    ]) {
+      const r = wcag(drawn, c);
+      if (r < 3)
+        bad.push(`${named(el)} boundary against ${where} ${r.toFixed(2)}:1`);
+    }
+  }
+  return { bad, measured: [...measured] };
+};
+
+for (const theme of SWEEP_THEMES) {
+  await check(
+    `every text clears 4.5:1 and every control boundary 3:1 in ${theme.name}`,
+    async () => {
+      const bad = [];
+      const measured = new Set();
+      for (const width of [390, 1280]) {
+        for (const url of SWEEP) {
+          const { p, done } = await sweepPage(url, width, theme);
+          await stampVersion(p);
+          const r = await p.evaluate(`(${contrastFaults})(${paintKit})`);
+          await done();
+          for (const b of r.bad) bad.push(`${url} at ${width}px: ${b}`);
+          for (const c of r.measured) measured.add(c);
+        }
+      }
+      // The note's row, the hosting word and the link to the whole screenshot
+      // are the words this design added; a sweep that missed them proves
+      // nothing about them.
+      for (const c of [".about-sum", ".flag-label", ".shot-full"])
+        if (!measured.has(c)) bad.push(`no text inside ${c} was measured`);
+      if (bad.length) throw new Error(bad.join("\n        "));
+    },
+  );
+}
+
+// The chevron of the note's row turns and a dark screenshot brightens, each
+// over a transition. Asked for less motion, both happen at once; asked for
+// nothing, both still move, or the reduced value above would hold of a
+// transition that no longer exists.
+await check(
+  "with reduced motion the note's chevron and a screenshot change at once",
+  async () => {
+    const read = async (motion) => {
+      const ctx = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        reducedMotion: motion,
+      });
+      await ctx.route(
+        (u) => u.hostname !== "127.0.0.1",
+        (r) => r.abort(),
+      );
+      const p = await ctx.newPage();
+      const got = {};
+      for (const [url, sel] of [
+        [`${DEMO}fr/`, ".about-chev"],
+        [`${DEMO}fr/whoami/`, ".shot img"],
+      ]) {
+        await p.goto(url);
+        got[sel] = await p.$eval(
+          sel,
+          (e) => getComputedStyle(e).transitionDuration,
+        );
+      }
+      await ctx.close();
+      return got;
+    };
+    const still = await read("reduce"),
+      moving = await read("no-preference");
+    const bad = [];
+    for (const sel of Object.keys(still)) {
+      if (still[sel].split(",").some((d) => parseFloat(d) !== 0))
+        bad.push(`${sel} transitions over ${still[sel]} with reduced motion`);
+      if (moving[sel].split(",").every((d) => parseFloat(d) === 0))
+        bad.push(`${sel} has no transition to reduce`);
+    }
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
 
 await browser.close();
 console.log(failures ? `\n${failures} failed` : "\nall passed");

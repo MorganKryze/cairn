@@ -17,7 +17,7 @@ so is every key in it.
 | `locales`       | `[en]`    | Languages served. First entry is the default and the fallback; see [Languages](i18n.md).                                                                                                                                                                                                                         |
 | `theme.accent`  | `#247b7b` | Hex color for links, focus rings, buttons; see [Theming](theming.md).                                                                                                                                                                                                                                            |
 | `theme.font`    | none      | Body font: `family`, a CSS font stack; `file`, a font in the config directory's `fonts/` folder, served by cairn itself so the page makes no external font request. See [Theming](theming.md).                                                                                                                   |
-| `about`         | empty     | A welcome note under the hero, translatable; visitors can dismiss it (cookie, one year). Long text: paragraphs and [CommonMark, minus raw HTML](text.md).                                                                                                                                                        |
+| `about`         | empty     | A welcome note under the hero, translatable, folded to one row on a phone; visitors can dismiss it (cookie, one year). Long text: paragraphs and [CommonMark, minus raw HTML](text.md).                                                                                                                          |
 | `links`         | `[]`      | Header navigation links, with optional icons; see below.                                                                                                                                                                                                                                                         |
 | `footer`        | `[]`      | Links at the bottom of every page.                                                                                                                                                                                                                                                                               |
 | `pages`         | `[]`      | Pages cairn serves itself (legal notice, privacy…); see below. Bodies accept [CommonMark, minus raw HTML](text.md).                                                                                                                                                                                              |
@@ -416,6 +416,22 @@ place to tell visitors where they landed, in your words and languages.
 Visitors can dismiss it with the button in its corner; a cookie remembers
 the choice for a year, and without JavaScript the note simply stays. The
 button label lives in the `strings` table as `about.dismiss`.
+
+On a phone the note folds into one row, "About this site" in the page's
+language, so the first services show without scrolling. A tap opens it, with
+or without JavaScript, and a second tap folds it again. Nothing remembers that
+choice: the note arrives folded on every visit. A wide screen shows the note
+whole with no row, and so does a printout at any width. The row's words live
+in the `strings` table as `about.summary`:
+
+```yaml
+strings:
+  about.summary: { en: Read me first, fr: À lire d'abord }
+```
+
+A browser too old to show a folded note's content while it is closed (one
+without `::details-content`) keeps the row at every width, so the note is one
+click away there rather than gone.
 
 ## Hosted pages
 
