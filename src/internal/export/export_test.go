@@ -151,6 +151,36 @@ func TestEveryLocalLinkLandsOnAnExportedFile(t *testing.T) {
 	}
 }
 
+// The link under a screenshot is the only way to the whole image on a phone,
+// so on a static host it has to land on the file the export wrote, the one the
+// image itself loads.
+func TestTheFullScreenshotLinkLeadsToTheExportedImage(t *testing.T) {
+	img := regexp.MustCompile(`<figure class="shot">(?:<div[^>]*>)?<img src="([^"]*)"`)
+	link := regexp.MustCompile(`<a class="shot-full" href="([^"]*)"`)
+	for _, base := range []string{"", "/tools"} {
+		t.Run("base="+base, func(t *testing.T) {
+			prev := render.BasePath
+			render.BasePath = base
+			t.Cleanup(func() { render.BasePath = prev })
+
+			files := exportSite(t)
+			for _, page := range []string{"en/pad/index.html", "fr/pad/index.html"} {
+				src, href := img.FindSubmatch(files[page]), link.FindSubmatch(files[page])
+				if src == nil || href == nil {
+					t.Fatalf("%s has no screenshot or no full link", page)
+				}
+				if string(href[1]) != string(src[1]) {
+					t.Errorf("%s: the link leads to %s, the image loads %s", page, href[1], src[1])
+				}
+				rel, ok := strings.CutPrefix(string(href[1]), base+"/")
+				if _, there := files[rel]; !ok || !there {
+					t.Errorf("%s: the link leads to %s, which the export does not carry", page, href[1])
+				}
+			}
+		})
+	}
+}
+
 func TestTheExportCarriesTheWholeSite(t *testing.T) {
 	files := exportSite(t)
 	for _, want := range []string{

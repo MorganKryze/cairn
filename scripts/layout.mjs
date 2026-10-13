@@ -1417,6 +1417,181 @@ for (const width of PHONES) {
   );
 }
 
+// ---- screenshots ----
+
+// The locales fixture's pad page carries four: wide.png (2000x700), half.png
+// (800x400), tall.png (600x1200) and the demo's logo, whose size cairn does
+// not read. The demo's whoami page carries its own 2000x700 one.
+const SHOTS = [`${LOCALES}en/pad/`, `${DEMO}fr/whoami/`];
+const shots = () =>
+  [...document.querySelectorAll(".shot")].map((f) => {
+    const img = f.querySelector("img"),
+      strip = f.querySelector(".shot-scroll"),
+      link = f.querySelector(".shot-full"),
+      cap = f.querySelector("figcaption");
+    const r = img.getBoundingClientRect(),
+      box = (strip ?? img).getBoundingClientRect(),
+      l = link?.getBoundingClientRect();
+    return {
+      name: img.getAttribute("src").split("/").pop(),
+      w: r.width,
+      h: r.height,
+      ratio: +img.getAttribute("height") / +img.getAttribute("width") || 0,
+      col: f.getBoundingClientRect().width,
+      strip: !!strip,
+      scrolls: strip ? strip.scrollWidth > strip.clientWidth + 1 : false,
+      more: strip?.getAttribute("data-more") ?? null,
+      left: strip?.scrollLeft ?? 0,
+      // where the picture's left edge sits against the strip's: scrollLeft
+      // alone reads 0 at the start of a right-to-left scroller too
+      edge: r.left - box.left,
+      mask: strip ? getComputedStyle(strip).maskImage : "none",
+      link: l ? l.height : 0,
+      under: l ? l.top >= box.bottom - 1 : false,
+      capAbove: cap ? cap.getBoundingClientRect().bottom <= l.top + 1 : true,
+    };
+  });
+const byName = (all, name) => all.find((s) => s.name === name);
+
+// Shrunk to a phone column the demo's screenshot was 0.16 of its size and
+// unreadable. It keeps 17rem of height and scrolls sideways instead; one that
+// fits the column at that height fills it and does not scroll.
+for (const width of PHONES) {
+  for (const url of SHOTS) {
+    await check(
+      `a wide screenshot scrolls at a readable height at ${width}px on ${url}`,
+      async () => {
+        const p = await open(url, width);
+        const all = await p.evaluate(shots);
+        await p.close();
+        const bad = [];
+        const wide = all.find((s) => s.ratio && s.ratio < 0.4);
+        if (!wide) throw new Error("no 2000x700 screenshot on the page");
+        if (Math.abs(wide.h - 272) > 1)
+          bad.push(`it is ${wide.h.toFixed(1)}px high, want 272`);
+        if (wide.w / 2000 < 0.38)
+          bad.push(`it shows at ${(wide.w / 2000).toFixed(3)} of its size`);
+        if (!wide.scrolls) bad.push("its strip does not scroll");
+        if (wide.more !== "right")
+          bad.push(`its strip fades on ${wide.more}, want right`);
+        if (url.startsWith(LOCALES)) {
+          const half = byName(all, "half.png");
+          if (!half?.scrolls) bad.push("half.png does not scroll");
+          for (const n of ["tall.png", "logo.png"]) {
+            const s = byName(all, n);
+            if (!s) bad.push(`${n} is missing`);
+            else if (Math.abs(s.w - s.col) > 1 || s.scrolls || s.more)
+              bad.push(
+                `${n} is ${s.w.toFixed(1)}px in a ${s.col.toFixed(1)}px column, scrolls ${s.scrolls}, fades ${s.more}`,
+              );
+          }
+        }
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+  }
+}
+
+for (const width of WIDE) {
+  await check(
+    `no screenshot scrolls and each fills the column at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of SHOTS) {
+        const p = await open(url, width);
+        for (const s of await p.evaluate(shots)) {
+          if (s.scrolls || s.more || Math.abs(s.w - s.col) > 1)
+            bad.push(
+              `${s.name} on ${url}: ${s.w.toFixed(1)}px in ${s.col.toFixed(1)}px, scrolls ${s.scrolls}, fades ${s.more}`,
+            );
+        }
+        await p.close();
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+// The link to the whole image is the one way to read it on a phone: under
+// every screenshot, a thumb's 44px, under the caption where there is one.
+for (const width of WIDTHS) {
+  await check(
+    `a 44px link to the whole image sits under every screenshot at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of SHOTS) {
+        const p = await open(url, width);
+        for (const s of await p.evaluate(shots)) {
+          if (s.link < 44) bad.push(`${s.name}: link ${s.link.toFixed(1)}px`);
+          if (!s.under) bad.push(`${s.name}: the link is not under the image`);
+          if (!s.capAbove)
+            bad.push(`${s.name}: the caption is not above the link`);
+        }
+        await p.close();
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+// A screenshot is a picture of a page, not text: right to left, the strip
+// still opens on the image's left edge and fades on its right.
+await check(
+  "a right-to-left page opens the strip on the image's left edge",
+  async () => {
+    const p = await open(`${LOCALES}ar/pad/`, 390);
+    const wide = byName(await p.evaluate(shots), "wide.png");
+    await p.close();
+    if (
+      Math.abs(wide.edge) > 1 ||
+      wide.left !== 0 ||
+      wide.more !== "right" ||
+      wide.mask === "none"
+    )
+      throw new Error(
+        `the image starts ${wide.edge.toFixed(1)}px from the strip's left, scrollLeft ${wide.left}, fades on ${wide.more}, mask ${wide.mask}`,
+      );
+  },
+);
+
+// In the dark theme a white screenshot was the brightest thing on the screen:
+// it steps down until the pointer is on it. Light never dims.
+for (const theme of THEMES) {
+  await check(`a screenshot's brightness in ${theme.name}`, async () => {
+    const p = await open(`${DEMO}fr/whoami/`, 390, theme);
+    const filter = () =>
+      p.$eval(".shot img", (i) => getComputedStyle(i).filter);
+    const rest = await filter();
+    await p.hover(".shot img");
+    const over = await filter();
+    await p.close();
+    const want = theme.name === "light" ? "none" : "brightness(0.78)";
+    if (rest !== want || over !== "none")
+      throw new Error(`at rest ${rest}, want ${want}; hovered ${over}`);
+  });
+}
+
+// Paper does not scroll: printed at a phone's width, every screenshot is whole.
+await check("a printed screenshot is whole at 390px", async () => {
+  const p = await open(`${LOCALES}en/pad/`, 390);
+  await p.emulateMedia({ media: "print" });
+  const all = await p.evaluate(shots);
+  await p.close();
+  const bad = all
+    .filter(
+      (s) =>
+        s.scrolls ||
+        s.mask !== "none" ||
+        s.w > s.col + 1 ||
+        (s.ratio && Math.abs(s.h / s.w - s.ratio) > 0.02),
+    )
+    .map(
+      (s) =>
+        `${s.name} ${s.w.toFixed(1)}x${s.h.toFixed(1)} in ${s.col.toFixed(1)}px, scrolls ${s.scrolls}, mask ${s.mask}`,
+    );
+  if (bad.length) throw new Error(bad.join("; "));
+});
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

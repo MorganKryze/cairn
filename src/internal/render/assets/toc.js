@@ -71,3 +71,20 @@
 
   spy();
 })();
+
+// A screenshot strip on a phone says it continues the way the trail does: the
+// side with more picture behind it fades. Its own block, since the trail's
+// returns early on a page without a trail, and a detail page has none. The
+// strip is always left to right, so scrollLeft reads the same in every engine
+// here, unlike in the trail.
+for (const strip of document.querySelectorAll('.shot-scroll')) {
+  const edges = () => {
+    const left = strip.scrollLeft > 1;
+    const right = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1;
+    const v = [left && 'left', right && 'right'].filter(Boolean).join(' ');
+    if (v) strip.setAttribute('data-more', v); else strip.removeAttribute('data-more');
+  };
+  strip.addEventListener('scroll', edges, { passive: true });
+  addEventListener('resize', edges, { passive: true });
+  edges();
+}

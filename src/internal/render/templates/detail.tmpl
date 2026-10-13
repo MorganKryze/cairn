@@ -17,6 +17,12 @@
   </div>
   {{if .SignIn}}<div class="signin" role="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg><p><strong>{{.SignInLabel}}</strong>{{.SignInNote}}</p></div>
   {{end}}{{if .Desc.Text}}<p class="lead"{{.Desc.Attrs}}>{{.Desc}}</p>
-  {{end}}{{template "prose" .Body}}{{range .Images}}<figure class="shot"><img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}</figure>
+  {{end}}{{template "prose" .Body}}{{/* On a phone a wide screenshot scrolls sideways at a readable height.
+       The strip sizes the image from the ratio its width and height
+       attributes give it, and a contained image with no ratio collapses to
+       nothing, so the strip is only drawn where cairn read both. It takes no
+       tabindex: a browser makes a scrolling region a stop only while it
+       scrolls. The link opens the file itself in the same tab, the one way
+       to the whole picture on a phone. */}}{{range .Images}}<figure class="shot">{{if and .W .H}}<div class="shot-scroll" role="region" aria-label="{{$.S.ShotScroll}}">{{end}}<img src="{{.Src}}" alt="" loading="lazy"{{if .W}} width="{{.W}}" height="{{.H}}"{{end}}>{{if and .W .H}}</div>{{end}}{{if .Caption.Text}}<figcaption{{.Caption.Attrs}}>{{.Caption}}</figcaption>{{end}}<a class="shot-full" href="{{.Src}}"><svg class="shot-full-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg>{{$.S.ShotFull}}</a></figure>
   {{end}}</article>
 {{template "bottom" .}}

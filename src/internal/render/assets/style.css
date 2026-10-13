@@ -1188,6 +1188,77 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   box-shadow: var(--shadow);
 }
 .shot figcaption { margin-top: .55rem; font-size: .85rem; color: var(--muted); }
+/* The way to the whole picture, under the caption on a row of its own at every
+   width: on a phone the strip shows a slice of it, and the file itself is the
+   only place it can be read whole. */
+.shot-full {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 2.75rem;
+  color: var(--accent-ink);
+  font-size: .9rem;
+  font-weight: 500;
+  text-underline-offset: .2em;
+}
+.shot-full-glyph { width: .95rem; height: .95rem; flex: none; }
+.shot-full:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Shrunk to a phone column, the demo's 2000x700 screenshot came out 0.16 of its
+   size, 120px high and unreadable. Below 44rem it keeps a readable 17rem and
+   the strip scrolls sideways instead; one that fits the column at that height
+   fills it at its own ratio and does not scroll.
+
+   The height comes from the ratio the width and height attributes give the
+   image. contain: size makes the image's own pixels count for nothing, so the
+   strip is sized before the image loads, and the flex row is what makes every
+   engine honour that ratio: without it Firefox stretched the picture. The
+   template only draws the strip where cairn read both attributes, since a
+   contained image with no ratio collapses.
+
+   A screenshot is a picture of a page, not text: it reads from its left edge
+   in a right-to-left page too, so the strip keeps left to right and toc.js
+   can measure the fade from scrollLeft. */
+@media (max-width: 44rem) {
+  .shot-scroll {
+    display: flex;
+    overflow-x: auto;
+    direction: ltr;
+    border-radius: var(--radius);
+  }
+  .shot-scroll img {
+    flex: 1 0 auto;
+    contain: size;
+    width: auto;
+    height: auto;
+    min-height: 17rem;
+    max-width: none;
+  }
+  /* The side with more picture behind it fades, as the category trail does.
+     toc.js sets the attribute; without it the strip still scrolls. */
+  .shot-scroll[data-more="right"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.2rem), transparent);
+  }
+  .shot-scroll[data-more="left"] {
+    mask-image: linear-gradient(to right, transparent, #000 2.2rem);
+  }
+  .shot-scroll[data-more="left right"] {
+    mask-image: linear-gradient(to right, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent);
+  }
+  /* A mask clips the element's own outline, so the fade gives way while the
+     strip has the keyboard: with it the ring computed and never showed. */
+  .shot-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; mask-image: none; }
+}
+/* A screenshot is usually a white page, which in the dark theme became the
+   brightest thing on the screen. It steps down until the pointer is on it or
+   the keyboard is in it. Dark arrives from the system or from the toggle, so
+   both selectors carry it; light never dims. */
+.shot img { transition: filter .2s; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .shot img { filter: brightness(.78); }
+  :root:not([data-theme="light"]) .shot:is(:hover, :focus-within) img { filter: none; }
+}
+:root[data-theme="dark"] .shot img { filter: brightness(.78); }
+:root[data-theme="dark"] .shot:is(:hover, :focus-within) img { filter: none; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1788,6 +1859,10 @@ footer { margin-top: 1rem; }
     word-break: break-all;
   }
   .shot { break-inside: avoid; }
+  /* Paper does not scroll either: the strip goes and the screenshot prints at
+     the column's width, whole. */
+  .shot-scroll, .shot-scroll[data-more] { display: block; overflow: visible; mask-image: none; }
+  .shot-scroll img { contain: none; width: 100%; height: auto; min-height: 0; }
   /* Paper does not scroll, so whatever hung off the edge would simply be
      missing: the block wraps instead, and the table is laid out as a table. */
   :is(.about, .detail) pre { overflow-x: visible; white-space: pre-wrap; }

@@ -150,7 +150,11 @@ balanced with its lock after the last word, the demo's page and cards short at
 centre that follows the flag); the detail head on a phone (Open under the
 name at the tile's edge, then the pill and the state on one line, no divider
 opening a wrapped line) and a hosted page on a phone (no rule after the title,
-a 44px back link); and the layouts that have to stay
+a 44px back link); the screenshots (on a phone a wide one 272px high in a
+strip that scrolls and fades on the side it continues, right to left too, one
+that fits filling the column; nothing scrolling on a wide screen; a 44px link
+to the whole image under the caption; dimmed in dark until hovered; whole when
+printed); and the layouts that have to stay
 as they are (a bare header, a card with nothing at its foot, the detail head on
 a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
 without the demo stack, so every pill reads unknown), against

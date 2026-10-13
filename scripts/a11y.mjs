@@ -5,9 +5,10 @@
 //
 // Run it with `just test-browser`, which builds cairn and serves the example
 // config, scripts/fixtures/many-categories, scripts/fixtures/status,
-// scripts/fixtures/themed and scripts/fixtures/leave on scratch ports first.
+// scripts/fixtures/themed, scripts/fixtures/leave, scripts/fixtures/states and
+// scripts/fixtures/locales on scratch ports first.
 //
-// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url]
+// Usage: node scripts/a11y.mjs [example-url] [many-url] [status-url] [themed-url] [leave-url] [states-url] [locales-url]
 import { chromium } from "playwright";
 
 const SITE =
@@ -28,6 +29,10 @@ const STATES =
   process.argv[7] ??
   process.env.CAIRN_STATES_URL ??
   "http://127.0.0.1:8095/en/";
+// Every built-in language plus a right-to-left one; its pad page carries
+// screenshots whose size cairn reads. test-browser serves it for layout.mjs.
+const LOCALES =
+  process.argv[8] ?? process.env.CAIRN_LOCALES_URL ?? "http://127.0.0.1:8102/";
 const PHONE = { width: 390, height: 780 };
 
 let failures = 0;
@@ -2585,6 +2590,118 @@ for (const width of [360, 390, 1280, 1440]) {
       if (width <= 704 && !row)
         throw new Error("the row is not shown on a phone");
       if (small.length) throw new Error(small.join(", "));
+    },
+  );
+}
+
+// ---- screenshots ----
+
+// On a phone a wide screenshot is a strip that scrolls sideways. Chromium makes
+// a scrolling region a keyboard stop of its own, so the strip carries no
+// tabindex: it is a stop exactly while it scrolls, and arrow keys move it. Its
+// name, in the page's language, says what it is and what to do with it.
+const shotPage = async (width, scheme = "light", path = "fr/pad/") => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: scheme,
+    reducedMotion: "reduce",
+  });
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  const p = await ctx.newPage();
+  await p.goto(LOCALES + path);
+  return { p, done: () => ctx.close() };
+};
+// Tabs until the focus lands on sel or the page runs out of stops.
+const tabTo = async (p, sel) => {
+  for (let i = 0; i < 80; i++) {
+    await p.keyboard.press("Tab");
+    const at = await p.evaluate(
+      (s) => [
+        document.activeElement?.matches(s),
+        document.activeElement?.tagName,
+      ],
+      sel,
+    );
+    if (at[0]) return true;
+    if (i > 0 && at[1] === "BODY") return false;
+  }
+  return false;
+};
+const ringOf = (p) =>
+  p.evaluate(() => {
+    const s = getComputedStyle(document.activeElement);
+    const probe = document.createElement("i");
+    probe.style.color = "var(--accent)";
+    document.body.append(probe);
+    const accent = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
+      colour: s.outlineColor,
+      accent,
+      mask: s.maskImage,
+    };
+  });
+
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `a screenshot strip is a named stop arrow keys scroll at 390px in ${scheme}`,
+    async () => {
+      const { p, done } = await shotPage(390, scheme);
+      const named = await p
+        .getByRole("region", { name: "Capture d'écran, faire défiler" })
+        .count();
+      const on = await tabTo(p, ".shot-scroll");
+      let before = 0,
+        after = 0,
+        ring = null;
+      if (on) {
+        ring = await ringOf(p);
+        before = await p.evaluate(() => document.activeElement.scrollLeft);
+        await p.keyboard.press("ArrowRight");
+        await p.waitForTimeout(100);
+        after = await p.evaluate(() => document.activeElement.scrollLeft);
+      }
+      await done();
+      if (!named)
+        throw new Error("no region named with the page's shot.scroll word");
+      if (!on) throw new Error("Tab never reaches the strip");
+      if (after <= before)
+        throw new Error(`ArrowRight left scrollLeft at ${after}`);
+      if (ring.ring !== "solid 2px" || ring.colour !== ring.accent)
+        throw new Error(`the strip wears ${ring.ring} ${ring.colour}`);
+      if (ring.mask !== "none")
+        throw new Error(`the fade still masks the ring: ${ring.mask}`);
+    },
+  );
+}
+
+await check(
+  "a screenshot that does not scroll is no tab stop at 1280px",
+  async () => {
+    const { p, done } = await shotPage(1280);
+    const on = await tabTo(p, ".shot-scroll");
+    await done();
+    if (on) throw new Error("Tab stops on a strip that does not scroll");
+  },
+);
+
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `the link to the whole screenshot wears cairn's ring in ${scheme}`,
+    async () => {
+      const { p, done } = await shotPage(390, scheme);
+      const on = await tabTo(p, ".shot-full");
+      const m = on ? await ringOf(p) : null;
+      await done();
+      if (!m) throw new Error("Tab never reaches the link");
+      if (m.ring !== "solid 2px" || m.colour !== m.accent)
+        throw new Error(
+          `the link wears ${m.ring} ${m.colour}, want solid 2px ${m.accent}`,
+        );
     },
   );
 }

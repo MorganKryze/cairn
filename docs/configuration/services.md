@@ -190,9 +190,19 @@ name; each entry is a plain path or a `{src, caption}` pair:
       caption: { fr: La vue albums., en: The albums view. }
 ```
 
-They appear on the detail page, in order, between the text and the button.
-cairn serves `media/` itself at `/media/`, so previews stay self-hosted like
-everything else; a full URL or an `/assets/…` path passes through unchanged.
+They appear on the detail page, in order, after the text. Each one has a
+"See the full screenshot" link under it, and under its caption if it has one,
+which opens the image file itself in the same tab. cairn serves `media/` itself
+at `/media/`, so previews stay self-hosted like everything else; a full URL or
+an `/assets/…` path passes through unchanged.
+
+On a phone, a screenshot wider than the column keeps a readable height of
+17rem and scrolls sideways, with a fade on the side it continues; one that fits
+the column at that height simply fills it. This needs the image's width and
+height, which cairn reads from the files in `media/` only: a full URL or an
+`/assets/…` image shrinks to the column width instead. In the dark theme
+screenshots are dimmed a little, and come back to full brightness when the
+pointer is on them or the keyboard is in them.
 
 `screen.png` and `/media/screen.png` are two spellings of the same file, and
 cairn opens the file behind either one before it serves the page. A name that
