@@ -97,7 +97,7 @@ var builtinStrings = map[string]map[string]string{
 		"state.deprecated":   "Obsolète",
 		"state.new":          "Nouveau",
 		"signin.label":       "Connexion requise",
-		"signin.note":        "Il vous faudra un compte pour l'utiliser. Pas encore de compte\u00a0? Demandez à la personne qui gère ce site.",
+		"signin.note":        "Il vous faudra un compte pour l'utiliser. Pas encore de compte\u202f? Demandez à la personne qui gère ce site.",
 		"leave.go":           "Continuer",
 		"leave.stay":         "Rester ici",
 		"notfound.title":     "Page introuvable",
@@ -331,7 +331,7 @@ var builtinStrings = map[string]map[string]string{
 		"leave.go":           "Continuar",
 		"leave.stay":         "Ficar aqui",
 		"notfound.title":     "Página não encontrada",
-		"notfound.body":      "Não há nada neste endereço. Talvez o link esteja desatualizado.",
+		"notfound.body":      "Não há nada neste endereço. Talvez a ligação esteja desatualizada.",
 	},
 	"sv": {
 		"nav.skip":           "Hoppa till innehåll",
