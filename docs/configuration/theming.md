@@ -21,6 +21,15 @@ neutral, so most accents are safe, but the button sets white text on the
 accent, so pick a mid-to-dark accent (the default `#247b7b` gives 5:1). A
 very light accent would weaken that button's contrast.
 
+Focus rings, and the border of the search match the keyboard selects, draw in
+a contrast-adjusted accent, `--accent-ink` in [custom.css](#3-customcss): the
+accent pushed toward black in light and toward white in dark, so they keep the
+3:1 a focus indicator needs against the page and the cards. `#8a4f7d` gives
+2.71:1 against a dark card as it is and 4.83:1 adjusted. The Open button's
+ring is the text color, since the button is filled with the accent. The
+adjustment is a fixed mix, not a guarantee: an accent close to black still
+falls short in dark, where `#333333` gives 2.84:1 against a card.
+
 ## 2. Typography
 
 ```yaml
@@ -82,18 +91,18 @@ The stylesheet is built on custom properties; override those first:
 }
 ```
 
-| Variable         | Role                                                |
-| ---------------- | --------------------------------------------------- |
-| `--bg`           | page background                                     |
-| `--fg`           | text                                                |
-| `--muted`        | secondary text                                      |
-| `--card`         | card, tile and search backgrounds                   |
-| `--faint`        | icon tiles, subtle fills                            |
-| `--border`       | card, chip and rule outlines                        |
-| `--ui-border`    | the edge of a control you can operate               |
-| `--accent`       | fills, focus rings, buttons (set by `theme.accent`) |
-| `--accent-ink`   | accent tuned for text contrast (derived)            |
-| `--up`, `--down` | status dot colors                                   |
+| Variable         | Role                                                                             |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `--bg`           | page background                                                                  |
+| `--fg`           | text                                                                             |
+| `--muted`        | secondary text                                                                   |
+| `--card`         | card, tile and search backgrounds                                                |
+| `--faint`        | icon tiles, subtle fills                                                         |
+| `--border`       | card, chip and rule outlines                                                     |
+| `--ui-border`    | the edge of a control you can operate                                            |
+| `--accent`       | fills, buttons (set by `theme.accent`)                                           |
+| `--accent-ink`   | accent for text and focus rings; keep it at 3:1 on `--bg` and `--card` (derived) |
+| `--up`, `--down` | status dot colors                                                                |
 
 Two border colors, because they answer to different rules. `--border` draws
 decoration: the outline of a card, a rule, the trail's spine, all things the
