@@ -623,20 +623,26 @@ await check(
 
 // ---- the search field ----
 
-// The placeholder is the only word in the field, so it shows whole. It is
-// measured in the input's own font against the room inside its padding: a
-// field one pixel short clips the last letter with no ellipsis to say so.
+// The placeholder is the only word in the field, so it shows whole. The
+// browser's own overflow says so, with the placeholder put in as the value: a
+// count of the room inside the padding misses the clear button a search field
+// keeps space for even while it is hidden, which in Chromium cut "Chercher un
+// outil…" to "outil.." with 130.6px of padding-box room for its 122.7.
+// The room is measured the same way, as what a long value overflows by.
 const searchField = () => {
   const i = document.querySelector(".search-box input");
   const s = getComputedStyle(i);
   const ctx = document.createElement("canvas").getContext("2d");
   ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+  i.value = "m".repeat(60);
+  const room = i.clientWidth - (i.scrollWidth - ctx.measureText(i.value).width);
+  i.value = i.placeholder;
+  const whole = i.scrollWidth <= i.clientWidth;
+  i.value = "";
   return {
     placeholder: i.placeholder,
-    room:
-      i.clientWidth -
-      parseFloat(s.paddingInlineStart) -
-      parseFloat(s.paddingInlineEnd),
+    room,
+    whole,
     text: ctx.measureText(i.placeholder).width,
     ellipsis: s.textOverflow,
     hint: [...document.querySelectorAll(".search-kbd")].some((k) =>
@@ -655,7 +661,7 @@ for (const width of WIDE) {
           const p = await open(`${base}${l}/`, width);
           const f = await p.evaluate(searchField);
           await p.close();
-          if (f.text > f.room)
+          if (!f.whole)
             cut.push(
               `"${f.placeholder}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)} on ${base}${l}/`,
             );
@@ -664,7 +670,7 @@ for (const width of WIDE) {
       if (cut.length) throw new Error(cut.join("; "));
     },
   );
-  // 130.6px is what the field left the placeholder before it grew taller; no
+  // 116.6px is what the field left the placeholder before it grew taller; no
   // language may lose a letter it showed then.
   await check(
     `no language's search field has less room than before at ${width}px`,
@@ -674,7 +680,7 @@ for (const width of WIDE) {
         const p = await open(`${LOCALES}${l}/`, width);
         const f = await p.evaluate(searchField);
         await p.close();
-        if (f.room < 130.6) short.push(`${l} ${f.room.toFixed(1)}px`);
+        if (f.room < 116.6) short.push(`${l} ${f.room.toFixed(1)}px`);
       }
       if (short.length) throw new Error(short.join(", "));
     },
@@ -696,7 +702,7 @@ for (const width of PHONES) {
         if (f.hint) bad.push(`the Cmd-K hint is painted on ${l}/`);
         if (f.ellipsis !== "ellipsis")
           bad.push(`text-overflow is ${f.ellipsis} on ${l}/`);
-        if (width === 360 && f.text > f.room)
+        if (width === 360 && !f.whole)
           bad.push(
             `"${f.placeholder}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)}`,
           );

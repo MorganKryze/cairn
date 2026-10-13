@@ -416,10 +416,12 @@ header { padding-block: 1.4rem; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Width on the wrapper: as a flex item the box would otherwise size to its own
-   max-content and stop short of the inline end. */
+   max-content and stop short of the inline end. A search field keeps room for
+   its clear button even while the button is hidden, so at 14.5rem Chromium
+   left "Chercher un outil…" 117px of the 123 it takes and WebKit 113. */
 .search {
   margin-inline-start: auto;
-  width: min(14.5rem, 100%);
+  width: min(15.5rem, 100%);
   transition: width .2s ease;
 }
 .search:focus-within { width: min(19rem, 100%); }
