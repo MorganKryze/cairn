@@ -47,7 +47,7 @@
       <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m7.07-17.07-1.41 1.41M6.34 17.66l-1.41 1.41M22 12h-2M4 12H2m17.07 7.07-1.41-1.41M6.34 6.34 4.93 4.93"/></svg>
     </button>
     {{$v := .}}{{if gt (len .Locales) 3}}<details class="langs langs-menu">
-      <summary aria-label="{{.S.Languages}}">{{upper .Locale}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+      <summary aria-label="{{upper .Locale}}, {{.S.Languages}}">{{upper .Locale}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
       <nav aria-label="{{.S.Languages}}">{{range .Locales}}
         {{if eq . $v.Locale}}<span aria-current="page">{{upper .}}</span>{{else}}<a href="{{$v.Prefix}}/{{.}}/{{$v.SwitchPath}}?choose">{{upper .}}</a>{{end}}{{end}}
       </nav>
@@ -64,7 +64,7 @@
 </div>
 <div class="wrap menu">
   {{if .Links}}<details class="nav">
-    <summary class="nav-burger" aria-label="{{.S.LinksLabel}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>{{.S.Menu}}</span></summary>
+    <summary class="nav-burger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>{{.S.Menu}}</span></summary>
     <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}"{{.Label.Attrs}}>{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
     {{end}}</nav>
   </details>

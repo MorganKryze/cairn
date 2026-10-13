@@ -1,6 +1,7 @@
 // Scroll chrome for the header, the back-to-top button and the jump-to-category
-// select. All progressive: without JS the header stays put, the button stays
-// hidden and the select is inert.
+// select, and the phone header's long-name row. All progressive: without JS
+// the header stays put, the button stays hidden, the select is inert and a
+// long name wraps beside the tools.
 (() => {
   const NEAR_TOP = 80;   // still counts as the top of the page
   const JITTER = 4;      // below this a scroll is not a direction
@@ -40,4 +41,46 @@
   }, { passive: true });
 
   update();
+
+  // On a phone the site name shares its row with the tools until it would
+  // take more than two lines there; then it gets the whole row and the tools
+  // one under it. CSS cannot count the lines a text takes, and a count of
+  // characters is wrong both ways: at 360px a 27-character name took five
+  // lines and a 31-character one two. So the name is laid out beside the
+  // tools, its line boxes counted, and the class set from that, all before
+  // the next paint. Nothing here observes the header, so setting the class
+  // cannot call this again.
+  const topbar = document.querySelector('.topbar');
+  const brand = topbar && topbar.querySelector('.brand');
+  const phone = matchMedia('(max-width: 44rem)');
+  const lines = () => {
+    const texts = [...brand.childNodes].filter((n) => n.nodeType === 3 && n.data.trim());
+    if (!texts.length) return 0;
+    const range = document.createRange();
+    range.setStart(texts[0], 0);
+    const end = texts[texts.length - 1];
+    range.setEnd(end, end.length);
+    let n = 0, prev = -Infinity;
+    for (const top of [...range.getClientRects()].map((r) => r.top).sort((a, b) => a - b)) {
+      if (top - prev > 2) n++;
+      prev = top;
+    }
+    return n;
+  };
+  const split = () => {
+    topbar.classList.remove('topbar-split');
+    if (phone.matches && lines() > 2) topbar.classList.add('topbar-split');
+  };
+  if (brand) {
+    let measuring = false;
+    addEventListener('resize', () => {
+      if (measuring) return;
+      measuring = true;
+      requestAnimationFrame(() => { split(); measuring = false; });
+    }, { passive: true });
+    phone.addEventListener('change', split);
+    // The display face changes the width of every word once it lands.
+    document.fonts.ready.then(split);
+    split();
+  }
 })();

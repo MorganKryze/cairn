@@ -1,7 +1,9 @@
 // Drives the page geometry no look at the markup can settle: what the layout
 // does at the four widths the design is held to, light and dark, with the
 // longest words a built-in language has and with the page turned right to left.
-// a11y.mjs owns focus, names and contrast; this owns where things land.
+// a11y.mjs owns focus and contrast; this owns where things land, and the one
+// name check that needs the pages only this script serves: the language menu
+// and the phone's menu button say the words they show.
 //
 // Run it with `just test-browser`, which serves the demo config, the long site
 // name, every built-in locale, example/ and the states fixture first.
@@ -210,6 +212,314 @@ await check("a service that is not open shows no Open button", async () => {
       );
   }
 });
+
+// ---- the header ----
+
+// The site's mark is 34px high at every width; the name is 1.5rem wide and
+// keeps 1.3rem on a phone.
+await check(
+  "the mark is 34px high and the name sized for the width",
+  async () => {
+    for (const url of [`${DEMO}fr/`, `${LONG}fr/`]) {
+      for (const width of WIDTHS) {
+        const p = await open(url, width);
+        const m = await p.evaluate(() => ({
+          logo: document.querySelector(".brand img").getBoundingClientRect()
+            .height,
+          size: parseFloat(
+            getComputedStyle(document.querySelector(".brand")).fontSize,
+          ),
+        }));
+        await p.close();
+        if (Math.abs(m.logo - 34) > 0.5)
+          throw new Error(
+            `the mark is ${m.logo}px high at ${width}px on ${url}`,
+          );
+        const want = width > 704 ? 24 : 20.8;
+        if (Math.abs(m.size - want) > 0.05)
+          throw new Error(
+            `the name is ${m.size}px at ${width}px on ${url}, not ${want}px`,
+          );
+      }
+    }
+  },
+);
+
+// Wide, the header rule runs on the content column only, opened by an 8px
+// diamond in the site's accent; the footer rule spans the same column.
+// The content column is where main's .wrap lays its content.
+const rules = () => {
+  const w = document.querySelector("main .wrap");
+  const wr = w.getBoundingClientRect(),
+    wcs = getComputedStyle(w);
+  const col = {
+    start: wr.left + parseFloat(wcs.paddingLeft),
+    end: wr.right - parseFloat(wcs.paddingRight),
+  };
+  const menu = document.querySelector(".menu");
+  const mr = menu.getBoundingClientRect();
+  const before = getComputedStyle(menu, "::before"),
+    after = getComputedStyle(menu, "::after");
+  const foot = document.querySelector(".foot");
+  const fr = foot.getBoundingClientRect();
+  const fb = getComputedStyle(foot, "::before");
+  const probe = document.createElement("i");
+  probe.style.color = "var(--accent)";
+  document.body.append(probe);
+  const accent = getComputedStyle(probe).color;
+  probe.remove();
+  return {
+    col,
+    menuBorder: parseFloat(getComputedStyle(menu).borderTopWidth),
+    rule:
+      before.content === "none"
+        ? null
+        : {
+            start: mr.left + parseFloat(before.left),
+            end: mr.right - parseFloat(before.right),
+            line: parseFloat(before.borderTopWidth),
+          },
+    diamond:
+      after.content === "none"
+        ? null
+        : {
+            start: mr.left + parseFloat(after.left),
+            width: parseFloat(after.width),
+            height: parseFloat(after.height),
+            transform: after.transform,
+            color: after.backgroundColor,
+          },
+    accent,
+    footBorder: parseFloat(
+      getComputedStyle(document.querySelector("footer")).borderTopWidth,
+    ),
+    footRule:
+      fb.content === "none"
+        ? null
+        : {
+            start: fr.left + parseFloat(fb.left),
+            end: fr.right - parseFloat(fb.right),
+            line: parseFloat(fb.borderTopWidth),
+          },
+  };
+};
+for (const width of WIDE) {
+  await check(
+    `the header rule opens with the accent diamond on the content column at ${width}px`,
+    async () => {
+      const p = await open(`${DEMO}fr/`, width);
+      const m = await p.evaluate(rules);
+      await p.close();
+      const near = (a, b) => Math.abs(a - b) <= 1;
+      if (m.menuBorder)
+        throw new Error("the menu row still draws its own border");
+      if (!m.diamond) throw new Error("no diamond opens the header rule");
+      if (!m.rule || m.rule.line !== 1)
+        throw new Error("no 1px header rule on the column");
+      if (!near(m.diamond.start, m.col.start))
+        throw new Error(
+          `the diamond starts at ${m.diamond.start}, the column at ${m.col.start}`,
+        );
+      if (!near(m.rule.end, m.col.end))
+        throw new Error(
+          `the rule ends at ${m.rule.end}, the column at ${m.col.end}`,
+        );
+      if (m.rule.start < m.diamond.start + m.diamond.width)
+        throw new Error("the rule runs under the diamond");
+      if (m.diamond.width !== 8 || m.diamond.height !== 8)
+        throw new Error(
+          `the diamond is ${m.diamond.width}x${m.diamond.height}`,
+        );
+      if (!/^matrix\(0\.707/.test(m.diamond.transform))
+        throw new Error(`the diamond is not turned: ${m.diamond.transform}`);
+      if (m.diamond.color !== m.accent)
+        throw new Error(
+          `the diamond is ${m.diamond.color}, the accent ${m.accent}`,
+        );
+      const want = { 1280: [129, 1137], 1440: [209, 1217] }[width];
+      if (!near(m.col.start, want[0]) || !near(m.col.end, want[1]))
+        throw new Error(`the column is ${m.col.start} to ${m.col.end}`);
+      if (m.footBorder)
+        throw new Error("the footer still draws a full-width border");
+      if (!m.footRule || m.footRule.line !== 1)
+        throw new Error("no 1px footer rule");
+      if (
+        !near(m.footRule.start, m.col.start) ||
+        !near(m.footRule.end, m.col.end)
+      )
+        throw new Error(
+          `the footer rule spans ${m.footRule.start} to ${m.footRule.end}`,
+        );
+    },
+  );
+}
+
+// theme.accent reaches the diamond in every theme.
+await check(
+  "the diamond takes the site's own accent in every theme",
+  async () => {
+    for (const theme of THEMES) {
+      const p = await open(`${LOCALES}en/`, 1280, theme);
+      const m = await p.evaluate(rules);
+      await p.close();
+      if (m.diamond?.color !== "rgb(138, 79, 125)")
+        throw new Error(`the diamond is ${m.diamond?.color} in ${theme.name}`);
+    }
+  },
+);
+
+// Where a name fits in two lines beside the tools, the brand, the theme
+// toggle and the languages share one row on a phone.
+const centres = () => {
+  const mid = (s) => {
+    const r = document.querySelector(s).getBoundingClientRect();
+    return r.top + r.height / 2;
+  };
+  return [mid(".brand"), mid(".theme-toggle"), mid(".langs")];
+};
+for (const width of PHONES) {
+  await check(
+    `the brand and the tools share one row at ${width}px`,
+    async () => {
+      for (const url of [`${DEMO}fr/`, `${SITE}fr/`]) {
+        const p = await open(url, width);
+        const c = await p.evaluate(centres);
+        await p.close();
+        if (Math.max(...c) - Math.min(...c) > 4)
+          throw new Error(`centres ${c.join(", ")} on ${url}`);
+      }
+    },
+  );
+}
+
+// A name too long for two lines beside the tools takes the whole row, whole
+// and on at most two lines, with the tools on a row below it; the header is
+// no taller than it was before the name could move.
+const brandLines = () => {
+  const b = document.querySelector(".brand");
+  const texts = [...b.childNodes].filter(
+    (n) => n.nodeType === 3 && n.data.trim(),
+  );
+  const r = document.createRange();
+  r.setStart(texts[0], 0);
+  const last = texts[texts.length - 1];
+  r.setEnd(last, last.length);
+  const tops = [...r.getClientRects()].map((x) => x.top).sort((a, c) => a - c);
+  let lines = 0,
+    prev = -Infinity;
+  for (const t of tops) {
+    if (t - prev > 2) lines++;
+    prev = t;
+  }
+  const br = b.getBoundingClientRect(),
+    tr = document.querySelector(".topbar-tools").getBoundingClientRect();
+  return {
+    lines,
+    whole:
+      b.scrollWidth <= b.clientWidth &&
+      b.scrollHeight <= b.clientHeight &&
+      getComputedStyle(b).textOverflow !== "ellipsis",
+    toolsBelow: tr.top >= br.bottom - 1,
+    beside: tr.top < br.bottom && tr.bottom > br.top && tr.left >= br.right - 1,
+    header: document.querySelector("header").getBoundingClientRect().height,
+  };
+};
+for (const width of PHONES) {
+  await check(
+    `a long site name gets its own row, whole, at ${width}px`,
+    async () => {
+      const p = await open(`${LONG}fr/`, width);
+      const m = await p.evaluate(brandLines);
+      await p.close();
+      if (!m.whole) throw new Error("the name is cut");
+      if (m.lines > 2) throw new Error(`the name takes ${m.lines} lines`);
+      if (!m.toolsBelow)
+        throw new Error("the tools are not on a row below the name");
+      if (m.header > 215) throw new Error(`the header is ${m.header}px high`);
+    },
+  );
+}
+await check(
+  "without JavaScript a long name stays beside the tools at 360px",
+  async () => {
+    const p = await open(`${LONG}fr/`, 360, THEMES[0], {
+      javaScriptEnabled: false,
+    });
+    const m = await p.evaluate(brandLines);
+    await p.close();
+    if (!m.whole) throw new Error("the name is cut");
+    if (!m.beside) throw new Error("the tools are not beside the name");
+    if (m.header > 215) throw new Error(`the header is ${m.header}px high`);
+  },
+);
+
+// Every header control is a 44px target: the theme toggle, the language
+// links, the language menu and the header links or the menu button.
+for (const width of WIDTHS) {
+  await check(`every header control is 44px at ${width}px`, async () => {
+    const small = [];
+    for (const url of [`${DEMO}fr/`, `${SITE}fr/`, `${LOCALES}en/`]) {
+      const p = await open(url, width);
+      small.push(
+        ...(
+          await p.$$eval(
+            ".theme-toggle, .langs > a, .langs-menu > summary, .menu-link, .nav-burger",
+            (els) =>
+              els
+                .filter((e) => e.checkVisibility({ visibilityProperty: true }))
+                .map((e) => {
+                  const r = e.getBoundingClientRect();
+                  return {
+                    e: e.className || e.textContent.trim(),
+                    w: r.width,
+                    h: r.height,
+                  };
+                })
+                .filter((t) => t.w < 43.99 || t.h < 43.99)
+                .map((t) => `${t.e} ${Math.round(t.w)}x${Math.round(t.h)}`),
+          )
+        ).map((s) => `${s} on ${url}`),
+      );
+      await p.close();
+    }
+    if (small.length) throw new Error(small.join("; "));
+  });
+}
+
+// A control's name carries the words it shows (WCAG 2.5.3): a speech user
+// says what they see. Only an aria-label can drift from the text.
+await check(
+  "every labelled control's name contains its visible text",
+  async () => {
+    const bad = [];
+    for (const width of WIDTHS) {
+      for (const url of PAGES) {
+        const p = await open(url, width);
+        bad.push(
+          ...(
+            await p.$$eval(
+              "a[aria-label], button[aria-label], summary[aria-label]",
+              (els) =>
+                els
+                  .filter((e) =>
+                    e.checkVisibility({ visibilityProperty: true }),
+                  )
+                  .map((e) => ({
+                    name: e.getAttribute("aria-label").toLowerCase(),
+                    text: e.innerText.replace(/\s+/g, " ").trim().toLowerCase(),
+                    cls: e.className || e.tagName,
+                  }))
+                  .filter((t) => t.text && !t.name.includes(t.text))
+                  .map((t) => `${t.cls} shows "${t.text}" named "${t.name}"`),
+            )
+          ).map((s) => `${s} at ${width}px on ${url}`),
+        );
+        await p.close();
+      }
+    }
+    if (bad.length) throw new Error([...new Set(bad)].slice(0, 8).join("; "));
+  },
+);
 
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();

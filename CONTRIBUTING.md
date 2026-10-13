@@ -134,9 +134,11 @@ fake clock, so a five-second poll costs no seconds.
 
 `scripts/layout.mjs` drives where things land: no page pushed sideways at
 360, 390, 1280 and 1440 px, in light, in dark from the system and in dark from
-the toggle, plus the layouts that have to stay as they are (a bare header, a
-card with nothing at its foot, the detail head on a wide screen, a service that
-is not open). It runs against the demo's own config (`demo/config`, served
+the toggle; the header (a 34px mark, the rule and its accent diamond on the
+content column, a long site name on a row of its own on a phone, 44px controls
+whose names contain the words they show); and the layouts that have to stay
+as they are (a bare header, a card with nothing at its foot, the detail head on
+a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
 without the demo stack, so every pill reads unknown), against
 `scripts/fixtures/longname/`, a site name too long for one header row, and
 against `scripts/fixtures/locales/`, every built-in language plus Arabic, which
