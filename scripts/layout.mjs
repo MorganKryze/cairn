@@ -620,6 +620,201 @@ await check(
   },
 );
 
+// ---- the welcome note folds on a phone ----
+
+// A phone shows the note as one row and opens it on demand, so the first card
+// is on the first screen. The fold is a <details>: it works with no script,
+// remembers nothing, and a wide screen or a printout shows the note whole.
+const FOLDS = [
+  [`${DEMO}fr/`, "À propos de ce site"],
+  [`${LOCALES}de/`, "Über diese Seite"],
+];
+const fold = () => {
+  const sum = document.querySelector(".about-sum");
+  const body = document.querySelector(".about-fold > :not(summary)");
+  const r = sum.getBoundingClientRect();
+  return {
+    open: document.querySelector(".about-fold").open,
+    row: sum.checkVisibility(),
+    words: sum.innerText.trim(),
+    height: r.height,
+    shown: body.checkVisibility(),
+    section: document.querySelector(".about").checkVisibility(),
+  };
+};
+// A context of its own for whatever writes state, so a dismissed note or a
+// cookie never leaks into the checks that share the cached contexts.
+const fresh = async (width, extra = {}) => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: width > 704 ? 900 : 844 },
+    reducedMotion: "reduce",
+    ...extra,
+  });
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  return ctx;
+};
+
+for (const width of PHONES) {
+  await check(
+    `the welcome note arrives folded to one row at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const [url, word] of FOLDS) {
+        const p = await open(url, width);
+        const f = await p.evaluate(fold);
+        await p.close();
+        if (f.open) bad.push(`${url} arrives open`);
+        if (!f.row) bad.push(`${url} shows no row`);
+        if (f.words !== word)
+          bad.push(`${url} reads "${f.words}", want "${word}"`);
+        if (f.height > 46) bad.push(`${url} row is ${f.height}px high`);
+        if (f.shown) bad.push(`${url} shows the folded note`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+  for (const js of [true, false]) {
+    await check(
+      `a click opens the note and a second folds it at ${width}px, JavaScript ${js ? "on" : "off"}`,
+      async () => {
+        const ctx = await fresh(width, { javaScriptEnabled: js });
+        const p = await ctx.newPage();
+        await p.goto(`${DEMO}fr/`);
+        await p.click(".about-sum");
+        const opened = await p.evaluate(fold);
+        await p.click(".about-sum");
+        const closed = await p.evaluate(fold);
+        await ctx.close();
+        const bad = [];
+        if (!opened.open || !opened.shown)
+          bad.push("the first click does not show the note");
+        if (!opened.row) bad.push("the row is gone once open");
+        if (closed.open || closed.shown)
+          bad.push("the second click does not fold it");
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+  }
+  await check(
+    `Enter opens the note and Space folds it at ${width}px`,
+    async () => {
+      const p = await open(`${DEMO}fr/`, width);
+      await p.focus(".about-sum");
+      await p.keyboard.press("Enter");
+      const opened = await p.evaluate(fold);
+      await p.keyboard.press("Space");
+      const closed = await p.evaluate(fold);
+      await p.close();
+      if (!opened.open || !opened.shown)
+        throw new Error("Enter does not open the note");
+      if (closed.open || closed.shown)
+        throw new Error("Space does not fold the note");
+    },
+  );
+  await check(
+    `folding the note writes no cookie and no storage at ${width}px`,
+    async () => {
+      const ctx = await fresh(width);
+      const p = await ctx.newPage();
+      await p.goto(`${DEMO}fr/`);
+      await p.click(".about-sum");
+      await p.click(".about-sum");
+      await p.click(".about-sum");
+      const kept = await p.evaluate(() => ({
+        cookie: document.cookie,
+        storage: localStorage.length,
+      }));
+      const cookies = await ctx.cookies();
+      await p.reload();
+      const again = await p.evaluate(fold);
+      await ctx.close();
+      const bad = [];
+      if (kept.cookie || cookies.length)
+        bad.push(`cookies written: ${cookies.map((c) => c.name).join(", ")}`);
+      if (kept.storage) bad.push(`${kept.storage} storage entries written`);
+      if (again.open || again.shown)
+        bad.push("the note comes back open after a reload");
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+  await check(
+    `without JavaScript there is no dismiss button at ${width}px`,
+    async () => {
+      const p = await open(`${DEMO}fr/`, width, THEMES[0], {
+        javaScriptEnabled: false,
+      });
+      const shown = await p.$eval("#about-x", (x) => x.checkVisibility());
+      await p.close();
+      if (shown) throw new Error("a button that cannot work is on the page");
+    },
+  );
+  await check(
+    `printed at ${width}px the note is whole and the row hidden`,
+    async () => {
+      const p = await open(`${DEMO}fr/`, width);
+      await p.emulateMedia({ media: "print" });
+      const f = await p.evaluate(fold);
+      await p.close();
+      if (f.row) throw new Error("the row is printed");
+      if (!f.shown) throw new Error("the folded note is left off the paper");
+    },
+  );
+}
+
+for (const width of WIDE) {
+  await check(
+    `a wide screen shows the note whole and no row at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const [url] of FOLDS) {
+        const p = await open(url, width);
+        const f = await p.evaluate(fold);
+        await p.close();
+        if (f.row) bad.push(`${url} shows the row`);
+        if (!f.shown) bad.push(`${url} hides the note`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+for (const width of WIDTHS) {
+  await check(
+    `dismissing hides the whole note, and it stays hidden after a reload, at ${width}px`,
+    async () => {
+      const ctx = await fresh(width);
+      const p = await ctx.newPage();
+      await p.goto(`${DEMO}fr/`);
+      await p.click("#about-x");
+      const now = await p.evaluate(fold);
+      await p.reload();
+      const later = await p.evaluate(fold);
+      await ctx.close();
+      if (now.section) throw new Error("the note is still on the page");
+      if (later.section) throw new Error("the note is back after a reload");
+    },
+  );
+}
+
+// The point of the fold: on the demo at 390 by 844 the first card sat 800px
+// down with the note open, under the bottom of the first screen.
+await check(
+  "the first card starts within the first half screen at 390 by 844",
+  async () => {
+    const p = await open(`${DEMO}fr/`, 390);
+    const top = await p.$eval(
+      ".card",
+      (c) => c.getBoundingClientRect().top + scrollY,
+    );
+    await p.close();
+    if (top > 420)
+      throw new Error(`the first card starts at ${top.toFixed(1)}px`);
+  },
+);
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

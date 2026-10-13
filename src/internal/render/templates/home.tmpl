@@ -2,11 +2,17 @@
 <h1 class="visually-hidden"{{.SiteTitle.Attrs}}>{{.SiteTitle}}</h1>
 {{if .Tagline.Text}}<p class="tagline"{{.Tagline.Attrs}}>{{.Tagline}}</p>
 {{end}}{{if .About.Blocks}}<section class="about">
-  {{/* The dismiss button is a cairn string, always in the page's language, so
-       the note's own marking goes on the note and not on the section: putting
-       it here would have claimed the button reads in another language too. */}}
+  {{/* The row and the dismiss button are cairn strings, always in the page's
+       language, so the note's own marking goes on the note inside the fold and
+       never on the section or the row: putting it there would have claimed
+       they read in another language too. A <details> folds the note on a
+       phone with no script at all; a wide screen shows it whole. The button
+       follows the fold so that Tab meets the row first, the order a phone
+       shows them in. */}}
+  <details class="about-fold"><summary class="about-sum"><svg class="about-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10.8v5"/><path d="M12 7.4v.4"/></svg><span>{{.S.AboutSummary}}</span><svg class="about-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+  {{template "prose" .About}}</details>
   <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>{{.S.Dismiss}}</span></button>
-  {{template "prose" .About}}</section>
+</section>
 {{end}}{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
   <ul>
     {{range .Cats}}<li><a href="#cat-{{.ID}}"><span class="toc-mark" aria-hidden="true"></span><span class="toc-name"{{.Name.Attrs}}>{{.Name}}</span></a></li>

@@ -326,9 +326,10 @@ header { padding-block: 1.4rem; }
   margin: 2.2rem 0 2.4rem;
   /* Logical, not physical: the close button sits at inset-inline-end, so under
      RTL a physical end padding stayed put while the button moved across and
-     landed on the text. */
+     landed on the text. The end padding is the button's 2.75rem, its .8rem
+     inset and a gap, so the text never runs under it. */
   padding-block: 1.3rem;
-  padding-inline: 1.5rem 3.4rem;
+  padding-inline: 1.5rem 4.2rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -336,6 +337,36 @@ header { padding-block: 1.4rem; }
 }
 .about p { line-height: 1.7; margin: 0 0 .85rem; }
 .about p:last-of-type { margin-bottom: 0; }
+
+/* The note sits in a <details>, so a phone shows one row and opens it with no
+   script at all. The row is drawn at every width: a browser that cannot show a
+   closed fold's content keeps it everywhere, and the note is one tap away
+   rather than gone. Where ::details-content exists, a wide screen and paper
+   get the note whole and no row; the same query is what the stylesheet test
+   reads, since hiding the row anywhere else would hide the note with it. */
+.about-sum {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 2.75rem;
+  font-size: .92rem;
+  font-weight: 500;
+  color: var(--fg);
+  cursor: pointer;
+  list-style: none;
+}
+.about-sum::-webkit-details-marker { display: none; }
+.about-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius); }
+.about-info { width: 1.05rem; height: 1.05rem; flex: none; color: var(--accent-ink); }
+.about-chev { width: .9rem; height: .9rem; flex: none; color: var(--muted); transition: transform .16s; }
+.about-fold[open] .about-chev { transform: rotate(180deg); }
+@supports selector(::details-content) {
+  @media (min-width: 44.01rem), print {
+    .about-fold::details-content { content-visibility: visible; display: contents; }
+    .about-sum { display: none; }
+  }
+}
+
 /* The same fold as the host flag: a glyph at rest, the word unfurled beside it
    on hover or focus. Swapping display between the two cannot be animated, since
    display does not interpolate, and it took the cross away at the instant the
@@ -350,8 +381,9 @@ header { padding-block: 1.4rem; }
   gap: .32rem;
   /* Folded it is a disc, not a pill: as wide as it is tall. The border, the
      glyph and the two paddings have to add up to exactly that, border pixel
-     included, or the box goes oval and the cross sits off centre. */
-  --x-disc: 1.9rem;
+     included, or the box goes oval and the cross sits off centre. 2.75rem at
+     every width, since a pointer is a thumb on a touch laptop too. */
+  --x-disc: 2.75rem;
   --x-glyph: .8rem;
   height: var(--x-disc);
   max-width: var(--x-disc);
@@ -371,17 +403,19 @@ header { padding-block: 1.4rem; }
 /* flex: none, or the glyph is what gives way when the box is clipped */
 .about-x svg { width: var(--x-glyph); height: var(--x-glyph); flex: none; }
 .about-x span { opacity: 0; transition: opacity .18s; }
-.about-x:hover, .about-x:focus-visible {
-  max-width: 14rem;
-  color: var(--fg);
-  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+/* Wide only, unlike the flag. The flag sits in the card foot, in flow, so an
+   unfurled label costs nothing. This button is absolute at the end of the
+   folded row on a phone, and unfurled there it would lay its label across the
+   row's own words. */
+@media (min-width: 44.01rem) {
+  .about-x:hover, .about-x:focus-visible {
+    max-width: 14rem;
+    color: var(--fg);
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+  }
+  .about-x:hover span, .about-x:focus-visible span { opacity: 1; }
 }
-.about-x:hover span, .about-x:focus-visible span { opacity: 1; }
 .about-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* No (hover: none) rule here, unlike the flag. The flag sits in the card foot,
-   in flow, so an unfurled label costs nothing. This button is absolute over the
-   note, which reserves 3.4rem of end padding for it folded: unfurled on a phone
-   it would lay its label across the first line of the welcome text. */
 
 /* Width on the wrapper: as a flex item the box would otherwise size to its own
    max-content and stop short of the inline end. */
@@ -1324,14 +1358,15 @@ html:has(dialog[open]) {
 /* The note's own padding sets its top edge: padding does not collapse with a
    child's margin, so a note opening with a heading got both one after the other
    and sat visibly lower than one opening with a paragraph. The dismiss button
-   is absolutely positioned, so the first block of prose is whatever follows it,
-   one step further in when the prose template wrapped a fallback language. */
-.about > .about-x + *,
-.about > [lang] > :first-child { margin-top: 0; }
+   is absolutely positioned after the fold, so the first block of prose is
+   whatever follows the fold's row, one step further in when the prose template
+   wrapped a fallback language. */
+.about-sum + *,
+.about-fold > [lang] > :first-child { margin-top: 0; }
 /* Space below the last block is the card's padding to give. p:last-of-type used
    to say this: with lists and tables in the mix the last <p> is often mid-note,
    and every paragraph ending a list item or a quote matched it too. */
-:is(.about, .about > [lang]) > :last-child { margin-bottom: 0; }
+:is(.about-fold, .about-fold > [lang]) > :last-child { margin-bottom: 0; }
 
 :is(.about, .detail) ul { margin: 0 0 .9rem; padding-inline-start: 1.15rem; }
 /* Without a rule, ol kept the browser's 40px indent and sat visibly further in
@@ -1631,14 +1666,26 @@ footer { margin-top: 1rem; }
 
   /* finger-sized controls (44px) */
   .search-box input { padding-block: .55rem; }
-  /* 44px for the thumb, and still a disc: the fold caps the width, so raising
-     the height alone left a 30 by 44 oval with the cross 3px from the clip. */
-  .about-x {
-    --x-disc: 2.75rem;
-    height: var(--x-disc);
-    max-width: var(--x-disc);
-    padding-inline: calc((var(--x-disc) - var(--x-glyph)) / 2 - 1px);
-  }
+
+  /* The welcome note folds to one 44px row with the dismiss cross at its end,
+     so the first card shows without scrolling: on the demo at 390 by 844 it
+     sat 800px down with the note open. The open fold gets its padding back
+     and pulls the row out to the box's edge, where it was when closed. */
+  .tagline { margin-block-start: 1.2rem; font-size: 1.08rem; line-height: 1.45; }
+  .tagline + .about { margin-block-start: .8rem; }
+  .about { margin-block: .8rem 0; padding-block: 0; padding-inline: 0 2.9rem; }
+  .about-sum { padding-inline: 1rem .4rem; }
+  .about-fold[open] { padding-block: .2rem 1.1rem; padding-inline: 1.1rem 0; }
+  .about-fold[open] .about-sum { margin-inline-start: -1.1rem; }
+  .about-x { top: 0; inset-inline-end: 0; background: transparent; border-color: transparent; }
+  .toc { margin-block-start: 1rem; }
+  /* 2rem above a heading, with a scroll margin under it: at 1.6rem a heading
+     reached from the trail landed with 6.5px of the previous card still in
+     view. The first category sits closer to what is above it; .cat:first-of-type
+     never matches, since the welcome note is a <section> too. */
+  .way { margin-block: 2rem .8rem; }
+  .way-name { scroll-margin-top: 1.6rem; }
+  .cat:not(.cat ~ .cat) .way { margin-block-start: 1.3rem; }
 
   /* the category trail becomes a wrapping chip row under the intro */
 
@@ -1654,6 +1701,8 @@ footer { margin-top: 1rem; }
   .skip, .topbar-tools, .menu, .toc, .about-x, .card-foot, .btn, .back, .powered, .totop { display: none !important; }
   body { background: #fff; }
   .about, .card { border: 1px solid #999; box-shadow: none; background: #fff; }
+  /* the note prints whole, so it takes back the padding a phone gave its row */
+  .about { padding-block: 1.3rem; padding-inline: 1.5rem; }
   .cards { grid-template-columns: 1fr; }
   .card { break-inside: avoid; }
   .card-name { text-decoration: none; }

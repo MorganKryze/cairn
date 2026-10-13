@@ -230,7 +230,7 @@ func catName(cfg *config.Config, c config.Category, loc string) locText {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, Theme, Powered, Menu, Top string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, AboutSummary, Theme, Powered, Menu, Top string
 	// The six the leave dialog needs, empty on a site that does not ask for it.
 	// LeaveCopied is the label the copy button swaps to, so it goes into a data
 	// attribute rather than the button: the script needs both.
@@ -588,6 +588,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				Toc:               cfg.Str(loc, "nav.toc"),
 				LinksLabel:        cfg.Str(loc, "nav.links"),
 				Dismiss:           cfg.Str(loc, "about.dismiss"),
+				AboutSummary:      cfg.Str(loc, "about.summary"),
 				Theme:             cfg.Str(loc, "nav.theme"),
 				Powered:           cfg.Str(loc, "foot.powered"),
 				Menu:              cfg.Str(loc, "nav.menu"),

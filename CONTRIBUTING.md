@@ -136,7 +136,10 @@ fake clock, so a five-second poll costs no seconds.
 360, 390, 1280 and 1440 px, in light, in dark from the system and in dark from
 the toggle; the header (a 34px mark, the rule and its accent diamond on the
 content column, a long site name on a row of its own on a phone, 44px controls
-whose names contain the words they show); and the layouts that have to stay
+whose names contain the words they show); the welcome note folded to one row
+on a phone (it opens with or without JavaScript, remembers nothing, prints
+whole and shows whole on a wide screen, and the first card starts within 420px
+at 390 by 844); and the layouts that have to stay
 as they are (a bare header, a card with nothing at its foot, the detail head on
 a wide screen, a service that is not open). It runs against the demo's own config (`demo/config`, served
 without the demo stack, so every pill reads unknown), against

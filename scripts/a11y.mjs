@@ -759,11 +759,11 @@ const phone = await browser.newContext({ viewport: PHONE });
 const m = await phone.newPage();
 await m.goto(MANY);
 
-// A phone raises the dismiss button to 44px for the thumb, and that rule is
-// older than the fold. The fold caps the width from the desktop block, so
-// raising only the height leaves an oval with the cross pressed against the
-// clip: 30 by 44 with 3px of air on one side, on a shipped release. Held at
-// 320 as well, where a rem is no smaller but the note is tightest.
+// The dismiss button is 44px for the thumb, and that size is older than the
+// fold. The fold caps the width, so raising only the height leaves an oval
+// with the cross pressed against the clip: 30 by 44 with 3px of air on one
+// side, on a shipped release. Held at 320 as well, where a rem is no smaller
+// but the note is tightest.
 for (const width of [390, 320]) {
   await check(`the dismiss button is a disc at ${width}px`, async () => {
     const p = await browser.newPage({ viewport: { width, height: 780 } });
@@ -2343,6 +2343,115 @@ await check(
       await pg.close();
       if (bad.length)
         throw new Error(`these draw too small or nothing: ${bad.join(", ")}`);
+    },
+  );
+}
+
+// ---- the welcome note's fold ----
+
+// On a phone the note is one row, a <summary>. It has to be announced as a
+// disclosure that says whether it is open, which only the accessibility tree
+// can tell: a click handler on a div would look the same on screen.
+const foldPage = async (width, scheme = "light") => {
+  const ctx = await browser.newContext({
+    viewport: { width, height: 844 },
+    colorScheme: scheme,
+    reducedMotion: "reduce",
+  });
+  // the icons come from a CDN, and none of these checks looks at them
+  await ctx.route(
+    (u) => u.hostname !== "127.0.0.1",
+    (r) => r.abort(),
+  );
+  const p = await ctx.newPage();
+  await p.goto(SITE);
+  return { p, done: () => ctx.close() };
+};
+
+await check(
+  "the note's row is a disclosure that states its state",
+  async () => {
+    const { p, done } = await foldPage(390);
+    const cdp = await p.context().newCDPSession(p);
+    const row = async () => {
+      const { nodes } = await cdp.send("Accessibility.getFullAXTree");
+      const n = nodes.find((x) => x.role?.value === "DisclosureTriangle");
+      if (!n) return null;
+      const expanded = n.properties?.find((q) => q.name === "expanded");
+      return { name: n.name?.value, expanded: expanded?.value?.value };
+    };
+    const before = await row();
+    await p.click(".about-sum");
+    const after = await row();
+    await done();
+    if (!before) throw new Error("no disclosure in the accessibility tree");
+    if (!before.name) throw new Error("the disclosure has no name");
+    if (before.expanded !== false)
+      throw new Error(`folded, it reports expanded ${before.expanded}`);
+    if (after?.expanded !== true)
+      throw new Error(`opened, it reports expanded ${after?.expanded}`);
+  },
+);
+
+// The designed ring, not Chromium's own: with the rule gone the row still
+// gets an outline, style auto at 1px in the browser's blue.
+for (const scheme of ["light", "dark"]) {
+  await check(
+    `the note's row wears cairn's ring on keyboard focus in ${scheme}`,
+    async () => {
+      const { p, done } = await foldPage(390, scheme);
+      let on = false;
+      for (let i = 0; i < 40 && !on; i++) {
+        await p.keyboard.press("Tab");
+        on = await p.evaluate(() =>
+          document.activeElement?.classList.contains("about-sum"),
+        );
+      }
+      const m = on
+        ? await p.evaluate(() => {
+            const s = getComputedStyle(document.activeElement);
+            const probe = document.createElement("i");
+            probe.style.color = "var(--accent)";
+            document.body.append(probe);
+            const accent = getComputedStyle(probe).color;
+            probe.remove();
+            return {
+              ring: `${s.outlineStyle} ${parseFloat(s.outlineWidth)}px`,
+              colour: s.outlineColor,
+              accent,
+            };
+          })
+        : null;
+      await done();
+      if (!m) throw new Error("Tab never reaches the row");
+      if (m.ring !== "solid 2px")
+        throw new Error(`the row wears ${m.ring}, want solid 2px`);
+      if (m.colour !== m.accent)
+        throw new Error(`the ring is ${m.colour}, want the accent ${m.accent}`);
+    },
+  );
+}
+
+// A thumb's 44px for the row and the cross alike. The row only shows on a
+// phone; a wide screen has the note whole and the cross alone.
+for (const width of [360, 390, 1280, 1440]) {
+  await check(
+    `the note's row and dismiss button are 44px at ${width}px`,
+    async () => {
+      const { p, done } = await foldPage(width);
+      await p.locator("#about-x").waitFor({ state: "visible" });
+      const small = await p.$$eval(".about-sum, #about-x", (els) =>
+        els
+          .filter((e) => e.checkVisibility())
+          .map((e) => [e.className || e.id, e.getBoundingClientRect()])
+          .filter(([, r]) => r.width < 44 || r.height < 44)
+          .map(([n, r]) => `${n} ${r.width.toFixed(1)}x${r.height.toFixed(1)}`),
+      );
+      const row = await p.$eval(".about-sum", (e) => e.checkVisibility());
+      await done();
+      if (width <= 704 && !row)
+        throw new Error("the row is not shown on a phone");
+      if (small.length) throw new Error(small.join(", "));
     },
   );
 }
