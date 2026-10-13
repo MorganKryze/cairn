@@ -1662,9 +1662,11 @@ footer { margin-top: 1rem; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 0 1.3rem; }
 .foot-links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 .foot a { color: var(--muted); text-decoration: none; }
-.foot a:hover, .foot a:focus-visible { color: var(--fg); }
-/* every footer link: the list, the credit and the version alike */
-.foot a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
+.foot a:hover { color: var(--fg); }
+/* A footer link reads muted until it is reached. The keyboard's also draws
+   cairn's ring, which the browser's own 1px one would otherwise stand in for:
+   the list, the credit and the version link alike. */
+.foot a:focus-visible { color: var(--fg); outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 3px; }
 .powered { display: inline-flex; align-items: center; gap: .45rem; margin-inline-start: auto; font-size: .82rem; color: var(--muted); }
 .powered .foot-mark { width: .95rem; height: .95rem; }
 .powered a { position: relative; color: var(--accent-ink); font-weight: 500; }
@@ -1894,11 +1896,13 @@ footer { margin-top: 1rem; }
 
 
 @media print {
-  .skip, .topbar-tools, .menu, .toc, .about-x, .card-foot, .btn, .back, .powered, .totop { display: none !important; }
+  .skip, .topbar-tools, .menu, .toc, .about-x, .card-foot, .btn, .back, .powered, .totop, .shot-full { display: none !important; }
   body { background: #fff; }
   .about, .card { border: 1px solid #999; box-shadow: none; background: #fff; }
-  /* the note prints whole, so it takes back the padding a phone gave its row */
+  /* the note prints whole, so it takes back the padding a phone gave its row,
+     and an opened fold drops the padding it took to sit beside that row */
   .about { padding-block: 1.3rem; padding-inline: 1.5rem; }
+  .about-fold[open] { padding: 0; }
   .cards { grid-template-columns: 1fr; }
   .card { break-inside: avoid; }
   .card-name { text-decoration: none; }
@@ -1913,6 +1917,9 @@ footer { margin-top: 1rem; }
     word-break: break-all;
   }
   .shot { break-inside: avoid; }
+  /* Paper is white whatever the screen's theme. The dark theme's dimming
+     outranks a plain selector here, since it is reached through :root. */
+  .shot img { filter: none !important; }
   /* Paper does not scroll either: the strip goes and the screenshot prints at
      the column's width, whole. */
   .shot-scroll, .shot-scroll[data-more] { display: block; overflow: visible; mask-image: none; }

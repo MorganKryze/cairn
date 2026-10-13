@@ -863,6 +863,38 @@ for (const width of PHONES) {
       if (!f.shown) throw new Error("the folded note is left off the paper");
     },
   );
+  // The open fold takes padding on a phone screen to make room for its row,
+  // and paper has no row: opened or not, the note prints in the same place.
+  await check(
+    `printed at ${width}px an opened note sits where a folded one does`,
+    async () => {
+      const p = await open(`${DEMO}fr/`, width);
+      const at = () =>
+        p.$eval(".about-fold > :not(summary)", (b) => {
+          const r = b.getBoundingClientRect();
+          return { x: r.left, y: r.top, w: r.width };
+        });
+      await p.emulateMedia({ media: "print" });
+      const folded = await at();
+      await p.emulateMedia({ media: "screen" });
+      await p.click(".about-sum");
+      await p.emulateMedia({ media: "print" });
+      const opened = await at();
+      await p.close();
+      const off = ["x", "y", "w"].filter(
+        (k) => Math.abs(opened[k] - folded[k]) > 0.5,
+      );
+      if (off.length)
+        throw new Error(
+          off
+            .map(
+              (k) =>
+                `${k} ${opened[k].toFixed(1)} opened, ${folded[k].toFixed(1)} folded`,
+            )
+            .join("; "),
+        );
+    },
+  );
 }
 
 for (const width of WIDE) {
@@ -1594,6 +1626,33 @@ await check("a printed screenshot is whole at 390px", async () => {
     );
   if (bad.length) throw new Error(bad.join("; "));
 });
+// Paper is white whatever the screen's theme, and a link prints as words no
+// one can follow: a printed screenshot is never dimmed and drops the link to
+// the whole image.
+for (const theme of THEMES) {
+  await check(
+    `a printed screenshot is undimmed and has no link to follow in ${theme.name}`,
+    async () => {
+      const p = await open(`${DEMO}fr/whoami/`, 390, theme);
+      await p.emulateMedia({ media: "print" });
+      const all = await p.$$eval(".shot", (fs) =>
+        fs.map((f) => ({
+          name: f.querySelector("img").getAttribute("src").split("/").pop(),
+          filter: getComputedStyle(f.querySelector("img")).filter,
+          link: !!f.querySelector(".shot-full")?.checkVisibility(),
+        })),
+      );
+      await p.close();
+      const bad = [];
+      if (!all.length) bad.push("no screenshot on the page");
+      for (const s of all) {
+        if (s.filter !== "none") bad.push(`${s.name} prints at ${s.filter}`);
+        if (s.link) bad.push(`${s.name} prints its full-screenshot link`);
+      }
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
 
 // ---- every link and control is a 44px target ----
 
