@@ -427,10 +427,15 @@ header { padding-block: 1.4rem; }
 /* Width on the wrapper: as a flex item the box would otherwise size to its own
    max-content and stop short of the inline end. A search field keeps room for
    its clear button even while the button is hidden, so at 14.5rem Chromium
-   left "Chercher un outil…" 117px of the 123 it takes and WebKit 113. */
+   left "Chercher un outil…" 117px of the 123 it takes and WebKit 113.
+   At 15.5rem a Linux desktop, which draws system-ui in DejaVu Sans and names
+   the shortcut "Ctrl K", left the placeholder 119.8px of the 135.8 it takes.
+   ch follows a face with wide figures, but a zero is 10.7px in San Francisco
+   and 10.8px in DejaVu, so the count itself covers the wider face. The cap is
+   the focused width; staying under it leaves the field room to grow. */
 .search {
   margin-inline-start: auto;
-  width: min(15.5rem, 100%);
+  width: min(25.5ch, 19rem, 100%);
   transition: width .2s ease;
 }
 .search:focus-within { width: min(19rem, 100%); }

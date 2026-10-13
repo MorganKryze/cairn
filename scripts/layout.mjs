@@ -660,6 +660,20 @@ const searchField = () => {
   };
 };
 const ENFR = ["en", "fr"];
+// search.js names the shortcut after the platform, and "Ctrl K" off a Mac
+// takes 13px more of the field than "⌘K": with it, "Chercher un outil…" had
+// 119.8px of the 135.8 it takes in DejaVu Sans, the system-ui of a Linux
+// desktop. Both words are measured wherever this runs.
+const PLATFORMS = ["MacIntel", "Win32"];
+const openOn = async (url, width, platform) => {
+  const page = await (await contextFor(width, THEMES[0])).newPage();
+  await page.addInitScript((p) => {
+    Object.defineProperty(Navigator.prototype, "platform", { get: () => p });
+  }, platform);
+  await page.goto(url);
+  await page.evaluate(() => document.fonts.ready);
+  return page;
+};
 for (const width of WIDE) {
   await check(
     `the English and French placeholders show whole at ${width}px`,
@@ -667,13 +681,16 @@ for (const width of WIDE) {
       const cut = [];
       for (const base of [DEMO, SITE]) {
         for (const l of ENFR) {
-          const p = await open(`${base}${l}/`, width);
-          const f = await p.evaluate(searchField);
-          await p.close();
-          if (!f.whole)
-            cut.push(
-              `"${f.placeholder}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)} on ${base}${l}/`,
-            );
+          for (const platform of PLATFORMS) {
+            const p = await openOn(`${base}${l}/`, width, platform);
+            const f = await p.evaluate(searchField);
+            const hint = await p.locator(".search-kbd").textContent();
+            await p.close();
+            if (!f.whole)
+              cut.push(
+                `"${f.placeholder}" beside "${hint}" needs ${f.text.toFixed(1)}px of ${f.room.toFixed(1)} on ${base}${l}/`,
+              );
+          }
         }
       }
       if (cut.length) throw new Error(cut.join("; "));
