@@ -950,7 +950,7 @@ func TestCheckWarnsAboutAStringsOverrideThatSkipsALocale(t *testing.T) {
 	}
 }
 
-// cairn dresses its interface in seven languages. Any other locale renders
+// cairn dresses its interface in eight languages. Any other locale renders
 // with the right lang attribute and an entirely English menu, and nobody is
 // told: the pages build, they validate, and only a reader notices.
 func TestCheckWarnsAboutALocaleWithNoInterface(t *testing.T) {

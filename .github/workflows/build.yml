@@ -94,13 +94,14 @@ jobs:
       # reload are the behaviours the Go tests cannot reach: they assert the
       # markup that ships, not what happens once someone types, clicks, scrolls
       # or leaves a tab open. Deliberately not the demo stack, so this pulls
-      # nothing from a registry and can be a required check. Same three
+      # nothing from a registry and can be a required check. Same nine
       # instances as `just test-browser`: example/, the fixture with nine
-      # categories and a header burger, the one with a status page, and
-      # the one whose artwork differs between the two themes, none of which
-      # example/ has, and the one that guards its external links with a dialog.
-      # Then the demo's own config, the long site name and every built-in
-      # language, which layout.mjs measures at four widths.
+      # categories and a header burger, the one with a status page, the one
+      # whose artwork differs between the two themes, the one that guards its
+      # external links with a dialog and the one carrying a card per state,
+      # none of which example/ has. Then the demo's own config, the long site
+      # name and every built-in language, which layout.mjs measures at four
+      # widths.
       # Then a static export, served by the script itself.
       # The two lists are written twice and have to be kept in
       # step: a fixture added to the justfile alone leaves this job connecting

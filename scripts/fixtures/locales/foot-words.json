@@ -22,7 +22,7 @@
     "status": ["En ligne", "Hors ligne", "Dégradé", "Maintenance", "Inconnu"]
   },
   "it": {
-    "host": ["Auto-ospitato", "Esterno"],
+    "host": ["Self-hosted", "Esterno"],
     "status": ["Online", "Offline", "Degradato", "Manutenzione", "Sconosciuto"]
   },
   "nl": {
