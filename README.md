@@ -77,6 +77,10 @@ account or a manual, and boring for you to operate.
 
 <em>Behind a card when a visitor wants more than one sentence, and the same page in a hand.</em>
 
+<video src="https://github.com/MorganKryze/cairn/raw/main/docs/assets/demo.mp4" width="100%" autoplay loop muted playsinline></video>
+
+<em>Seventeen seconds: a visitor lands, searches, opens a service page, switches language. <a href="https://cairn.libresoftware.cloud">Click it yourself</a> if the player stays blank.</em>
+
 </div>
 
 ### What you get as the operator
