@@ -8,3 +8,8 @@ node_modules/
 
 # just save writes release tarballs here; they are downloads, not sources
 dist/
+
+# just clip writes both; only the mp4 is committed. The gif is a fallback for
+# the few places that refuse video, and at 3 MB it does not belong in a repo
+# whose whole binary is 4 MB.
+docs/assets/demo.gif

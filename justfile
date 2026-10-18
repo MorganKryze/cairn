@@ -255,6 +255,16 @@ shots: demo-rebuild
     @npx --yes playwright install --only-shell chromium
     @node scripts/screenshots.mjs
 
+# The short looping clip, for the places a still picture does not answer "what
+# is this page for". Same Gatus wait as `shots`, for the same reason: a clip
+# recorded before the first poll shows a wall of "unknown" pills.
+clip: demo-rebuild
+    @for i in $(seq 1 24); do p=$(curl -fs http://127.0.0.1:8080/en/ || true); echo "$p" | grep -q status-up && echo "$p" | grep -q status-down && break; [ "$i" = 24 ] && { echo "gatus never settled: every pill would read unknown" >&2; exit 1; }; sleep 5; done
+    @npm --silent install --no-save --no-package-lock playwright
+    @npx --yes playwright install --only-shell chromium
+    @command -v ffmpeg >/dev/null || { echo "ffmpeg not found: brew install ffmpeg" >&2; exit 1; }
+    @node scripts/demo-video.mjs
+
 # drive search and the accessibility behaviours in a real browser: what the Go
 # tests cannot see, since they assert the markup that ships and not what
 # happens once someone types, clicks or scrolls
