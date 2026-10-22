@@ -662,76 +662,114 @@ await check("the back link is a real target on a detail page", async () => {
   }
 });
 
-// A hosting flag that leads somewhere is a control: its word is painted before
-// anyone hovers, with motion allowed, and a thumb gets 44px to land on, the
-// chip or the band its ::before draws around it. Each flag on the page, light
-// and dark. The flag's colour eases over .2s when the theme turns, so it is
-// read once that has run.
+// A hosting flag that leads somewhere is a control. With a mouse it is its
+// icon at rest and a thumb still gets 44px to land on, the chip or the band
+// its ::before draws around it; Tab reaches it, and the word unfurls once the
+// card is focused or hovered, where its contrast is read. On a touch screen
+// the word is painted at rest. Each flag on the page, light and dark, with
+// motion allowed. The flag's colour eases over .2s when the theme turns and
+// the word over .3s when it unfurls, so each is read once that has run.
+const linkedFlags = (els) => {
+  const toRGB = (c) => {
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 1;
+    const x = cv.getContext("2d");
+    x.fillStyle = c;
+    x.fillRect(0, 0, 1, 1);
+    const d = x.getImageData(0, 0, 1, 1).data;
+    return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
+  };
+  return els.map((el) => {
+    const r = el.getBoundingClientRect(),
+      s = getComputedStyle(el),
+      b = getComputedStyle(el, "::before"),
+      label = el.querySelector(".flag-label");
+    const lr = label.getBoundingClientRect();
+    let w = r.width,
+      h = r.height;
+    if (b.content !== "none" && b.position === "absolute") {
+      const bx = parseFloat(s.borderLeftWidth),
+        by = parseFloat(s.borderTopWidth);
+      w = Math.max(
+        w,
+        r.width - 2 * bx - parseFloat(b.left) - parseFloat(b.right),
+      );
+      h = Math.max(
+        h,
+        r.height - 2 * by - parseFloat(b.top) - parseFloat(b.bottom),
+      );
+    }
+    const opacity = Number(getComputedStyle(label).opacity);
+    const inside =
+      lr.width > 0 && lr.left >= r.left - 0.5 && lr.right <= r.right + 0.5;
+    return {
+      word: label.textContent,
+      w,
+      h,
+      opacity,
+      shown: opacity === 1 && inside && lr.width >= label.scrollWidth - 0.5,
+      hidden: opacity === 0 || lr.width < 0.5,
+      ink: toRGB(getComputedStyle(label).color),
+      chip: toRGB(s.backgroundColor),
+    };
+  });
+};
 const atRest = await desk.newPage();
 await atRest.goto(SITE);
 for (const theme of ["light", "dark"]) {
   await check(
-    `a linked hosting flag shows its word at rest and is a 44px target in ${theme}`,
+    `with a mouse a linked hosting flag folds at rest, stays a 44px target and unfurls on Tab and hover in ${theme}`,
     async () => {
       await atRest.evaluate(
         (t) => (document.documentElement.dataset.theme = t),
         theme,
       );
+      await atRest.mouse.move(0, 0);
+      await atRest.evaluate(() => document.activeElement?.blur());
       await atRest.waitForTimeout(400);
-      const flags = await atRest.$$eval(".card-foot a.flag", (els) => {
-        const toRGB = (c) => {
-          const cv = document.createElement("canvas");
-          cv.width = cv.height = 1;
-          const x = cv.getContext("2d");
-          x.fillStyle = c;
-          x.fillRect(0, 0, 1, 1);
-          const d = x.getImageData(0, 0, 1, 1).data;
-          return `rgb(${d[0]}, ${d[1]}, ${d[2]})`;
-        };
-        return els.map((el) => {
-          const r = el.getBoundingClientRect(),
-            s = getComputedStyle(el),
-            b = getComputedStyle(el, "::before"),
-            label = el.querySelector(".flag-label");
-          const lr = label.getBoundingClientRect();
-          let w = r.width,
-            h = r.height;
-          if (b.content !== "none" && b.position === "absolute") {
-            const bx = parseFloat(s.borderLeftWidth),
-              by = parseFloat(s.borderTopWidth);
-            w = Math.max(
-              w,
-              r.width - 2 * bx - parseFloat(b.left) - parseFloat(b.right),
-            );
-            h = Math.max(
-              h,
-              r.height - 2 * by - parseFloat(b.top) - parseFloat(b.bottom),
-            );
-          }
-          return {
-            word: label.textContent,
-            w,
-            h,
-            opacity: Number(getComputedStyle(label).opacity),
-            shown:
-              lr.width > 0 &&
-              lr.left >= r.left - 0.5 &&
-              lr.right <= r.right + 0.5,
-            ink: toRGB(getComputedStyle(label).color),
-            chip: toRGB(s.backgroundColor),
-          };
-        });
-      });
+      const flags = await atRest.$$eval(".card-foot a.flag", linkedFlags);
       if (flags.length === 0)
         throw new Error("no linked hosting flag on this page");
       for (const f of flags) {
-        if (f.opacity !== 1 || !f.shown)
+        if (!f.hidden)
           throw new Error(
-            `"${f.word}" is not painted at rest: opacity ${f.opacity}, ${f.shown ? "inside" : "clipped by"} its chip`,
+            `"${f.word}" is painted at rest, at opacity ${f.opacity}`,
           );
         if (f.w < 44 || f.h < 44)
           throw new Error(
-            `"${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
+            `folded, "${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
+          );
+      }
+      let reached = false;
+      for (let i = 0; i < 200 && !reached; i++) {
+        await atRest.keyboard.press("Tab");
+        reached = await atRest.evaluate(() =>
+          document.activeElement?.matches(".card-foot a.flag"),
+        );
+      }
+      if (!reached) throw new Error("Tab never reaches a linked flag");
+      await atRest.waitForTimeout(400);
+      const [tabbed] = await atRest.$$eval(":focus", linkedFlags);
+      if (!tabbed.shown)
+        throw new Error(
+          `"${tabbed.word}" is not painted once Tab reaches it, at opacity ${tabbed.opacity}`,
+        );
+      await atRest.evaluate(() => document.activeElement.blur());
+      const n = await atRest.locator(".card:has(.card-foot a.flag)").count();
+      for (let i = 0; i < n; i++) {
+        await atRest.locator(".card:has(.card-foot a.flag)").nth(i).hover();
+        await atRest.waitForTimeout(400);
+        const [f] = await atRest.$$eval(
+          ".card:hover .card-foot a.flag",
+          linkedFlags,
+        );
+        if (!f || !f.shown)
+          throw new Error(
+            `hovered, "${f?.word}" is not painted: opacity ${f?.opacity}`,
+          );
+        if (f.w < 44 || f.h < 44)
+          throw new Error(
+            `unfurled, "${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
           );
         const r = ratio(f.ink, f.chip);
         if (r < 4.5)
@@ -743,6 +781,33 @@ for (const theme of ["light", "dark"]) {
   );
 }
 await atRest.close();
+await check(
+  "on a touch screen a linked hosting flag shows its word at rest",
+  async () => {
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const p = await ctx.newPage();
+    await p.goto(SITE);
+    await p.waitForTimeout(400);
+    const flags = await p.$$eval(".card-foot a.flag", linkedFlags);
+    await ctx.close();
+    if (flags.length === 0)
+      throw new Error("no linked hosting flag on this page");
+    for (const f of flags) {
+      if (!f.shown)
+        throw new Error(
+          `"${f.word}" is not painted at rest: opacity ${f.opacity}`,
+        );
+      if (f.w < 44 || f.h < 44)
+        throw new Error(
+          `"${f.word}" answers on ${Math.round(f.w)} by ${Math.round(f.h)}, and a thumb needs 44 by 44`,
+        );
+    }
+  },
+);
 
 // A card is one big link, so the pointer is a hand everywhere on it and says
 // nothing extra when it reaches a control. The fill is what tells a visitor
@@ -1789,6 +1854,12 @@ await check(
   await check(
     "a muted card and every badge still clear their thresholds",
     async () => {
+      // With a mouse the hosting word is folded until the card is hovered, so
+      // it is read unfurled.
+      if (await st.$(".card-off .flag-label")) {
+        await st.hover(".card-off");
+        await st.waitForTimeout(400);
+      }
       const bad = await st.evaluate(() => {
         // A number here can be negative and can be in scientific notation: a
         // mix just outside the gamut serialises as -3.48948e-7, and [\d.]+
@@ -1867,6 +1938,8 @@ await check(
           ]) {
             const el = card.querySelector(sel);
             if (!el) continue;
+            if (Number(getComputedStyle(el).opacity) !== 1)
+              fails.push(`${sel} is not painted, so its contrast is moot`);
             const r = ratio(inkOf(el), behind);
             if (r < floor)
               fails.push(`${sel} at ${r.toFixed(2)}:1, floor ${floor}`);

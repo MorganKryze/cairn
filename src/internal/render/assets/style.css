@@ -846,9 +846,12 @@ html { scrollbar-gutter: stable; }
    second row and the row gap above it, under nothing. */
 .card-foot:not(:has(.flag, .status-pill)) { display: none; }
 
-/* Host flag: an icon and its word, both shown at every width, hover or not.
-   Folded to the icon at rest, the flag said nothing until a pointer found it,
-   and the house and the cloud alone were read as decoration.
+/* Host flag: an icon and its word. The word folds behind the icon only where
+   a pointer can unfurl it, a screen with hover and motion allowed, and opens
+   on card hover or focus-within; folded, it is clipped and transparent, never
+   removed, so a screen reader still reads it. On touch and under reduced
+   motion it stays shown: a tap on a card leaves the page, so a fold there hid
+   the word for good.
    As a span it stays under the stretched-link overlay, so a click on it opens
    the service like the rest of the card. As a link, which it becomes when
    hosting_flag names a target, it is raised above: a third target inside the
@@ -891,6 +894,26 @@ a.flag::before,
   inset-inline: -1px;
 }
 .card-more::before { inset-inline: calc(-.5rem - 1px); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .flag {
+    gap: 0;
+    padding-inline-end: .5rem;
+    transition: gap .3s cubic-bezier(.2, .7, .3, 1), padding .3s cubic-bezier(.2, .7, .3, 1), color .2s, border-color .2s;
+  }
+  .flag-label {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding-inline-end: 0;
+    transition: max-width .3s cubic-bezier(.2, .7, .3, 1), padding .3s cubic-bezier(.2, .7, .3, 1), opacity .18s;
+  }
+  .card:hover .flag, .card:focus-within .flag { gap: .32rem; padding-inline-end: .6rem; }
+  .card:hover .flag-label, .card:focus-within .flag-label { max-width: 14rem; opacity: 1; padding-inline-end: .14rem; }
+  /* Folded, a linked flag is 34px wide: its band takes the 8px each side the
+     detail glyph takes, and gives them back once the word opens beside the
+     pill. */
+  .card:not(:hover, :focus-within) a.flag::before { inset-inline: calc(-.5rem - 1px); }
+}
 @media (prefers-reduced-motion: reduce) {
   /* the dismiss button keeps the fold and loses only the travel: it is
      absolute over the note and has no room to unfurl */

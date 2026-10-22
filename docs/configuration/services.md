@@ -58,8 +58,8 @@ start from a situation, not from features.
 Set `selfhosted: true` on a service you run yourself, or `selfhosted: false`
 on one hosted by someone else. The card gains a small flag at the start of its
 foot, the row under the icon and the text, that shows an icon and its word
-("Self-hosted" / "External") at every width. Omit the key and the card carries
-no flag.
+("Self-hosted" / "External"). On a screen with a mouse the word appears when
+the card is hovered or focused. Omit the key and the card carries no flag.
 
 It is a data-location cue for your guests: which tools keep their data on your
 server, and which send them to a third party.
