@@ -37,7 +37,7 @@ With the binary from a [release](https://github.com/MorganKryze/cairn/releases),
 here for Linux on amd64 (`linux_arm64` and `darwin_arm64` are there too):
 
 ```sh
-curl -fsSL https://github.com/MorganKryze/cairn/releases/download/v1.25.0/cairn_1.25.0_linux_amd64.tar.gz | tar -xz cairn
+curl -fsSL https://github.com/MorganKryze/cairn/releases/download/v1.25.1/cairn_1.25.1_linux_amd64.tar.gz | tar -xz cairn
 ./cairn -config ./config -assets ./assets -export site.zip
 ```
 
@@ -45,7 +45,7 @@ With the image, and nothing else installed:
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-  morgankryze/cairn:1.25.0 -config /work/config -assets /work/assets -export /work/site.zip
+  morgankryze/cairn:1.25.1 -config /work/config -assets /work/assets -export /work/site.zip
 ```
 
 Keep `--user`. The image runs as `nobody`, and `nobody` cannot write into a
@@ -149,7 +149,7 @@ jobs:
       - name: export the site
         run: |
           docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
-            morgankryze/cairn:1.25.0 -config /work/config -assets /work/assets -export /work/site
+            morgankryze/cairn:1.25.1 -config /work/config -assets /work/assets -export /work/site
       - uses: actions/upload-artifact@v4
         with:
           name: site
