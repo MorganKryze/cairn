@@ -89,7 +89,7 @@
       },
       "selfhosted": {
         "type": "boolean",
-        "description": "true if you host this service yourself, false if it is hosted elsewhere. Shows a small flag at the start of the card's foot, an icon and its word; omit for no flag."
+        "description": "true if you host this service yourself, false if it is hosted elsewhere. Shows a small flag at the start of the card's foot, an icon and its word; on a screen with a mouse the word appears when the card is hovered or focused. Omit for no flag."
       },
       "state": {
         "type": "string",

@@ -967,41 +967,100 @@ await check(
 
 // ---- the card foot ----
 
-// The hosting word is the point of the flag, so it is painted at rest, with
-// no hover and with motion allowed: a word clipped behind a fold was invisible
-// on a phone until a tap, and a tap on a card leaves the page.
-const NO_FOLD = { reducedMotion: "no-preference" };
+// With a mouse, and with motion allowed, the hosting flag is its icon at rest
+// and unfurls its word when the card is hovered or focused; on a touch screen
+// the word is painted at rest, since a tap on a card leaves the page. The
+// word is read after the unfurl with transitions off, so the check measures
+// where the flag lands rather than a frame of the travel.
+const MOUSE = { reducedMotion: "no-preference" };
+const TOUCH = {
+  reducedMotion: "no-preference",
+  hasTouch: true,
+  isMobile: true,
+};
 const FOOTED = [`${DEMO}fr/`, `${LOCALES}en/`, `${LOCALES}ar/`];
-for (const width of WIDTHS) {
-  await check(`the hosting word shows at rest at ${width}px`, async () => {
-    const bad = [];
-    for (const url of FOOTED) {
-      const p = await open(url, width, THEMES[0], NO_FOLD);
-      bad.push(
-        ...(
-          await p.$$eval(".card .flag", (flags) =>
-            flags.map((f) => {
-              const l = f.querySelector(".flag-label");
-              const fr = f.getBoundingClientRect(),
-                lr = l.getBoundingClientRect();
-              const opacity = Number(getComputedStyle(l).opacity);
-              const inside =
-                lr.width > 0 &&
-                lr.left >= fr.left - 0.5 &&
-                lr.right <= fr.right + 0.5;
-              return opacity === 1 && inside
-                ? null
-                : `"${l.textContent}" opacity ${opacity}, ${inside ? "inside" : "clipped by"} its flag`;
-            }),
-          )
-        )
-          .filter(Boolean)
-          .map((s) => `${s} on ${url}`),
-      );
-      await p.close();
-    }
-    if (bad.length) throw new Error([...new Set(bad)].slice(0, 6).join("; "));
+// Each flag on the page, its word painted or not, and whether a flag sharing
+// its foot with a pill still shares its row.
+const flagWords = (sel) =>
+  [...document.querySelectorAll(sel)].map((f) => {
+    const l = f.querySelector(".flag-label");
+    const fr = f.getBoundingClientRect(),
+      lr = l.getBoundingClientRect();
+    const opacity = Number(getComputedStyle(l).opacity);
+    const full = lr.width >= l.scrollWidth - 0.5;
+    const inside =
+      lr.width > 0 && lr.left >= fr.left - 0.5 && lr.right <= fr.right + 0.5;
+    const pill = f.closest(".card-foot").querySelector(".status-pill");
+    return {
+      word: l.textContent,
+      painted: opacity === 1 && inside && full,
+      hidden: opacity === 0 || lr.width < 0.5,
+      oneRow: !pill || Math.abs(pill.getBoundingClientRect().top - fr.top) < 1,
+      how: `opacity ${opacity}, ${inside ? "inside" : "clipped by"} its flag${full ? "" : ", cut short"}`,
+    };
   });
+// The page's CSP refuses an inline style, and the one that stops the travel
+// is the test's, so this context alone lets it through.
+const UNCSP = { ...MOUSE, bypassCSP: true };
+const NO_TRAVEL = "*, *::before, *::after { transition: none !important; }";
+for (const width of WIDTHS) {
+  await check(
+    `with a mouse the hosting word folds at rest and unfurls on hover or focus at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of FOOTED) {
+        const p = await open(url, width, THEMES[0], UNCSP);
+        await p.mouse.move(0, 0);
+        for (const f of await p.evaluate(flagWords, ".card .flag"))
+          if (!f.hidden) bad.push(`"${f.word}" is painted at rest on ${url}`);
+        await p.addStyleTag({ content: NO_TRAVEL });
+        const cards = p.locator(".card:has(.flag)");
+        const n = await cards.count();
+        if (n === 0) bad.push(`no flagged card on ${url}`);
+        for (let i = 0; i < n; i++) {
+          await cards.nth(i).hover();
+          await p.evaluate(settle);
+          await p.evaluate((i) => {
+            document.querySelectorAll(".card:has(.flag)")[i].dataset.probe =
+              "1";
+          }, i);
+          const [h] = await p.evaluate(flagWords, ".card[data-probe] .flag");
+          if (!h.painted) bad.push(`hovered, "${h.word}" ${h.how} on ${url}`);
+          if (!h.oneRow)
+            bad.push(`hovered, "${h.word}" takes a second row on ${url}`);
+          await p.mouse.move(0, 0);
+          await p.evaluate(() => {
+            const c = document.querySelector(".card[data-probe]");
+            c.querySelector("a, button").focus();
+          });
+          await p.evaluate(settle);
+          const [k] = await p.evaluate(flagWords, ".card[data-probe] .flag");
+          if (!k.painted) bad.push(`focused, "${k.word}" ${k.how} on ${url}`);
+          await p.evaluate(() => {
+            document.activeElement.blur();
+            delete document.querySelector(".card[data-probe]").dataset.probe;
+          });
+        }
+        await p.close();
+      }
+      if (bad.length) throw new Error([...new Set(bad)].slice(0, 6).join("; "));
+    },
+  );
+}
+for (const width of PHONES) {
+  await check(
+    `on a touch screen the hosting word shows at rest at ${width}px`,
+    async () => {
+      const bad = [];
+      for (const url of FOOTED) {
+        const p = await open(url, width, THEMES[0], TOUCH);
+        for (const f of await p.evaluate(flagWords, ".card .flag"))
+          if (!f.painted) bad.push(`"${f.word}" ${f.how} on ${url}`);
+        await p.close();
+      }
+      if (bad.length) throw new Error([...new Set(bad)].slice(0, 6).join("; "));
+    },
+  );
 }
 
 // The foot is a row of its own under the icon and the text, from the card's
@@ -1303,13 +1362,16 @@ const overlaps = (wrap) => {
   return out;
 };
 for (const width of WIDTHS) {
-  for (const wrap of [false, true]) {
+  // The third pass is a mouse at rest, where the flag folds to its icon and
+  // its band widens to keep 44px.
+  for (const [wrap, extra] of [[false], [true], [false, MOUSE]]) {
     await check(
-      `no two hit areas in a card overlap at ${width}px${wrap ? ", the foot wrapped" : ""}`,
+      `no two hit areas in a card overlap at ${width}px${wrap ? ", the foot wrapped" : ""}${extra ? ", the flag folded" : ""}`,
       async () => {
         const bad = [];
         for (const url of [`${DEMO}fr/`, `${LOCALES}de/`, `${LOCALES}ar/`]) {
-          const p = await open(url, width);
+          const p = await open(url, width, THEMES[0], extra);
+          if (extra) await p.mouse.move(0, 0);
           bad.push(
             ...(await p.evaluate(overlaps, wrap)).map((s) => `${s} on ${url}`),
           );
