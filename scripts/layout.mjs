@@ -2342,9 +2342,16 @@ for (const theme of THEMES.slice(0, 2)) {
 }
 
 // Gecko anchors to the badge's box before its transform, Blink after it, so a
-// badge lifted by a translate had Firefox's note over it. Firefox is not in CI:
-// CAIRN_FIREFOX=1 runs the gap check there when Playwright's Firefox is
+// badge lifted by a translate had Firefox's note over it. The flip below a
+// badge at the top of the screen and the mirrored start edge are Gecko's own
+// code too, and a note that stays above there is off the screen. Firefox is not
+// in CI: CAIRN_FIREFOX=1 runs the three there when Playwright's Firefox is
 // installed (npx playwright install firefox).
+const FIREFOX_NOTES = [
+  ["opens above its badge, clear of it,", 400, "above", ""],
+  ["flips below a badge at the top of the screen", 4, "below", ""],
+  ["starts at its badge's right edge right to left", 400, "above", "rtl"],
+];
 if (process.env.CAIRN_FIREFOX === "1") {
   let fx = null;
   try {
@@ -2356,20 +2363,27 @@ if (process.env.CAIRN_FIREFOX === "1") {
   }
   if (fx) {
     for (const width of WIDTHS) {
-      await check(
-        `in Firefox a state note opens above its badge, clear of it, at ${width}px`,
-        async () => {
-          const ctx = await fx.newContext({
-            viewport: { width, height: width > 704 ? 900 : 844 },
-            reducedMotion: "reduce",
-          });
-          const p = await ctx.newPage();
-          await p.goto(`${STATES}en/`);
-          const bad = noteFaults(await noteOnBadge(p, 400), "above");
-          await ctx.close();
-          if (bad.length) throw new Error(bad.join("\n        "));
-        },
-      );
+      for (const [what, at, side, dir] of FIREFOX_NOTES) {
+        await check(
+          `in Firefox a state note ${what} at ${width}px`,
+          async () => {
+            const ctx = await fx.newContext({
+              viewport: { width, height: width > 704 ? 900 : 844 },
+              reducedMotion: "reduce",
+            });
+            const p = await ctx.newPage();
+            await p.goto(`${STATES}en/`);
+            // room under the last row, so every badge can scroll to the top
+            await p.evaluate((dir) => {
+              document.body.style.paddingBlockEnd = "100vh";
+              if (dir) document.documentElement.dir = dir;
+            }, dir);
+            const bad = noteFaults(await noteOnBadge(p, at), side);
+            await ctx.close();
+            if (bad.length) throw new Error(bad.join("\n        "));
+          },
+        );
+      }
     }
     await fx.close();
   }
