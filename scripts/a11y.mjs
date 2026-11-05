@@ -2005,7 +2005,9 @@ await check(
         await sn.keyboard.press("Escape");
         if (await isOpen("note-beta")) bad.push("Escape left it open");
         await tap(".card-badge-beta");
-        await tap(".way-rule");
+        // The open note lies over the rule's middle, so outside is its start.
+        const rule = await sn.locator(".way-rule").first().boundingBox();
+        await sn.mouse.click(rule.x + 2, rule.y);
         if (await isOpen("note-beta")) bad.push("a click outside left it open");
         await tap(".card-badge-beta");
         await tap(".card-badge-beta");

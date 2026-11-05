@@ -784,6 +784,8 @@ html { scrollbar-gutter: stable; }
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   transition: border-color .16s, transform .16s, box-shadow .16s;
+  /* every card names its badge --state, and each note finds its own */
+  anchor-scope: --state;
 }
 .card:hover {
   border-color: color-mix(in oklab, var(--accent) 55%, var(--border));
@@ -929,14 +931,18 @@ a.flag::before,
    chip it was: the font, margin and cursor a button brings of its own are
    reset. Raised above the stretched link, which would take its click, above
    the film of a muted card, which would take its ink, and above that card's
-   text (z-index 2), which its hit band reaches on a phone under a long word. */
+   text (z-index 2), which its hit band reaches on a phone under a long word.
+   Its centre sits on the border by an offset of half its own height (half a
+   line, its padding and its border) and not by a translate: Gecko anchors a
+   note to the box before its transform, and a badge lifted by translateY(-50%)
+   had Firefox's note over it by 4.2px, where Blink left the 7.2px margin. */
 .card-badge {
   --b-ink: var(--muted);
+  anchor-name: --state;
   position: absolute;
   z-index: 3;
-  inset-block-start: 0;
+  inset-block-start: calc(-.5lh - .12rem - 1px);
   inset-inline-start: 1rem;
-  transform: translateY(-50%);
   margin: 0;
   padding: .12rem .55rem;
   border: 1px solid var(--border);
@@ -989,10 +995,11 @@ a.flag::before,
 .card-badge-deprecated { --b-ink: var(--ink-deprecated); border-color: color-mix(in oklab, var(--degraded) 40%, var(--border)); }
 .card-badge-soon { --b-ink: var(--ink-soon); border-color: color-mix(in oklab, var(--maintenance) 40%, var(--border)); }
 /* .card-badge-retired needs no rule: --muted above is already its colour. */
-/* What the state means: the card's own paper, raised. The browser centres an
-   open popover on screen, which is where it shows here. The border is the
+/* What the state means: the card's own paper, raised. The border is the
    control boundary, not decoration: in dark the note and the card under it
-   share a fill and the shadow barely shows. */
+   share a fill and the shadow barely shows. A browser without anchor
+   positioning centres the open note on screen, whole at any width, which the
+   measure below keeps it. */
 .state-note {
   max-inline-size: min(18rem, calc(100vw - 2rem));
   padding: .6rem .85rem .65rem;
@@ -1005,6 +1012,21 @@ a.flag::before,
   line-height: 1.5;
   text-wrap: pretty;
   overflow-wrap: break-word;
+}
+/* Above its badge and from the badge's start edge, so the card it explains
+   stays readable. A badge near the top of the screen has no room above, and
+   the note flips below it; near the end edge it flips to the other side. The
+   margins keep it off the badge whichever side it lands, and off the screen's
+   end edge. */
+@supports (anchor-name: --a) {
+  .state-note {
+    position-anchor: --state;
+    position-area: block-start span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    inset: auto;
+    margin-block: .45rem;
+    margin-inline: 0 .75rem;
+  }
 }
 
 /* The two disabling states. A film over the card rather than lighter text: the

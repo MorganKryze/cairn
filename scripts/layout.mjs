@@ -11,7 +11,7 @@
 //
 // Usage: node scripts/layout.mjs [demo] [longname] [locales] [example] [states] [many] [leave]
 import { readFileSync } from "node:fs";
-import { chromium } from "playwright";
+import { chromium, firefox } from "playwright";
 
 const arg = (i, env, port) =>
   (process.argv[i] ?? process.env[env] ?? `http://127.0.0.1:${port}/`).replace(
@@ -2206,6 +2206,175 @@ for (const theme of THEMES.slice(0, 2)) {
       },
     );
   }
+}
+
+// A badge's note opens on its badge, above it and from its start edge, so the
+// card it explains stays in view. A badge at the top of the screen has no room
+// above, and the note flips below rather than leave the screen. Either way it
+// never covers the badge, and the page never widens while it is open. Each
+// badge is scrolled to `at` px from the top and opened by its own click.
+const noteOnBadge = async (p, at) =>
+  p.evaluate(async (at) => {
+    const out = [];
+    for (const b of document.querySelectorAll(".card-badge")) {
+      scrollTo({
+        top: b.getBoundingClientRect().top + scrollY - at,
+        behavior: "instant",
+      });
+      b.click();
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+      const note = document.getElementById(b.getAttribute("popovertarget"));
+      const br = b.getBoundingClientRect(),
+        nr = note.getBoundingClientRect(),
+        rtl = getComputedStyle(b).direction === "rtl";
+      out.push({
+        word: b.textContent,
+        open: note.matches(":popover-open"),
+        above: br.top - nr.bottom,
+        below: nr.top - br.bottom,
+        start: rtl ? br.right - nr.right : nr.left - br.left,
+        inside:
+          nr.left >= 0 &&
+          nr.top >= 0 &&
+          nr.right <= innerWidth &&
+          nr.bottom <= innerHeight,
+        over:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      });
+      note.hidePopover();
+    }
+    return out;
+  }, at);
+const noteFaults = (all, side) => {
+  const bad = [];
+  if (!all.length) bad.push("no badge found");
+  for (const m of all) {
+    const gap = m[side];
+    if (!m.open) bad.push(`"${m.word}" does not open its note`);
+    else if (!(gap >= -0.5))
+      bad.push(
+        `"${m.word}" note is not ${side} its badge (gap ${gap.toFixed(1)}px)`,
+      );
+    else if (Math.abs(m.start) > 1)
+      bad.push(
+        `"${m.word}" note starts ${m.start.toFixed(1)}px off the badge's start edge`,
+      );
+    if (m.over > 0) bad.push(`"${m.word}" open widens the page by ${m.over}px`);
+  }
+  return bad;
+};
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `a state note opens above its badge, from its start edge, at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        const bad = noteFaults(await noteOnBadge(p, 400), "above");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `a state note flips below a badge at the top of the screen at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        // room under the last row, so every badge can scroll to the top
+        await p.evaluate(() => (document.body.style.paddingBlockEnd = "100vh"));
+        const bad = noteFaults(await noteOnBadge(p, 4), "below");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `right to left, a state note starts at its badge's right edge at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        await p.evaluate(() => (document.documentElement.dir = "rtl"));
+        const bad = noteFaults(await noteOnBadge(p, 400), "above");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// A browser without anchor positioning centres an open popover on screen, and
+// the note's measure has to keep it whole there. Blink has had no switch to
+// turn the feature off since it shipped, so the page drops the one block that
+// asks for it, the way such a browser drops it, and the check first proves the
+// note lost its anchor, or it would measure the anchored note and pass for
+// nothing.
+const unanchor = () => {
+  let gone = 0;
+  for (const sheet of document.styleSheets)
+    for (let i = sheet.cssRules.length - 1; i >= 0; i--) {
+      const r = sheet.cssRules[i];
+      if (r instanceof CSSSupportsRule && /anchor-name/.test(r.conditionText)) {
+        sheet.deleteRule(i);
+        gone++;
+      }
+    }
+  const note = document.querySelector(".state-note");
+  return gone && getComputedStyle(note).positionArea === "none";
+};
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `without anchor positioning a state note lies inside the screen at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        try {
+          if (!(await p.evaluate(unanchor)))
+            throw new Error("the note is still anchored to its badge");
+          const all = await noteOnBadge(p, 400);
+          const bad = all.length ? [] : ["no badge found"];
+          for (const m of all)
+            if (!m.open || !m.inside)
+              bad.push(`"${m.word}" note leaves the screen`);
+          if (bad.length) throw new Error(bad.join("\n        "));
+        } finally {
+          await p.close();
+        }
+      },
+    );
+  }
+}
+
+// Gecko anchors to the badge's box before its transform, Blink after it, so a
+// badge lifted by a translate had Firefox's note over it. Firefox is not in CI:
+// CAIRN_FIREFOX=1 runs the gap check there when Playwright's Firefox is
+// installed (npx playwright install firefox).
+if (process.env.CAIRN_FIREFOX === "1") {
+  let fx = null;
+  try {
+    fx = await firefox.launch();
+  } catch (e) {
+    console.log(
+      `  skip  Firefox is not installed: ${e.message.split("\n")[0]}`,
+    );
+  }
+  if (fx) {
+    for (const width of WIDTHS) {
+      await check(
+        `in Firefox a state note opens above its badge, clear of it, at ${width}px`,
+        async () => {
+          const ctx = await fx.newContext({
+            viewport: { width, height: width > 704 ? 900 : 844 },
+            reducedMotion: "reduce",
+          });
+          const p = await ctx.newPage();
+          await p.goto(`${STATES}en/`);
+          const bad = noteFaults(await noteOnBadge(p, 400), "above");
+          await ctx.close();
+          if (bad.length) throw new Error(bad.join("\n        "));
+        },
+      );
+    }
+    await fx.close();
+  }
+} else {
+  console.log("  skip  Firefox: set CAIRN_FIREFOX=1 to run its note checks");
 }
 
 // The rail is fixed, so the page scrolling never brings its foot into view: at
