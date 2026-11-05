@@ -40,9 +40,12 @@ esac
 go=false web=false image=false chart=false ci=false
 while IFS= read -r f; do
   [ -n "$f" ] || continue
-  # In a case pattern * crosses slashes, so src/*.go is every Go file under src.
+  # Everything under src/ is go, not only the .go files: templates and assets
+  # are compiled in with go:embed, and go test holds the CSP hashes to
+  # layout.tmpl and the rendered page to testdata/golden. In a case pattern
+  # * crosses slashes, so src/* is every file under src.
   case $f in
-    src/*.go | go.mod | go.sum | .golangci.yml) go=true ;;
+    src/* | go.mod | go.sum | .golangci.yml) go=true ;;
   esac
   case $f in
     src/internal/render/templates/* | src/internal/render/assets/* | scripts/* | example/*) web=true ;;
