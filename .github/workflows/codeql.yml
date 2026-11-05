@@ -20,7 +20,8 @@ on:
     branches: [main]
   # No paths filter, deliberately: these are required checks, and a required
   # check that never runs leaves a docs-only pull request waiting forever.
-  # security.yml carries the same note for the same reason.
+  # security.yml carries the same note for the same reason. What a pull
+  # request does not touch is skipped step by step instead, below.
   pull_request:
     branches: [main]
   # Default setup analysed on a schedule too. A weekly run is what catches a
@@ -33,12 +34,43 @@ permissions:
   contents: read
 
 jobs:
+  # What a pull request touches, as flags; .github/changes.sh holds the
+  # classification. Any other event sets every flag, so push and the
+  # schedule analyse what they always analysed. A flag reads `!= 'false'`
+  # so that if this job fails, everything is analysed.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.flags.outputs.go }}
+      web: ${{ steps.flags.outputs.web }}
+      ci: ${{ steps.flags.outputs.ci }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # the three-dot diff needs the merge base
+      - id: flags
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            bash .github/changes.sh "$BASE" "$HEAD"
+          else
+            bash .github/changes.sh
+          fi
+
   analyze:
     # Spelled out rather than left to GitHub, which names a matrix job after
     # every key in the entry: the build mode rode along, and the checks came
     # out as "Analyze (go, autobuild)". These names are what the ruleset
     # requires, so they are decided here rather than derived.
     name: Analyze (${{ matrix.language }})
+    # Never skipped as a job: a skipped matrix job reports once, under the
+    # unexpanded name "Analyze (${{ matrix.language }})", and the three
+    # checks the ruleset requires never arrive. The job always runs under
+    # its real name and skips its own steps when its flag is false.
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,24 +82,35 @@ jobs:
       matrix:
         # The three default setup reported, and the three the ruleset requires.
         # javascript-typescript covers both what the pages load and the scripts
-        # that drive the browser suite.
+        # that drive the browser suite. flag names the output of `changes`
+        # that says this language was touched.
         include:
           - language: actions
             build-mode: none
+            flag: ci
           - language: go
             build-mode: autobuild
+            flag: go
           - language: javascript-typescript
             build-mode: none
+            flag: web
+    env:
+      RUN: ${{ needs.changes.outputs[matrix.flag] != 'false' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - if: matrix.language == 'go'
+      - if: env.RUN != 'true'
+        run: echo "nothing this pull request changed is ${{ matrix.language }} code, so there is nothing to analyse"
+      - if: env.RUN == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: env.RUN == 'true' && matrix.language == 'go'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: stable
-      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      - if: env.RUN == 'true'
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      - if: env.RUN == 'true'
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: "/language:${{ matrix.language }}"
