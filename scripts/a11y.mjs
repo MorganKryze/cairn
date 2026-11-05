@@ -463,14 +463,14 @@ await check(
 await check(
   "a state or a pill never shifts the icon off the name",
   async () => {
-    for (const [path, what] of [
-      ["beta/", "a state and a pill"],
-      ["gone/", "a state and no pill"],
+    for (const [path, what, line] of [
+      ["beta/", "a state and a pill", ".detail-state-row"],
+      ["gone/", "a state and no pill", ".detail-note"],
     ]) {
       const page = await desk.newPage();
       await page.goto(new URL(path, STATES).href, { waitUntil: "networkidle" });
       await page.waitForTimeout(400);
-      const m = await page.evaluate(() => {
+      const m = await page.evaluate((line) => {
         const tile = document.querySelector(".detail-top .tile");
         const h1 = document.querySelector(".detail-top h1");
         if (!tile || !h1) return null;
@@ -478,13 +478,13 @@ await check(
           n = h1.getBoundingClientRect();
         return {
           off: t.top + t.height / 2 - (n.top + n.height / 2),
-          row: !!document.querySelector(".detail-state-row"),
+          row: !!document.querySelector(line),
         };
-      });
+      }, line);
       await page.close();
       if (!m) throw new Error(`no tile or no name on ${path}`);
       if (!m.row)
-        throw new Error(`${path} shows no state row, so this proves nothing`);
+        throw new Error(`${path} shows no ${line}, so this proves nothing`);
       if (Math.abs(m.off) > 1) {
         throw new Error(
           `with ${what}, the icon sits ${m.off.toFixed(1)}px off the name`,
@@ -1951,54 +1951,43 @@ await check(
     },
   );
 
-  // The rule between the pill and the state must not be drawn with nothing to
-  // its left, which is every disabling state, since none of them is monitored:
-  // a stroke hanging off the start of a line reads as a rendering fault.
-  await check(
-    "the rule appears only when a pill precedes the state",
-    async () => {
-      const border = async (page, path) => {
-        const p2 = await browser.newPage();
-        await p2.goto(new URL(path, page).href, { waitUntil: "networkidle" });
-        const m = await p2.evaluate(() => {
-          const el = document.querySelector(".detail-state");
-          if (!el) return null;
-          const s = getComputedStyle(el);
-          return {
-            w: parseFloat(s.borderInlineStartWidth) || 0,
-            style: s.borderInlineStartStyle,
-            pill: !!document.querySelector(".status-slot")?.textContent.trim(),
-          };
-        });
-        await p2.close();
-        return m;
-      };
-
-      const withPill = await border(STATES, "beta/");
-      if (!withPill)
-        throw new Error("the beta detail page names no state at all");
-      if (!withPill.pill)
-        throw new Error(
-          "the beta detail page has no pill, so this proves nothing",
-        );
-      if (withPill.w < 1 || withPill.style === "none") {
-        throw new Error("no rule beside a state that follows a pill");
-      }
-
-      const alone = await border(STATES, "gone/");
-      if (!alone)
-        throw new Error("the retired detail page names no state at all");
-      if (alone.pill)
-        throw new Error(
-          "the retired detail page has a pill, so this proves nothing",
-        );
-      if (alone.w >= 1 && alone.style !== "none") {
-        throw new Error(
-          "a rule is drawn with nothing to its left on a page that has no pill",
-        );
-      }
-    },
-  );
+  // The state's word and its meaning are one paragraph, and the colon between
+  // them is hidden from sight only: without it a screen reader runs "Beta
+  // Available" together as one phrase. The note is muted prose, so its
+  // contrast is read in both themes against whatever the page paints behind it.
+  await check("the detail state line reads word: note", async () => {
+    const p2 = await browser.newPage();
+    await p2.goto(new URL("beta/", STATES).href, { waitUntil: "networkidle" });
+    // The snapshot puts a space before the hidden colon, since a clipped
+    // absolute box reads to it as a block of its own; it is taken out here and
+    // nowhere else, so a missing colon or a second item still fails.
+    const said = (await p2.locator(".detail-note").ariaSnapshot()).replace(
+      / :/,
+      ":",
+    );
+    const want = `- paragraph: "Beta: Available, but still being tested: it may change."`;
+    const bad = [];
+    if (said !== want)
+      bad.push(`the line reads ${JSON.stringify(said)}, want ${want}`);
+    for (const theme of ["light", "dark"]) {
+      const [ink, behind] = await p2.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+        const note = document.querySelector(".detail-note > span:last-child");
+        let el = note;
+        let bg = "rgba(0, 0, 0, 0)";
+        while (el && /rgba\(.*, 0\)$|transparent/.test(bg)) {
+          bg = getComputedStyle(el).backgroundColor;
+          el = el.parentElement;
+        }
+        return [getComputedStyle(note).color, bg];
+      }, theme);
+      const r = ratio(ink, behind);
+      if (r < 4.5)
+        bad.push(`the note in ${theme} is ${r.toFixed(2)}:1, want 4.5`);
+    }
+    await p2.close();
+    if (bad.length) throw new Error(bad.join("; "));
+  });
 
   await st.close();
 }

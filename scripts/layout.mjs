@@ -200,11 +200,14 @@ await check("a service that is not open shows no Open button", async () => {
       const r = (s) => document.querySelector(s)?.getBoundingClientRect();
       const h1 = r(".detail-top h1"),
         tile = r(".detail-top .tile"),
-        state = r(".detail-state");
+        state = r(".detail-note");
       return {
         btn: !!document.querySelector(".detail-top .btn"),
         below: !!state && state.top >= h1.bottom - 1,
         start: state ? state.left - tile.left : NaN,
+        // One row gap at most: placed a row too far down, the empty row
+        // between them still costs its gap.
+        gap: state ? state.top - Math.max(h1.bottom, tile.bottom) : NaN,
       };
     });
     await p.close();
@@ -219,6 +222,10 @@ await check("a service that is not open shows no Open button", async () => {
     if (!(Math.abs(m.start) <= 1))
       throw new Error(
         `the state starts ${m.start}px from the tile's edge at ${width}px`,
+      );
+    if (!(m.gap <= 20))
+      throw new Error(
+        `the state sits ${m.gap.toFixed(1)}px under the name's row at ${width}px`,
       );
   }
 });
@@ -1488,57 +1495,31 @@ for (const width of PHONES) {
 // ---- the detail head and the hosted page on a phone ----
 
 // Open sits under the name, at the start of the line the tile starts, and the
-// pill and the state follow it on that one line, the way a store puts its Get
-// button under an app's name. Lifted onto the back link's row, Open sat a
-// whole row away from the name it acts on.
+// pill follows it on that one line, the way a store puts its Get button under
+// an app's name. Lifted onto the back link's row, Open sat a whole row away
+// from the name it acts on. The state's line comes under both, from the
+// tile's edge.
 const detailHead = () => {
   const r = (s) => document.querySelector(s).getBoundingClientRect();
   const tile = r(".detail-top .tile"),
     h1 = r(".detail-top h1"),
     btn = r(".detail-top .btn"),
     pill = r(".detail-top .status-pill"),
-    state = r(".detail-top .detail-state");
+    note = r(".detail-top .detail-note");
   const mid = (x) => x.top + x.height / 2;
   return {
     below: btn.top >= h1.bottom - 1,
     start: btn.left - tile.left,
-    order: pill.left >= btn.right && state.left >= pill.right,
-    spread:
-      Math.max(mid(btn), mid(pill), mid(state)) -
-      Math.min(mid(btn), mid(pill), mid(state)),
-  };
-};
-// The state row narrowed until it wraps: whatever starts a line draws no
-// divider before it, since a stroke there separates the item from nothing.
-const wrappedRow = () => {
-  const row = document.querySelector(".detail-top .detail-state-row");
-  // The pill's slot is display: contents, so the pill itself is the flex item.
-  const items = [...row.querySelectorAll(".status-pill, .detail-state")];
-  row.style.maxWidth = `${items[0].getBoundingClientRect().width + 4}px`;
-  const start = Math.min(...items.map((e) => e.getBoundingClientRect().left));
-  const tops = new Set(
-    items.map((e) => Math.round(e.getBoundingClientRect().top)),
-  );
-  return {
-    lines: tops.size,
-    divided: items
-      .filter((e) => Math.abs(e.getBoundingClientRect().left - start) < 1)
-      .filter((e) => {
-        // A stroke on the start side only is a divider; the pill's outline
-        // goes all the way round.
-        const c = getComputedStyle(e);
-        return (
-          parseFloat(c.borderInlineStartWidth) >
-          parseFloat(c.borderInlineEndWidth)
-        );
-      })
-      .map((e) => e.className),
+    order: pill.left >= btn.right,
+    spread: Math.abs(mid(btn) - mid(pill)),
+    under: note.top >= Math.max(btn.bottom, pill.bottom) - 1,
+    noteStart: note.left - tile.left,
   };
 };
 for (const width of PHONES) {
   for (const url of [`${LOCALES}de/beta/`, `${DEMO}fr/whoami/`]) {
     await check(
-      `Open leads the line under the name, then the pill and the state, at ${width}px on ${url}`,
+      `Open leads the line under the name, then the pill, at ${width}px on ${url}`,
       async () => {
         const p = await open(url, width);
         const m = await p.evaluate(detailHead);
@@ -1547,24 +1528,103 @@ for (const width of PHONES) {
         if (!m.below) bad.push("Open is not below the name");
         if (Math.abs(m.start) > 1)
           bad.push(`Open starts ${m.start.toFixed(1)}px from the tile's edge`);
-        if (!m.order) bad.push("the line does not read Open, pill, state");
+        if (!m.order) bad.push("the line does not read Open, then the pill");
         if (m.spread > 6)
           bad.push(`their centres are ${m.spread.toFixed(1)}px apart`);
+        if (!m.under)
+          bad.push("the state's line is not under Open and the pill");
+        if (Math.abs(m.noteStart) > 1)
+          bad.push(
+            `the state's line starts ${m.noteStart.toFixed(1)}px from the tile's edge`,
+          );
         if (bad.length) throw new Error(bad.join("; "));
       },
     );
+  }
+}
+
+// The state's line sits under the pill's row at every width, and wraps rather
+// than pushes the page sideways: the German note is the longest built-in one
+// on a 360px phone.
+for (const width of WIDTHS) {
+  for (const url of [`${LOCALES}de/beta/`, `${STATES}en/old/`]) {
     await check(
-      `a wrapped state line draws no divider at a line start at ${width}px on ${url}`,
+      `the state's line sits under the pill and fits at ${width}px on ${url}`,
       async () => {
         const p = await open(url, width);
-        const m = await p.evaluate(wrappedRow);
+        const m = await p.evaluate(() => {
+          const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+          const row = r(".detail-top .detail-state-row"),
+            note = r(".detail-top .detail-note"),
+            tile = r(".detail-top .tile"),
+            head = r(".detail-top");
+          if (!row || !note) return null;
+          // Placed by the grid's own flow, the line lands in the tile's
+          // column alone: under the row and from the tile's edge, as wanted,
+          // and 58px wide.
+          const cap = parseFloat(
+            getComputedStyle(document.querySelector(".detail-note"))
+              .maxInlineSize,
+          );
+          return {
+            narrow: note.width < Math.min(head.width, cap) - 1,
+            width: note.width,
+            under: note.top >= row.bottom - 1,
+            gap: note.top - row.bottom,
+            start: note.left - tile.left,
+            over: document.documentElement.scrollWidth - innerWidth,
+            out: note.right - innerWidth,
+          };
+        });
         await p.close();
-        if (m.lines < 2) throw new Error("the row did not wrap");
-        if (m.divided.length)
-          throw new Error(`a divider opens a line: ${m.divided.join(", ")}`);
+        if (!m) throw new Error("no pill row or no state line to measure");
+        const bad = [];
+        if (!m.under) bad.push("the state's line is not under the pill's row");
+        if (m.narrow)
+          bad.push(
+            `the line is ${m.width.toFixed(1)}px wide, not the head's width`,
+          );
+        if (m.gap > 12)
+          bad.push(`the line sits ${m.gap.toFixed(1)}px below the row`);
+        if (Math.abs(m.start) > 1)
+          bad.push(`it starts ${m.start.toFixed(1)}px from the tile's edge`);
+        if (m.over > 0) bad.push(`the page scrolls ${m.over}px sideways`);
+        if (m.out > 0) bad.push(`the line runs ${m.out.toFixed(1)}px off`);
+        if (bad.length) throw new Error(bad.join("; "));
       },
     );
   }
+}
+
+// A site with no monitor has no pill, so an open service with a state has Open
+// and the state's line and no row between them. No fixture is that site, so
+// the row is taken out of a page that has one; :has() follows the change live.
+for (const width of WIDTHS) {
+  await check(
+    `with no pill, the state's line sits under Open at ${width}px`,
+    async () => {
+      const p = await open(`${STATES}en/old/`, width);
+      const m = await p.evaluate(() => {
+        document.querySelector(".detail-top .detail-state-row")?.remove();
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        const tile = r(".detail-top .tile"),
+          h1 = r(".detail-top h1"),
+          btn = r(".detail-top .btn"),
+          note = r(".detail-top .detail-note");
+        const above = Math.max(tile.bottom, h1.bottom, btn.bottom);
+        return { gap: note.top - above, start: note.left - tile.left };
+      });
+      await p.close();
+      const bad = [];
+      if (m.gap < -1)
+        bad.push(`the line overlaps what is above it by ${-m.gap}px`);
+      if (m.gap > 20)
+        bad.push(`the line sits ${m.gap.toFixed(1)}px under what is above it`);
+      if (Math.abs(m.start) > 1)
+        bad.push(`it starts ${m.start.toFixed(1)}px from the tile's edge`);
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
 }
 
 // A hosted page on a phone: the title stands alone, with no rule running off
@@ -2200,7 +2260,7 @@ for (const width of WIDTHS) {
 
 for (const width of PHONES) {
   await check(
-    `right to left, the detail line reads Open, pill, state from the right at ${width}px`,
+    `right to left, the detail line reads Open, pill from the right, the state under them, at ${width}px`,
     async () => {
       const p = await open(`${LOCALES}ar/beta/`, width);
       const m = await p.evaluate(() => {
@@ -2208,16 +2268,23 @@ for (const width of PHONES) {
         const tile = r(".detail-top .tile"),
           btn = r(".detail-top .btn"),
           pill = r(".detail-top .status-pill"),
-          state = r(".detail-top .detail-state");
+          note = r(".detail-top .detail-note");
         return {
           start: tile.right - btn.right,
-          order: pill.right <= btn.left + 0.5 && state.right <= pill.left + 0.5,
+          order: pill.right <= btn.left + 0.5,
+          under: note.top >= pill.bottom - 1,
+          noteStart: tile.right - note.right,
         };
       });
       await p.close();
       const bad = [];
       if (!m.order)
-        bad.push("the line does not read Open, pill, state from the right");
+        bad.push("the line does not read Open, then the pill, from the right");
+      if (!m.under) bad.push("the state's line is not under the pill");
+      if (Math.abs(m.noteStart) > 1)
+        bad.push(
+          `the state's line ends ${m.noteStart.toFixed(1)}px from the tile's right edge`,
+        );
       if (Math.abs(m.start) > 1)
         bad.push(
           `Open ends ${m.start.toFixed(1)}px from the tile's right edge`,

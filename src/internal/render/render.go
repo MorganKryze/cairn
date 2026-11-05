@@ -212,6 +212,16 @@ func tr(ls config.LString, loc, def string) locText {
 	return t
 }
 
+// stateNote is what a service's state means to the visitor: the operator's own
+// state_note when there is one, in whatever language it was written, else the
+// built-in line for that state in the page's language.
+func stateNote(cfg *config.Config, s config.Service, loc, def string) locText {
+	if t := tr(s.StateNote, loc, def); t.Text != "" {
+		return t
+	}
+	return locText{Text: cfg.Str(loc, "state."+string(s.State)+".note")}
+}
+
 func proseOf(t locText, ctx mdCtx) prose {
 	return prose{Blocks: mdBlocks(t.Text, ctx), Lang: t.Lang, Dir: t.Dir}
 }
@@ -373,7 +383,7 @@ type detailView struct {
 	StatusID                                   string
 	Icon, URL, Status, StatusLabel, StatusHref string
 	IconClass                                  string // see cardView.IconClass
-	Name, Desc                                 locText
+	Name, Desc, StateNote                      locText
 	StatusA11y                                 string
 	Body                                       prose
 	Images                                     []imageView
@@ -702,6 +712,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				if s.State != config.StateNone {
 					dv.State = string(s.State)
 					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					dv.StateNote = stateNote(cfg, s, loc, def)
 				}
 				if !dv.Off {
 					dv.Status = statusOf(cfg, statuses, s.ID)

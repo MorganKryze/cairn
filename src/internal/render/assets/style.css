@@ -1189,20 +1189,28 @@ a.status-pill:focus-visible { outline: 2px solid var(--accent-ink); outline-offs
 .detail-top h1 { grid-area: 2 / 2; min-width: 0; }
 .detail-top .btn { grid-area: 2 / 3; justify-self: end; margin: 0; }
 .detail-top .detail-state-row { grid-area: 3 / 1 / 4 / -1; }
+/* The state's line goes under the pill's row, or takes that row when there is
+   no pill, which is every disabling state: an empty grid row still costs its
+   gap. */
+.detail-top .detail-note { grid-area: 4 / 1 / 5 / -1; }
+.detail-top:not(:has(.detail-state-row)) .detail-note { grid-area: 3 / 1 / 4 / -1; }
 .detail-top h1 { flex: 1 1 auto; min-width: 0; }
-/* No card here, so no badge: the state shares the pill's row under the title.
-   On a line of its own it read as an orphan, and the pill leads as the heavier
-   object. */
 .detail-state-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
-/* A rule between them: one claim was measured, the other declared. Only when
-   the slot before it holds something, though. A disabling state has no pill,
-   and a slot the monitor has not answered yet is empty, and either would leave
-   a stroke hanging off nothing. :empty is live, so the rule arrives with the
-   pill status.js swaps in. */
-.detail-state-row .status-slot:not(:empty) + .detail-state {
-  padding-inline-start: .8rem;
-  border-inline-start: 1px solid var(--border);
+/* No card here, so no badge: the state is a line of its own, word first and
+   what it means after it, in muted prose. The row above says what the monitor
+   measured, this one what the operator declared. */
+.detail-note {
+  margin: 0;
+  max-inline-size: 40rem;
+  font-size: .95rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+  color: var(--muted);
 }
+.detail-note .detail-state { margin-inline-end: .55rem; }
+/* Pulled toward the pill's row: at the grid's own gap the two read as two
+   unrelated blocks, and they are the two halves of what state it is in. */
+.detail-state-row + .detail-note { margin-block-start: -.4rem; }
 .detail-state {
   font-size: .72rem;
   font-weight: 600;
@@ -1418,12 +1426,12 @@ html:has(dialog[open]) {
    the keyboard still tabs copy, stay, continue, trading 2.4.3 for a layout. */
 @media (max-width: 44rem) {
   /* No room beside a name at this width. Open leads the line under it, then
-     the pill, then the state, the way a store puts its Get button under an
-     app's name: up on the back link's row it sat a whole row away from the
-     name it acts on. That line reads in the order Tab walks it. Open spans
-     the tile's column and the next one, so it starts where the tile does; a
-     service that is not open has no button, and its state takes the line
-     from the tile's edge.
+     the pill, the way a store puts its Get button under an app's name: up on
+     the back link's row it sat a whole row away from the name it acts on.
+     That line reads in the order Tab walks it, and the state's own line
+     comes under it. Open spans the tile's column and the next one, so it
+     starts where the tile does; a service that is not open has no button,
+     and its state takes the line from the tile's edge.
 
      Open at 2.75rem, the thumb target the rest of the phone layout uses. The
      article's own padding already parts the head from the header, so the
@@ -1440,6 +1448,9 @@ html:has(dialog[open]) {
   }
   .detail-top .detail-state-row { grid-area: 3 / 3 / 4 / 4; }
   .detail-top:not(:has(.btn)) .detail-state-row { grid-area: 3 / 1 / 4 / -1; }
+  /* Open holds the line under the name here, so the state's line goes under
+     it even with no pill beside it. */
+  .detail-top:has(.btn):not(:has(.detail-state-row)) .detail-note { grid-area: 4 / 1 / 5 / -1; }
   .detail-top .btn .btn-glyph { width: 1em; height: 1em; }
   /* The pill on a detail page stands alone and is a link to the status page, so
      it takes a thumb's 44px of height. The one in a card foot keeps its 28px
@@ -1447,10 +1458,6 @@ html:has(dialog[open]) {
      every card down. */
   .detail-top .status-pill { min-height: 2.75rem; padding-inline: .8rem .9rem; font-size: .82rem; }
   .detail-top a.status-pill::before { display: none; }
-  /* A line this narrow can wrap, and a divider would then open the next line
-     with a stroke that separates the state from nothing: the gap alone parts
-     the pill from the state here. */
-  .detail-state-row .status-slot:not(:empty) + .detail-state { padding-inline-start: 0; border-inline-start: 0; }
   .leave-acts { flex-direction: column; align-items: stretch; }
   .leave-acts .btn { margin-inline-start: 0; justify-content: center; }
 }

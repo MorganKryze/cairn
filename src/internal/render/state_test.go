@@ -115,12 +115,13 @@ func TestADisabledCardIsStillSearchable(t *testing.T) {
 	}
 }
 
-func TestTheDetailPageShowsTheStateBesideThePill(t *testing.T) {
-	// a decorative state on a service with a detail page: both must appear,
-	// the state first, and inside one row
+// detailPage renders one service's detail page in the given locale, with a
+// status address so a live service has a pill to sit under.
+func detailPage(t *testing.T, locales, service, page string) string {
+	t.Helper()
 	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
-		"site.yaml":     "locales: [en]\nstatus:\n  gatus: https://status.example.org\n",
-		"services.yaml": "- {id: beta, url: 'https://beta.example.org', name: Beta one, state: beta, details: Long.}\n",
+		"site.yaml":     "locales: " + locales + "\nstatus:\n  gatus: https://status.example.org\n",
+		"services.yaml": service,
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -129,24 +130,71 @@ func TestTheDetailPageShowsTheStateBesideThePill(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := string(m.Pages["en/beta"].HTML)
-	// The span, not the row that wraps both. `class="detail-state` matches
-	// `detail-state-row` too, and that wrapper precedes the pill whichever
-	// order its children are in: written that way this could not see the order
-	// it claimed to hold, and passed against both.
-	i := strings.Index(page, `class="detail-state detail-state-`)
-	j := strings.Index(page, `class="status-slot`)
-	if i < 0 {
-		t.Fatal("the detail page does not name the state at all")
+	return string(m.Pages[page].HTML)
+}
+
+const betaService = "- {id: beta, url: 'https://beta.example.org', name: Beta one, state: beta, details: Long.}\n"
+
+func TestTheDetailPageSaysWhatTheStateMeansUnderThePill(t *testing.T) {
+	page := detailPage(t, "[en]", betaService, "en/beta")
+	// One paragraph, so a screen reader reads the word and its meaning as one
+	// item, and the hidden colon so it does not run them together as one phrase.
+	want := `<p class="detail-note"><span class="detail-state detail-state-beta">Beta</span>` +
+		`<span class="visually-hidden">: </span><span>Available, but still being tested: it may change.</span></p>`
+	if !strings.Contains(page, want) {
+		t.Fatalf("the detail page does not carry the state line %s", want)
 	}
-	if j < 0 {
-		t.Fatal("no status slot on a page that has a monitor: nothing to order against")
+	row := strings.Index(page, `<div class="detail-state-row">`)
+	note := strings.Index(page, `<p class="detail-note">`)
+	if row < 0 {
+		t.Fatal("a live service lost the row its pill sits in")
 	}
-	if i < j {
-		t.Error("the state is written before the pill: the pill is the heavier object and leads the row")
+	if note < row {
+		t.Error("the state line is written before the pill's row, so it is read before what the monitor measured")
 	}
-	if !strings.Contains(page, `class="detail-state-row"`) {
-		t.Error("the two are not in one row, so the state falls under the pill and reads as an orphan")
+	if strings.Contains(page[row:note], `class="detail-state `) {
+		t.Error("the state word is still in the pill's row as well as on its own line")
+	}
+}
+
+func TestAStateNoteReplacesTheBuiltInOne(t *testing.T) {
+	page := detailPage(t, "[en]",
+		"- {id: beta, url: 'https://beta.example.org', name: Beta one, state: beta, state_note: Ask Sam before relying on it., details: Long.}\n",
+		"en/beta")
+	if !strings.Contains(page, `<span class="visually-hidden">: </span><span>Ask Sam before relying on it.</span></p>`) {
+		t.Error("the service's own state_note is not the line under the pill")
+	}
+	if strings.Contains(page, "still being tested") {
+		t.Error("the built-in note is still on a page whose service replaced it")
+	}
+}
+
+func TestAStateNoteInAnotherLanguageIsMarkedAsSuch(t *testing.T) {
+	page := detailPage(t, "[en, fr]",
+		"- {id: beta, url: 'https://beta.example.org', name: Beta one, state: beta, state_note: {en: Ask Sam first.}, details: Long.}\n",
+		"fr/beta")
+	if !strings.Contains(page, `<span lang="en">Ask Sam first.</span></p>`) {
+		t.Error("an English state_note on the French page is not marked lang=\"en\", so a screen reader reads it in French")
+	}
+}
+
+func TestAPageWithoutStateHasNoStateLine(t *testing.T) {
+	page := detailPage(t, "[en]", "- {id: plain, url: 'https://plain.example.org', name: Plain, details: Long.}\n", "en/plain")
+	if page == "" {
+		t.Fatal("no detail page for the plain service")
+	}
+	if strings.Contains(page, "detail-note") {
+		t.Error("a service with no state still prints a state line")
+	}
+}
+
+func TestARetiredPageHasNoEmptyPillRow(t *testing.T) {
+	page := detailPage(t, "[en]", "- {id: gone, url: 'https://gone.example.org', name: Gone one, state: retired, details: Moved.}\n", "en/gone")
+	if strings.Contains(page, "detail-state-row") {
+		t.Error("a retired service, which has no pill, still prints the pill's row")
+	}
+	if !strings.Contains(page, `<p class="detail-note"><span class="detail-state detail-state-retired">`) {
+		t.Error("a retired service lost its state line, the one place that says it is gone")
 	}
 }
 

@@ -36,3 +36,24 @@
   selfhosted: true
   details: |
     Here so the detail page has a sign-in note to measure.
+
+# After the others, so the first muted card on the page stays the retired one
+# the contrast checks read. This one has its own state_note, the case where
+# the line under the pill is the operator's and not cairn's.
+- id: old
+  url: https://old.example.org
+  name: Old one
+  desc: On its way out.
+  state: deprecated
+  state_note: Use the new vault instead; this one closes at the end of the year.
+  selfhosted: true
+  details: |
+    Here so a detail page carries a note the operator wrote.
+
+- id: soon
+  name: Soon one
+  desc: Not open yet.
+  state: soon
+  selfhosted: true
+  details: |
+    The second muted state, so both can be reached from one page.
