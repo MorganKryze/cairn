@@ -30,7 +30,11 @@ case $# in
   1) files=$(cat) ;;
   # --no-renames: rename detection prints only where a file went, so a Go
   # file moved to docs/ would read as a docs change and skip every check.
-  *) files=$(git diff --no-renames --name-only "$1...$2") || all "git diff $1...$2 failed" ;;
+  # -z: without it, a path with a non-ASCII character or a quote comes out
+  # wrapped in quotes and matches no pattern. A newline in a name splits it
+  # in two, and the first piece still starts with the directory it is in.
+  *) files=$(git diff --no-renames --name-only -z "$1...$2" | tr '\0' '\n') ||
+    all "git diff $1...$2 failed" ;;
 esac
 
 go=false web=false image=false chart=false ci=false
