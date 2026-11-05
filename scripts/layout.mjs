@@ -1852,30 +1852,41 @@ for (const theme of THEMES) {
 
 // ---- every link and control is a 44px target ----
 
-// Where a pointer or a thumb lands for a control: its border box, or the
-// absolute ::before drawn around it when that covers more. The pseudo's
-// offsets count from inside the control's border: a positioned box lays out
-// its absolute children from its padding box. Runs in the page.
+// Where a pointer or a thumb lands for a control: its border box, or an
+// absolute ::before or ::after drawn over it when that gives the wider short
+// side. A card's state badge carries its target on ::after, and on a phone that
+// is a square at the badge's start, smaller in area than a long word's badge
+// but the only part 44px tall. The pseudo's offsets count from inside the
+// control's border: a positioned box lays out its absolute children from its
+// padding box. Runs in the page.
 const hitRect = (el) => {
   const r = el.getBoundingClientRect();
-  let box = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
   const s = getComputedStyle(el),
-    b = getComputedStyle(el, "::before");
-  if (
-    s.position !== "static" &&
-    b.content !== "none" &&
-    b.display !== "none" &&
-    b.position === "absolute"
-  ) {
-    const px = parseFloat;
+    px = parseFloat;
+  const short = (q) => Math.min(q.x1 - q.x0, q.y1 - q.y0);
+  const area = (q) => (q.x1 - q.x0) * (q.y1 - q.y0);
+  let box = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+  for (const which of ["::before", "::after"]) {
+    const b = getComputedStyle(el, which);
+    if (
+      s.position === "static" ||
+      b.content === "none" ||
+      b.display === "none" ||
+      b.position !== "absolute"
+    )
+      continue;
     const p = {
       x0: r.left + px(s.borderLeftWidth) + px(b.left),
       y0: r.top + px(s.borderTopWidth) + px(b.top),
       x1: r.right - px(s.borderRightWidth) - px(b.right),
       y1: r.bottom - px(s.borderBottomWidth) - px(b.bottom),
     };
-    const area = (q) => (q.x1 - q.x0) * (q.y1 - q.y0);
-    if (Object.values(p).every(Number.isFinite) && area(p) > area(box)) box = p;
+    if (!Object.values(p).every(Number.isFinite)) continue;
+    if (
+      short(p) > short(box) + 0.5 ||
+      (short(p) > short(box) - 0.5 && area(p) > area(box))
+    )
+      box = p;
   }
   return { ...box, w: box.x1 - box.x0, h: box.y1 - box.y0 };
 };
@@ -1886,7 +1897,9 @@ const hitRect = (el) => {
 // on it, and which of its neighbours its hit area overlaps by more than .5px.
 // Exempt are a link inside a sentence of the operator's prose, which WCAG
 // 2.5.8 lets keep its line, and the card name, whose link is the whole card;
-// they and a control nested in another sit out the overlap too. A hosted
+// they and a control nested in another sit out the overlap too. A card's state
+// badge is held to 24px where a mouse points, the WCAG 2.5.8 floor, since a
+// band any taller would take the click meant for the icon. A hosted
 // page's back link sits in a paragraph of its own and is no prose. The skip link
 // is off screen until focused, so it is measured focused, at the end. Runs in
 // the page; the scope is a selector, the whole document by default.
@@ -1928,6 +1941,10 @@ const pageTargets = (hitRect, scope) => {
         el.matches(".card-name") ||
         (el.matches("a:not(.back)") && !!el.closest(PROSE)),
       fixed: getComputedStyle(el).position === "fixed",
+      min:
+        el.matches(".card-badge") && matchMedia("(hover: hover)").matches
+          ? 24
+          : 44,
       x0: r.x0 + scrollX,
       y0: r.y0 + scrollY,
       x1: r.x1 + scrollX,
@@ -1995,7 +2012,8 @@ const targetFaults = ({ skip, list }) => {
   const bad = [];
   for (const t of [...list, ...(skip ? [skip] : [])]) {
     if (t.exempt) continue;
-    if (t.w < 43.5 || t.h < 43.5)
+    const min = (t.min ?? 44) - 0.5;
+    if (t.w < min || t.h < min)
       bad.push(`${t.name} is ${t.w.toFixed(1)}x${t.h.toFixed(1)}`);
     if (t.missed.length)
       bad.push(`${t.name} does not answer at its ${t.missed.join(", ")} edge`);
@@ -2097,6 +2115,92 @@ for (const theme of THEMES) {
               bad.push(`${o.what}: ${b}`);
             await p.close();
           }
+        }
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// A card's state badge answers a thumb on 44px: the sweep above runs with a
+// mouse, where the badge is held to 24px, so its square is measured here under
+// a touch screen, against every other target of the page. The card name is
+// exempt from that sweep, its link being the whole card, so the square is held
+// clear of the name's own words apart. With a mouse the band stays off the
+// tile's icon, and a click on the tile opens the service.
+const BADGED = [`${DEMO}fr/`, `${LOCALES}de/`, `${LOCALES}ar/`, `${STATES}en/`];
+const badgeClearance = (hitRect) =>
+  [...document.querySelectorAll(".card-badge")].map((b) => {
+    const card = b.closest(".card"),
+      h = hitRect(b),
+      apart = (r) =>
+        Math.min(
+          Math.min(h.x1, r.right) - Math.max(h.x0, r.left),
+          Math.min(h.y1, r.bottom) - Math.max(h.y0, r.top),
+        ),
+      tile = card.querySelector(".tile > *").getBoundingClientRect();
+    return {
+      word: b.textContent,
+      name: apart(card.querySelector(".card-name").getBoundingClientRect()),
+      tile: apart(tile),
+    };
+  });
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `a card's state badge is a 44px target on a touch screen, clear of the name, at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        for (const url of BADGED) {
+          const p = await open(url, width, theme, TOUCH);
+          const found = await targets(p);
+          const mine = targetFaults(found).filter((f) =>
+            f.includes("card-badge"),
+          );
+          if (!found.list.some((t) => /card-badge/.test(t.name)))
+            mine.push("no badge found");
+          for (const f of mine) bad.push(`${url}: ${f}`);
+          for (const c of await p.evaluate(`(${badgeClearance})(${hitRect})`))
+            if (c.name > 0.5)
+              bad.push(
+                `${url}: "${c.word}" reaches its name by ${c.name.toFixed(1)}px`,
+              );
+          await p.close();
+        }
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `with a mouse a card's state badge keeps off the icon, and the tile opens the service, at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        for (const url of BADGED) {
+          const p = await open(url, width, theme, MOUSE);
+          const all = await p.evaluate(`(${badgeClearance})(${hitRect})`);
+          if (!all.length) bad.push(`${url}: no badge found`);
+          for (const c of all)
+            if (c.tile > 0.5)
+              bad.push(
+                `${url}: "${c.word}" reaches its icon by ${c.tile.toFixed(1)}px`,
+              );
+          const hit = await p.evaluate(() => {
+            const card = document
+              .querySelector(".card:not(.card-off) .card-badge")
+              ?.closest(".card");
+            if (!card) return "no live badged card";
+            card.scrollIntoView({ block: "center", behavior: "instant" });
+            const t = card.querySelector(".tile").getBoundingClientRect();
+            const el = document.elementFromPoint(
+              (t.left + t.right) / 2,
+              (t.top + t.bottom) / 2,
+            );
+            return el?.closest("a, button")?.className ?? el?.tagName;
+          });
+          if (hit !== "card-name")
+            bad.push(
+              `${url}: the tile of a live badged card answers as ${hit}`,
+            );
+          await p.close();
         }
         if (bad.length) throw new Error(bad.join("\n        "));
       },

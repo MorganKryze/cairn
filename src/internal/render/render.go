@@ -302,6 +302,10 @@ type cardView struct {
 	// StateLabel is that word in the page's language. Neither has anything to do
 	// with a status level.
 	State, StateLabel string
+	// StateNote is what the state means, opened from the badge. NoteID ties the
+	// two together: the badge opens and is described by the element it names.
+	StateNote locText
+	NoteID    string
 	// Off is the two disabling states, hoisted onto the view so the template asks
 	// one question instead of comparing strings in three places.
 	Off bool
@@ -655,6 +659,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				if s.State != config.StateNone {
 					card.State = string(s.State)
 					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					card.StateNote = stateNote(cfg, s, loc, def)
+					card.NoteID = "note-" + s.ID
 				}
 				// A disabling state means nothing is monitored, so there is no slot
 				// for a pill to be swapped into.

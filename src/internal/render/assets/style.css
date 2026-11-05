@@ -918,36 +918,94 @@ a.flag::before,
   /* the dismiss button keeps the fold and loses only the travel: it is
      absolute over the note and has no room to unfurl */
   .about-x, .about-x span { transition: none; }
-  header, .nav-links { transition: none; }
+  header, .nav-links, .card-badge { transition: none; }
 }
 /* Where a service stands, declared and not measured, so it carries no dot: the
    dot in the foot is what says a machine looked. It hangs on the top border
    rather than taking a row inside the card, because the grid stretches a row to
    its tallest card and a row inside charged 27px to every card beside it,
    measured. Out here it lives in the gap between rows, and .card declares no
-   overflow to open. */
+   overflow to open. It is a button that opens the state's note, drawn as the
+   chip it was: the font, margin and cursor a button brings of its own are
+   reset. Raised above the stretched link, which would take its click, above
+   the film of a muted card, which would take its ink, and above that card's
+   text (z-index 2), which its hit band reaches on a phone under a long word. */
 .card-badge {
+  --b-ink: var(--muted);
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   inset-block-start: 0;
   inset-inline-start: 1rem;
   transform: translateY(-50%);
+  margin: 0;
   padding: .12rem .55rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   /* the card's own fill, or the border it sits on shows through */
   background: inherit;
-  color: var(--muted);
+  color: var(--b-ink);
+  font: inherit;
   font-size: .66rem;
   font-weight: 600;
   letter-spacing: .05em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: background .16s, color .16s, border-color .16s;
 }
-.card-badge-beta { color: var(--ink-beta); border-color: color-mix(in oklab, var(--up) 40%, var(--border)); }
-.card-badge-new { color: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
-.card-badge-deprecated { color: var(--ink-deprecated); border-color: color-mix(in oklab, var(--degraded) 40%, var(--border)); }
-.card-badge-soon { color: var(--ink-soon); border-color: color-mix(in oklab, var(--maintenance) 40%, var(--border)); }
+/* Filled like every outlined control on hover, and while its note is open, so
+   the open note says which badge it belongs to. */
+@media (hover: hover) {
+  .card-badge:hover { background: var(--b-ink); border-color: var(--b-ink); color: var(--card); }
+}
+.card:has(.state-note:popover-open) .card-badge {
+  background: var(--b-ink);
+  border-color: var(--b-ink);
+  color: var(--card);
+}
+.card-badge:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+/* The drawn badge is about 18px tall. With a mouse a 24px band answers, the
+   floor WCAG 2.5.8 sets, and it stays clear of the icon so a click on the tile
+   still opens the service. A thumb gets 44px: a square at the badge's start,
+   over the icon tile, the one corner of the card that holds no other target.
+   It ends 44px in, before the name's column. Both reach 10px above the card's
+   edge and no further: a band 12px up met the category heading's own target
+   by .6px, measured at 1280. */
+.card-badge::after {
+  content: "";
+  position: absolute;
+  inset-inline: -1px;
+  inset-block-start: calc(50% - 10px);
+  block-size: 24px;
+}
+@media (hover: none) {
+  .card-badge::after {
+    inset-inline-end: auto;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+  }
+}
+.card-badge-beta { --b-ink: var(--ink-beta); border-color: color-mix(in oklab, var(--up) 40%, var(--border)); }
+.card-badge-new { --b-ink: var(--accent-ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.card-badge-deprecated { --b-ink: var(--ink-deprecated); border-color: color-mix(in oklab, var(--degraded) 40%, var(--border)); }
+.card-badge-soon { --b-ink: var(--ink-soon); border-color: color-mix(in oklab, var(--maintenance) 40%, var(--border)); }
 /* .card-badge-retired needs no rule: --muted above is already its colour. */
+/* What the state means: the card's own paper, raised. The browser centres an
+   open popover on screen, which is where it shows here. The border is the
+   control boundary, not decoration: in dark the note and the card under it
+   share a fill and the shadow barely shows. */
+.state-note {
+  max-inline-size: min(18rem, calc(100vw - 2rem));
+  padding: .6rem .85rem .65rem;
+  border: 1px solid var(--ui-border);
+  border-radius: .7rem;
+  background: var(--card);
+  color: var(--fg);
+  box-shadow: var(--shadow-lift);
+  font-size: .9rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
 
 /* The two disabling states. A film over the card rather than lighter text: the
    card, the icon and the two chips recede together.

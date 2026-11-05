@@ -1951,6 +1951,212 @@ await check(
     },
   );
 
+  // The badge is a button that opens a popover holding what the state means.
+  // Every click below goes to the badge's centre with the mouse rather than
+  // through a locator, which would refuse a covered target and wait: a badge
+  // under the stretched link or the film has to fail here, not time out.
+  {
+    const sn = await browser.newPage();
+    await sn.goto(STATES, { waitUntil: "networkidle" });
+    const BETA = "Available, but still being tested: it may change.";
+    const isOpen = (id) =>
+      sn.evaluate(
+        (id) => document.getElementById(id)?.matches(":popover-open") ?? null,
+        id,
+      );
+    const tap = async (sel) => {
+      const b = await sn.locator(sel).first().boundingBox();
+      if (!b) throw new Error(`${sel} is not on the page`);
+      await sn.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+    };
+    // A stray click that followed a link would leave every later check
+    // measuring another page.
+    const home = async () => {
+      await sn.keyboard.press("Escape");
+      if (sn.url() !== STATES)
+        await sn.goto(STATES, { waitUntil: "networkidle" });
+    };
+
+    await check(
+      "the badge is a button named by its word, described by its note",
+      async () => {
+        const cdp = await sn.context().newCDPSession(sn);
+        const { nodes } = await cdp.send("Accessibility.getFullAXTree");
+        await cdp.detach();
+        // Chromium hands the name back in the capitals the badge is drawn in,
+        // so the word is compared without case.
+        const node = nodes.find(
+          (n) =>
+            n.role?.value === "button" &&
+            n.name?.value.toLowerCase() === "beta",
+        );
+        if (!node)
+          throw new Error("no button named Beta: the badge is not a control");
+        eq(node.description?.value, BETA, "its description");
+      },
+    );
+
+    await check(
+      "a click opens the note; Escape, a click outside and a second click close it",
+      async () => {
+        const bad = [];
+        await tap(".card-badge-beta");
+        if (!(await isOpen("note-beta"))) bad.push("a click left it shut");
+        await sn.keyboard.press("Escape");
+        if (await isOpen("note-beta")) bad.push("Escape left it open");
+        await tap(".card-badge-beta");
+        await tap(".way-rule");
+        if (await isOpen("note-beta")) bad.push("a click outside left it open");
+        await tap(".card-badge-beta");
+        await tap(".card-badge-beta");
+        if (await isOpen("note-beta")) bad.push("a second click left it open");
+        if (sn.url() !== STATES) bad.push(`the click went to ${sn.url()}`);
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+
+    await check("Enter and Space open it from the keyboard", async () => {
+      const bad = [];
+      for (const key of ["Enter", "Space"]) {
+        await sn.focus(".card-badge-beta");
+        await sn.keyboard.press(key);
+        if (!(await isOpen("note-beta"))) bad.push(`${key} left it shut`);
+        await sn.keyboard.press("Escape");
+      }
+      await home();
+      if (bad.length) throw new Error(bad.join("; "));
+    });
+
+    await check(
+      "the open note says the note alone, and the badge its word alone",
+      async () => {
+        await tap(".card-badge-beta");
+        const m = await sn.evaluate(() => {
+          const b = document.querySelector(".card-badge-beta");
+          const glyph = ["::before", "::after"]
+            .map((p) => getComputedStyle(b, p).content)
+            .filter((c) => c !== "none" && c !== "normal" && c !== '""');
+          return {
+            note: document.getElementById("note-beta").innerText.trim(),
+            word: b.textContent,
+            children: b.children.length,
+            glyph,
+          };
+        });
+        await home();
+        eq(m.note, BETA, "the open note");
+        eq(m.word, "Beta", "the badge's text");
+        if (m.children || m.glyph.length)
+          throw new Error(
+            `the badge carries a glyph: ${m.children} elements, generated ${m.glyph.join(", ")}`,
+          );
+      },
+    );
+
+    // The film over a muted card lets clicks through but not ink, so the badge
+    // has to sit above it to be read, and its note has to stay readable on a
+    // page that is otherwise receding.
+    await check(
+      "a muted card's badge opens its note, and the note holds 4.5:1",
+      async () => {
+        const bad = [];
+        const id = await sn.$eval(".card-off .card-badge", (b) =>
+          b.getAttribute("popovertarget"),
+        );
+        await tap(".card-off .card-badge");
+        if (!(await isOpen(id))) bad.push("a click left it shut");
+        const over = await sn.$eval(".card-off .card-badge", (b) => {
+          const z = (el, p) => Number(getComputedStyle(el, p).zIndex) || 0;
+          return z(b) > z(b.closest(".card"), "::after");
+        });
+        if (!over)
+          bad.push("the badge sits under the film, so its word recedes");
+        for (const theme of ["light", "dark"]) {
+          const [ink, paper] = await sn.evaluate(
+            ([id, theme]) => {
+              document.documentElement.dataset.theme = theme;
+              const s = getComputedStyle(document.getElementById(id));
+              return [s.color, s.backgroundColor];
+            },
+            [id, theme],
+          );
+          const r = ratio(ink, paper);
+          if (r < 4.5)
+            bad.push(`the note in ${theme} is ${r.toFixed(2)}:1, want 4.5`);
+        }
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+
+    // In dark the note and the card under it share a fill and the shadow
+    // barely shows, so the border is the only edge the note has.
+    await check(
+      "the note's border is 1px all round in --ui-border",
+      async () => {
+        await tap(".card-badge-beta");
+        const bad = [];
+        for (const theme of ["light", "dark"]) {
+          const m = await sn.evaluate((theme) => {
+            document.documentElement.dataset.theme = theme;
+            const n = document.getElementById("note-beta");
+            const probe = document.createElement("span");
+            probe.style.color = "var(--ui-border)";
+            n.parentElement.append(probe);
+            const want = getComputedStyle(probe).color;
+            probe.remove();
+            const s = getComputedStyle(n);
+            return ["Top", "Right", "Bottom", "Left"].map((side) => [
+              side,
+              s[`border${side}Width`],
+              s[`border${side}Style`],
+              s[`border${side}Color`] === want ? "ok" : s[`border${side}Color`],
+            ]);
+          }, theme);
+          for (const [side, w, style, colour] of m) {
+            if (w !== "1px" || style !== "solid" || colour !== "ok")
+              bad.push(`${theme} ${side}: ${w} ${style} ${colour}`);
+          }
+        }
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+
+    await check(
+      "Tab reaches the badge before the name, and rings it 2px solid",
+      async () => {
+        // A fresh load: Escape hands focus back to the badge that opened the
+        // note, and from there the next Tab is already past it.
+        await sn.goto(STATES, { waitUntil: "networkidle" });
+        let first = null;
+        let ring = null;
+        for (let i = 0; i < 80 && !first; i++) {
+          await sn.keyboard.press("Tab");
+          [first, ring] = await sn.evaluate(() => {
+            const a = document.activeElement;
+            const card = document
+              .querySelector(".card-badge-beta")
+              .closest(".card");
+            if (a.matches(".card-badge-beta")) {
+              const s = getComputedStyle(a);
+              return ["badge", `${s.outlineWidth} ${s.outlineStyle}`];
+            }
+            if (a === card.querySelector(".card-name")) return ["name", null];
+            return [null, null];
+          });
+        }
+        if (first !== "badge")
+          throw new Error(
+            `Tab reached the ${first ?? "end"} first, not the badge`,
+          );
+        eq(ring, "2px solid", "the focus ring");
+      },
+    );
+    await sn.close();
+  }
+
   // The state's word and its meaning are one paragraph, and the colon between
   // them is hidden from sight only: without it a screen reader runs "Beta
   // Available" together as one phrase. The note is muted prose, so its
