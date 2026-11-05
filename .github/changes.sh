@@ -28,7 +28,9 @@ all() {
 case $# in
   0) all "not a pull request" ;;
   1) files=$(cat) ;;
-  *) files=$(git diff --name-only "$1...$2") || all "git diff $1...$2 failed" ;;
+  # --no-renames: rename detection prints only where a file went, so a Go
+  # file moved to docs/ would read as a docs change and skip every check.
+  *) files=$(git diff --no-renames --name-only "$1...$2") || all "git diff $1...$2 failed" ;;
 esac
 
 go=false web=false image=false chart=false ci=false
