@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Says which parts of the repository a pull request touches, as flags in
-# $GITHUB_OUTPUT that the jobs of build.yml, security.yml and codeql.yml read
-# to decide whether they have anything to check.
+# $GITHUB_OUTPUT (stdout when unset, to run it locally) that the jobs of
+# build.yml and security.yml read to decide whether they have anything to check.
 #
 # The workflows cannot use a `paths:` filter on pull_request for this: their
 # jobs are required checks, and a workflow that never starts never reports
@@ -17,10 +17,12 @@
 # request merge with nothing checked.
 set -uo pipefail
 
+out=${GITHUB_OUTPUT:-/dev/stdout}
+
 flags="go web image chart ci"
 
 all() {
-  for f in $flags; do echo "$f=true"; done >>"$GITHUB_OUTPUT"
+  for f in $flags; do echo "$f=true"; done >>"$out"
   echo "every check runs: $1"
   exit 0
 }
@@ -50,17 +52,18 @@ while IFS= read -r f; do
   case $f in
     src/internal/render/templates/* | src/internal/render/assets/* | scripts/* | example/*) web=true ;;
   esac
-  # README.md because the image job holds the README's stated pull size to
-  # the image it builds.
+  # Not README.md: the image job checks the README's stated pull size on push
+  # to main only, so a README-only pull request would build it for nothing.
   case $f in
-    src/* | go.mod | go.sum | docker/* | demo/* | README.md) image=true ;;
+    src/* | go.mod | go.sum | docker/* | demo/*) image=true ;;
   esac
   case $f in
     charts/*) chart=true ;;
   esac
-  # A workflow, or this file, decides what runs: changing either runs it all.
+  # A workflow, or this file and its test, decides what runs: changing one
+  # runs it all.
   case $f in
-    .github/workflows/* | .github/changes.sh) ci=true ;;
+    .github/workflows/* | .github/changes.sh | .github/changes_test.sh) ci=true ;;
   esac
 done <<<"$files"
 
@@ -75,4 +78,4 @@ printf '%s\n' "$files"
   echo "image=$image"
   echo "chart=$chart"
   echo "ci=$ci"
-} | tee -a "$GITHUB_OUTPUT"
+} | if [ "$out" = /dev/stdout ]; then cat; else tee -a "$out"; fi

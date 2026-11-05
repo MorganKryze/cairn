@@ -19,6 +19,7 @@ on:
       - "go.sum"
       - ".github/workflows/build.yml"
       - ".github/changes.sh"
+      - ".github/changes_test.sh"
   # No paths filter here on purpose: these jobs are required checks, and a
   # required check that never runs leaves a docs-only pull request waiting
   # forever. The `changes` job below skips them by `if:` instead, which
@@ -73,6 +74,8 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: latest
+      - name: Classifier cases
+        run: bash .github/changes_test.sh
 
   coverage:
     needs: changes

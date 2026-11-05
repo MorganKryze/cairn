@@ -35,6 +35,10 @@ lint:
     golangci-lint run
     golangci-lint fmt --diff
 
+# check which checks a pull request's files turn on
+changes-test:
+    bash .github/changes_test.sh
+
 # install the git pre-commit hook
 hooks:
     git config core.hooksPath githooks
