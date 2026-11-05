@@ -142,6 +142,7 @@ func missingTranslations(cfg *config.Config) []string {
 		for _, s := range c.Services {
 			warn(fmt.Sprintf("service %q name", s.ID), s.Name)
 			warn(fmt.Sprintf("service %q desc", s.ID), s.Desc)
+			warn(fmt.Sprintf("service %q state note", s.ID), s.StateNote)
 			warn(fmt.Sprintf("service %q details", s.ID), s.Details)
 			for _, img := range s.Images {
 				warn(fmt.Sprintf("service %q image caption", s.ID), img.Caption)

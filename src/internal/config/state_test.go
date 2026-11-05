@@ -102,3 +102,46 @@ func TestTheFiveStatesAreNamedInTheStringsTable(t *testing.T) {
 		}
 	}
 }
+
+// A site string under a note's key replaces the built-in for the locales it
+// names and only those: the others keep the built-in note.
+func TestASiteStringReplacesAStateNote(t *testing.T) {
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"site.yaml":     "locales: [fr, en]\nstrings:\n  state.beta.note: {fr: Encore en rodage.}\n",
+		"services.yaml": "- {id: a, url: 'https://a.example.org', name: A, state: beta}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.Str("fr", "state.beta.note"); got != "Encore en rodage." {
+		t.Errorf("fr note = %q, want the site string", got)
+	}
+	if got := cfg.Str("en", "state.beta.note"); got != "Available, but still being tested: it may change." {
+		t.Errorf("en note = %q, want the built-in one", got)
+	}
+}
+
+// A note alone would never print, since the note explains a badge and no
+// badge exists without a state, so it is refused rather than dropped.
+func TestAStateNoteWithoutAStateIsRefused(t *testing.T) {
+	_, err := loadServices(t, "- {id: a, url: 'https://a.example.org', name: A, state_note: Bientôt}\n")
+	if err == nil {
+		t.Fatal("a state_note with no state was accepted, and it would never show")
+	}
+	for _, want := range []string{"services.yaml line 1", "state_note", "state:"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %q: %s", want, err)
+		}
+	}
+}
+
+func TestStateNoteDecodesPerLocale(t *testing.T) {
+	cfg, err := loadServices(t, "- {id: a, url: 'https://a.example.org', name: A, state: deprecated, state_note: {fr: Remplacé par B., en: Replaced by B.}}\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	note := cfg.Categories[0].Services[0].StateNote
+	if note["fr"] != "Remplacé par B." || note["en"] != "Replaced by B." {
+		t.Errorf("state_note decoded as %v", note)
+	}
+}
