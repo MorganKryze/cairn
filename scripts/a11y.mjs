@@ -463,14 +463,14 @@ await check(
 await check(
   "a state or a pill never shifts the icon off the name",
   async () => {
-    for (const [path, what] of [
-      ["beta/", "a state and a pill"],
-      ["gone/", "a state and no pill"],
+    for (const [path, what, line] of [
+      ["beta/", "a state and a pill", ".detail-state-row"],
+      ["gone/", "a state and no pill", ".detail-note"],
     ]) {
       const page = await desk.newPage();
       await page.goto(new URL(path, STATES).href, { waitUntil: "networkidle" });
       await page.waitForTimeout(400);
-      const m = await page.evaluate(() => {
+      const m = await page.evaluate((line) => {
         const tile = document.querySelector(".detail-top .tile");
         const h1 = document.querySelector(".detail-top h1");
         if (!tile || !h1) return null;
@@ -478,13 +478,13 @@ await check(
           n = h1.getBoundingClientRect();
         return {
           off: t.top + t.height / 2 - (n.top + n.height / 2),
-          row: !!document.querySelector(".detail-state-row"),
+          row: !!document.querySelector(line),
         };
-      });
+      }, line);
       await page.close();
       if (!m) throw new Error(`no tile or no name on ${path}`);
       if (!m.row)
-        throw new Error(`${path} shows no state row, so this proves nothing`);
+        throw new Error(`${path} shows no ${line}, so this proves nothing`);
       if (Math.abs(m.off) > 1) {
         throw new Error(
           `with ${what}, the icon sits ${m.off.toFixed(1)}px off the name`,
@@ -1951,54 +1951,251 @@ await check(
     },
   );
 
-  // The rule between the pill and the state must not be drawn with nothing to
-  // its left, which is every disabling state, since none of them is monitored:
-  // a stroke hanging off the start of a line reads as a rendering fault.
-  await check(
-    "the rule appears only when a pill precedes the state",
-    async () => {
-      const border = async (page, path) => {
-        const p2 = await browser.newPage();
-        await p2.goto(new URL(path, page).href, { waitUntil: "networkidle" });
-        const m = await p2.evaluate(() => {
-          const el = document.querySelector(".detail-state");
-          if (!el) return null;
-          const s = getComputedStyle(el);
+  // The badge is a button that opens a popover holding what the state means.
+  // Every click below goes to the badge's centre with the mouse rather than
+  // through a locator, which would refuse a covered target and wait: a badge
+  // under the stretched link or the film has to fail here, not time out.
+  {
+    const sn = await browser.newPage();
+    await sn.goto(STATES, { waitUntil: "networkidle" });
+    const BETA = "Available, but still being tested: it may change.";
+    const isOpen = (id) =>
+      sn.evaluate(
+        (id) => document.getElementById(id)?.matches(":popover-open") ?? null,
+        id,
+      );
+    const tap = async (sel) => {
+      const b = await sn.locator(sel).first().boundingBox();
+      if (!b) throw new Error(`${sel} is not on the page`);
+      await sn.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+    };
+    // A stray click that followed a link would leave every later check
+    // measuring another page.
+    const home = async () => {
+      await sn.keyboard.press("Escape");
+      if (sn.url() !== STATES)
+        await sn.goto(STATES, { waitUntil: "networkidle" });
+    };
+
+    await check(
+      "the badge is a button named by its word, described by its note",
+      async () => {
+        const cdp = await sn.context().newCDPSession(sn);
+        const { nodes } = await cdp.send("Accessibility.getFullAXTree");
+        await cdp.detach();
+        // Chromium hands the name back in the capitals the badge is drawn in,
+        // so the word is compared without case.
+        const node = nodes.find(
+          (n) =>
+            n.role?.value === "button" &&
+            n.name?.value.toLowerCase() === "beta",
+        );
+        if (!node)
+          throw new Error("no button named Beta: the badge is not a control");
+        eq(node.description?.value, BETA, "its description");
+      },
+    );
+
+    await check(
+      "a click opens the note; Escape, a click outside and a second click close it",
+      async () => {
+        const bad = [];
+        await tap(".card-badge-beta");
+        if (!(await isOpen("note-beta"))) bad.push("a click left it shut");
+        await sn.keyboard.press("Escape");
+        if (await isOpen("note-beta")) bad.push("Escape left it open");
+        await tap(".card-badge-beta");
+        // The open note lies over the rule's middle, so outside is its start.
+        const rule = await sn.locator(".way-rule").first().boundingBox();
+        await sn.mouse.click(rule.x + 2, rule.y);
+        if (await isOpen("note-beta")) bad.push("a click outside left it open");
+        await tap(".card-badge-beta");
+        await tap(".card-badge-beta");
+        if (await isOpen("note-beta")) bad.push("a second click left it open");
+        if (sn.url() !== STATES) bad.push(`the click went to ${sn.url()}`);
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+
+    await check("Enter and Space open it from the keyboard", async () => {
+      const bad = [];
+      for (const key of ["Enter", "Space"]) {
+        await sn.focus(".card-badge-beta");
+        await sn.keyboard.press(key);
+        if (!(await isOpen("note-beta"))) bad.push(`${key} left it shut`);
+        await sn.keyboard.press("Escape");
+      }
+      await home();
+      if (bad.length) throw new Error(bad.join("; "));
+    });
+
+    await check(
+      "the open note says the note alone, and the badge its word alone",
+      async () => {
+        await tap(".card-badge-beta");
+        const m = await sn.evaluate(() => {
+          const b = document.querySelector(".card-badge-beta");
+          const glyph = ["::before", "::after"]
+            .map((p) => getComputedStyle(b, p).content)
+            .filter((c) => c !== "none" && c !== "normal" && c !== '""');
           return {
-            w: parseFloat(s.borderInlineStartWidth) || 0,
-            style: s.borderInlineStartStyle,
-            pill: !!document.querySelector(".status-slot")?.textContent.trim(),
+            note: document.getElementById("note-beta").innerText.trim(),
+            word: b.textContent,
+            children: b.children.length,
+            glyph,
           };
         });
-        await p2.close();
-        return m;
-      };
+        await home();
+        eq(m.note, BETA, "the open note");
+        eq(m.word, "Beta", "the badge's text");
+        if (m.children || m.glyph.length)
+          throw new Error(
+            `the badge carries a glyph: ${m.children} elements, generated ${m.glyph.join(", ")}`,
+          );
+      },
+    );
 
-      const withPill = await border(STATES, "beta/");
-      if (!withPill)
-        throw new Error("the beta detail page names no state at all");
-      if (!withPill.pill)
-        throw new Error(
-          "the beta detail page has no pill, so this proves nothing",
+    // The film over a muted card lets clicks through but not ink, so the badge
+    // has to sit above it to be read, and its note has to stay readable on a
+    // page that is otherwise receding.
+    await check(
+      "a muted card's badge opens its note, and the note holds 4.5:1",
+      async () => {
+        const bad = [];
+        const id = await sn.$eval(".card-off .card-badge", (b) =>
+          b.getAttribute("popovertarget"),
         );
-      if (withPill.w < 1 || withPill.style === "none") {
-        throw new Error("no rule beside a state that follows a pill");
-      }
+        await tap(".card-off .card-badge");
+        if (!(await isOpen(id))) bad.push("a click left it shut");
+        const over = await sn.$eval(".card-off .card-badge", (b) => {
+          const z = (el, p) => Number(getComputedStyle(el, p).zIndex) || 0;
+          return z(b) > z(b.closest(".card"), "::after");
+        });
+        if (!over)
+          bad.push("the badge sits under the film, so its word recedes");
+        for (const theme of ["light", "dark"]) {
+          const [ink, paper] = await sn.evaluate(
+            ([id, theme]) => {
+              document.documentElement.dataset.theme = theme;
+              const s = getComputedStyle(document.getElementById(id));
+              return [s.color, s.backgroundColor];
+            },
+            [id, theme],
+          );
+          const r = ratio(ink, paper);
+          if (r < 4.5)
+            bad.push(`the note in ${theme} is ${r.toFixed(2)}:1, want 4.5`);
+        }
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
 
-      const alone = await border(STATES, "gone/");
-      if (!alone)
-        throw new Error("the retired detail page names no state at all");
-      if (alone.pill)
-        throw new Error(
-          "the retired detail page has a pill, so this proves nothing",
-        );
-      if (alone.w >= 1 && alone.style !== "none") {
-        throw new Error(
-          "a rule is drawn with nothing to its left on a page that has no pill",
-        );
-      }
-    },
-  );
+    // In dark the note and the card under it share a fill and the shadow
+    // barely shows, so the border is the only edge the note has.
+    await check(
+      "the note's border is 1px all round in --ui-border",
+      async () => {
+        await tap(".card-badge-beta");
+        const bad = [];
+        for (const theme of ["light", "dark"]) {
+          const m = await sn.evaluate((theme) => {
+            document.documentElement.dataset.theme = theme;
+            const n = document.getElementById("note-beta");
+            const probe = document.createElement("span");
+            probe.style.color = "var(--ui-border)";
+            n.parentElement.append(probe);
+            const want = getComputedStyle(probe).color;
+            probe.remove();
+            const s = getComputedStyle(n);
+            return ["Top", "Right", "Bottom", "Left"].map((side) => [
+              side,
+              s[`border${side}Width`],
+              s[`border${side}Style`],
+              s[`border${side}Color`] === want ? "ok" : s[`border${side}Color`],
+            ]);
+          }, theme);
+          for (const [side, w, style, colour] of m) {
+            if (w !== "1px" || style !== "solid" || colour !== "ok")
+              bad.push(`${theme} ${side}: ${w} ${style} ${colour}`);
+          }
+        }
+        await home();
+        if (bad.length) throw new Error(bad.join("; "));
+      },
+    );
+
+    await check(
+      "Tab reaches the badge before the name, and rings it 2px solid",
+      async () => {
+        // A fresh load: Escape hands focus back to the badge that opened the
+        // note, and from there the next Tab is already past it.
+        await sn.goto(STATES, { waitUntil: "networkidle" });
+        let first = null;
+        let ring = null;
+        for (let i = 0; i < 80 && !first; i++) {
+          await sn.keyboard.press("Tab");
+          [first, ring] = await sn.evaluate(() => {
+            const a = document.activeElement;
+            const card = document
+              .querySelector(".card-badge-beta")
+              .closest(".card");
+            if (a.matches(".card-badge-beta")) {
+              const s = getComputedStyle(a);
+              return ["badge", `${s.outlineWidth} ${s.outlineStyle}`];
+            }
+            if (a === card.querySelector(".card-name")) return ["name", null];
+            return [null, null];
+          });
+        }
+        if (first !== "badge")
+          throw new Error(
+            `Tab reached the ${first ?? "end"} first, not the badge`,
+          );
+        eq(ring, "2px solid", "the focus ring");
+      },
+    );
+    await sn.close();
+  }
+
+  // The state's word and its meaning are one paragraph, and the colon between
+  // them is hidden from sight only: without it a screen reader runs "Beta
+  // Available" together as one phrase. The note is muted prose, so its
+  // contrast is read in both themes against whatever the page paints behind it.
+  await check("the detail state line reads word: note", async () => {
+    const p2 = await browser.newPage();
+    await p2.goto(new URL("beta/", STATES).href, { waitUntil: "networkidle" });
+    // The snapshot puts a space before the hidden colon, since a clipped
+    // absolute box reads to it as a block of its own; it is taken out here and
+    // nowhere else, so a missing colon or a second item still fails.
+    const said = (await p2.locator(".detail-note").ariaSnapshot()).replace(
+      / :/,
+      ":",
+    );
+    const want = `- paragraph: "Beta: Available, but still being tested: it may change."`;
+    const bad = [];
+    if (said !== want)
+      bad.push(`the line reads ${JSON.stringify(said)}, want ${want}`);
+    for (const theme of ["light", "dark"]) {
+      const [ink, behind] = await p2.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+        const note = document.querySelector(".detail-note > span:last-child");
+        let el = note;
+        let bg = "rgba(0, 0, 0, 0)";
+        while (el && /rgba\(.*, 0\)$|transparent/.test(bg)) {
+          bg = getComputedStyle(el).backgroundColor;
+          el = el.parentElement;
+        }
+        return [getComputedStyle(note).color, bg];
+      }, theme);
+      const r = ratio(ink, behind);
+      if (r < 4.5)
+        bad.push(`the note in ${theme} is ${r.toFixed(2)}:1, want 4.5`);
+    }
+    await p2.close();
+    if (bad.length) throw new Error(bad.join("; "));
+  });
 
   await st.close();
 }

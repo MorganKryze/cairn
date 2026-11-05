@@ -56,6 +56,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Stay here",
 		"notfound.title":     "Page not found",
 		"notfound.body":      "Nothing lives at this address. The link may be out of date.",
+
+		"state.soon.note":       "Not open yet: it will be available soon.",
+		"state.retired.note":    "This service has been shut down and is no longer available.",
+		"state.beta.note":       "Available, but still being tested: it may change.",
+		"state.deprecated.note": "Still available, but scheduled to be withdrawn.",
+		"state.new.note":        "Recently added to this directory.",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -102,6 +108,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Rester ici",
 		"notfound.title":     "Page introuvable",
 		"notfound.body":      "Il n'y a rien à cette adresse. Le lien n'est peut-être plus à jour.",
+
+		"state.soon.note":       "Pas encore ouvert\u202f: il sera disponible prochainement.",
+		"state.retired.note":    "Ce service a été arrêté et n’est plus accessible.",
+		"state.beta.note":       "Disponible, mais encore en test\u202f: son fonctionnement peut évoluer.",
+		"state.deprecated.note": "Encore accessible, mais appelé à être retiré.",
+		"state.new.note":        "Ajouté récemment à cet annuaire.",
 	},
 	"de": {
 		"nav.skip":           "Zum Inhalt springen",
@@ -148,6 +160,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Hier bleiben",
 		"notfound.title":     "Seite nicht gefunden",
 		"notfound.body":      "Unter dieser Adresse gibt es nichts. Der Link ist vielleicht veraltet.",
+
+		"state.soon.note":       "Noch nicht geöffnet: Der Dienst ist bald verfügbar.",
+		"state.retired.note":    "Dieser Dienst wurde eingestellt und ist nicht mehr verfügbar.",
+		"state.beta.note":       "Verfügbar, wird aber noch getestet: Änderungen sind möglich.",
+		"state.deprecated.note": "Noch verfügbar, die Abschaltung ist aber geplant.",
+		"state.new.note":        "Vor Kurzem in dieses Verzeichnis aufgenommen.",
 	},
 	"es": {
 		"nav.skip":           "Saltar al contenido",
@@ -194,6 +212,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Quedarse aquí",
 		"notfound.title":     "Página no encontrada",
 		"notfound.body":      "No hay nada en esta dirección. Puede que el enlace esté desactualizado.",
+
+		"state.soon.note":       "Aún no está abierto: estará disponible próximamente.",
+		"state.retired.note":    "Este servicio se ha cerrado y ya no está disponible.",
+		"state.beta.note":       "Disponible, pero aún en pruebas: su funcionamiento puede cambiar.",
+		"state.deprecated.note": "Aún disponible, pero está previsto retirarlo.",
+		"state.new.note":        "Añadido recientemente a este directorio.",
 	},
 	"it": {
 		"nav.skip":           "Vai al contenuto",
@@ -240,6 +264,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Resta qui",
 		"notfound.title":     "Pagina non trovata",
 		"notfound.body":      "Non c'è niente a questo indirizzo. Forse il link non è più aggiornato.",
+
+		"state.soon.note":       "Non ancora aperto: sarà disponibile a breve.",
+		"state.retired.note":    "Questo servizio è stato chiuso e non è più disponibile.",
+		"state.beta.note":       "Disponibile, ma ancora in fase di test: il funzionamento può cambiare.",
+		"state.deprecated.note": "Ancora disponibile, ma ne è prevista la dismissione.",
+		"state.new.note":        "Aggiunto di recente a questo elenco.",
 	},
 	"nl": {
 		"nav.skip":           "Naar inhoud springen",
@@ -286,6 +316,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Hier blijven",
 		"notfound.title":     "Pagina niet gevonden",
 		"notfound.body":      "Op dit adres staat niets. Misschien is de link verouderd.",
+
+		"state.soon.note":       "Nog niet open: het is binnenkort beschikbaar.",
+		"state.retired.note":    "Deze dienst is stopgezet en niet meer beschikbaar.",
+		"state.beta.note":       "Beschikbaar, maar wordt nog getest: de werking kan veranderen.",
+		"state.deprecated.note": "Nog beschikbaar, maar het wordt uitgefaseerd.",
+		"state.new.note":        "Onlangs aan dit overzicht toegevoegd.",
 	},
 	"pt": {
 		"nav.skip":           "Ir para o conteúdo",
@@ -332,6 +368,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Ficar aqui",
 		"notfound.title":     "Página não encontrada",
 		"notfound.body":      "Não há nada neste endereço. Talvez a ligação esteja desatualizada.",
+
+		"state.soon.note":       "Ainda não está aberto: estará disponível em breve.",
+		"state.retired.note":    "Este serviço foi encerrado e já não está disponível.",
+		"state.beta.note":       "Disponível, mas ainda em testes: o funcionamento pode mudar.",
+		"state.deprecated.note": "Ainda disponível, mas com retirada prevista.",
+		"state.new.note":        "Adicionado recentemente a este diretório.",
 	},
 	"sv": {
 		"nav.skip":           "Hoppa till innehåll",
@@ -378,6 +420,12 @@ var builtinStrings = map[string]map[string]string{
 		"leave.stay":         "Stanna här",
 		"notfound.title":     "Sidan hittades inte",
 		"notfound.body":      "Det finns inget på den här adressen. Länken kan vara inaktuell.",
+
+		"state.soon.note":       "Inte öppnad än: tjänsten blir tillgänglig snart.",
+		"state.retired.note":    "Den här tjänsten har lagts ned och är inte längre tillgänglig.",
+		"state.beta.note":       "Tillgänglig, men testas fortfarande: funktionen kan ändras.",
+		"state.deprecated.note": "Fortfarande tillgänglig, men kommer att avvecklas.",
+		"state.new.note":        "Nyligen tillagd i den här katalogen.",
 	},
 }
 

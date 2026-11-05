@@ -253,6 +253,9 @@ type Service struct {
 	// elsewhere, nil no flag at all.
 	Selfhosted *bool `yaml:"selfhosted"`
 	State      State `yaml:"state"`
+	// StateNote replaces the built-in note for this one service, and needs a
+	// state beside it: the note explains a badge, and no state means no badge.
+	StateNote LString `yaml:"state_note"`
 	// SignIn says the visitor will need an account: a lock after the name on
 	// the card, a note on the detail page. It says nothing about how the site
 	// is protected, which is the operator's business and not the visitor's.
@@ -786,6 +789,8 @@ func parseServices(file string, data []byte) ([]Service, error) {
 		// retiring a service is adding a line rather than deleting one.
 		case !IsURLOrAbs(s.URL) && !s.State.Disables():
 			return nil, fmt.Errorf("config: %s line %d: service %q missing or invalid url (expected: url: https://…, or state: soon / state: retired, which do not need one)", file, item.Line, s.ID)
+		case len(s.StateNote) > 0 && s.State == StateNone:
+			return nil, fmt.Errorf("config: %s line %d: service %q has a state_note but no state (expected: state: soon / retired / beta / deprecated / new, beside the note)", file, item.Line, s.ID)
 		case len(s.Name) == 0:
 			return nil, fmt.Errorf("config: %s line %d: service %q missing name (expected: name: My tool  or  name: {fr: …, en: …})", file, item.Line, s.ID)
 		}

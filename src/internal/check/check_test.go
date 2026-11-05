@@ -62,6 +62,7 @@ func TestCheckWarnings(t *testing.T) {
 	dir := testutil.WriteFiles(t, map[string]string{
 		"site.yaml": "locales: [fr, en]\nabout: {fr: Bonjour}\n",
 		"services.yaml": "- id: a\n  url: https://a.example.org\n  name: {fr: Outil, en: Tool}\n  desc: {fr: Une phrase}\n" +
+			"  state: beta\n  state_note: {fr: En rodage}\n" +
 			"- id: b\n  url: https://b.example.org\n  name: Partout\n",
 	})
 	if err := os.MkdirAll(filepath.Join(dir, "media"), 0o755); err != nil {
@@ -78,6 +79,7 @@ func TestCheckWarnings(t *testing.T) {
 	for _, want := range []string{
 		"site about has no en",
 		`service "a" desc has no en`,
+		`service "a" state note has no en`,
 		"media/orphan.png is not referenced",
 	} {
 		if !strings.Contains(warnings, want) {

@@ -11,7 +11,7 @@
 //
 // Usage: node scripts/layout.mjs [demo] [longname] [locales] [example] [states] [many] [leave]
 import { readFileSync } from "node:fs";
-import { chromium } from "playwright";
+import { chromium, firefox } from "playwright";
 
 const arg = (i, env, port) =>
   (process.argv[i] ?? process.env[env] ?? `http://127.0.0.1:${port}/`).replace(
@@ -200,11 +200,14 @@ await check("a service that is not open shows no Open button", async () => {
       const r = (s) => document.querySelector(s)?.getBoundingClientRect();
       const h1 = r(".detail-top h1"),
         tile = r(".detail-top .tile"),
-        state = r(".detail-state");
+        state = r(".detail-note");
       return {
         btn: !!document.querySelector(".detail-top .btn"),
         below: !!state && state.top >= h1.bottom - 1,
         start: state ? state.left - tile.left : NaN,
+        // One row gap at most: placed a row too far down, the empty row
+        // between them still costs its gap.
+        gap: state ? state.top - Math.max(h1.bottom, tile.bottom) : NaN,
       };
     });
     await p.close();
@@ -219,6 +222,10 @@ await check("a service that is not open shows no Open button", async () => {
     if (!(Math.abs(m.start) <= 1))
       throw new Error(
         `the state starts ${m.start}px from the tile's edge at ${width}px`,
+      );
+    if (!(m.gap <= 20))
+      throw new Error(
+        `the state sits ${m.gap.toFixed(1)}px under the name's row at ${width}px`,
       );
   }
 });
@@ -1488,57 +1495,31 @@ for (const width of PHONES) {
 // ---- the detail head and the hosted page on a phone ----
 
 // Open sits under the name, at the start of the line the tile starts, and the
-// pill and the state follow it on that one line, the way a store puts its Get
-// button under an app's name. Lifted onto the back link's row, Open sat a
-// whole row away from the name it acts on.
+// pill follows it on that one line, the way a store puts its Get button under
+// an app's name. Lifted onto the back link's row, Open sat a whole row away
+// from the name it acts on. The state's line comes under both, from the
+// tile's edge.
 const detailHead = () => {
   const r = (s) => document.querySelector(s).getBoundingClientRect();
   const tile = r(".detail-top .tile"),
     h1 = r(".detail-top h1"),
     btn = r(".detail-top .btn"),
     pill = r(".detail-top .status-pill"),
-    state = r(".detail-top .detail-state");
+    note = r(".detail-top .detail-note");
   const mid = (x) => x.top + x.height / 2;
   return {
     below: btn.top >= h1.bottom - 1,
     start: btn.left - tile.left,
-    order: pill.left >= btn.right && state.left >= pill.right,
-    spread:
-      Math.max(mid(btn), mid(pill), mid(state)) -
-      Math.min(mid(btn), mid(pill), mid(state)),
-  };
-};
-// The state row narrowed until it wraps: whatever starts a line draws no
-// divider before it, since a stroke there separates the item from nothing.
-const wrappedRow = () => {
-  const row = document.querySelector(".detail-top .detail-state-row");
-  // The pill's slot is display: contents, so the pill itself is the flex item.
-  const items = [...row.querySelectorAll(".status-pill, .detail-state")];
-  row.style.maxWidth = `${items[0].getBoundingClientRect().width + 4}px`;
-  const start = Math.min(...items.map((e) => e.getBoundingClientRect().left));
-  const tops = new Set(
-    items.map((e) => Math.round(e.getBoundingClientRect().top)),
-  );
-  return {
-    lines: tops.size,
-    divided: items
-      .filter((e) => Math.abs(e.getBoundingClientRect().left - start) < 1)
-      .filter((e) => {
-        // A stroke on the start side only is a divider; the pill's outline
-        // goes all the way round.
-        const c = getComputedStyle(e);
-        return (
-          parseFloat(c.borderInlineStartWidth) >
-          parseFloat(c.borderInlineEndWidth)
-        );
-      })
-      .map((e) => e.className),
+    order: pill.left >= btn.right,
+    spread: Math.abs(mid(btn) - mid(pill)),
+    under: note.top >= Math.max(btn.bottom, pill.bottom) - 1,
+    noteStart: note.left - tile.left,
   };
 };
 for (const width of PHONES) {
   for (const url of [`${LOCALES}de/beta/`, `${DEMO}fr/whoami/`]) {
     await check(
-      `Open leads the line under the name, then the pill and the state, at ${width}px on ${url}`,
+      `Open leads the line under the name, then the pill, at ${width}px on ${url}`,
       async () => {
         const p = await open(url, width);
         const m = await p.evaluate(detailHead);
@@ -1547,24 +1528,103 @@ for (const width of PHONES) {
         if (!m.below) bad.push("Open is not below the name");
         if (Math.abs(m.start) > 1)
           bad.push(`Open starts ${m.start.toFixed(1)}px from the tile's edge`);
-        if (!m.order) bad.push("the line does not read Open, pill, state");
+        if (!m.order) bad.push("the line does not read Open, then the pill");
         if (m.spread > 6)
           bad.push(`their centres are ${m.spread.toFixed(1)}px apart`);
+        if (!m.under)
+          bad.push("the state's line is not under Open and the pill");
+        if (Math.abs(m.noteStart) > 1)
+          bad.push(
+            `the state's line starts ${m.noteStart.toFixed(1)}px from the tile's edge`,
+          );
         if (bad.length) throw new Error(bad.join("; "));
       },
     );
+  }
+}
+
+// The state's line sits under the pill's row at every width, and wraps rather
+// than pushes the page sideways: the German note is the longest built-in one
+// on a 360px phone.
+for (const width of WIDTHS) {
+  for (const url of [`${LOCALES}de/beta/`, `${STATES}en/old/`]) {
     await check(
-      `a wrapped state line draws no divider at a line start at ${width}px on ${url}`,
+      `the state's line sits under the pill and fits at ${width}px on ${url}`,
       async () => {
         const p = await open(url, width);
-        const m = await p.evaluate(wrappedRow);
+        const m = await p.evaluate(() => {
+          const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+          const row = r(".detail-top .detail-state-row"),
+            note = r(".detail-top .detail-note"),
+            tile = r(".detail-top .tile"),
+            head = r(".detail-top");
+          if (!row || !note) return null;
+          // Placed by the grid's own flow, the line lands in the tile's
+          // column alone: under the row and from the tile's edge, as wanted,
+          // and 58px wide.
+          const cap = parseFloat(
+            getComputedStyle(document.querySelector(".detail-note"))
+              .maxInlineSize,
+          );
+          return {
+            narrow: note.width < Math.min(head.width, cap) - 1,
+            width: note.width,
+            under: note.top >= row.bottom - 1,
+            gap: note.top - row.bottom,
+            start: note.left - tile.left,
+            over: document.documentElement.scrollWidth - innerWidth,
+            out: note.right - innerWidth,
+          };
+        });
         await p.close();
-        if (m.lines < 2) throw new Error("the row did not wrap");
-        if (m.divided.length)
-          throw new Error(`a divider opens a line: ${m.divided.join(", ")}`);
+        if (!m) throw new Error("no pill row or no state line to measure");
+        const bad = [];
+        if (!m.under) bad.push("the state's line is not under the pill's row");
+        if (m.narrow)
+          bad.push(
+            `the line is ${m.width.toFixed(1)}px wide, not the head's width`,
+          );
+        if (m.gap > 12)
+          bad.push(`the line sits ${m.gap.toFixed(1)}px below the row`);
+        if (Math.abs(m.start) > 1)
+          bad.push(`it starts ${m.start.toFixed(1)}px from the tile's edge`);
+        if (m.over > 0) bad.push(`the page scrolls ${m.over}px sideways`);
+        if (m.out > 0) bad.push(`the line runs ${m.out.toFixed(1)}px off`);
+        if (bad.length) throw new Error(bad.join("; "));
       },
     );
   }
+}
+
+// A site with no monitor has no pill, so an open service with a state has Open
+// and the state's line and no row between them. No fixture is that site, so
+// the row is taken out of a page that has one; :has() follows the change live.
+for (const width of WIDTHS) {
+  await check(
+    `with no pill, the state's line sits under Open at ${width}px`,
+    async () => {
+      const p = await open(`${STATES}en/old/`, width);
+      const m = await p.evaluate(() => {
+        document.querySelector(".detail-top .detail-state-row")?.remove();
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        const tile = r(".detail-top .tile"),
+          h1 = r(".detail-top h1"),
+          btn = r(".detail-top .btn"),
+          note = r(".detail-top .detail-note");
+        const above = Math.max(tile.bottom, h1.bottom, btn.bottom);
+        return { gap: note.top - above, start: note.left - tile.left };
+      });
+      await p.close();
+      const bad = [];
+      if (m.gap < -1)
+        bad.push(`the line overlaps what is above it by ${-m.gap}px`);
+      if (m.gap > 20)
+        bad.push(`the line sits ${m.gap.toFixed(1)}px under what is above it`);
+      if (Math.abs(m.start) > 1)
+        bad.push(`it starts ${m.start.toFixed(1)}px from the tile's edge`);
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
 }
 
 // A hosted page on a phone: the title stands alone, with no rule running off
@@ -1792,30 +1852,41 @@ for (const theme of THEMES) {
 
 // ---- every link and control is a 44px target ----
 
-// Where a pointer or a thumb lands for a control: its border box, or the
-// absolute ::before drawn around it when that covers more. The pseudo's
-// offsets count from inside the control's border: a positioned box lays out
-// its absolute children from its padding box. Runs in the page.
+// Where a pointer or a thumb lands for a control: its border box, or an
+// absolute ::before or ::after drawn over it when that gives the wider short
+// side. A card's state badge carries its target on ::after, and on a phone that
+// is a square at the badge's start, smaller in area than a long word's badge
+// but the only part 44px tall. The pseudo's offsets count from inside the
+// control's border: a positioned box lays out its absolute children from its
+// padding box. Runs in the page.
 const hitRect = (el) => {
   const r = el.getBoundingClientRect();
-  let box = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
   const s = getComputedStyle(el),
-    b = getComputedStyle(el, "::before");
-  if (
-    s.position !== "static" &&
-    b.content !== "none" &&
-    b.display !== "none" &&
-    b.position === "absolute"
-  ) {
-    const px = parseFloat;
+    px = parseFloat;
+  const short = (q) => Math.min(q.x1 - q.x0, q.y1 - q.y0);
+  const area = (q) => (q.x1 - q.x0) * (q.y1 - q.y0);
+  let box = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+  for (const which of ["::before", "::after"]) {
+    const b = getComputedStyle(el, which);
+    if (
+      s.position === "static" ||
+      b.content === "none" ||
+      b.display === "none" ||
+      b.position !== "absolute"
+    )
+      continue;
     const p = {
       x0: r.left + px(s.borderLeftWidth) + px(b.left),
       y0: r.top + px(s.borderTopWidth) + px(b.top),
       x1: r.right - px(s.borderRightWidth) - px(b.right),
       y1: r.bottom - px(s.borderBottomWidth) - px(b.bottom),
     };
-    const area = (q) => (q.x1 - q.x0) * (q.y1 - q.y0);
-    if (Object.values(p).every(Number.isFinite) && area(p) > area(box)) box = p;
+    if (!Object.values(p).every(Number.isFinite)) continue;
+    if (
+      short(p) > short(box) + 0.5 ||
+      (short(p) > short(box) - 0.5 && area(p) > area(box))
+    )
+      box = p;
   }
   return { ...box, w: box.x1 - box.x0, h: box.y1 - box.y0 };
 };
@@ -1826,7 +1897,9 @@ const hitRect = (el) => {
 // on it, and which of its neighbours its hit area overlaps by more than .5px.
 // Exempt are a link inside a sentence of the operator's prose, which WCAG
 // 2.5.8 lets keep its line, and the card name, whose link is the whole card;
-// they and a control nested in another sit out the overlap too. A hosted
+// they and a control nested in another sit out the overlap too. A card's state
+// badge is held to 24px where a mouse points, the WCAG 2.5.8 floor, since a
+// band any taller would take the click meant for the icon. A hosted
 // page's back link sits in a paragraph of its own and is no prose. The skip link
 // is off screen until focused, so it is measured focused, at the end. Runs in
 // the page; the scope is a selector, the whole document by default.
@@ -1868,6 +1941,10 @@ const pageTargets = (hitRect, scope) => {
         el.matches(".card-name") ||
         (el.matches("a:not(.back)") && !!el.closest(PROSE)),
       fixed: getComputedStyle(el).position === "fixed",
+      min:
+        el.matches(".card-badge") && matchMedia("(hover: hover)").matches
+          ? 24
+          : 44,
       x0: r.x0 + scrollX,
       y0: r.y0 + scrollY,
       x1: r.x1 + scrollX,
@@ -1935,7 +2012,8 @@ const targetFaults = ({ skip, list }) => {
   const bad = [];
   for (const t of [...list, ...(skip ? [skip] : [])]) {
     if (t.exempt) continue;
-    if (t.w < 43.5 || t.h < 43.5)
+    const min = (t.min ?? 44) - 0.5;
+    if (t.w < min || t.h < min)
       bad.push(`${t.name} is ${t.w.toFixed(1)}x${t.h.toFixed(1)}`);
     if (t.missed.length)
       bad.push(`${t.name} does not answer at its ${t.missed.join(", ")} edge`);
@@ -2042,6 +2120,275 @@ for (const theme of THEMES) {
       },
     );
   }
+}
+
+// A card's state badge answers a thumb on 44px: the sweep above runs with a
+// mouse, where the badge is held to 24px, so its square is measured here under
+// a touch screen, against every other target of the page. The card name is
+// exempt from that sweep, its link being the whole card, so the square is held
+// clear of the name's own words apart. With a mouse the band stays off the
+// tile's icon, and a click on the tile opens the service.
+const BADGED = [`${DEMO}fr/`, `${LOCALES}de/`, `${LOCALES}ar/`, `${STATES}en/`];
+const badgeClearance = (hitRect) =>
+  [...document.querySelectorAll(".card-badge")].map((b) => {
+    const card = b.closest(".card"),
+      h = hitRect(b),
+      apart = (r) =>
+        Math.min(
+          Math.min(h.x1, r.right) - Math.max(h.x0, r.left),
+          Math.min(h.y1, r.bottom) - Math.max(h.y0, r.top),
+        ),
+      tile = card.querySelector(".tile > *").getBoundingClientRect();
+    return {
+      word: b.textContent,
+      name: apart(card.querySelector(".card-name").getBoundingClientRect()),
+      tile: apart(tile),
+    };
+  });
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `a card's state badge is a 44px target on a touch screen, clear of the name, at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        for (const url of BADGED) {
+          const p = await open(url, width, theme, TOUCH);
+          const found = await targets(p);
+          const mine = targetFaults(found).filter((f) =>
+            f.includes("card-badge"),
+          );
+          if (!found.list.some((t) => /card-badge/.test(t.name)))
+            mine.push("no badge found");
+          for (const f of mine) bad.push(`${url}: ${f}`);
+          for (const c of await p.evaluate(`(${badgeClearance})(${hitRect})`))
+            if (c.name > 0.5)
+              bad.push(
+                `${url}: "${c.word}" reaches its name by ${c.name.toFixed(1)}px`,
+              );
+          await p.close();
+        }
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `with a mouse a card's state badge keeps off the icon, and the tile opens the service, at ${width}px in ${theme.name}`,
+      async () => {
+        const bad = [];
+        for (const url of BADGED) {
+          const p = await open(url, width, theme, MOUSE);
+          const all = await p.evaluate(`(${badgeClearance})(${hitRect})`);
+          if (!all.length) bad.push(`${url}: no badge found`);
+          for (const c of all)
+            if (c.tile > 0.5)
+              bad.push(
+                `${url}: "${c.word}" reaches its icon by ${c.tile.toFixed(1)}px`,
+              );
+          const hit = await p.evaluate(() => {
+            const card = document
+              .querySelector(".card:not(.card-off) .card-badge")
+              ?.closest(".card");
+            if (!card) return "no live badged card";
+            card.scrollIntoView({ block: "center", behavior: "instant" });
+            const t = card.querySelector(".tile").getBoundingClientRect();
+            const el = document.elementFromPoint(
+              (t.left + t.right) / 2,
+              (t.top + t.bottom) / 2,
+            );
+            return el?.closest("a, button")?.className ?? el?.tagName;
+          });
+          if (hit !== "card-name")
+            bad.push(
+              `${url}: the tile of a live badged card answers as ${hit}`,
+            );
+          await p.close();
+        }
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// A badge's note opens on its badge, above it and from its start edge, so the
+// card it explains stays in view. A badge at the top of the screen has no room
+// above, and the note flips below rather than leave the screen. Either way it
+// never covers the badge, and the page never widens while it is open. Each
+// badge is scrolled to `at` px from the top and opened by its own click.
+const noteOnBadge = async (p, at) =>
+  p.evaluate(async (at) => {
+    const out = [];
+    for (const b of document.querySelectorAll(".card-badge")) {
+      scrollTo({
+        top: b.getBoundingClientRect().top + scrollY - at,
+        behavior: "instant",
+      });
+      b.click();
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+      const note = document.getElementById(b.getAttribute("popovertarget"));
+      const br = b.getBoundingClientRect(),
+        nr = note.getBoundingClientRect(),
+        rtl = getComputedStyle(b).direction === "rtl";
+      out.push({
+        word: b.textContent,
+        open: note.matches(":popover-open"),
+        above: br.top - nr.bottom,
+        below: nr.top - br.bottom,
+        start: rtl ? br.right - nr.right : nr.left - br.left,
+        inside:
+          nr.left >= 0 &&
+          nr.top >= 0 &&
+          nr.right <= innerWidth &&
+          nr.bottom <= innerHeight,
+        over:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      });
+      note.hidePopover();
+    }
+    return out;
+  }, at);
+const noteFaults = (all, side) => {
+  const bad = [];
+  if (!all.length) bad.push("no badge found");
+  for (const m of all) {
+    const gap = m[side];
+    if (!m.open) bad.push(`"${m.word}" does not open its note`);
+    else if (!(gap >= -0.5))
+      bad.push(
+        `"${m.word}" note is not ${side} its badge (gap ${gap.toFixed(1)}px)`,
+      );
+    else if (Math.abs(m.start) > 1)
+      bad.push(
+        `"${m.word}" note starts ${m.start.toFixed(1)}px off the badge's start edge`,
+      );
+    if (m.over > 0) bad.push(`"${m.word}" open widens the page by ${m.over}px`);
+  }
+  return bad;
+};
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `a state note opens above its badge, from its start edge, at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        const bad = noteFaults(await noteOnBadge(p, 400), "above");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `a state note flips below a badge at the top of the screen at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        // room under the last row, so every badge can scroll to the top
+        await p.evaluate(() => (document.body.style.paddingBlockEnd = "100vh"));
+        const bad = noteFaults(await noteOnBadge(p, 4), "below");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+    await check(
+      `right to left, a state note starts at its badge's right edge at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        await p.evaluate(() => (document.documentElement.dir = "rtl"));
+        const bad = noteFaults(await noteOnBadge(p, 400), "above");
+        await p.close();
+        if (bad.length) throw new Error(bad.join("\n        "));
+      },
+    );
+  }
+}
+
+// A browser without anchor positioning centres an open popover on screen, and
+// the note's measure has to keep it whole there. Blink has had no switch to
+// turn the feature off since it shipped, so the page drops the one block that
+// asks for it, the way such a browser drops it, and the check first proves the
+// note lost its anchor, or it would measure the anchored note and pass for
+// nothing.
+const unanchor = () => {
+  let gone = 0;
+  for (const sheet of document.styleSheets)
+    for (let i = sheet.cssRules.length - 1; i >= 0; i--) {
+      const r = sheet.cssRules[i];
+      if (r instanceof CSSSupportsRule && /anchor-name/.test(r.conditionText)) {
+        sheet.deleteRule(i);
+        gone++;
+      }
+    }
+  const note = document.querySelector(".state-note");
+  return gone && getComputedStyle(note).positionArea === "none";
+};
+for (const theme of THEMES.slice(0, 2)) {
+  for (const width of WIDTHS) {
+    await check(
+      `without anchor positioning a state note lies inside the screen at ${width}px in ${theme.name}`,
+      async () => {
+        const p = await open(`${STATES}en/`, width, theme);
+        try {
+          if (!(await p.evaluate(unanchor)))
+            throw new Error("the note is still anchored to its badge");
+          const all = await noteOnBadge(p, 400);
+          const bad = all.length ? [] : ["no badge found"];
+          for (const m of all)
+            if (!m.open || !m.inside)
+              bad.push(`"${m.word}" note leaves the screen`);
+          if (bad.length) throw new Error(bad.join("\n        "));
+        } finally {
+          await p.close();
+        }
+      },
+    );
+  }
+}
+
+// Gecko anchors to the badge's box before its transform, Blink after it, so a
+// badge lifted by a translate had Firefox's note over it. The flip below a
+// badge at the top of the screen and the mirrored start edge are Gecko's own
+// code too, and a note that stays above there is off the screen. Firefox is not
+// in CI: CAIRN_FIREFOX=1 runs the three there when Playwright's Firefox is
+// installed (npx playwright install firefox).
+const FIREFOX_NOTES = [
+  ["opens above its badge, clear of it,", 400, "above", ""],
+  ["flips below a badge at the top of the screen", 4, "below", ""],
+  ["starts at its badge's right edge right to left", 400, "above", "rtl"],
+];
+if (process.env.CAIRN_FIREFOX === "1") {
+  let fx = null;
+  try {
+    fx = await firefox.launch();
+  } catch (e) {
+    console.log(
+      `  skip  Firefox is not installed: ${e.message.split("\n")[0]}`,
+    );
+  }
+  if (fx) {
+    for (const width of WIDTHS) {
+      for (const [what, at, side, dir] of FIREFOX_NOTES) {
+        await check(
+          `in Firefox a state note ${what} at ${width}px`,
+          async () => {
+            const ctx = await fx.newContext({
+              viewport: { width, height: width > 704 ? 900 : 844 },
+              reducedMotion: "reduce",
+            });
+            const p = await ctx.newPage();
+            await p.goto(`${STATES}en/`);
+            // room under the last row, so every badge can scroll to the top
+            await p.evaluate((dir) => {
+              document.body.style.paddingBlockEnd = "100vh";
+              if (dir) document.documentElement.dir = dir;
+            }, dir);
+            const bad = noteFaults(await noteOnBadge(p, at), side);
+            await ctx.close();
+            if (bad.length) throw new Error(bad.join("\n        "));
+          },
+        );
+      }
+    }
+    await fx.close();
+  }
+} else {
+  console.log("  skip  Firefox: set CAIRN_FIREFOX=1 to run its note checks");
 }
 
 // The rail is fixed, so the page scrolling never brings its foot into view: at
@@ -2200,7 +2547,7 @@ for (const width of WIDTHS) {
 
 for (const width of PHONES) {
   await check(
-    `right to left, the detail line reads Open, pill, state from the right at ${width}px`,
+    `right to left, the detail line reads Open, pill from the right, the state under them, at ${width}px`,
     async () => {
       const p = await open(`${LOCALES}ar/beta/`, width);
       const m = await p.evaluate(() => {
@@ -2208,16 +2555,23 @@ for (const width of PHONES) {
         const tile = r(".detail-top .tile"),
           btn = r(".detail-top .btn"),
           pill = r(".detail-top .status-pill"),
-          state = r(".detail-top .detail-state");
+          note = r(".detail-top .detail-note");
         return {
           start: tile.right - btn.right,
-          order: pill.right <= btn.left + 0.5 && state.right <= pill.left + 0.5,
+          order: pill.right <= btn.left + 0.5,
+          under: note.top >= pill.bottom - 1,
+          noteStart: tile.right - note.right,
         };
       });
       await p.close();
       const bad = [];
       if (!m.order)
-        bad.push("the line does not read Open, pill, state from the right");
+        bad.push("the line does not read Open, then the pill, from the right");
+      if (!m.under) bad.push("the state's line is not under the pill");
+      if (Math.abs(m.noteStart) > 1)
+        bad.push(
+          `the state's line ends ${m.noteStart.toFixed(1)}px from the tile's right edge`,
+        );
       if (Math.abs(m.start) > 1)
         bad.push(
           `Open ends ${m.start.toFixed(1)}px from the tile's right edge`,

@@ -101,3 +101,44 @@ func TestBuiltinStringsKeepOneRegisterAndTheUsualWords(t *testing.T) {
 		}
 	}
 }
+
+var stateNames = []string{"soon", "retired", "beta", "deprecated", "new"}
+
+// The completeness test only compares tables with each other, so a note key
+// misspelled the same way in all eight would pass it. This holds the names.
+func TestEveryStateHasANoteInEveryLocale(t *testing.T) {
+	for lang, table := range builtinStrings {
+		for _, s := range stateNames {
+			if table["state."+s+".note"] == "" {
+				t.Errorf("locale %q has no note for state %s", lang, s)
+			}
+		}
+	}
+}
+
+// The French notes carry U+202F before the colon and U+2019 as apostrophe;
+// a plain space or a straight quote looks the same in an editor, so both are
+// asserted by rune and not only through the string compare.
+func TestTheEnglishAndFrenchNotesAreTheApprovedOnes(t *testing.T) {
+	for _, c := range []struct{ state, en, fr string }{
+		{"soon", "Not open yet: it will be available soon.", "Pas encore ouvert : il sera disponible prochainement."},
+		{"retired", "This service has been shut down and is no longer available.", "Ce service a été arrêté et n’est plus accessible."},
+		{"beta", "Available, but still being tested: it may change.", "Disponible, mais encore en test : son fonctionnement peut évoluer."},
+		{"deprecated", "Still available, but scheduled to be withdrawn.", "Encore accessible, mais appelé à être retiré."},
+		{"new", "Recently added to this directory.", "Ajouté récemment à cet annuaire."},
+	} {
+		key := "state." + c.state + ".note"
+		if got := builtinStrings["en"][key]; got != c.en {
+			t.Errorf("en %q = %q, want %q", key, got, c.en)
+		}
+		if got := builtinStrings["fr"][key]; got != c.fr {
+			t.Errorf("fr %q = %q, want %q", key, got, c.fr)
+		}
+	}
+	if s := builtinStrings["fr"]["state.soon.note"]; !strings.ContainsRune(s, ' ') {
+		t.Errorf("fr state.soon.note has no U+202F before its colon: %q", s)
+	}
+	if s := builtinStrings["fr"]["state.retired.note"]; !strings.ContainsRune(s, '’') || strings.ContainsRune(s, '\'') {
+		t.Errorf("fr state.retired.note does not use U+2019 as its apostrophe: %q", s)
+	}
+}

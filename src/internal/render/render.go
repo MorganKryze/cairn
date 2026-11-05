@@ -212,6 +212,16 @@ func tr(ls config.LString, loc, def string) locText {
 	return t
 }
 
+// stateNote is what a service's state means to the visitor: the operator's own
+// state_note when there is one, in whatever language it was written, else the
+// built-in line for that state in the page's language.
+func stateNote(cfg *config.Config, s config.Service, loc, def string) locText {
+	if t := tr(s.StateNote, loc, def); t.Text != "" {
+		return t
+	}
+	return locText{Text: cfg.Str(loc, "state."+string(s.State)+".note")}
+}
+
 func proseOf(t locText, ctx mdCtx) prose {
 	return prose{Blocks: mdBlocks(t.Text, ctx), Lang: t.Lang, Dir: t.Dir}
 }
@@ -292,6 +302,10 @@ type cardView struct {
 	// StateLabel is that word in the page's language. Neither has anything to do
 	// with a status level.
 	State, StateLabel string
+	// StateNote is what the state means, opened from the badge. NoteID ties the
+	// two together: the badge opens and is described by the element it names.
+	StateNote locText
+	NoteID    string
 	// Off is the two disabling states, hoisted onto the view so the template asks
 	// one question instead of comparing strings in three places.
 	Off bool
@@ -373,7 +387,7 @@ type detailView struct {
 	StatusID                                   string
 	Icon, URL, Status, StatusLabel, StatusHref string
 	IconClass                                  string // see cardView.IconClass
-	Name, Desc                                 locText
+	Name, Desc, StateNote                      locText
 	StatusA11y                                 string
 	Body                                       prose
 	Images                                     []imageView
@@ -645,6 +659,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				if s.State != config.StateNone {
 					card.State = string(s.State)
 					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					card.StateNote = stateNote(cfg, s, loc, def)
+					card.NoteID = "note-" + s.ID
 				}
 				// A disabling state means nothing is monitored, so there is no slot
 				// for a pill to be swapped into.
@@ -702,6 +718,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				if s.State != config.StateNone {
 					dv.State = string(s.State)
 					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					dv.StateNote = stateNote(cfg, s, loc, def)
 				}
 				if !dv.Off {
 					dv.Status = statusOf(cfg, statuses, s.ID)

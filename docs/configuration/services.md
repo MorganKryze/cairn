@@ -9,20 +9,21 @@ Any text field accepts a plain string or a per-locale map; see
 
 ## Keys
 
-| Key          | Required | Default       | What it is                                                                                                                                                   |
-| ------------ | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`         | yes      | n/a           | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                                                                 |
-| `url`        | yes\*    | n/a           | Where the card links. `https://…` or an absolute path. Optional with `state: soon` or `state: retired`, which link nowhere.                                  |
-| `name`       | yes      | n/a           | The card title.                                                                                                                                              |
-| `desc`       | no       | empty         | One line under the name. Keep it plain: what the tool does for the visitor.                                                                                  |
-| `details`    | no       | empty         | Longer text for the [detail page](#detail-pages); paragraphs and [CommonMark, minus raw HTML](text.md).                                                      |
-| `images`     | no       | `[]`          | Screenshots for the detail page; see [Preview images](#preview-images).                                                                                      |
-| `category`   | no       | `other`       | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml).                                                                          |
-| `icon`       | no       | neutral glyph | Slug, URL or `/assets` path, or `{light, dark}` for a [monochrome mark](theming.md#artwork-that-cannot-serve-both-themes); see [Icons](../recipes/icons.md). |
-| `tags`       | no       | `[]`          | Extra search words, invisible on the page. Add synonyms in every language.                                                                                   |
-| `selfhosted` | no       | none          | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag).                                     |
-| `state`      | no       | none          | `soon`, `retired`, `beta`, `deprecated` or `new`; a badge on the card. See [Where a service stands](#where-a-service-stands).                                |
-| `sign_in`    | no       | `false`       | `true` if a visitor will need an account; a lock after the name, a note on the detail page. See [Behind a sign-in](#behind-a-sign-in).                       |
+| Key          | Required | Default          | What it is                                                                                                                                                   |
+| ------------ | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`         | yes      | n/a              | Unique slug; becomes the detail page URL. Lowercase letters, digits, dashes.                                                                                 |
+| `url`        | yes\*    | n/a              | Where the card links. `https://…` or an absolute path. Optional with `state: soon` or `state: retired`, which link nowhere.                                  |
+| `name`       | yes      | n/a              | The card title.                                                                                                                                              |
+| `desc`       | no       | empty            | One line under the name. Keep it plain: what the tool does for the visitor.                                                                                  |
+| `details`    | no       | empty            | Longer text for the [detail page](#detail-pages); paragraphs and [CommonMark, minus raw HTML](text.md).                                                      |
+| `images`     | no       | `[]`             | Screenshots for the detail page; see [Preview images](#preview-images).                                                                                      |
+| `category`   | no       | `other`          | Group id; see `categories.yaml` in the [reference](../reference.md#categoriesyaml).                                                                          |
+| `icon`       | no       | neutral glyph    | Slug, URL or `/assets` path, or `{light, dark}` for a [monochrome mark](theming.md#artwork-that-cannot-serve-both-themes); see [Icons](../recipes/icons.md). |
+| `tags`       | no       | `[]`             | Extra search words, invisible on the page. Add synonyms in every language.                                                                                   |
+| `selfhosted` | no       | none             | `true` if you run it yourself, `false` if hosted elsewhere; shows a flag on the card. See [Hosting flag](#hosting-flag).                                     |
+| `state`      | no       | none             | `soon`, `retired`, `beta`, `deprecated` or `new`; a badge on the card. See [Where a service stands](#where-a-service-stands).                                |
+| `state_note` | no       | the state's note | One line saying what the state means for this service, localized; replaces the built-in note. Needs `state`.                                                 |
+| `sign_in`    | no       | `false`          | `true` if a visitor will need an account; a lock after the name, a note on the detail page. See [Behind a sign-in](#behind-a-sign-in).                       |
 
 ## Full example
 
@@ -150,6 +151,30 @@ needs a calendar is a different program.
 
 The five words come from the strings table, so they read in the page's
 language. See [Languages](i18n.md).
+
+Each state also carries a short note that says what the word means: "Available,
+but still being tested: it may change." for `beta`. The detail page prints it on
+a line under the state, and on the card the badge is a button: one tap or click
+on it shows the note above the badge. When the generic line does not fit your
+service, write your own with `state_note`:
+
+```yaml
+- id: forge
+  name: Forge
+  url: https://forge.example.org
+  state: beta
+  state_note:
+    en: Open for testing until March. Your repositories may be reset.
+    fr: Ouvert aux tests jusqu’en mars. Vos dépôts peuvent être réinitialisés.
+```
+
+A plain string works too, and a locale you leave out falls back to the default
+language like every other text. `state_note` without `state` stops the start,
+since there is no badge for it to explain:
+
+```text
+config: services.yaml line 1: service "forge" has a state_note but no state (expected: state: soon / retired / beta / deprecated / new, beside the note)
+```
 
 ## Behind a sign-in
 

@@ -30,10 +30,13 @@
          which is the right order for a service that is gone. It hangs on the
          top border rather than taking a row: the grid stretches a row to its
          tallest card, so a row inside would charge its height to every card
-         beside it. The comment closes hard against the range, since the
-         newline after it would otherwise print into every page that has no
-         state at all. */}}{{range .Cards}}<li class="card{{if .Off}} card-off{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
-      {{if .State}}<span class="card-badge card-badge-{{.State}}">{{.StateLabel}}</span>
+         beside it. It is a button that opens the note saying what the state
+         means, and the note sits beside it rather than in .card-main, the text
+         the search reads, so a word of it does not match every service in that
+         state. The comment closes hard against the range, since the newline
+         after it would otherwise print into every page that has no state at
+         all. */}}{{range .Cards}}<li class="card{{if .Off}} card-off{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
+      {{if .State}}<button type="button" class="card-badge card-badge-{{.State}}" popovertarget="{{.NoteID}}" aria-describedby="{{.NoteID}}">{{.StateLabel}}</button><span id="{{.NoteID}}" class="state-note" popover{{.StateNote.Attrs}}>{{.StateNote}}</span>
       {{end}}<div class="card-main">
         <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
