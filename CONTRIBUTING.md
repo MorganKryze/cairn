@@ -103,6 +103,14 @@ maintainer to approve workflow runs coming from a fork the first time, so
 nobody can spend its CI by opening a pull request. One click here starts them,
 and after that yours run on their own.
 
+A pull request runs only the checks its files concern, and the others report
+as skipped. A change under `docs/` or to the README runs none, any
+file under `src/`, templates and golden files included, runs the linter, the
+tests, the browser suite and the image, a script under `scripts/` runs the
+browser suite and the image, and `charts/` runs the chart job. Touching a
+workflow runs everything. CodeQL runs on every pull request.
+`.github/changes.sh` holds the list, `just changes-test` checks it.
+
 ## The browser tests
 
 A handful of behaviours are what `go test` cannot reach: the Go tests assert

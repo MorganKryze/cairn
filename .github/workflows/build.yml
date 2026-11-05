@@ -18,9 +18,12 @@ on:
       - "go.mod"
       - "go.sum"
       - ".github/workflows/build.yml"
+      - ".github/changes.sh"
+      - ".github/changes_test.sh"
   # No paths filter here on purpose: these jobs are required checks, and a
   # required check that never runs leaves a docs-only pull request waiting
-  # forever. The push trigger above keeps its filter.
+  # forever. The `changes` job below skips them by `if:` instead, which
+  # reports. The push trigger above keeps its filter.
   pull_request:
     branches: [main]
 
@@ -33,7 +36,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # What a pull request touches, as flags; .github/changes.sh holds the
+  # classification and why it is an `if:` rather than a paths filter. Any
+  # other event sets every flag, so push runs what it always ran. A flag
+  # reads `!= 'false'` so that if this job fails, everything runs.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.flags.outputs.go }}
+      web: ${{ steps.flags.outputs.web }}
+      image: ${{ steps.flags.outputs.image }}
+      chart: ${{ steps.flags.outputs.chart }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # the three-dot diff needs the merge base
+      - id: flags
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            bash .github/changes.sh "$BASE" "$HEAD"
+          else
+            bash .github/changes.sh
+          fi
+
   lint:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.go != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -43,8 +74,12 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: latest
+      - name: Classifier cases
+        run: bash .github/changes_test.sh
 
   coverage:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.go != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # publishes the badge to the orphan `badges` branch
@@ -83,6 +118,8 @@ jobs:
   # a new name never runs, which leaves every pull request waiting forever for
   # a job that no longer exists.
   search:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.go != 'false' || needs.changes.outputs.web != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -132,6 +169,8 @@ jobs:
           node scripts/export.mjs "$static"
 
   chart:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.chart != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -154,6 +193,8 @@ jobs:
             || { echo "kubeVersion is the Kubernetes floor, not cairn's version: it does not move with a release"; exit 1; }
 
   image:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.image != 'false' || needs.changes.outputs.web != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -288,6 +329,8 @@ jobs:
           done
 
   demo:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.image != 'false' || needs.changes.outputs.web != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

@@ -12,9 +12,11 @@ on:
       - "go.sum"
       - "docker/**"
       - ".github/workflows/security.yml"
+      - ".github/changes.sh"
   # No paths filter here on purpose: these jobs are required checks, and a
   # required check that never runs leaves a docs-only pull request waiting
-  # forever. The push trigger above keeps its filter.
+  # forever. The `changes` job below skips them by `if:` instead, which
+  # reports. The push trigger above keeps its filter.
   pull_request:
     branches: [main]
 
@@ -22,7 +24,33 @@ permissions:
   contents: read
 
 jobs:
+  # What a pull request touches, as flags; .github/changes.sh holds the
+  # classification and why it is an `if:` rather than a paths filter. Any
+  # other event sets every flag, so push and the schedule run what they always ran. A flag
+  # reads `!= 'false'` so that if this job fails, everything runs.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.flags.outputs.go }}
+      image: ${{ steps.flags.outputs.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # the three-dot diff needs the merge base
+      - id: flags
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            bash .github/changes.sh "$BASE" "$HEAD"
+          else
+            bash .github/changes.sh
+          fi
+
   govulncheck:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.go != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -32,6 +60,8 @@ jobs:
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
   trivy:
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.image != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
