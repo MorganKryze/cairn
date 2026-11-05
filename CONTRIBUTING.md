@@ -272,3 +272,4 @@ same PR: `values.yaml` is a public API, and renaming a key breaks installs.
 
 Be decent, assume good faith, critique the work and not the person. The full
 version is in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
