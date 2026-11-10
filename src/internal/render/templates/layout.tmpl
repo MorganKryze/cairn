@@ -131,8 +131,11 @@
      The slot around it is what status.js replaces. It exists on every service
      of a site that has a Gatus and is empty when there is no pill, because
      "no pill" is one of the states a refresh has to be able to arrive at. A
-     site without a Gatus emits neither, exactly as before. */}}
-{{define "statuspill"}}{{if .StatusID}}<span class="status-slot" data-status="{{.StatusID}}">{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</span>{{end}}{{end}}</span>{{end}}{{end}}
+     site without a Gatus emits neither, exactly as before.
+
+     An on-demand service gets the mark in the pill's place, with or without a
+     monitor, and no slot: status.js has nothing of its to swap. */}}
+{{define "statuspill"}}{{if .OnDemand}}<span class="ondemand-mark">{{.OnDemandLabel}}</span>{{else if .StatusID}}<span class="status-slot" data-status="{{.StatusID}}">{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</span>{{end}}{{end}}</span>{{end}}{{end}}
 
 {{/* A long text field, already rendered to markdown blocks. The wrapper exists
      only to carry lang and dir, so it appears only when the text is not in the

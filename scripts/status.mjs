@@ -65,6 +65,9 @@ const tick = async () => {
 };
 
 await check('every service starts with a slot, and a pill in it', async () => {
+  // Three cards, two slots: sleeper is on demand, so the monitor never speaks
+  // for it and its card has no slot to fill.
+  eq(await page.locator('.card').count(), 3, 'cards');
   eq(await page.locator('.status-slot').count(), 2, 'slots');
   eq(await pillOf('alpha'), 'status-pill status-unknown', "alpha's pill");
   eq(await pillOf('bravo'), 'status-pill status-unknown', "bravo's pill");
@@ -118,6 +121,61 @@ await check('a pill under the keyboard is left alone until focus moves on', asyn
   await page.locator('.card-name').first().focus();
   await tick();
   eq(await pillOf('alpha'), 'status-pill status-down', "alpha's pill");
+});
+
+// The mark is how the service runs, not what it is: a visitor typing the
+// label's words is not looking for it.
+await check('the on-demand mark is not searched', async () => {
+  const q = page.locator('#q');
+  const painted = () =>
+    page.$$eval('.card', els => els.filter(e => e.getClientRects().length > 0).length);
+  await q.fill('sleeper');
+  eq(await painted(), 1, 'cards matching "sleeper"');
+  await q.fill('demand');
+  eq(await painted(), 0, 'cards matching "demand"');
+  await q.fill('');
+});
+
+// status.js swaps what is inside a slot, and the mark is in none: every poll
+// above has run past it.
+await check('a status swap leaves the mark alone', async () => {
+  answer = original.replace(
+    /(<span class="status-slot" data-status="bravo">.*?status-pill )status-unknown/s,
+    '$1status-down',
+  );
+  await tick();
+  eq(await pillOf('bravo'), 'status-pill status-down', "bravo's pill");
+  eq(await page.locator('.ondemand-mark').allTextContents(), ['On demand'], 'the marks');
+  eq(await page.locator('.status-slot').count(), 2, 'slots');
+});
+
+// The note is the longest thing in the detail head, and at 360 it shares the
+// phone row with Open.
+await check('the on-demand detail page does not overflow at 360', async () => {
+  for (const colorScheme of ['light', 'dark']) {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme });
+    const p = await ctx.newPage();
+    await p.goto(new globalThis.URL('sleeper/', URL).href);
+    const g = await p.evaluate(() => {
+      const note = document.querySelector('.ondemand-note').getBoundingClientRect();
+      return {
+        scroll: document.documentElement.scrollWidth,
+        width: document.documentElement.clientWidth,
+        note: note.right,
+        top: note.top,
+        mark: document.querySelector('.ondemand-mark').getBoundingClientRect().bottom,
+      };
+    });
+    await ctx.close();
+    if (g.scroll > g.width || g.note > g.width) {
+      throw new Error(`${colorScheme}: the page is ${g.scroll}px wide in ${g.width}, the note ends at ${g.note}`);
+    }
+    // Beside the mark there is no room for a sentence, only for a sliver of
+    // one word per line.
+    if (g.top < g.mark) {
+      throw new Error(`${colorScheme}: the note starts at ${g.top}, beside the mark that ends at ${g.mark}`);
+    }
+  }
 });
 
 await browser.close();

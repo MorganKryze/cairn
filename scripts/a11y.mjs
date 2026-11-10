@@ -960,6 +960,146 @@ await check(
   },
 );
 
+// ---- the on-demand mark: a word in the pill's place, and no pill ----
+
+// The fixture's sleeper is on demand beside two Unknown pills. The mark
+// declares how the service runs; it measures nothing, so nothing about it may
+// read as a status: no dot, a dashed ring and no fill, no control, and the
+// pill's height so the foot does not jump between the two.
+await check("the on-demand mark is no pill", async () => {
+  for (const theme of ["light", "dark"]) {
+    const m = await pills.$eval(
+      ".ondemand-mark",
+      (el, theme) => {
+        document.documentElement.dataset.theme = theme;
+        // The ground is the first box that paints one; the mark has none.
+        const behind = (e) => {
+          for (; e; e = e.parentElement) {
+            const c = getComputedStyle(e).backgroundColor;
+            if (c !== "rgba(0, 0, 0, 0)") return c;
+          }
+          return "rgb(255, 255, 255)";
+        };
+        const pill = el
+          .closest(".cards")
+          .querySelector(".card .status-pill.status-unknown");
+        const s = getComputedStyle(el);
+        return {
+          dot: !!el.querySelector(".dot"),
+          control: !!el.closest("a, button") || el.tabIndex >= 0,
+          border: s.borderTopStyle,
+          fill: s.backgroundColor,
+          h: el.getBoundingClientRect().height,
+          pill: pill ? pill.getBoundingClientRect().height : -1,
+          ink: s.color,
+          behind: behind(el.parentElement),
+        };
+      },
+      theme,
+    );
+    if (m.dot) throw new Error(`${theme}: the mark carries a dot`);
+    if (m.control) throw new Error(`${theme}: the mark is a control`);
+    if (m.border !== "dashed")
+      throw new Error(`${theme}: the mark's ring is ${m.border}, not dashed`);
+    if (m.fill !== "rgba(0, 0, 0, 0)")
+      throw new Error(`${theme}: the mark is filled with ${m.fill}`);
+    if (m.pill < 0)
+      throw new Error("no Unknown pill in the grid to measure against");
+    // Both stand on the card's 1.75rem floor, so they match to the pixel.
+    // Half of one, because the mark left at its own height is 0.8px short.
+    if (Math.abs(m.h - m.pill) > 0.5)
+      throw new Error(
+        `${theme}: the mark is ${m.h}px tall beside a ${m.pill}px pill`,
+      );
+    const r = ratio(m.ink, m.behind);
+    if (r < 4.5)
+      throw new Error(
+        `${theme}: ${m.ink} on ${m.behind} is ${r.toFixed(2)}:1, the text needs 4.5:1`,
+      );
+  }
+  // sleeper carries a flag; a foot holding the mark alone has to stay drawn
+  // too, and the rule that hides an empty foot is what would fold it.
+  const alone = await still.newPage();
+  await alone.goto(STATUS);
+  const drawn = await alone.$eval(".ondemand-mark", (el) => {
+    el.closest(".card-foot").querySelector(".flag")?.remove();
+    return el.getClientRects().length > 0;
+  });
+  await alone.close();
+  if (!drawn) throw new Error("a foot holding only the mark is not drawn");
+  const tabbed = await still.newPage();
+  await tabbed.goto(STATUS);
+  for (let i = 0; i < 40; i++) {
+    await tabbed.keyboard.press("Tab");
+    if (
+      await tabbed.evaluate(
+        () => !!document.activeElement?.closest(".ondemand-mark"),
+      )
+    ) {
+      await tabbed.close();
+      throw new Error(`Tab stop ${i + 1} is the mark`);
+    }
+  }
+  await tabbed.close();
+});
+
+// A screen reader walks the row as one sentence, label then note, and the
+// note is plain markup that reads with JavaScript off. The note is muted
+// prose, so its ink is measured in both themes.
+await check("the on-demand line reads as label then note", async () => {
+  const url = new URL("sleeper/", STATUS).href;
+  const ctx = await browser.newContext({
+    javaScriptEnabled: false,
+    reducedMotion: "reduce",
+  });
+  const p = await ctx.newPage();
+  await p.goto(url);
+  eq(
+    await p.$eval(".detail-state-row", (el) => el.textContent),
+    "On demand: Starts when opened: the first load may take a few seconds.",
+    "the row's text",
+  );
+  eq(
+    await p.$eval(
+      ".detail-state-row .visually-hidden",
+      (el) => el.getClientRects().length > 0,
+    ),
+    true,
+    "the hidden colon is in the layout",
+  );
+  for (const theme of ["light", "dark"]) {
+    const m = await p.$eval(
+      ".ondemand-note",
+      (el, theme) => {
+        document.documentElement.dataset.theme = theme;
+        const r = el.getBoundingClientRect();
+        let ground = "rgb(255, 255, 255)";
+        for (let e = el; e; e = e.parentElement) {
+          const c = getComputedStyle(e).backgroundColor;
+          if (c !== "rgba(0, 0, 0, 0)") {
+            ground = c;
+            break;
+          }
+        }
+        return {
+          shown: r.width > 0 && r.height > 0,
+          ink: getComputedStyle(el).color,
+          behind: ground,
+        };
+      },
+      theme,
+    );
+    if (!m.shown)
+      throw new Error(`${theme}: the note is not painted without JavaScript`);
+    const r = ratio(m.ink, m.behind);
+    if (r < 4.5)
+      throw new Error(
+        `${theme}: the note's ${m.ink} on ${m.behind} is ${r.toFixed(2)}:1`,
+      );
+  }
+  await ctx.close();
+});
+
 // ---- A2 and A4, both of which only exist at phone width ----
 
 const phone = await browser.newContext({ viewport: PHONE });

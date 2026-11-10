@@ -325,6 +325,11 @@ type cardView struct {
 	SignIn             bool
 	SignInLabel        string
 	NameHead, NameTail string
+	// OnDemand puts a mark where the pill would sit: the service sleeps until
+	// opened, which no monitor can tell from an outage. A disabling state
+	// clears it, since such a card has neither a link nor a pill.
+	OnDemand      bool
+	OnDemandLabel string
 }
 
 // hostKindOf reads the card's flag off the service rather than off the built
@@ -396,6 +401,8 @@ type detailView struct {
 	Off                                        bool   // see cardView
 	SignIn                                     bool   // see cardView
 	SignInLabel, SignInNote                    string
+	OnDemand                                   bool // see cardView
+	OnDemandLabel, OnDemandNote                string
 }
 
 type imageView struct {
@@ -642,6 +649,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		for _, c := range cfg.Categories {
 			cv := catView{ID: c.ID, Name: catName(cfg, c, loc)}
 			for _, s := range c.Services {
+				onDemand := s.OnDemand && !s.State.Disables()
 				card := cardView{
 					URL:       s.URL,
 					Icon:      AppURL(config.IconURL(cfg, s.Icon.Light)),
@@ -650,6 +658,10 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					Desc:      tr(s.Desc, loc, def),
 					Tags:      strings.Join(s.Tags, " "),
 					Off:       s.State.Disables(),
+					OnDemand:  onDemand,
+				}
+				if onDemand {
+					card.OnDemandLabel = cfg.Str(loc, "ondemand.label")
 				}
 				if s.SignIn {
 					card.SignIn = true
@@ -669,7 +681,9 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					card.StatusID = statusSlot(cfg, s.ID)
 					card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
 				}
-				if len(s.Details) > 0 || len(s.Images) > 0 {
+				// The note lives on the detail page only, so an on-demand card
+				// leads there even with nothing else to show.
+				if len(s.Details) > 0 || len(s.Images) > 0 || onDemand {
 					card.MoreHref = BasePath + "/" + loc + "/" + s.ID + "/"
 					card.MoreA11y = s.Name.Get(loc, def) + ", " + cfg.Str(loc, "card.more")
 				}
@@ -700,6 +714,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 
 		for _, c := range cfg.Categories {
 			for _, s := range c.Services {
+				onDemand := s.OnDemand && !s.State.Disables()
 				dv := detailView{
 					pageView:  base,
 					Name:      tr(s.Name, loc, def),
@@ -709,6 +724,11 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					URL:       s.URL,
 					Body:      proseOf(tr(s.Details, loc, def), mdCtx{media: media}),
 					Off:       s.State.Disables(),
+					OnDemand:  onDemand,
+				}
+				if onDemand {
+					dv.OnDemandLabel = cfg.Str(loc, "ondemand.label")
+					dv.OnDemandNote = cfg.Str(loc, "ondemand.note")
 				}
 				if s.SignIn {
 					dv.SignIn = true
