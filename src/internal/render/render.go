@@ -664,7 +664,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				}
 				// A disabling state means nothing is monitored, so there is no slot
 				// for a pill to be swapped into.
-				if !card.Off {
+				if !card.Off && !s.OnDemand {
 					card.Status = statusOf(cfg, statuses, s.ID)
 					card.StatusID = statusSlot(cfg, s.ID)
 					card.StatusLabel, card.StatusHref, card.StatusA11y = statusMeta(cfg, loc, card.Status, s, statuses[s.ID].Key)
@@ -720,7 +720,7 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
 					dv.StateNote = stateNote(cfg, s, loc, def)
 				}
-				if !dv.Off {
+				if !dv.Off && !s.OnDemand {
 					dv.Status = statusOf(cfg, statuses, s.ID)
 					dv.StatusID = statusSlot(cfg, s.ID)
 				}

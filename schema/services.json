@@ -103,6 +103,10 @@
       "sign_in": {
         "type": "boolean",
         "description": "true when a visitor will need an account: a lock after the name on the card, and a note on the detail page."
+      },
+      "on_demand": {
+        "type": "boolean",
+        "description": "true when a proxy such as Sablier starts the service on request and lets it sleep when idle: no endpoint from -emit-gatus, no status pill, an On demand mark in its place, and a line on the detail page saying the first load may take a few seconds."
       }
     }
   },

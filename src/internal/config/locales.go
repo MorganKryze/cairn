@@ -62,6 +62,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Available, but still being tested: it may change.",
 		"state.deprecated.note": "Still available, but scheduled to be withdrawn.",
 		"state.new.note":        "Recently added to this directory.",
+
+		"ondemand.label": "On demand",
+		"ondemand.note":  "Starts when opened: the first load may take a few seconds.",
 	},
 	"fr": {
 		"nav.skip":           "Aller au contenu",
@@ -114,6 +117,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Disponible, mais encore en test\u202f: son fonctionnement peut évoluer.",
 		"state.deprecated.note": "Encore accessible, mais appelé à être retiré.",
 		"state.new.note":        "Ajouté récemment à cet annuaire.",
+
+		"ondemand.label": "À la demande",
+		"ondemand.note":  "Démarre à l’ouverture : le premier chargement peut prendre quelques secondes.",
 	},
 	"de": {
 		"nav.skip":           "Zum Inhalt springen",
@@ -166,6 +172,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Verfügbar, wird aber noch getestet: Änderungen sind möglich.",
 		"state.deprecated.note": "Noch verfügbar, die Abschaltung ist aber geplant.",
 		"state.new.note":        "Vor Kurzem in dieses Verzeichnis aufgenommen.",
+
+		"ondemand.label": "Auf Abruf",
+		"ondemand.note":  "Startet beim Öffnen: Das erste Laden kann einige Sekunden dauern.",
 	},
 	"es": {
 		"nav.skip":           "Saltar al contenido",
@@ -218,6 +227,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Disponible, pero aún en pruebas: su funcionamiento puede cambiar.",
 		"state.deprecated.note": "Aún disponible, pero está previsto retirarlo.",
 		"state.new.note":        "Añadido recientemente a este directorio.",
+
+		"ondemand.label": "Bajo demanda",
+		"ondemand.note":  "Se inicia al abrirlo: la primera carga puede tardar unos segundos.",
 	},
 	"it": {
 		"nav.skip":           "Vai al contenuto",
@@ -270,6 +282,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Disponibile, ma ancora in fase di test: il funzionamento può cambiare.",
 		"state.deprecated.note": "Ancora disponibile, ma ne è prevista la dismissione.",
 		"state.new.note":        "Aggiunto di recente a questo elenco.",
+
+		"ondemand.label": "Su richiesta",
+		"ondemand.note":  "Si avvia all'apertura: il primo caricamento può richiedere alcuni secondi.",
 	},
 	"nl": {
 		"nav.skip":           "Naar inhoud springen",
@@ -322,6 +337,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Beschikbaar, maar wordt nog getest: de werking kan veranderen.",
 		"state.deprecated.note": "Nog beschikbaar, maar het wordt uitgefaseerd.",
 		"state.new.note":        "Onlangs aan dit overzicht toegevoegd.",
+
+		"ondemand.label": "Op aanvraag",
+		"ondemand.note":  "Start bij het openen: het eerste laden kan enkele seconden duren.",
 	},
 	"pt": {
 		"nav.skip":           "Ir para o conteúdo",
@@ -374,6 +392,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Disponível, mas ainda em testes: o funcionamento pode mudar.",
 		"state.deprecated.note": "Ainda disponível, mas com retirada prevista.",
 		"state.new.note":        "Adicionado recentemente a este diretório.",
+
+		"ondemand.label": "A pedido",
+		"ondemand.note":  "Inicia ao abrir: o primeiro carregamento pode demorar alguns segundos.",
 	},
 	"sv": {
 		"nav.skip":           "Hoppa till innehåll",
@@ -426,6 +447,9 @@ var builtinStrings = map[string]map[string]string{
 		"state.beta.note":       "Tillgänglig, men testas fortfarande: funktionen kan ändras.",
 		"state.deprecated.note": "Fortfarande tillgänglig, men kommer att avvecklas.",
 		"state.new.note":        "Nyligen tillagd i den här katalogen.",
+
+		"ondemand.label": "Vid behov",
+		"ondemand.note":  "Startar när den öppnas: första inläsningen kan ta några sekunder.",
 	},
 }
 

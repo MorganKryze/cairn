@@ -278,3 +278,46 @@ func TestEmitGatusSkipsDisabledServices(t *testing.T) {
 		t.Error("a retired service got an endpoint, so somebody has to maintain a monitor for nothing")
 	}
 }
+
+// A proxy that starts a service on request answers its first probe slowly or
+// not at all, so a monitor would report every nap as an outage.
+func TestAnOnDemandServiceGetsNoEndpoint(t *testing.T) {
+	load := func(services string) []byte {
+		t.Helper()
+		cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{"site.yaml": "locales: [en]\n", "services.yaml": services}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := status.Emit(cfg, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	const plain = "- {id: live, url: 'https://live.example.org', name: Live}\n"
+	with := load(plain + "- {id: nap, url: 'https://nap.example.org', name: Nap, on_demand: true}\n")
+	if strings.Contains(string(with), "name: nap") {
+		t.Errorf("an on-demand service got an endpoint:\n%s", with)
+	}
+	if !strings.Contains(string(with), "name: live") {
+		t.Errorf("the plain service lost its endpoint:\n%s", with)
+	}
+	if without := load(plain); string(with) != string(without) {
+		t.Errorf("the rest of the output moved:\n%s\nwant:\n%s", with, without)
+	}
+}
+
+func TestUnmonitoredLeavesOnDemandServicesOut(t *testing.T) {
+	cfg := &config.Config{Categories: []config.Category{{ID: "t", Services: []config.Service{
+		{ID: "seen"}, {ID: "ghost"}, {ID: "nap", OnDemand: true},
+	}}}}
+	got := status.Unmonitored(cfg, map[string]status.State{"seen": {Level: status.LevelUp}})
+	if !strings.Contains(got, "ghost") || strings.Contains(got, "nap") {
+		t.Errorf("Unmonitored = %q, want ghost named and nap left out", got)
+	}
+	// A monitor the operator kept for it names it too, and that is no mismatch.
+	got = status.Unmonitored(cfg, map[string]status.State{"seen": {Level: status.LevelUp}, "nap": {Level: status.LevelDown}})
+	if !strings.Contains(got, "ghost") || strings.Contains(got, "nap") {
+		t.Errorf("Unmonitored = %q, want ghost named and nap left out", got)
+	}
+}

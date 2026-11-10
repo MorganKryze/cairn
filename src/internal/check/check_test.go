@@ -1060,3 +1060,29 @@ func TestCheckExplainsTheDemotedHeading(t *testing.T) {
 		t.Errorf("a page that already starts at ## was warned about:\n%s", w)
 	}
 }
+
+// A disabling state already takes the link and the pill away, so on_demand
+// beside it changes nothing the visitor sees and one of the two is stale.
+func TestCheckWarnsAboutOnDemandBesideADisablingState(t *testing.T) {
+	dir := testutil.WriteFiles(t, map[string]string{
+		"site.yaml": "locales: [en]\nindex: false\n",
+		"services.yaml": "- {id: gone, url: https://gone.example.org, name: Gone, state: retired, on_demand: true}\n" +
+			"- {id: later, url: https://later.example.org, name: Later, state: soon, on_demand: true}\n" +
+			"- {id: trial, url: https://trial.example.org, name: Trial, state: beta, on_demand: true}\n",
+	})
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := strings.Join(inertSettings(cfg), "\n")
+	for _, c := range []struct{ id, state string }{{"gone", "retired"}, {"later", "soon"}} {
+		want := `service "` + c.id + `": on_demand does nothing beside state: ` + c.state +
+			", which already takes away the link and the status pill (drop on_demand, or the state once the service is back)"
+		if !strings.Contains(w, want) {
+			t.Errorf("missing %q in:\n%s", want, w)
+		}
+	}
+	if strings.Contains(w, `"trial"`) {
+		t.Errorf("a beta service, still monitored, was warned about:\n%s", w)
+	}
+}
