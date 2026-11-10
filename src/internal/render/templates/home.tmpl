@@ -9,9 +9,9 @@
        phone with no script at all; a wide screen shows it whole. The button
        follows the fold so that Tab meets the row first, the order a phone
        shows them in. */}}
-  <details class="about-fold"><summary class="about-sum"><svg class="about-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10.8v5"/><path d="M12 7.4v.4"/></svg><span>{{.S.AboutSummary}}</span><svg class="about-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+  <details class="about-fold"><summary class="about-sum"><svg class="about-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10.8v5"/><path d="M12 7.4v.4"/></svg><span{{.S.AboutSummary.Attrs}}>{{.S.AboutSummary}}</span><svg class="about-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
   {{template "prose" .About}}</details>
-  <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>{{.S.Dismiss}}</span></button>
+  <button class="about-x" id="about-x" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span{{.S.Dismiss.Attrs}}>{{.S.Dismiss}}</span></button>
 </section>
 {{end}}{{if gt (len .Cats) 1}}<nav class="toc" aria-label="{{.S.Toc}}">
   <ul>
@@ -36,7 +36,7 @@
          state. The comment closes hard against the range, since the newline
          after it would otherwise print into every page that has no state at
          all. */}}{{range .Cards}}<li class="card{{if .Off}} card-off{{end}}"{{if .Tags}} data-tags="{{.Tags}}"{{end}}>
-      {{if .State}}<button type="button" class="card-badge card-badge-{{.State}}" popovertarget="{{.NoteID}}" aria-describedby="{{.NoteID}}">{{.StateLabel}}</button><span id="{{.NoteID}}" class="state-note" popover{{.StateNote.Attrs}}>{{.StateNote}}</span>
+      {{if .State}}<button type="button" class="card-badge card-badge-{{.State}}" popovertarget="{{.NoteID}}" aria-describedby="{{.NoteID}}">{{template "word" .StateLabel}}</button><span id="{{.NoteID}}" class="state-note" popover{{.StateNote.Attrs}}>{{.StateNote}}</span>
       {{end}}<div class="card-main">
         <span class="tile">{{if .Icon}}<img{{if .IconClass}} class="{{.IconClass}}"{{end}} src="{{.Icon}}" alt="" loading="lazy" width="40" height="40">{{else}}{{template "glyph"}}{{end}}</span>
         <div class="card-text">
@@ -49,11 +49,11 @@
            a thumb can hit. The name it is read by is on the anchor, since a
            glyph carries none. */}}
       {{if .MoreHref}}<a class="card-more" href="{{.MoreHref}}" aria-label="{{.MoreA11y}}" title="{{$.S.More}}"><svg class="more-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10.8v5"/><path d="M12 7.4v.4"/></svg></a>{{end}}
-      {{if or .HostKind .StatusID .OnDemand}}<div class="card-foot">{{if .HostKind}}{{if .HostHref}}<a class="flag flag-{{.HostKind}}" href="{{.HostHref}}"{{if .HostBlank}} target="_blank" rel="noopener noreferrer"{{end}}>{{else}}<span class="flag flag-{{.HostKind}}">{{end}}{{if eq .HostKind "self"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{{else}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a5 5 0 1 1 .5-9.98A6 6 0 0 1 21 9.5a4.5 4.5 0 0 1-3.5 9.5Z"/></svg>{{end}}<span class="flag-label">{{.HostLabel}}</span>{{if .HostHref}}</a>{{else}}</span>{{end}}{{end}}{{template "statuspill" .}}</div>
+      {{if or .HostKind .StatusID .OnDemand}}<div class="card-foot">{{if .HostKind}}{{if .HostHref}}<a class="flag flag-{{.HostKind}}" href="{{.HostHref}}"{{if .HostBlank}} target="_blank" rel="noopener noreferrer"{{end}}>{{else}}<span class="flag flag-{{.HostKind}}">{{end}}{{if eq .HostKind "self"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{{else}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a5 5 0 1 1 .5-9.98A6 6 0 0 1 21 9.5a4.5 4.5 0 0 1-3.5 9.5Z"/></svg>{{end}}<span class="flag-label">{{template "word" .HostLabel}}</span>{{if .HostHref}}</a>{{else}}</span>{{end}}{{end}}{{template "statuspill" .}}</div>
       {{end}}</li>
     {{end}}
   </ul>
 </section>
-{{end}}<p id="empty" class="empty" role="status" hidden>{{.S.SearchEmpty}}</p>
+{{end}}<p id="empty" class="empty" role="status"{{.S.SearchEmpty.Attrs}} hidden>{{.S.SearchEmpty}}</p>
 <p id="count" class="visually-hidden" role="status" aria-live="polite" data-single="{{.S.SearchOne}}" data-plural="{{.S.SearchMany}}"></p>
 {{template "bottom" .}}

@@ -2687,11 +2687,19 @@ for (const width of PHONES) {
         bad.push(
           `the title moved ${Math.round(before.top - after.top)}px for a 300px scroll`,
         );
-      if (!(await p.$eval("body > header", (h) => h.classList.contains("header-hidden"))))
+      if (
+        !(await p.$eval("body > header", (h) =>
+          h.classList.contains("header-hidden"),
+        ))
+      )
         bad.push("the site header did not hide going down");
       await p.evaluate(() => scrollTo(0, 100));
       await frame();
-      if (await p.$eval("body > header", (h) => h.classList.contains("header-hidden")))
+      if (
+        await p.$eval("body > header", (h) =>
+          h.classList.contains("header-hidden"),
+        )
+      )
         bad.push("the site header did not come back going up");
 
       // A link scrolled to the top edge, as a Tab upward or a find leaves it.
@@ -2712,6 +2720,56 @@ for (const width of PHONES) {
     },
   );
 }
+
+// ---- English inside a right-to-left page reads left to right ----
+
+// Arabic has no built-in strings, so cairn's own words on an Arabic page are
+// English. Left to inherit dir="rtl", a sentence's full stop is laid out at
+// its left end and the placeholder read "…Search for a tool". The sign-in note
+// on a detail page is cairn's, the welcome note the operator's English, which
+// was already marked and is the control.
+await check(
+  "on an Arabic page an English sentence ends with its full stop, and the search placeholder reads left to right",
+  async () => {
+    const bad = [];
+    // The last character of the element's text and the one before it: in a
+    // left-to-right run the stop is drawn after the letter it follows.
+    const lastStop = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let last = null;
+      for (let n; (n = w.nextNode());) if (n.data.trim()) last = n;
+      const i = last.data.trimEnd().length - 1;
+      const at = (k) => {
+        const r = document.createRange();
+        r.setStart(last, k);
+        r.setEnd(last, k + 1);
+        return r.getClientRects()[0];
+      };
+      return { ch: last.data[i], after: at(i).left >= at(i - 1).right - 1 };
+    };
+    for (const [url, sel] of [
+      [`${LOCALES}ar/`, ".about-fold > div p:last-child"],
+      [`${LOCALES}ar/long/`, ".signin p"],
+    ]) {
+      const p = await open(url, 1280);
+      const m = await p.evaluate(lastStop, sel);
+      if (!m) bad.push(`${url}: no ${sel}`);
+      else if (m.ch !== ".")
+        bad.push(`${url}: ${sel} does not end on a full stop`);
+      else if (!m.after)
+        bad.push(`${url}: ${sel} puts its full stop before the words`);
+      if (url.endsWith("/ar/")) {
+        const ltr = await p.$eval("#q", (q) => q.matches(":dir(ltr)"));
+        if (!ltr)
+          bad.push(`${url}: the search placeholder is laid out right to left`);
+      }
+      await p.close();
+    }
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
 
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();

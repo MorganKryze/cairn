@@ -167,3 +167,61 @@ func TestForgedLocaleNeverBecomesAnAttribute(t *testing.T) {
 		}
 	}
 }
+
+// Arabic has no built-in strings, so every word cairn writes itself on an
+// Arabic page is English: the skip link, the welcome row, the hosting flag, the
+// state badge, the back link. Unmarked, they inherit dir="rtl" from <html> and
+// their punctuation moves to the wrong end ("…Search for a tool" on the
+// locales fixture), and a screen reader reads them in an Arabic voice. Each
+// one carries the language it is written in, as an operator's fallback does.
+func TestBuiltInWordsInAnotherLanguageAreMarked(t *testing.T) {
+	m := modelFrom(t, map[string]string{
+		"site.yaml": "locales: [ar, en]\n" +
+			"about: {ar: \"مرحبا.\"}\n" +
+			"hosting_flag: {self: legal}\n" +
+			"links: [{label: {ar: \"مساعدة\"}, url: https://help.example.org}]\n" +
+			"pages:\n  - id: legal\n    title: {ar: \"إشعار\"}\n    body: {ar: \"نص.\"}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, selfhosted: true, " +
+			"state: beta, sign_in: true, details: {ar: \"فقرة.\"}}\n" +
+			"- {id: wake, url: https://wake.example.org, name: Wake, on_demand: true}\n",
+	})
+	const mark = ` lang="en" dir="ltr"`
+	home := string(m.Pages["ar"].HTML)
+	for _, want := range []string{
+		`<a class="skip" href="#main"><span` + mark + `>Skip to content</span></a>`,
+		`<span` + mark + `>About this site</span>`,
+		`<span` + mark + `>Dismiss</span>`,
+		`<span` + mark + `>Menu</span>`,
+		`<span class="flag-label"><span` + mark + `>Self-hosted</span>`,
+		`aria-describedby="note-pad"><span` + mark + `>Beta</span></button>`,
+		`popover` + mark + `>Available, but still being tested: it may change.</span>`,
+		`<span class="ondemand-mark"><span` + mark + `>On demand</span>`,
+		`<p id="empty" class="empty" role="status"` + mark + ` hidden>`,
+		`<span` + mark + `>powered by</span> <a`,
+		// An attribute cannot carry a language of its own, and dir on the box
+		// would also turn round what the visitor types. dir="auto" lays the
+		// placeholder out by its own first letter and the query by its own.
+		`placeholder="Search for a tool…" dir="auto"`,
+	} {
+		if !strings.Contains(home, want) {
+			t.Errorf("the Arabic home page does not carry %s", want)
+		}
+	}
+	detail := string(m.Pages["ar/pad"].HTML)
+	for _, want := range []string{
+		`<span` + mark + `>Open</span><svg`,
+		`<p` + mark + `><strong>Sign-in required</strong>`,
+	} {
+		if !strings.Contains(detail, want) {
+			t.Errorf("the Arabic detail page does not carry %s", want)
+		}
+	}
+	// The back link and Open keep the page's direction, so their arrows stay on
+	// the side the page reads from; the word inside carries the mark.
+	if !strings.Contains(detail, `<span`+mark+`>Back</span></a>`) {
+		t.Error("the Arabic detail page's back link is not marked")
+	}
+	if page := string(m.Pages["ar/legal"].HTML); !strings.Contains(page, `<span`+mark+`>Back</span></a>`) {
+		t.Error("the Arabic hosted page's back link is not marked")
+	}
+}
