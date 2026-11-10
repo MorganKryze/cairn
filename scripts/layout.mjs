@@ -2771,6 +2771,39 @@ await check(
   },
 );
 
+await check(
+  "on an Arabic page a description written once in English is drawn left to right",
+  async () => {
+    const p = await open(`${LOCALES}ar/`, 1280);
+    // The glyph painted furthest left: in a left-to-right run that is the
+    // first letter, in a run laid out right to left it is the full stop.
+    const m = await p.evaluate(() => {
+      const el = [...document.querySelectorAll(".card-desc")].find(
+        (d) => d.textContent.trim() === "Write together.",
+      );
+      if (!el) return null;
+      const t = el.firstChild;
+      let best = null;
+      for (let i = 0; i < t.data.length; i++) {
+        if (!t.data[i].trim()) continue;
+        const r = document.createRange();
+        r.setStart(t, i);
+        r.setEnd(t, i + 1);
+        const x = r.getClientRects()[0].left;
+        if (!best || x < best.x) best = { x, ch: t.data[i] };
+      }
+      return best.ch;
+    });
+    await p.close();
+    if (m === null)
+      throw new Error("no card description reads Write together.");
+    if (!/\p{L}/u.test(m))
+      throw new Error(
+        `the description's leftmost glyph is "${m}", not a letter`,
+      );
+  },
+);
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

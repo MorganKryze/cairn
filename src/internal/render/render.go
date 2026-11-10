@@ -187,8 +187,12 @@ func (p prose) Attrs() template.HTMLAttr { return langAttrs(p.Lang, p.Dir) }
 // Anything failing either check is dropped rather than escaped.
 //
 // dir is left out when it matches the page's own direction, which the browser
-// has already inherited.
+// has already inherited. dir="auto" comes alone: it is for text whose language
+// nobody stated, see tr.
 func langAttrs(lang, dir string) template.HTMLAttr {
+	if lang == "" && dir == "auto" {
+		return ` dir="auto"`
+	}
 	if !config.IsLocale(lang) {
 		return ""
 	}
@@ -199,9 +203,20 @@ func langAttrs(lang, dir string) template.HTMLAttr {
 	return template.HTMLAttr(attrs)
 }
 
+// A plain YAML string serves every locale, so it counts as the page's language
+// and is never marked. On a right-to-left page it is often English all the
+// same, and inheriting rtl would draw "Write together." as ".Write together".
+// It gets dir="auto" there: the browser takes the direction from its first
+// strong letter. A left-to-right page gets nothing, since an Arabic sentence
+// in a plain string is rare there and would move every such page's markup.
 func tr(ls config.LString, loc, def string) locText {
 	text, from := ls.GetLocale(loc, def)
-	return marked(text, from, loc)
+	t := marked(text, from, loc)
+	plain := from == loc && ls[loc] == ""
+	if t.Text != "" && plain && config.LocaleDir(loc) == "rtl" {
+		t.Dir = "auto"
+	}
+	return t
 }
 
 // ui is a built-in string, marked the way tr marks an operator's fallback: on

@@ -161,6 +161,8 @@ func TestForgedLocaleNeverBecomesAnAttribute(t *testing.T) {
 	for _, c := range []struct{ lang, dir, want string }{
 		{"ar", "rtl", ` lang="ar" dir="rtl"`},
 		{"pt-BR", "", ` lang="pt-BR"`},
+		{"", "auto", ` dir="auto"`},
+		{"", `auto" onload="alert(1)`, ""},
 	} {
 		if got := string(langAttrs(c.lang, c.dir)); got != c.want {
 			t.Errorf("langAttrs(%q, %q) = %q, want %q", c.lang, c.dir, got, c.want)
@@ -223,5 +225,42 @@ func TestBuiltInWordsInAnotherLanguageAreMarked(t *testing.T) {
 	}
 	if page := string(m.Pages["ar/legal"].HTML); !strings.Contains(page, `<span`+mark+`>Back</span></a>`) {
 		t.Error("the Arabic hosted page's back link is not marked")
+	}
+}
+
+// A plain YAML string has no language cairn can name: it is the operator's one
+// wording for every locale, and on an Arabic page it is often English. Left to
+// inherit dir="rtl", "Write together." is drawn as ".Write together". dir="auto"
+// lets the browser take the direction from the first strong letter, so Arabic
+// still reads right to left and English left to right. A localized mapping
+// already says what it is, and a left-to-right page needs none of this.
+func TestPlainTextOnARightToLeftPageFindsItsOwnDirection(t *testing.T) {
+	files := map[string]string{
+		"site.yaml": "locales: [ar, en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, desc: Write together.}\n" +
+			"- {id: cal, url: https://cal.example.org, name: {ar: تقويم, en: Calendar}, " +
+			"desc: {ar: \"مواعيد مشتركة.\", en: Shared dates.}}\n" +
+			"- {id: doc, url: https://doc.example.org, name: Doc, desc: {en: Edit documents.}}\n",
+	}
+	m := modelFrom(t, files)
+
+	ar := string(m.Pages["ar"].HTML)
+	for _, want := range []string{
+		`<span class="card-desc" dir="auto">Write together.</span>`,
+		`<span class="card-desc">مواعيد مشتركة.</span>`,
+		`<span class="card-desc" lang="en" dir="ltr">Edit documents.</span>`,
+	} {
+		if !strings.Contains(ar, want) {
+			t.Errorf("the Arabic home page does not carry %s", want)
+		}
+	}
+	if !strings.Contains(string(m.Pages["ar/pad"].HTML), `<p class="lead" dir="auto">Write together.</p>`) {
+		t.Error("the Arabic detail page does not let a plain description find its own direction")
+	}
+
+	for key, page := range m.Pages {
+		if strings.HasPrefix(key, "en") && strings.Contains(string(page.HTML), `dir="auto"`) {
+			t.Errorf("the left-to-right page %s carries dir=\"auto\"", key)
+		}
 	}
 }
