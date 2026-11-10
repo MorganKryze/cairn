@@ -169,7 +169,7 @@ image written the other. Add the file, or drop the entry.
 
 ## Nothing else in 1.13.0 needs your attention
 
-The rest of the release changes behaviour without asking anything of your
+The rest of the release changes behavior without asking anything of your
 config: `/.well-known/security.txt` if you set `security.contact`, gzip on the
 text responses, an `ETag` that names its encoding, security headers on the root
 probes under `-base-path`, dot-prefixed paths refused under `-assets` and

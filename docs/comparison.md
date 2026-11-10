@@ -34,7 +34,7 @@ cairn on the public side for everyone else.
   cannot act on are noise.
 - **It speaks their language, structurally.** One config carries every
   translation inline, the server negotiates from the browser, a switcher pins
-  the choice, and each locale gets its own canonical and `hreflang`. Seven
+  the choice, and each locale gets its own canonical and `hreflang`. Eight
   interface languages ship built in, and right-to-left scripts lay out
   properly rather than being bolted on.
 - **It serves the legal pages.** Legal notice, privacy, anything else you
@@ -55,7 +55,7 @@ cairn on the public side for everyone else.
   bundle, and nothing else. No shell for a compromised process to spawn, no
   package manager, no libc, so an entire family of advisories does not
   apply. Trivy reports one target, the Go binary itself. The whole thing is
-  4.3 MB to pull, non-root, two Go dependencies, and signed with SLSA
+  about 5 MB to pull, non-root, two Go dependencies, and signed with SLSA
   provenance and an SBOM.
 
   A flaw in cairn is still a flaw, and none of this prevents one. It leaves the

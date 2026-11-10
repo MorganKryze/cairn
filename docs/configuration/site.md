@@ -131,7 +131,7 @@ Two things cairn deliberately will not do: fall back to its own mark when you
 have no logo, because that would put cairn's stones on your link card, and
 derive the tab icon from the logo, which is the separate `favicon` key.
 
-A logo drawn in one colour disappears in the theme it was not drawn for. Give
+A logo drawn in one color disappears in the theme it was not drawn for. Give
 `logo` two images instead of one and cairn swaps them with the theme; the
 preview card still takes the light one, since a card in someone else's chat
 window has no theme to follow. See
@@ -291,7 +291,7 @@ none of it can drift:
 
 | File                           | Where it shows up                                                                                                                                                 |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `favicon.svg`                  | The browser tab, at any size and on any tab colour.                                                                                                               |
+| `favicon.svg`                  | The browser tab, at any size and on any tab color.                                                                                                                |
 | `favicon.ico`                  | 16, 32 and 48 pixels, for the feed readers and link previewers that fetch `/favicon.ico` and never read the html.                                                 |
 | `touch-icon.png`               | 180 pixels: an iPhone or iPad home screen.                                                                                                                        |
 | `icon-192.png`, `icon-512.png` | Android. Chromium offers "install this site" only when the manifest carries both, and cairn's are declared `maskable`, so Android's round crop takes nothing off. |
