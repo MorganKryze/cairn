@@ -38,7 +38,7 @@
 {{if .CustomCSS}}<link rel="stylesheet" href="{{.Prefix}}/custom.css">
 {{end}}</head>
 <body>
-<a class="skip" href="#main">{{.S.Skip}}</a>
+<a class="skip" href="#main">{{template "word" .S.Skip}}</a>
 <header><div class="wrap topbar">
   <a class="brand" href="{{.Prefix}}/{{.Locale}}/"{{.SiteTitle.Attrs}}>{{if .Logo}}<img src="{{.Logo}}" alt="">{{end}}{{.SiteTitle}}</a>
   <div class="topbar-tools">
@@ -64,22 +64,22 @@
 </div>
 <div class="wrap menu">
   {{if .Links}}<details class="nav">
-    <summary class="nav-burger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>{{.S.Menu}}</span></summary>
+    <summary class="nav-burger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span{{.S.Menu.Attrs}}>{{.S.Menu}}</span></summary>
     <nav class="nav-links" aria-label="{{.S.LinksLabel}}">{{range .Links}}<a class="menu-link" href="{{.URL}}"{{.Label.Attrs}}>{{if .IconSVG}}{{.IconSVG}}{{else if .IconIMG}}<img src="{{.IconIMG}}" alt="">{{end}}{{.Label}}</a>
     {{end}}</nav>
   </details>
   {{end}}{{if .Search}}{{if .SearchLive}}<div class="search" id="search">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
-      <label class="visually-hidden" for="q">{{.S.SearchLabel}}</label>
-      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}" autocomplete="off" enterkeyhint="go" disabled>
+      <label class="visually-hidden" for="q"{{.S.SearchLabel.Attrs}}>{{.S.SearchLabel}}</label>
+      <input id="q" type="search" placeholder="{{.S.SearchPlaceholder}}"{{if .S.SearchPlaceholder.Dir}} dir="auto"{{end}} autocomplete="off" enterkeyhint="go" disabled>
       <kbd class="search-kbd" hidden>⌘K</kbd>
     </div>
   </div>
   {{else}}<div class="search" aria-hidden="true">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
-      <input type="search" placeholder="{{.S.SearchPlaceholder}}" disabled tabindex="-1">
+      <input type="search" placeholder="{{.S.SearchPlaceholder}}"{{if .S.SearchPlaceholder.Dir}} dir="auto"{{end}} disabled tabindex="-1">
     </div>
   </div>
   {{end}}{{end}}</div>
@@ -90,7 +90,7 @@
 {{define "bottom"}}</div></main>
 <footer><div class="wrap foot">
   {{if .Footer}}<div class="foot-links">{{range .Footer}}<a href="{{.URL}}"{{.Label.Attrs}}>{{.Label}}</a>{{end}}</div>
-  {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{.S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a>{{if .ShowVer}} {{if .VerHref}}<a class="foot-version" href="{{.VerHref}}">{{.VerLabel}}</a>{{else}}<span class="foot-version">{{.VerLabel}}</span>{{end}}{{end}}</span>
+  {{end}}{{if .Credit}}<span class="powered"><span class="foot-mark">{{template "glyph"}}</span>{{template "word" .S.Powered}} <a href="https://github.com/MorganKryze/cairn" title="cairn {{.Version}}">cairn</a>{{if .ShowVer}} {{if .VerHref}}<a class="foot-version" href="{{.VerHref}}">{{.VerLabel}}</a>{{else}}<span class="foot-version">{{.VerLabel}}</span>{{end}}{{end}}</span>
   {{end}}</div></footer>
 <a class="totop" href="#top" aria-label="{{.S.Top}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
 {{if .Leave}}<!-- A native <dialog>, so the focus trap, Escape and aria-modal
@@ -101,7 +101,7 @@
      The continue button is a real anchor rather than a scripted navigation:
      a window.open() after a dialog is what a popup blocker is for, and an
      href needs no permission from anybody. -->
-<dialog id="leave" class="leave" aria-labelledby="leave-title">
+<dialog id="leave" class="leave" aria-labelledby="leave-title"{{.S.LeaveTitle.Attrs}}>
   <h2 id="leave-title">{{.S.LeaveTitle}}</h2>
   <p class="leave-body">{{.S.LeaveBody}}</p>
   <p class="leave-url"><span class="leave-host"></span><span class="leave-rest"></span></p>
@@ -135,13 +135,19 @@
 
      An on-demand service gets the mark in the pill's place, with or without a
      monitor, and no slot: status.js has nothing of its own to swap. */}}
-{{define "statuspill"}}{{if .OnDemand}}<span class="ondemand-mark">{{.OnDemandLabel}}</span>{{else if .StatusID}}<span class="status-slot" data-status="{{.StatusID}}">{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{.StatusLabel}}</span>{{end}}{{end}}</span>{{end}}{{end}}
+{{define "statuspill"}}{{if .OnDemand}}<span class="ondemand-mark">{{template "word" .OnDemandLabel}}</span>{{else if .StatusID}}<span class="status-slot" data-status="{{.StatusID}}">{{if .Status}}{{if .StatusHref}}<a class="status-pill status-{{.Status}}" href="{{.StatusHref}}" target="_blank" rel="noopener" aria-label="{{.StatusA11y}}"><span class="dot" aria-hidden="true"></span>{{template "word" .StatusLabel}}</a>{{else}}<span class="status-pill status-{{.Status}}"><span class="dot" aria-hidden="true"></span>{{template "word" .StatusLabel}}</span>{{end}}{{end}}</span>{{end}}{{end}}
 
 {{/* A long text field, already rendered to markdown blocks. The wrapper exists
      only to carry lang and dir, so it appears only when the text is not in the
      page's language: a site translated for the locales it lists emits exactly
      the markup it always did, and the div shows up on the pages that would
      otherwise lie about what language they are reading. */}}
+{{/* A built-in word inside a control or a badge. The mark goes on a span of its
+     own: dir on the control itself would turn its glyph, its padding and its
+     place in the row round with it, all of which are written in logical sides.
+     A page in a language cairn has strings for gets the bare word. */}}
+{{define "word"}}{{if .Lang}}<span{{.Attrs}}>{{.}}</span>{{else}}{{.}}{{end}}{{end}}
+
 {{define "prose"}}{{if .Attrs}}<div{{.Attrs}}>{{end}}{{range .Blocks}}{{.}}
 {{end}}{{if .Attrs}}</div>
 {{end}}{{end}}

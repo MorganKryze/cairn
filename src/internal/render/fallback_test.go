@@ -161,9 +161,106 @@ func TestForgedLocaleNeverBecomesAnAttribute(t *testing.T) {
 	for _, c := range []struct{ lang, dir, want string }{
 		{"ar", "rtl", ` lang="ar" dir="rtl"`},
 		{"pt-BR", "", ` lang="pt-BR"`},
+		{"", "auto", ` dir="auto"`},
+		{"", `auto" onload="alert(1)`, ""},
 	} {
 		if got := string(langAttrs(c.lang, c.dir)); got != c.want {
 			t.Errorf("langAttrs(%q, %q) = %q, want %q", c.lang, c.dir, got, c.want)
+		}
+	}
+}
+
+// Arabic has no built-in strings, so every word cairn writes itself on an
+// Arabic page is English: the skip link, the welcome row, the hosting flag, the
+// state badge, the back link. Unmarked, they inherit dir="rtl" from <html> and
+// their punctuation moves to the wrong end ("…Search for a tool" on the
+// locales fixture), and a screen reader reads them in an Arabic voice. Each
+// one carries the language it is written in, as an operator's fallback does.
+func TestBuiltInWordsInAnotherLanguageAreMarked(t *testing.T) {
+	m := modelFrom(t, map[string]string{
+		"site.yaml": "locales: [ar, en]\n" +
+			"about: {ar: \"مرحبا.\"}\n" +
+			"hosting_flag: {self: legal}\n" +
+			"links: [{label: {ar: \"مساعدة\"}, url: https://help.example.org}]\n" +
+			"pages:\n  - id: legal\n    title: {ar: \"إشعار\"}\n    body: {ar: \"نص.\"}\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, selfhosted: true, " +
+			"state: beta, sign_in: true, details: {ar: \"فقرة.\"}}\n" +
+			"- {id: wake, url: https://wake.example.org, name: Wake, on_demand: true}\n",
+	})
+	const mark = ` lang="en" dir="ltr"`
+	home := string(m.Pages["ar"].HTML)
+	for _, want := range []string{
+		`<a class="skip" href="#main"><span` + mark + `>Skip to content</span></a>`,
+		`<span` + mark + `>About this site</span>`,
+		`<span` + mark + `>Dismiss</span>`,
+		`<span` + mark + `>Menu</span>`,
+		`<span class="flag-label"><span` + mark + `>Self-hosted</span>`,
+		`aria-describedby="note-pad"><span` + mark + `>Beta</span></button>`,
+		`popover` + mark + `>Available, but still being tested: it may change.</span>`,
+		`<span class="ondemand-mark"><span` + mark + `>On demand</span>`,
+		`<p id="empty" class="empty" role="status"` + mark + ` hidden>`,
+		`<span` + mark + `>powered by</span> <a`,
+		// An attribute cannot carry a language of its own, and dir on the box
+		// would also turn round what the visitor types. dir="auto" lays the
+		// placeholder out by its own first letter and the query by its own.
+		`placeholder="Search for a tool…" dir="auto"`,
+	} {
+		if !strings.Contains(home, want) {
+			t.Errorf("the Arabic home page does not carry %s", want)
+		}
+	}
+	detail := string(m.Pages["ar/pad"].HTML)
+	for _, want := range []string{
+		`<span` + mark + `>Open</span><svg`,
+		`<p` + mark + `><strong>Sign-in required</strong>`,
+	} {
+		if !strings.Contains(detail, want) {
+			t.Errorf("the Arabic detail page does not carry %s", want)
+		}
+	}
+	// The back link and Open keep the page's direction, so their arrows stay on
+	// the side the page reads from; the word inside carries the mark.
+	if !strings.Contains(detail, `<span`+mark+`>Back</span></a>`) {
+		t.Error("the Arabic detail page's back link is not marked")
+	}
+	if page := string(m.Pages["ar/legal"].HTML); !strings.Contains(page, `<span`+mark+`>Back</span></a>`) {
+		t.Error("the Arabic hosted page's back link is not marked")
+	}
+}
+
+// A plain YAML string has no language cairn can name: it is the operator's one
+// wording for every locale, and on an Arabic page it is often English. Left to
+// inherit dir="rtl", "Write together." is drawn as ".Write together". dir="auto"
+// lets the browser take the direction from the first strong letter, so Arabic
+// still reads right to left and English left to right. A localized mapping
+// already says what it is, and a left-to-right page needs none of this.
+func TestPlainTextOnARightToLeftPageFindsItsOwnDirection(t *testing.T) {
+	files := map[string]string{
+		"site.yaml": "locales: [ar, en]\n",
+		"services.yaml": "- {id: pad, url: https://pad.example.org, name: Pad, desc: Write together.}\n" +
+			"- {id: cal, url: https://cal.example.org, name: {ar: تقويم, en: Calendar}, " +
+			"desc: {ar: \"مواعيد مشتركة.\", en: Shared dates.}}\n" +
+			"- {id: doc, url: https://doc.example.org, name: Doc, desc: {en: Edit documents.}}\n",
+	}
+	m := modelFrom(t, files)
+
+	ar := string(m.Pages["ar"].HTML)
+	for _, want := range []string{
+		`<span class="card-desc" dir="auto">Write together.</span>`,
+		`<span class="card-desc">مواعيد مشتركة.</span>`,
+		`<span class="card-desc" lang="en" dir="ltr">Edit documents.</span>`,
+	} {
+		if !strings.Contains(ar, want) {
+			t.Errorf("the Arabic home page does not carry %s", want)
+		}
+	}
+	if !strings.Contains(string(m.Pages["ar/pad"].HTML), `<p class="lead" dir="auto">Write together.</p>`) {
+		t.Error("the Arabic detail page does not let a plain description find its own direction")
+	}
+
+	for key, page := range m.Pages {
+		if strings.HasPrefix(key, "en") && strings.Contains(string(page.HTML), `dir="auto"`) {
+			t.Errorf("the left-to-right page %s carries dir=\"auto\"", key)
 		}
 	}
 }

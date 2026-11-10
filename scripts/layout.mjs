@@ -2649,6 +2649,161 @@ await check(
   },
 );
 
+// ---- only the site header follows the scroll ----
+
+// The phone's sticky rule once read `header`, and a hosted page's title sits in
+// a <header> of its own: at 390px it stayed pinned with a rule under it while
+// the page scrolled, and a link brought to the top of the screen by focus went
+// under it. The demo's legal page is long enough to scroll and ends on a
+// mail link. The site header is the control: it still hides going down and
+// comes back going up.
+for (const width of PHONES) {
+  await check(
+    `a hosted page's title scrolls with the page and covers no focused link at ${width}px`,
+    async () => {
+      const p = await open(`${DEMO}en/legal/`, width);
+      const bad = [];
+      const room = await p.evaluate(
+        () => document.documentElement.scrollHeight - innerHeight,
+      );
+      if (room < 400)
+        throw new Error(`only ${room}px of scroll room, this proves nothing`);
+      const frame = () =>
+        p.evaluate(
+          () => new Promise((r) => requestAnimationFrame(() => setTimeout(r))),
+        );
+      const head = () =>
+        p.$eval(".page-head", (h) => ({
+          pos: getComputedStyle(h).position,
+          top: h.getBoundingClientRect().top,
+        }));
+      const before = await head();
+      await p.evaluate(() => scrollTo(0, 300));
+      await frame();
+      const after = await head();
+      if (after.pos !== "static")
+        bad.push(`the title's header is position ${after.pos}`);
+      if (Math.round(before.top - after.top) !== 300)
+        bad.push(
+          `the title moved ${Math.round(before.top - after.top)}px for a 300px scroll`,
+        );
+      if (
+        !(await p.$eval("body > header", (h) =>
+          h.classList.contains("header-hidden"),
+        ))
+      )
+        bad.push("the site header did not hide going down");
+      await p.evaluate(() => scrollTo(0, 100));
+      await frame();
+      if (
+        await p.$eval("body > header", (h) =>
+          h.classList.contains("header-hidden"),
+        )
+      )
+        bad.push("the site header did not come back going up");
+
+      // A link scrolled to the top edge, as a Tab upward or a find leaves it.
+      await p.evaluate(() => scrollTo(0, 0));
+      await frame();
+      const covered = await p.evaluate(async () => {
+        const a = document.querySelector('.page a[href^="mailto:"]');
+        a.focus();
+        a.scrollIntoView({ block: "start", behavior: "instant" });
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+        const r = a.getBoundingClientRect();
+        const at = document.elementFromPoint(r.left + 2, r.top + r.height / 2);
+        return at && !a.contains(at) ? at.outerHTML.slice(0, 60) : "";
+      });
+      if (covered) bad.push(`the focused link is under ${covered}`);
+      await p.close();
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
+// ---- English inside a right-to-left page reads left to right ----
+
+// Arabic has no built-in strings, so cairn's own words on an Arabic page are
+// English. Left to inherit dir="rtl", a sentence's full stop is laid out at
+// its left end and the placeholder read "…Search for a tool". The sign-in note
+// on a detail page is cairn's, the welcome note the operator's English, which
+// was already marked and is the control.
+await check(
+  "on an Arabic page an English sentence ends with its full stop, and the search placeholder reads left to right",
+  async () => {
+    const bad = [];
+    // The last character of the element's text and the one before it: in a
+    // left-to-right run the stop is drawn after the letter it follows.
+    const lastStop = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let last = null;
+      for (let n; (n = w.nextNode());) if (n.data.trim()) last = n;
+      const i = last.data.trimEnd().length - 1;
+      const at = (k) => {
+        const r = document.createRange();
+        r.setStart(last, k);
+        r.setEnd(last, k + 1);
+        return r.getClientRects()[0];
+      };
+      return { ch: last.data[i], after: at(i).left >= at(i - 1).right - 1 };
+    };
+    for (const [url, sel] of [
+      [`${LOCALES}ar/`, ".about-fold > div p:last-child"],
+      [`${LOCALES}ar/long/`, ".signin p"],
+    ]) {
+      const p = await open(url, 1280);
+      const m = await p.evaluate(lastStop, sel);
+      if (!m) bad.push(`${url}: no ${sel}`);
+      else if (m.ch !== ".")
+        bad.push(`${url}: ${sel} does not end on a full stop`);
+      else if (!m.after)
+        bad.push(`${url}: ${sel} puts its full stop before the words`);
+      if (url.endsWith("/ar/")) {
+        const ltr = await p.$eval("#q", (q) => q.matches(":dir(ltr)"));
+        if (!ltr)
+          bad.push(`${url}: the search placeholder is laid out right to left`);
+      }
+      await p.close();
+    }
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
+
+await check(
+  "on an Arabic page a description written once in English is drawn left to right",
+  async () => {
+    const p = await open(`${LOCALES}ar/`, 1280);
+    // The glyph painted furthest left: in a left-to-right run that is the
+    // first letter, in a run laid out right to left it is the full stop.
+    const m = await p.evaluate(() => {
+      const el = [...document.querySelectorAll(".card-desc")].find(
+        (d) => d.textContent.trim() === "Write together.",
+      );
+      if (!el) return null;
+      const t = el.firstChild;
+      let best = null;
+      for (let i = 0; i < t.data.length; i++) {
+        if (!t.data[i].trim()) continue;
+        const r = document.createRange();
+        r.setStart(t, i);
+        r.setEnd(t, i + 1);
+        const x = r.getClientRects()[0].left;
+        if (!best || x < best.x) best = { x, ch: t.data[i] };
+      }
+      return best.ch;
+    });
+    await p.close();
+    if (m === null)
+      throw new Error("no card description reads Write together.");
+    if (!/\p{L}/u.test(m))
+      throw new Error(
+        `the description's leftmost glyph is "${m}", not a letter`,
+      );
+  },
+);
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

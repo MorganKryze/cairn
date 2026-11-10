@@ -187,8 +187,12 @@ func (p prose) Attrs() template.HTMLAttr { return langAttrs(p.Lang, p.Dir) }
 // Anything failing either check is dropped rather than escaped.
 //
 // dir is left out when it matches the page's own direction, which the browser
-// has already inherited.
+// has already inherited. dir="auto" comes alone: it is for text whose language
+// nobody stated, see tr.
 func langAttrs(lang, dir string) template.HTMLAttr {
+	if lang == "" && dir == "auto" {
+		return ` dir="auto"`
+	}
 	if !config.IsLocale(lang) {
 		return ""
 	}
@@ -199,8 +203,30 @@ func langAttrs(lang, dir string) template.HTMLAttr {
 	return template.HTMLAttr(attrs)
 }
 
+// A plain YAML string serves every locale, so it counts as the page's language
+// and is never marked. On a right-to-left page it is often English all the
+// same, and inheriting rtl would draw "Write together." as ".Write together".
+// It gets dir="auto" there: the browser takes the direction from its first
+// strong letter. A left-to-right page gets nothing, since an Arabic sentence
+// in a plain string is rare there and would move every such page's markup.
 func tr(ls config.LString, loc, def string) locText {
 	text, from := ls.GetLocale(loc, def)
+	t := marked(text, from, loc)
+	plain := from == loc && ls[loc] == ""
+	if t.Text != "" && plain && config.LocaleDir(loc) == "rtl" {
+		t.Dir = "auto"
+	}
+	return t
+}
+
+// ui is a built-in string, marked the way tr marks an operator's fallback: on
+// a page in a language cairn has no strings for, its words are English.
+func ui(cfg *config.Config, loc, key string) locText {
+	text, from := cfg.StrLocale(loc, key)
+	return marked(text, from, loc)
+}
+
+func marked(text, from, loc string) locText {
 	t := locText{Text: text}
 	if text == "" || config.SameLanguage(from, loc) {
 		return t
@@ -219,7 +245,7 @@ func stateNote(cfg *config.Config, s config.Service, loc, def string) locText {
 	if t := tr(s.StateNote, loc, def); t.Text != "" {
 		return t
 	}
-	return locText{Text: cfg.Str(loc, "state."+string(s.State)+".note")}
+	return ui(cfg, loc, "state."+string(s.State)+".note")
 }
 
 func proseOf(t locText, ctx mdCtx) prose {
@@ -240,11 +266,11 @@ func catName(cfg *config.Config, c config.Category, loc string) locText {
 }
 
 type uiStrings struct {
-	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, AboutSummary, ShotScroll, ShotFull, Theme, Powered, Menu, Top string
+	Skip, Languages, SearchLabel, SearchPlaceholder, SearchEmpty, SearchOne, SearchMany, Open, Back, More, Link, Toc, LinksLabel, Dismiss, AboutSummary, ShotScroll, ShotFull, Theme, Powered, Menu, Top locText
 	// The six the leave dialog needs, empty on a site that does not ask for it.
 	// LeaveCopied is the label the copy button swaps to, so it goes into a data
 	// attribute rather than the button: the script needs both.
-	LeaveTitle, LeaveBody, LeaveCopy, LeaveCopied, LeaveGo, LeaveStay string
+	LeaveTitle, LeaveBody, LeaveCopy, LeaveCopied, LeaveGo, LeaveStay locText
 }
 
 type pageView struct {
@@ -285,7 +311,8 @@ type pageView struct {
 }
 
 type cardView struct {
-	URL, Icon, Tags, MoreHref, Status, StatusLabel, StatusHref string
+	URL, Icon, Tags, MoreHref, Status, StatusHref string
+	StatusLabel                                   locText
 	// IconClass carries the dark variant of a themed icon, empty otherwise. The
 	// class names the pair rather than the service, so cards sharing an icon
 	// share the one rule in the page's stylesheet.
@@ -293,15 +320,17 @@ type cardView struct {
 	// MoreA11y names the detail link for a screen reader. The link is a glyph,
 	// which says nothing on its own, and a page of identical "Learn more" links
 	// is a link list nobody can navigate: it names the service too.
-	MoreA11y            string
-	Name, Desc          locText
-	StatusA11y          string // set only when the pill is a link
-	StatusID            string // names the pill's slot, empty without a monitor
-	HostKind, HostLabel string // "self"/"external"/"" and its localized label
+	MoreA11y   string
+	Name, Desc locText
+	StatusA11y string  // set only when the pill is a link
+	StatusID   string  // names the pill's slot, empty without a monitor
+	HostKind   string  // "self"/"external"/""
+	HostLabel  locText // its localized label
 	// State is the declared word, `soon` and friends, used as a class, and
 	// StateLabel is that word in the page's language. Neither has anything to do
 	// with a status level.
-	State, StateLabel string
+	State      string
+	StateLabel locText
 	// StateNote is what the state means, opened from the badge. NoteID ties the
 	// two together: the badge opens and is described by the element it names.
 	StateNote locText
@@ -323,13 +352,13 @@ type cardView struct {
 	// nothing. The label names the lock for a screen reader; it is an aria-label
 	// on the glyph and not text, since search.js reads the name's text.
 	SignIn             bool
-	SignInLabel        string
+	SignInLabel        locText
 	NameHead, NameTail string
 	// OnDemand puts a mark where the pill would sit: the service sleeps until
 	// opened, which no monitor can tell from an outage. A disabling state
 	// clears it, since such a card has neither a link nor a pill.
 	OnDemand      bool
-	OnDemandLabel string
+	OnDemandLabel locText
 }
 
 // hostKindOf reads the card's flag off the service rather than off the built
@@ -389,20 +418,22 @@ type homeView struct {
 
 type detailView struct {
 	pageView
-	StatusID                                   string
-	Icon, URL, Status, StatusLabel, StatusHref string
-	IconClass                                  string // see cardView.IconClass
-	Name, Desc, StateNote                      locText
-	StatusA11y                                 string
-	Body                                       prose
-	Images                                     []imageView
-	Blank, Leave                               bool   // see cardView
-	State, StateLabel                          string // see cardView
-	Off                                        bool   // see cardView
-	SignIn                                     bool   // see cardView
-	SignInLabel, SignInNote                    string
-	OnDemand                                   bool // see cardView
-	OnDemandLabel, OnDemandNote                string
+	StatusID                      string
+	Icon, URL, Status, StatusHref string
+	StatusLabel                   locText
+	IconClass                     string // see cardView.IconClass
+	Name, Desc, StateNote         locText
+	StatusA11y                    string
+	Body                          prose
+	Images                        []imageView
+	Blank, Leave                  bool    // see cardView
+	State                         string  // see cardView
+	StateLabel                    locText // see cardView
+	Off                           bool    // see cardView
+	SignIn                        bool    // see cardView
+	SignInLabel, SignInNote       locText
+	OnDemand                      bool // see cardView
+	OnDemandLabel, OnDemandNote   locText
 }
 
 type imageView struct {
@@ -461,11 +492,11 @@ func statusBase(cfg *config.Config) string {
 // reader reads instead. An empty href makes it display-only, which is what
 // status.linked: false asks for and the only shape the templates need to tell
 // the two apart.
-func statusMeta(cfg *config.Config, loc, level string, s config.Service, key string) (label, href, a11y string) {
+func statusMeta(cfg *config.Config, loc, level string, s config.Service, key string) (label locText, href, a11y string) {
 	if level == "" {
-		return "", "", ""
+		return locText{}, "", ""
 	}
-	label = cfg.Str(loc, "status."+level)
+	label = ui(cfg, loc, "status."+level)
 	if !cfg.StatusLinked() {
 		return label, "", ""
 	}
@@ -492,7 +523,7 @@ func statusMeta(cfg *config.Config, loc, level string, s config.Service, key str
 	// service name may be a fallback in another language and cannot be marked
 	// here, an aria-label being text inside an attribute; the visible pill next
 	// to it carries the marking.
-	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label + ", " + cfg.Str(loc, "status.link")
+	return label, href, s.Name.Get(loc, cfg.DefaultLocale()) + ", " + label.Text + ", " + cfg.Str(loc, "status.link")
 }
 
 // statusOf returns "", "unknown", "up", "degraded", "maintenance" or "down".
@@ -596,33 +627,33 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 			// Leave itself is per page, set once the links are known.
 			LeaveBlank: cfg.Site.ServiceLinks.NewTab,
 			S: uiStrings{
-				Skip:              cfg.Str(loc, "nav.skip"),
-				Languages:         cfg.Str(loc, "nav.languages"),
-				SearchLabel:       cfg.Str(loc, "search.label"),
-				SearchPlaceholder: cfg.Str(loc, "search.placeholder"),
-				SearchEmpty:       cfg.Str(loc, "search.empty"),
-				SearchOne:         cfg.Str(loc, "search.one"),
-				SearchMany:        cfg.Str(loc, "search.many"),
-				Open:              cfg.Str(loc, "detail.open"),
-				Back:              cfg.Str(loc, "detail.back"),
-				More:              cfg.Str(loc, "card.more"),
-				Link:              cfg.Str(loc, "status.link"),
-				Toc:               cfg.Str(loc, "nav.toc"),
-				LinksLabel:        cfg.Str(loc, "nav.links"),
-				Dismiss:           cfg.Str(loc, "about.dismiss"),
-				AboutSummary:      cfg.Str(loc, "about.summary"),
-				ShotScroll:        cfg.Str(loc, "shot.scroll"),
-				ShotFull:          cfg.Str(loc, "shot.full"),
-				Theme:             cfg.Str(loc, "nav.theme"),
-				Powered:           cfg.Str(loc, "foot.powered"),
-				Menu:              cfg.Str(loc, "nav.menu"),
-				Top:               cfg.Str(loc, "nav.top"),
-				LeaveTitle:        cfg.Str(loc, "leave.title"),
-				LeaveBody:         cfg.Str(loc, "leave.body"),
-				LeaveCopy:         cfg.Str(loc, "leave.copy"),
-				LeaveCopied:       cfg.Str(loc, "leave.copied"),
-				LeaveGo:           cfg.Str(loc, "leave.go"),
-				LeaveStay:         cfg.Str(loc, "leave.stay"),
+				Skip:              ui(cfg, loc, "nav.skip"),
+				Languages:         ui(cfg, loc, "nav.languages"),
+				SearchLabel:       ui(cfg, loc, "search.label"),
+				SearchPlaceholder: ui(cfg, loc, "search.placeholder"),
+				SearchEmpty:       ui(cfg, loc, "search.empty"),
+				SearchOne:         ui(cfg, loc, "search.one"),
+				SearchMany:        ui(cfg, loc, "search.many"),
+				Open:              ui(cfg, loc, "detail.open"),
+				Back:              ui(cfg, loc, "detail.back"),
+				More:              ui(cfg, loc, "card.more"),
+				Link:              ui(cfg, loc, "status.link"),
+				Toc:               ui(cfg, loc, "nav.toc"),
+				LinksLabel:        ui(cfg, loc, "nav.links"),
+				Dismiss:           ui(cfg, loc, "about.dismiss"),
+				AboutSummary:      ui(cfg, loc, "about.summary"),
+				ShotScroll:        ui(cfg, loc, "shot.scroll"),
+				ShotFull:          ui(cfg, loc, "shot.full"),
+				Theme:             ui(cfg, loc, "nav.theme"),
+				Powered:           ui(cfg, loc, "foot.powered"),
+				Menu:              ui(cfg, loc, "nav.menu"),
+				Top:               ui(cfg, loc, "nav.top"),
+				LeaveTitle:        ui(cfg, loc, "leave.title"),
+				LeaveBody:         ui(cfg, loc, "leave.body"),
+				LeaveCopy:         ui(cfg, loc, "leave.copy"),
+				LeaveCopied:       ui(cfg, loc, "leave.copied"),
+				LeaveGo:           ui(cfg, loc, "leave.go"),
+				LeaveStay:         ui(cfg, loc, "leave.stay"),
 			},
 		}
 		base.VerLabel, base.VerHref = versionInfo(Version)
@@ -661,16 +692,16 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					OnDemand:  onDemand,
 				}
 				if onDemand {
-					card.OnDemandLabel = cfg.Str(loc, "ondemand.label")
+					card.OnDemandLabel = ui(cfg, loc, "ondemand.label")
 				}
 				if s.SignIn {
 					card.SignIn = true
-					card.SignInLabel = cfg.Str(loc, "signin.label")
+					card.SignInLabel = ui(cfg, loc, "signin.label")
 					card.NameHead, card.NameTail = splitLast(card.Name.Text)
 				}
 				if s.State != config.StateNone {
 					card.State = string(s.State)
-					card.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					card.StateLabel = ui(cfg, loc, "state."+string(s.State))
 					card.StateNote = stateNote(cfg, s, loc, def)
 					card.NoteID = "note-" + s.ID
 				}
@@ -689,10 +720,10 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 				}
 				if s.Selfhosted != nil {
 					if *s.Selfhosted {
-						card.HostKind, card.HostLabel = "self", cfg.Str(loc, "host.self")
+						card.HostKind, card.HostLabel = "self", ui(cfg, loc, "host.self")
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.Self)
 					} else {
-						card.HostKind, card.HostLabel = "external", cfg.Str(loc, "host.external")
+						card.HostKind, card.HostLabel = "external", ui(cfg, loc, "host.external")
 						card.HostHref, card.HostBlank = hostTarget(cfg, loc, cfg.Site.HostingFlag.External)
 					}
 				}
@@ -727,17 +758,17 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 					OnDemand:  onDemand,
 				}
 				if onDemand {
-					dv.OnDemandLabel = cfg.Str(loc, "ondemand.label")
-					dv.OnDemandNote = cfg.Str(loc, "ondemand.note")
+					dv.OnDemandLabel = ui(cfg, loc, "ondemand.label")
+					dv.OnDemandNote = ui(cfg, loc, "ondemand.note")
 				}
 				if s.SignIn {
 					dv.SignIn = true
-					dv.SignInLabel = cfg.Str(loc, "signin.label")
-					dv.SignInNote = cfg.Str(loc, "signin.note")
+					dv.SignInLabel = ui(cfg, loc, "signin.label")
+					dv.SignInNote = ui(cfg, loc, "signin.note")
 				}
 				if s.State != config.StateNone {
 					dv.State = string(s.State)
-					dv.StateLabel = cfg.Str(loc, "state."+string(s.State))
+					dv.StateLabel = ui(cfg, loc, "state."+string(s.State))
 					dv.StateNote = stateNote(cfg, s, loc, def)
 				}
 				if !dv.Off && !s.OnDemand {
@@ -797,8 +828,8 @@ func BuildModel(cfg *config.Config, statuses map[string]status.State) (*Model, e
 		// leads nowhere, so it has no address of its own to declare.
 		nf := staticView{
 			pageView: base,
-			Title:    locText{Text: cfg.Str(loc, "notfound.title")},
-			Intro:    proseOf(locText{Text: cfg.Str(loc, "notfound.body")}, mdCtx{pClass: "page-intro", media: media}),
+			Title:    ui(cfg, loc, "notfound.title"),
+			Intro:    proseOf(ui(cfg, loc, "notfound.body"), mdCtx{pClass: "page-intro", media: media}),
 		}
 		nf.Base = ""
 		nf.Noindex = true

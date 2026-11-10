@@ -370,20 +370,28 @@ func (c *Config) StatusLinked() bool {
 // defines), then the locale's built-in set, its base language (pt-BR finds
 // pt), English, then the key.
 func (c *Config) Str(locale, key string) string {
+	s, _ := c.StrLocale(locale, key)
+	return s
+}
+
+// StrLocale is Str and the language the string turned out to be in: English
+// on a page whose language cairn has no strings for. An override counts as the
+// page's language, as a plain YAML string does.
+func (c *Config) StrLocale(locale, key string) (text, from string) {
 	if ls, ok := c.Site.Strings[key]; ok {
 		for _, k := range []string{locale, untranslated} {
 			if s := ls[k]; s != "" {
-				return s
+				return s, locale
 			}
 		}
 	}
 	base, _, _ := strings.Cut(locale, "-")
 	for _, l := range []string{locale, strings.ToLower(base), "en"} {
 		if s := builtinStrings[l][key]; s != "" {
-			return s
+			return s, l
 		}
 	}
-	return key
+	return key, locale
 }
 
 func (c *Config) CategoryName(cat Category, locale string) string {
