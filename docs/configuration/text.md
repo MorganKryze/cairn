@@ -27,9 +27,8 @@ and numbered lists, nesting, emphasis with either `*stars*` or `_underscores_`,
 `~~strikethrough~~`, task lists, link titles, backslash escapes. An address you
 write bare, `https://example.org` or `you@example.org`, is linked for you.
 
-That list is the least useful part of this page, because you already knew it.
-What is worth reading is the three places cairn does not behave like the
-preview in your editor, and the two behaviours that catch people out.
+You knew that list already. In three places cairn does not behave like the
+preview in your editor, and two behaviors catch people out.
 
 ### Raw HTML is text, not markup
 
@@ -43,7 +42,7 @@ data becomes markup on the way to the page. A stray angle bracket cannot break
 the layout, and a snippet pasted from somewhere else cannot break the
 [security headers](../../SECURITY.md#scope-worth-knowing).
 
-Refusing is not the same as deleting, and cairn does not delete. Markdown
+cairn refuses the markup and keeps the words. Markdown
 renderers commonly replace raw HTML with an `<!-- raw HTML omitted -->`
 comment, which loses the sentence you wrote without telling you. Here your
 words are always on the page, exactly as typed.
@@ -99,8 +98,7 @@ your `media/` folder, a URL or an absolute path passes through. When cairn can
 open the file it also writes the width and height into the page, so nothing
 shifts under the reader while the image loads.
 
-They are checked differently from `images:` entries, though, and it is worth
-knowing which way round. A missing `images:` entry stops the load and names
+They are checked differently from `images:` entries, though. A missing `images:` entry stops the load and names
 itself; a missing one here only earns a `cairn -check` warning, because prose
 is not worth refusing a whole site over:
 
@@ -126,9 +124,8 @@ below is untouched:
 | `## Title`  | `<h2>`  |
 | `### Title` | `<h3>`  |
 
-The two top spellings therefore produce the same thing, which is the one part
-worth knowing, and `cairn -check` says so rather than leaving you to discover
-it:
+The two top spellings therefore produce the same thing, and `cairn -check`
+says so rather than leaving you to discover it:
 
 ```console
 warning: page "legal" body opens a heading with a single #: cairn renders it as ## because the page already has its own top heading, so # and ## come out the same (write ## and the output is unchanged)
