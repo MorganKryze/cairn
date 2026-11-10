@@ -84,7 +84,8 @@ endpoints:
 ```
 
 Merge it into your Gatus config; alerting stays yours. Adjust the conditions
-per service if 200 is not the right health signal.
+per service if 200 is not the right health signal. Services marked `on_demand`
+get no endpoint, like those in state `soon` or `retired`.
 
 ### Keep the history across restarts
 
@@ -345,6 +346,8 @@ How they behave:
   every pill reads Unknown rather than stale or absent, and the log says why,
   once, rather than repeating itself every interval.
 - Once it has answered, a service it says nothing about shows no pill at all.
+- A service marked [`on_demand`](../configuration/services.md#started-on-demand)
+  never shows a pill, whatever the monitor says about it.
 - **An open page keeps up.** Start cairn before the monitor and every pill
   reads Unknown; when the monitor comes up, a tab already open catches up on
   its own, with no reload. It refetches the page it is on at `status.interval`

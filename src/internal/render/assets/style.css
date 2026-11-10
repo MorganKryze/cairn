@@ -1173,8 +1173,6 @@ a.flag::before,
   text-decoration: none;
   white-space: nowrap;
 }
-/* Only a pill that leads somewhere answers to a pointer: a display-only one
-   (status.linked: false) is not a control. */
 /* The on-demand mark sits where a pill goes and says how the service runs,
    not what a monitor measured: the pill's size and ink, no dot, and a dashed
    ring with no fill, so beside an Unknown pill it reads as declared. It is
@@ -1190,6 +1188,8 @@ a.flag::before,
   color: var(--muted);
   white-space: nowrap;
 }
+/* Only a pill that leads somewhere answers to a pointer: a display-only one
+   (status.linked: false) is not a control. */
 a.status-pill:hover { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--card); }
 /* The dot goes with the text rather than keeping its state colour: green on
    the filled accent measures 1.30:1 in light and 1.12:1 in dark, which is a

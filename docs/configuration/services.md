@@ -24,6 +24,7 @@ Any text field accepts a plain string or a per-locale map; see
 | `state`      | no       | none             | `soon`, `retired`, `beta`, `deprecated` or `new`; a badge on the card. See [Where a service stands](#where-a-service-stands).                                |
 | `state_note` | no       | the state's note | One line saying what the state means for this service, localized; replaces the built-in note. Needs `state`.                                                 |
 | `sign_in`    | no       | `false`          | `true` if a visitor will need an account; a lock after the name, a note on the detail page. See [Behind a sign-in](#behind-a-sign-in).                       |
+| `on_demand`  | no       | `false`          | `true` if a proxy starts the service on the first request; a neutral mark instead of a status pill. See [Started on demand](#started-on-demand).             |
 
 ## Full example
 
@@ -199,6 +200,32 @@ strings:
 ```
 
 Anything specific to one service belongs in its `details`.
+
+## Started on demand
+
+```yaml
+- id: wiki
+  name: Wiki
+  url: https://wiki.example.org
+  on_demand: true
+```
+
+For a service that sleeps until someone opens it, behind a proxy such as
+Sablier that starts the container on the first request. A monitor cannot tell
+a sleeping service from a broken one, so it would paint it Offline most of the
+day.
+
+With `on_demand: true`, the card shows a neutral "On demand" mark where the
+status pill would sit, and the detail page adds a note: the service starts when
+opened, and the first load may take a few seconds. Whatever the monitor says,
+the service never gets a pill, and `-emit-gatus` writes no endpoint for it.
+
+`state: soon` and `state: retired` win: the card loses its link and its pill
+already, so the mark goes too, and `cairn -check` says so:
+
+```text
+warning: service "wiki": on_demand does nothing beside state: retired, which already takes away the link and the status pill (drop on_demand, or the state once the service is back)
+```
 
 ## Preview images
 

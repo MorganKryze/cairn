@@ -330,7 +330,7 @@ it, and a translation are all work.
 </td>
 <td align="center" width="150">
 <a href="https://github.com/justinjakull"><img src="https://github.com/justinjakull.png?size=100" width="80" alt=""><br><sub><b>justinjakull</b></sub></a><br>
-<a href="https://github.com/MorganKryze/cairn/issues/151" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/issues?q=author%3Ajustinjakull" title="Ideas and planning">🤔</a>
 </td>
 </tr>
 </table>
