@@ -205,6 +205,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - id: buildkit
+        run: echo "image=$(sed -n 's/^FROM //p' docker/buildkit.Dockerfile)" >> "$GITHUB_OUTPUT"
+
       # buildx pulls its own builder image, and the default comes from Docker
       # Hub, where an anonymous pull shares one rate limit with every other
       # GitHub-hosted runner. It does not fail by saying so, it times out: this
@@ -218,11 +221,9 @@ jobs:
           # tag in the chain. The digest is the same on Docker Hub and on
           # the mirror, so it does not tie us to either.
           #
-          # Dependabot cannot watch an image named inside a workflow
-          # (dependabot-core#5541), so a pin here would rot in silence.
-          # The buildkit-pin job in security.yml is what stops that: it
-          # runs weekly and says when buildx-stable-1 has moved past it.
-          driver-opts: image=mirror.gcr.io/moby/buildkit@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe # buildx-stable-1
+          # The image comes from docker/buildkit.Dockerfile, where Dependabot
+          # can see it and bump it.
+          driver-opts: image=${{ steps.buildkit.outputs.image }}
 
       # A pull request builds the image but never publishes it, so a fork PR
       # needs no registry credentials.
