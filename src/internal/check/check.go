@@ -582,6 +582,16 @@ var uriRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 func inertSettings(cfg *config.Config) []string {
 	var out []string
 
+	// A disabling state already drops the link and the pill, so on_demand
+	// beside it is a leftover from before or after the state.
+	for _, c := range cfg.Categories {
+		for _, s := range c.Services {
+			if s.OnDemand && s.State.Disables() {
+				out = append(out, fmt.Sprintf("service %q: on_demand does nothing beside state: %s, which already takes away the link and the status pill (drop on_demand, or the state once the service is back)", s.ID, s.State))
+			}
+		}
+	}
+
 	// An address to poll, named either way, is what every pill comes from.
 	if st := cfg.Site.Status; cfg.Site.StatusAddress() == "" {
 		var set []string

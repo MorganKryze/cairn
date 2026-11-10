@@ -8,7 +8,7 @@ installs, and they never phone home.
 The one thing that does reach the internet is not the server at all. It is your
 visitor's browser, fetching icon slugs from a CDN. That is the whole difficulty
 of this page, and it is the part that fails quietly: the pods stay healthy, the
-page renders, and the icons are simply missing.
+page renders, and the icons are missing.
 
 ## What crosses
 
@@ -44,9 +44,8 @@ It needs `docker`, `helm` and
 connected machine, and without cosign it stops before downloading anything.
 
 It deliberately stops there. **Gatus, its chart and the icons are still yours to
-fetch**, and the icons in particular are the step nothing downstream will remind
-you about. Read on: the sections below are what the recipe automates and what it
-does not.
+fetch**, the icons above all. Read on: the sections below are what the recipe
+automates and what it does not.
 
 ### The chart, verified before it crosses
 
@@ -72,9 +71,9 @@ helm repo add twin https://twin.github.io/helm-charts
 helm pull twin/gatus --version 1.5.0
 ```
 
-That chart versions itself independently of the application it installs, which
-is worth knowing before you trust its number: `1.5.0` ships `appVersion v5.34.0`
-while Gatus is further along. Pin the image yourself rather than inherit it,
+That chart versions itself independently of the application it installs, so
+do not trust its number: `1.5.0` ships `appVersion v5.34.0` while Gatus is
+further along. Pin the image yourself rather than inherit it,
 which the values below do.
 
 ### The images, pinned by platform
@@ -138,7 +137,7 @@ docker run --rm -v ./config:/config:ro -v ./assets:/assets:ro \
 
 **Mount both directories.** Given only `/config`, `-check` cannot see the icons
 you just downloaded and warns about every one of them, every time, which is
-precisely how a warning stops being read. With both, the difference is the whole
+how a warning stops being read. With both, the difference is the whole
 point of the exercise:
 
 ```console
@@ -314,7 +313,7 @@ Without a registry, install what you carried:
 helm install cairn ./cairn-1.26.0.tgz -f values.yaml
 ```
 
-`linked: false` is a decision rather than an omission. Without it the pills link
+`linked: false` is there on purpose. Without it the pills link
 visitors to `http://gatus`, an address their browser will never resolve.
 
 Gatus installs from its own chart, out of the tarball you carried or out of your
@@ -455,7 +454,7 @@ cat pad.crt photos.crt wiki.crt > ca-bundle.crt
 kubectl create configmap ca-bundle --from-file=ca-certificates.crt=ca-bundle.crt
 ```
 
-Two things worth knowing before you reissue anything:
+Two things to know before you reissue anything:
 
 **A self-signed server certificate works as a trust anchor even when it carries
 `CA:FALSE`**, which is what most generators and cert-manager's `selfSigned`
@@ -591,8 +590,8 @@ anything that can answer on that address decides what your pills say, and the
 day the certificate changes stops being visible. That is what the bundle buys
 and this does not.
 
-cairn will not let it be quiet about it. The startup log says so once, and
-`cairn -check` says so on every run, for as long as it is on:
+The startup log says so once, and `cairn -check` says so on every run, for as
+long as it is on:
 
 ```console
 warning: status.insecure is on: the certificate https://status.internal presents is not verified, so anything answering on that address decides what the pills say and the day that certificate changes stops being visible (a CA bundle verifies instead of trusting; see docs/deployment/airgap.md)
@@ -639,7 +638,7 @@ curl -s -o /dev/null -w '%{http_code}\n' localhost:8080/assets/icons/nginx.svg  
 ```
 
 The middle one belongs in your runbook. A page that answers anything but `0`
-still depends on the outside, and it will look perfectly fine from a workstation
+still depends on the outside, and it will look fine from a workstation
 that happens to have a route.
 
 `kubectl exec` will not help you here: the image is `FROM scratch`, so there is
@@ -672,7 +671,7 @@ The certificate section was built the same way, against three hosts with three
 different self-signed certificates: two in the bundle, one deliberately left
 out, so that the fix could be told apart from a fix that merely stops checking.
 `CA:FALSE` trusting correctly, and the restart being needed after a bundle
-update, are both measured rather than reasoned.
+update, were both measured.
 
 The registry push in step 3 is the one step taken on faith, since that part is
 your Harbor and not ours.

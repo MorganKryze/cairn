@@ -142,3 +142,26 @@ func TestTheEnglishAndFrenchNotesAreTheApprovedOnes(t *testing.T) {
 		t.Errorf("fr state.retired.note does not use U+2019 as its apostrophe: %q", s)
 	}
 }
+
+// Same rule as the state notes: U+202F and U+2019 look like a space and a
+// straight quote in an editor, so they are asserted by rune.
+func TestTheOnDemandStringsAreTheApprovedOnes(t *testing.T) {
+	for _, c := range []struct{ key, en, fr string }{
+		{"ondemand.label", "On demand", "À la demande"},
+		{"ondemand.note", "Starts when opened: the first load may take a few seconds.", "Démarre à l’ouverture : le premier chargement peut prendre quelques secondes."},
+	} {
+		if got := builtinStrings["en"][c.key]; got != c.en {
+			t.Errorf("en %q = %q, want %q", c.key, got, c.en)
+		}
+		if got := builtinStrings["fr"][c.key]; got != c.fr {
+			t.Errorf("fr %q = %q, want %q", c.key, got, c.fr)
+		}
+	}
+	s := builtinStrings["fr"]["ondemand.note"]
+	if !strings.ContainsRune(s, ' ') {
+		t.Errorf("fr ondemand.note has no U+202F before its colon: %q", s)
+	}
+	if !strings.ContainsRune(s, '’') || strings.ContainsRune(s, '\'') {
+		t.Errorf("fr ondemand.note does not use U+2019 as its apostrophe: %q", s)
+	}
+}

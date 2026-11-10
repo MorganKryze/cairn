@@ -36,6 +36,7 @@ logs the same error.
 | `state`      | no       | none             | `soon`, `retired`, `beta`, `deprecated` or `new`: a badge on the card, and for the first two no link at all ([details](configuration/services.md#where-a-service-stands))                                                                        |
 | `state_note` | no       | the state's note | text: replaces the built-in note of the service's `state`, on its badge and its detail page; needs `state` ([details](configuration/services.md#where-a-service-stands))                                                                         |
 | `sign_in`    | no       | `false`          | `true`: a lock after the name on the card and a note on the detail page, for a service that needs an account ([details](configuration/services.md#behind-a-sign-in))                                                                             |
+| `on_demand`  | no       | `false`          | `true`: a neutral mark instead of the status pill, and a note on the detail page that the first load may be slow, for a service a proxy starts on request; no monitor endpoint ([details](configuration/services.md#started-on-demand))          |
 
 ## `site.yaml`
 

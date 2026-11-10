@@ -98,8 +98,8 @@ charts use to force a restart when a ConfigMap changes. Here it would cost you
 a rolling restart to achieve something that already happens.
 
 If the new config is invalid, cairn names the file and the line in its log and
-keeps serving the previous pages, staying ready. The site is up, just not on
-your newest edit.
+keeps serving the previous pages, and the pod stays ready. The site stays up on
+your last good edit.
 
 ## Keeping the ConfigMap out of the release
 
@@ -155,7 +155,7 @@ in the release moves. More in
 ## Icons, images, anything that is not text
 
 cairn serves `/assets` by default, so whatever you mount there is reachable
-with no extra flag. What trips people up is the shape, not the mount: **a
+with no extra flag. The shape is where people trip: **a
 ConfigMap key cannot contain a slash**, so one ConfigMap cannot hold both
 `icons/nginx.svg` and `logo.png`. It takes one per directory, mounted at its
 own depth:
@@ -219,8 +219,8 @@ up.
 
 They are values rather than hardcoded for one reason: OpenShift assigns its own
 UID range and rejects a fixed `runAsUser`. Set it to `null` there and let the
-platform choose, the image runs under any UID. Anywhere else, leaving this
-block alone is the right move.
+platform choose, the image runs under any UID. Anywhere else, leave this
+block alone.
 
 ## From a registry, through Argo CD
 
@@ -306,7 +306,7 @@ Recent Argo CD versions also accept a source of type `oci`, where `repoURL` does
 carry the `oci://` prefix and `path` is `"."`. Both forms install the same chart;
 the one above is the one that works on the widest range of versions.
 
-A last thing worth knowing here, because it looks like drift and is not: editing
+One more thing looks like drift and is not: editing
 your config in git changes the ConfigMap, Argo CD syncs it, and no pod restarts.
 cairn reloads on its own, so the Application settles as Synced and Healthy with
 nothing rolled.
@@ -337,8 +337,8 @@ If you need something the values do not cover, take the manifests and own them:
 helm template cairn oci://ghcr.io/morgankryze/charts/cairn -f values.yaml > cairn.yaml
 ```
 
-That prints exactly what would be installed, which is also the honest way to
-review a chart before trusting it.
+That prints exactly what would be installed, which is also how to review a
+chart before trusting it.
 
 ## Uninstalling
 

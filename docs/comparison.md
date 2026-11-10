@@ -10,9 +10,8 @@ that person hosts services _for_, who did not choose the stack, do not know
 what a container is, and mostly want to know what this place is and whether
 the thing they need works right now.
 
-Which is why plenty of setups run both: Homepage on the private side for you,
-cairn on the public side for everyone else. They are not competing for the
-same tab.
+That is why plenty of setups run both: Homepage on the private side for you,
+cairn on the public side for everyone else.
 
 ## Pick by audience
 
@@ -35,7 +34,7 @@ same tab.
   cannot act on are noise.
 - **It speaks their language, structurally.** One config carries every
   translation inline, the server negotiates from the browser, a switcher pins
-  the choice, and each locale gets its own canonical and `hreflang`. Seven
+  the choice, and each locale gets its own canonical and `hreflang`. Eight
   interface languages ship built in, and right-to-left scripts lay out
   properly rather than being bolted on.
 - **It serves the legal pages.** Legal notice, privacy, anything else you
@@ -54,15 +53,14 @@ same tab.
   distroless removes the distribution but keeps a small userland, so a scanner
   still finds packages in it. cairn's image contains the binary and a CA
   bundle, and nothing else. No shell for a compromised process to spawn, no
-  package manager, no libc, so an entire family of advisories simply does not
+  package manager, no libc, so an entire family of advisories does not
   apply. Trivy reports one target, the Go binary itself. The whole thing is
-  4.3 MB to pull, non-root, two Go dependencies, and signed with SLSA
+  about 5 MB to pull, non-root, two Go dependencies, and signed with SLSA
   provenance and an SBOM.
 
-  This removes somewhere to go, not the possibility of a bug: a flaw in cairn
-  is still a flaw. What it buys is that the flaw has no shell to pivot into and
-  nothing to install, and that your scanner stays empty without you patching
-  anything.
+  A flaw in cairn is still a flaw, and none of this prevents one. It leaves the
+  flaw no shell to pivot into and nothing to install, and your scanner stays
+  empty without you patching anything.
 
 - **It reads like a page, not a control panel.** A hero that says what this
   place is, typography meant for prose, text contrast measured against WCAG AA,
@@ -71,15 +69,15 @@ same tab.
 
 ## What the others do that cairn never will
 
-Worth knowing now rather than discovering after you have migrated.
+Read these before you migrate.
 
 - **No widgets, no integrations.** cairn will not show download speeds,
-  container states or calendar events. That is permanent, not a roadmap item.
+  container states or calendar events, and no roadmap will change that.
 - **No auth, no users, no admin UI.** The config is a file you mount read
   only; the page is public by design. Nothing to log into, nothing to lock.
 - **No per-guest views**, which are accounts wearing a costume, and **no
   analytics**, because your reverse proxy log already counts visits. Organizr
-  and Homarr do these well precisely because they embraced users and state.
+  and Homarr do these well because they embraced users and state.
   cairn stays the page before the login.
 - **No Docker socket**, so nothing is auto-discovered. You write the services
   you want shown, which is a chore the others spare you and a permission cairn
@@ -94,13 +92,12 @@ Homer and Homepage configs map over field by field: see
 [Migration](recipes/migration.md). You do not have to choose, and most people
 who adopt cairn keep the dashboard they already had.
 
-That said, cairn exists because its author did choose. I ran Homer as the
-public page and a separate dashboard for myself, and cairn replaced both. Not
-because it does more, but because once the config is YAML in a repository and
-deployment is GitOps, the admin side of what I actually used was a list of
-links I could already read. The widgets I thought I needed turned out to be
+cairn exists because its author did choose. I ran Homer as the public page
+and a separate dashboard for myself, and cairn replaced both without doing more
+than either. Once the config is YAML in a repository and deployment is GitOps,
+the admin side of what I used was a list of links I could already read. The widgets I thought I needed turned out to be
 things I looked at once a month.
 
-Whether that works for you is a question about your habits, not about the
-software. If you genuinely watch container states or download queues from your
-dashboard, keep it: cairn will never show them.
+That depends on your habits more than on the software. If you watch container
+states or download queues from your dashboard, keep it: cairn will never show
+them.

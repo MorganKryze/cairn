@@ -20,14 +20,14 @@ without it.
 
 ## What happens if you skip it
 
-cairn never exits on a bad config, but the three deployments differ, and it is
-worth knowing which one you are in.
+cairn never exits on a bad config, but what you see after a restart depends
+on which of three deployments you run.
 
 - **A running instance that reloads.** It keeps the last good pages and stays
   ready. The log names the problem. Nothing a visitor sees changes.
 - **Kubernetes, with the chart or the manifests.** The new pod loads the
   config, fails, and `/readyz` stays 503. The rolling update never completes,
-  so the old pod keeps serving. You get a stuck rollout, not a broken site.
+  so the old pod keeps serving. You get a stuck rollout, and the site stays up.
 - **Docker Compose, Podman, or the bare binary, restarted.** `/healthz` is
   liveness and stays 200, because a process serving the getting-started page is
   not one to kill. So the container comes back up healthy and **serves the
@@ -38,8 +38,8 @@ That last one is the case the dry run above exists for.
 ## 1.13.0
 
 Seven shapes that used to load are now refused. Every one of them was a value
-that did nothing: not one page that renders correctly today stops rendering.
-What changed is that a silent defect became a named error.
+that did nothing, so no page that renders correctly today stops rendering. Each
+silent defect now has an error that names it.
 
 Each heading is the message you will find in your log.
 
@@ -169,7 +169,7 @@ image written the other. Add the file, or drop the entry.
 
 ## Nothing else in 1.13.0 needs your attention
 
-The rest of the release changes behaviour without asking anything of your
+The rest of the release changes behavior without asking anything of your
 config: `/.well-known/security.txt` if you set `security.contact`, gzip on the
 text responses, an `ETag` that names its encoding, security headers on the root
 probes under `-base-path`, dot-prefixed paths refused under `-assets` and

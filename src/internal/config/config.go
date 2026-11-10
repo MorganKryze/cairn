@@ -260,6 +260,9 @@ type Service struct {
 	// the card, a note on the detail page. It says nothing about how the site
 	// is protected, which is the operator's business and not the visitor's.
 	SignIn bool `yaml:"sign_in"`
+	// OnDemand keeps the service out of the monitor: a monitor cannot tell a
+	// service asleep behind its proxy from a broken one.
+	OnDemand bool `yaml:"on_demand"`
 }
 
 // ServiceImage is a preview shown on the detail page. A plain YAML string is

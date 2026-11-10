@@ -58,7 +58,7 @@ sans-serif"` works with nothing else.
 cairn serves it itself at `/fonts/`, so the page makes no external font
 request: nothing to leak, nothing to block, no CDN. The first family in
 `family` is declared as that font, which is how the two keys go together:
-`file` supplies the file, `family` names it. Without `file`, the stack simply
+`file` supplies the file, `family` names it. Without `file`, the stack
 uses whatever is installed.
 
 One file is all cairn asks for, and a single-weight one is fine: the page uses
@@ -146,11 +146,10 @@ Mount the file as described in [Icons: your own files](../recipes/icons.md#your-
 
 ### Artwork that cannot serve both themes
 
-A logo drawn in one colour disappears in the theme it was not drawn for. It is
-worth being precise about how badly: on cairn's icon tile, a black mark reads
-**1.40:1** against the dark theme and a white one **1.24:1** against the light,
-where the rules ask 3:1 of anything you are meant to see. A full-colour mark
-usually clears both and needs nothing here.
+A logo drawn in one color disappears in the theme it was not drawn for. On
+cairn's icon tile, a black mark reads **1.40:1** against the dark theme and a
+white one **1.24:1** against the light, where the rules ask 3:1 of anything you
+are meant to see. A full-color mark usually clears both and needs nothing here.
 
 Give the field two images instead of one, keyed by the theme each appears in:
 
@@ -194,7 +193,7 @@ Two things have no theme to follow and always take the light image: the social
 preview (`og:image`, which is a picture in someone else's chat window) and the
 web app manifest (`icons`, which is a home-screen icon).
 
-One cost, measured rather than guessed: a visitor whose system is light fetches
+One cost, measured: a visitor whose system is light fetches
 the light file alone, and the dark one only if they press the button. A visitor
 whose system is dark fetches both, since the markup carries the light one and
 the rule then asks for the other. It buys the artwork keeping its `alt`, its

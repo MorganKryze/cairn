@@ -303,3 +303,36 @@ func TestStrOverrideAndFallback(t *testing.T) {
 		t.Errorf("base-locale fallback = %q, want the pt table", got)
 	}
 }
+
+func TestOnDemandDecodes(t *testing.T) {
+	cfg, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"services.yaml": "- {id: asleep, url: https://asleep.example.org, name: Asleep, on_demand: true}\n" +
+			"- {id: awake, url: https://awake.example.org, name: Awake}\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]bool{}
+	for _, s := range cfg.Categories[0].Services {
+		got[s.ID] = s.OnDemand
+	}
+	if !got["asleep"] {
+		t.Error("on_demand: true did not set the field")
+	}
+	if got["awake"] {
+		t.Error("a service without on_demand came out on demand")
+	}
+}
+
+// A word where a boolean belongs is a typo the operator has to hear about,
+// at the line it sits on, not a service quietly left in the monitor.
+func TestOnDemandRefusesANonBoolean(t *testing.T) {
+	_, err := config.Load(testutil.WriteFiles(t, map[string]string{
+		"services.yaml": "- id: a\n  url: https://a.example.org\n  name: A\n- id: b\n  url: https://b.example.org\n  name: B\n  on_demand: sometimes\n",
+	}))
+	for _, want := range []string{"services.yaml line 4", "`sometimes`", "true or false was expected"} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("error = %v, want %q in it", err, want)
+		}
+	}
+}

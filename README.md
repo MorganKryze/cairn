@@ -37,10 +37,11 @@
 
 ---
 
-Your family, your clients, your friends: they don't want a dashboard, they
-want to know what this place is, what each tool does, and whether it works
-right now. cairn is that page. Written in their language, readable without an
-account or a manual, and boring for you to operate.
+Your family has no use for a dashboard, and neither do your clients or your
+friends. They want to know what this place is, what each tool does and whether
+it works right now. cairn is the page that tells them, written in their
+language and readable without an account or a manual, and it is boring for you
+to operate.
 
 ## Features
 
@@ -101,8 +102,8 @@ account or a manual, and boring for you to operate.
 
 ## Status monitoring
 
-**Whatever already tells you it is up.** cairn does not ask you to change monitors. It reads the one you run, and the
-pills come from your server, never from the visitor's browser.
+**Whatever already tells you it is up.** Keep the monitor you run: cairn
+reads it from your server, never from the visitor's browser.
 
 <table>
 <tr><td><strong>Self-hosted</strong></td><td>
@@ -133,7 +134,7 @@ also says what cannot be read, and why.
 </td>
 <td valign="middle">
 
-**[Gatus](https://github.com/TwiN/gatus) gets the warmest handshake, and has earned it.**
+**cairn knows [Gatus](https://github.com/TwiN/gatus) best.**
 It is the only one cairn integrates with **both ways**, since `cairn -emit-gatus`
 writes its endpoint config out of your services, and the only one whose pills
 link to a page per service rather than to one page for everything. If you have
@@ -145,8 +146,8 @@ no monitor yet, start there.
 
 ## Security
 
-**Secure by subtraction:** the safest surface is the one that isn't there.
-cairn stores nothing, signs no one in, and takes no input it has to trust.
+**Secure by subtraction.** cairn stores nothing and signs no one in, and it
+takes no input it has to trust.
 
 - 🪨 **`FROM scratch`, non-root**: no shell, no package manager, no libc in the
   image, so a compromised process has nothing to pivot into.
@@ -170,14 +171,14 @@ cairn stores nothing, signs no one in, and takes no input it has to trust.
 
 ## Quickstart
 
-Nothing to write, nothing to mount, just look at it:
+To look at it first, with nothing to write or mount:
 
 ```sh
 docker run --rm -p 8080:8080 morgankryze/cairn:stable
 ```
 
 That is a running cairn on <http://localhost:8080>, telling you what to feed
-it. When you are ready to feed it, two files and one command:
+it. Feeding it takes two files and one command:
 
 ```yaml
 # config/services.yaml
@@ -206,11 +207,12 @@ services:
 docker compose up -d
 ```
 
-Open <http://localhost:8080>: that is a finished page.
+<http://localhost:8080> now shows a finished page.
 
-No server to keep running? Add `url: https://tools.example.org` to a
-`config/site.yaml`, and the same config exports as static files for
-Cloudflare Pages, Netlify or any Apache host, OVH shared hosting included:
+If you would rather not keep a server running, add
+`url: https://tools.example.org` to a `config/site.yaml` and the same config
+exports as static files for Cloudflare Pages, Netlify or any Apache host, OVH
+shared hosting included:
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" \
@@ -224,8 +226,8 @@ Everything else
 (title, languages, categories, status, theming) is one optional key at a
 time, at your pace: follow [Getting started](docs/getting-started.md).
 
-Prefer to see it live first? A public instance runs at
-**<https://cairn.libresoftware.cloud>**, and the [demo stack](demo/README.md)
+A public instance runs at **<https://cairn.libresoftware.cloud>** if you want
+to see it live first, and the [demo stack](demo/README.md)
 spins up your own copy, with a real Gatus and a handful of sample services,
 one intentionally dead, in one command:
 
@@ -236,8 +238,8 @@ docker compose up -d --build
 
 ## Documentation
 
-Everything lives in [docs/](docs/README.md). Each page teaches the why before
-the how. Start anywhere.
+Everything lives in [docs/](docs/README.md). Each page explains why a setting
+exists before it shows how to set it. Start anywhere.
 
 <table>
 <tr><td><strong>Start</strong></td><td>
@@ -284,15 +286,15 @@ name.
 
 ## Scope
 
-**Not a dashboard, on purpose.** cairn is a directory, not a control panel: no auth, no widgets, no Docker
-socket, no admin UI. If the audience is _you_, the admin,
+**Not a dashboard, on purpose.** cairn is a directory, with no auth, no widgets, no
+Docker socket and no admin UI. If the audience is _you_, the admin,
 [Homepage](https://github.com/gethomepage/homepage) or
 [Homer](https://github.com/bastienwirtz/homer) will make you happier; the
 [comparison](docs/comparison.md) is honest about it.
 
 ## Contributing
 
-cairn is young and opinionated, and other people's eyes make it better. Ideas
+cairn is young and opinionated, and it needs other people's eyes. Ideas
 and bugs in the [issues](https://github.com/MorganKryze/cairn/issues), code and
 docs through [contributing](CONTRIBUTING.md), within the scope above. And if
 cairn serves your people well, a [coffee](https://ko-fi.com/morgankryze) keeps
@@ -328,7 +330,7 @@ it, and a translation are all work.
 </td>
 <td align="center" width="150">
 <a href="https://github.com/justinjakull"><img src="https://github.com/justinjakull.png?size=100" width="80" alt=""><br><sub><b>justinjakull</b></sub></a><br>
-<a href="https://github.com/MorganKryze/cairn/issues/151" title="Ideas and planning">🤔</a>
+<a href="https://github.com/MorganKryze/cairn/issues?q=author%3Ajustinjakull" title="Ideas and planning">🤔</a>
 </td>
 </tr>
 </table>
@@ -338,7 +340,7 @@ it, and a translation are all work.
 The avatars come from GitHub itself rather than from a third-party image
 service, for the reason the coverage badge is self-hosted: nothing about this
 repository should depend on somebody else's uptime to render. Adding yourself
-here is part of a pull request, not an afterthought.
+here belongs in the pull request itself.
 
 ## Colophon
 

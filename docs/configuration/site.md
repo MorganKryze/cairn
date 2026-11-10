@@ -108,7 +108,7 @@ shows on the card when someone shares a link to your site.
 | `logo.png`, `.jpg`, `.webp`, `.gif` | fine                   | your image   |
 
 The svg row is the one that surprises. A vector logo looks right everywhere on
-the page, and most platforms simply ignore svg for a preview card, so your
+the page, and most platforms ignore svg for a preview card, so your
 links go out bare. `cairn -check` says so rather than leaving you to discover
 it from a shared link:
 
@@ -123,7 +123,7 @@ card. That is what the demo does.
 
 On size: platforms crop a large card around 1200×630, so an image drawn for
 that gets a full-width banner. A square logo gets a small square thumbnail
-beside the text, which is perfectly respectable and what most self-hosted sites
+beside the text, which is respectable and what most self-hosted sites
 want. cairn does not resize anything, it serves the file you point at, so pick
 the shape you want to see.
 
@@ -131,7 +131,7 @@ Two things cairn deliberately will not do: fall back to its own mark when you
 have no logo, because that would put cairn's stones on your link card, and
 derive the tab icon from the logo, which is the separate `favicon` key.
 
-A logo drawn in one colour disappears in the theme it was not drawn for. Give
+A logo drawn in one color disappears in the theme it was not drawn for. Give
 `logo` two images instead of one and cairn swaps them with the theme; the
 preview card still takes the light one, since a card in someone else's chat
 window has no theme to follow. See
@@ -174,14 +174,14 @@ config: site.yaml: footer url "tel:+33123456789" uses the tel: scheme, which cai
 That list is not a matter of taste. `html/template`, which writes every page,
 puts exactly those schemes in an `href` or a `src` and replaces every other one
 with a placeholder that goes nowhere. So a `tel:` link and a `javascript:` link
-fail in precisely the same way, and always have: the link renders in the footer
+fail the same way, and always have: the link renders in the footer
 of every page, it looks live, clicking it does nothing, and no log line
 anywhere mentions it. The only difference between the two is intent.
 
-This is why the rule is a list of what is accepted rather than a list of what
-is dangerous. A list of dangerous schemes is only ever as current as the last
-time somebody thought about it, and the question that decides this one is not
-which schemes are hostile but which ones cairn can actually write.
+This is why the rule lists what is accepted rather than what is dangerous. A
+list of dangerous schemes is only ever as current as the last time somebody
+thought about it, and what decides this one is which schemes cairn can write,
+whatever their intent.
 
 **If you were linking a phone number**, put it in the label and point the link
 at a page: `{label: "Support: +33 1 23 45 67 89", url: /contact}`. A hosted page
@@ -247,8 +247,8 @@ something.
 
 **Neither key touches a link cairn serves itself.** A "Learn more" page, the
 language switcher, a footer entry, or a service whose `url` is a path on this
-site: all of those navigate in place as they always have. What is being
-described is leaving, not being a link.
+site: all of those navigate in place as they always have. Both keys are about
+leaving the site.
 
 **Both degrade.** The dialog is a native `<dialog>`, so the modality, the
 Escape key and the return of focus come from the browser rather than from a
@@ -256,7 +256,7 @@ script that has to remember all three, and the button that continues is an
 ordinary link. The one part the browser leaves alone is Tab off the last
 control, which walks out of the page to the toolbar rather than wrapping round;
 a few lines send it back to the first. With JavaScript off, a guarded link is
-simply a link and the visitor arrives. `new_tab` needs no script at all.
+a plain link and the visitor arrives. `new_tab` needs no script at all.
 
 ## A footer entry is a label and a url, and only those
 
@@ -291,7 +291,7 @@ none of it can drift:
 
 | File                           | Where it shows up                                                                                                                                                 |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `favicon.svg`                  | The browser tab, at any size and on any tab colour.                                                                                                               |
+| `favicon.svg`                  | The browser tab, at any size and on any tab color.                                                                                                                |
 | `favicon.ico`                  | 16, 32 and 48 pixels, for the feed readers and link previewers that fetch `/favicon.ico` and never read the html.                                                 |
 | `touch-icon.png`               | 180 pixels: an iPhone or iPad home screen.                                                                                                                        |
 | `icon-192.png`, `icon-512.png` | Android. Chromium offers "install this site" only when the manifest carries both, and cairn's are declared `maskable`, so Android's round crop takes nothing off. |
@@ -302,7 +302,7 @@ compiled into the binary and served from it.
 ### Using your own
 
 Set `favicon` and it becomes the whole set. What cairn then tells browsers
-about it depends on what it can actually establish, and it never guesses:
+about it depends on what it can establish, and it never guesses:
 
 | What you set              | What the manifest says                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -354,7 +354,7 @@ a `cairn -check` warning instead.
 
 So is a `sizes` the file disagrees with. cairn cannot measure for you and
 publishes your number in the manifest as fact, and a wrong one is invisible
-from every side: the manifest validates, the file loads, and a phone simply
+from every side: the manifest validates, the file loads, and a phone
 picks it for a slot it does not fill, which is how a home-screen icon comes out
 blurred. With the assets directory in reach, `-check` opens each file and
 compares:
@@ -401,8 +401,8 @@ address is stale. cairn recomputes it on every request, a year out, so it
 cannot rot. `Preferred-Languages` comes from your `locales` and `Canonical`
 from `url`, or from the request when you have not set one.
 
-Without `security.contact` the path answers `404`, which is the honest answer:
-an empty security.txt is a promise cairn cannot make on your behalf.
+Without `security.contact` the path answers `404`: cairn will not publish a
+security.txt with nobody behind it.
 
 One caveat if you serve cairn [under a sub-path](../deployment/reverse-proxies.md#under-a-sub-path):
 the RFC wants this file at the root of the domain, and cairn can only serve it
@@ -414,7 +414,7 @@ owns the root.
 `about` renders as a framed note between the hero and the categories: your
 place to tell visitors where they landed, in your words and languages.
 Visitors can dismiss it with the button in its corner; a cookie remembers
-the choice for a year, and without JavaScript the note simply stays. The
+the choice for a year, and without JavaScript the note stays. The
 button label lives in the `strings` table as `about.dismiss`.
 
 On a phone the note folds into one row, "About this site" in the page's

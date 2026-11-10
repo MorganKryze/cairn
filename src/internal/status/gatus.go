@@ -71,7 +71,7 @@ func Emit(cfg *config.Config, hide bool) ([]byte, error) {
 // An endpoint for a service that is not there yet or not there any more is a
 // red dashboard row its operator can never fix.
 func monitorable(s config.Service) bool {
-	return strings.HasPrefix(s.URL, "http") && !s.State.Disables()
+	return strings.HasPrefix(s.URL, "http") && !s.State.Disables() && !s.OnDemand
 }
 
 // Level is what a source says about one service. Up and down are universal,
@@ -118,7 +118,7 @@ func Unmonitored(cfg *config.Config, statuses map[string]State) string {
 	claimed := make(map[string]bool, len(statuses))
 	for _, c := range cfg.Categories {
 		for _, s := range c.Services {
-			if _, ok := statuses[s.ID]; ok {
+			if _, ok := statuses[s.ID]; ok || s.OnDemand {
 				claimed[s.ID] = true
 			} else {
 				ids = append(ids, s.ID)
