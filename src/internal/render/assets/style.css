@@ -1909,17 +1909,20 @@ footer { margin-top: 1rem; }
   .wrap { padding-inline: 1.15rem; }
 
   /* auto-hiding sticky header: nav.js toggles .header-hidden by scroll
-     direction, so a long page keeps search in reach */
-  header {
+     direction, so a long page keeps search in reach. Only the site's own
+     header: a hosted page's title sits in a <header> too, and under a bare
+     `header` it stayed pinned at the top with a rule under it, over the link
+     a keyboard had just brought there. */
+  header { padding-block: .9rem; }
+  body > header {
     position: sticky;
     top: 0;
     z-index: var(--z-header);
-    padding-block: .9rem;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     transition: transform .3s ease;
   }
-  header.header-hidden { transform: translateY(-100%); }
+  body > header.header-hidden { transform: translateY(-100%); }
 
   /* The brand takes what the tools leave and wraps inside it: with 44px
      controls the bar needed 322px of 324 at 360, and the languages dropped to a

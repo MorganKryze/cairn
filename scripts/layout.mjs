@@ -2649,6 +2649,70 @@ await check(
   },
 );
 
+// ---- only the site header follows the scroll ----
+
+// The phone's sticky rule once read `header`, and a hosted page's title sits in
+// a <header> of its own: at 390px it stayed pinned with a rule under it while
+// the page scrolled, and a link brought to the top of the screen by focus went
+// under it. The demo's legal page is long enough to scroll and ends on a
+// mail link. The site header is the control: it still hides going down and
+// comes back going up.
+for (const width of PHONES) {
+  await check(
+    `a hosted page's title scrolls with the page and covers no focused link at ${width}px`,
+    async () => {
+      const p = await open(`${DEMO}en/legal/`, width);
+      const bad = [];
+      const room = await p.evaluate(
+        () => document.documentElement.scrollHeight - innerHeight,
+      );
+      if (room < 400)
+        throw new Error(`only ${room}px of scroll room, this proves nothing`);
+      const frame = () =>
+        p.evaluate(
+          () => new Promise((r) => requestAnimationFrame(() => setTimeout(r))),
+        );
+      const head = () =>
+        p.$eval(".page-head", (h) => ({
+          pos: getComputedStyle(h).position,
+          top: h.getBoundingClientRect().top,
+        }));
+      const before = await head();
+      await p.evaluate(() => scrollTo(0, 300));
+      await frame();
+      const after = await head();
+      if (after.pos !== "static")
+        bad.push(`the title's header is position ${after.pos}`);
+      if (Math.round(before.top - after.top) !== 300)
+        bad.push(
+          `the title moved ${Math.round(before.top - after.top)}px for a 300px scroll`,
+        );
+      if (!(await p.$eval("body > header", (h) => h.classList.contains("header-hidden"))))
+        bad.push("the site header did not hide going down");
+      await p.evaluate(() => scrollTo(0, 100));
+      await frame();
+      if (await p.$eval("body > header", (h) => h.classList.contains("header-hidden")))
+        bad.push("the site header did not come back going up");
+
+      // A link scrolled to the top edge, as a Tab upward or a find leaves it.
+      await p.evaluate(() => scrollTo(0, 0));
+      await frame();
+      const covered = await p.evaluate(async () => {
+        const a = document.querySelector('.page a[href^="mailto:"]');
+        a.focus();
+        a.scrollIntoView({ block: "start", behavior: "instant" });
+        await new Promise((r) => requestAnimationFrame(() => setTimeout(r)));
+        const r = a.getBoundingClientRect();
+        const at = document.elementFromPoint(r.left + 2, r.top + r.height / 2);
+        return at && !a.contains(at) ? at.outerHTML.slice(0, 60) : "";
+      });
+      if (covered) bad.push(`the focused link is under ${covered}`);
+      await p.close();
+      if (bad.length) throw new Error(bad.join("; "));
+    },
+  );
+}
+
 for (const ctx of contexts.values()) await ctx.close();
 await browser.close();
 if (failures) {

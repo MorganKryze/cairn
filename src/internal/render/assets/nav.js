@@ -6,7 +6,7 @@
   const NEAR_TOP = 80;   // still counts as the top of the page
   const JITTER = 4;      // below this a scroll is not a direction
 
-  const header = document.querySelector('header');
+  const header = document.querySelector('body > header');
   const totop = document.querySelector('.totop');
   const nav = document.querySelector('.nav');
   const burger = nav && nav.querySelector('summary');
