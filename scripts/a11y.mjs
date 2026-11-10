@@ -987,6 +987,16 @@ await check("the on-demand mark is no pill", async () => {
         return {
           dot: !!el.querySelector(".dot"),
           control: !!el.closest("a, button") || el.tabIndex >= 0,
+          // A press on it is a press on the card: nothing may sit above the
+          // stretched link, as a raised pill does.
+          press: (() => {
+            el.scrollIntoView({ block: "center" });
+            const r = el.getBoundingClientRect();
+            const hit = document
+              .elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+              ?.closest("a");
+            return hit === el.closest(".card").querySelector("a.card-name");
+          })(),
           border: s.borderTopStyle,
           fill: s.backgroundColor,
           h: el.getBoundingClientRect().height,
@@ -999,6 +1009,10 @@ await check("the on-demand mark is no pill", async () => {
     );
     if (m.dot) throw new Error(`${theme}: the mark carries a dot`);
     if (m.control) throw new Error(`${theme}: the mark is a control`);
+    if (!m.press)
+      throw new Error(
+        `${theme}: a press on the mark does not open the service`,
+      );
     if (m.border !== "dashed")
       throw new Error(`${theme}: the mark's ring is ${m.border}, not dashed`);
     if (m.fill !== "rgba(0, 0, 0, 0)")

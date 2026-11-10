@@ -103,7 +103,7 @@ to operate.
 ## Status monitoring
 
 **Whatever already tells you it is up.** Keep the monitor you run: cairn
-reads it from your server.
+reads it from your server, never from the visitor's browser.
 
 <table>
 <tr><td><strong>Self-hosted</strong></td><td>

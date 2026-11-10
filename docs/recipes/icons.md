@@ -20,7 +20,7 @@ requests for your visitors too, use the `/assets` form below.
 
 ### Monochrome marks, and the two suffixes
 
-Some marks are drawn in one colour and vanish in the theme they were not drawn
+Some marks are drawn in one color and vanish in the theme they were not drawn
 for: on cairn's tile, a black one reads 1.40:1 against the dark theme. Those
 slugs usually ship a second file, and you name both:
 
