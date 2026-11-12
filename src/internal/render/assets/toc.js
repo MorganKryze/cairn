@@ -52,6 +52,8 @@
     if (l.top < top) toc.scrollTop += l.top - top;
     else if (l.bottom > bottom) toc.scrollTop += l.bottom - bottom;
   };
+  // A window made shorter shrinks the box round a current link that stays put.
+  addEventListener('resize', () => { if (current) reveal(current); }, { passive: true });
 
   const spy = () => {
     const visible = sections.filter(s => !s.hidden);
