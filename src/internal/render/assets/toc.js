@@ -26,10 +26,32 @@
     }
     const v = [left && 'left', right && 'right'].filter(Boolean).join(' ');
     if (v) rail.setAttribute('data-more', v); else rail.removeAttribute('data-more');
+    // The rail above 88rem scrolls the other way, on .toc itself, under a
+    // short window: the same fade, on the edge with links behind it. Below
+    // 88rem .toc does not scroll, so it never carries one.
+    const top = toc.scrollTop > 1;
+    const bottom = toc.scrollTop + toc.clientHeight < toc.scrollHeight - 1;
+    const w = [top && 'top', bottom && 'bottom'].filter(Boolean).join(' ');
+    if (w) toc.setAttribute('data-more', w); else toc.removeAttribute('data-more');
   };
   rail.addEventListener('scroll', edges, { passive: true });
+  toc.addEventListener('scroll', edges, { passive: true });
   addEventListener('resize', edges, { passive: true });
   edges();
+
+  // The current link brought inside the rail's box, by the least that does it
+  // and clear of the fade, which scroll-padding measures. .toc is scrolled
+  // itself: scrollIntoView would scroll the window too, and below 88rem drag
+  // the page up to the chip row.
+  const reveal = (a) => {
+    if (toc.scrollHeight <= toc.clientHeight + 1) return;
+    const cs = getComputedStyle(toc);
+    const box = toc.getBoundingClientRect(), l = a.getBoundingClientRect();
+    const top = box.top + (parseFloat(cs.scrollPaddingTop) || 0);
+    const bottom = box.bottom - (parseFloat(cs.scrollPaddingBottom) || 0);
+    if (l.top < top) toc.scrollTop += l.top - top;
+    else if (l.bottom > bottom) toc.scrollTop += l.bottom - bottom;
+  };
 
   const spy = () => {
     const visible = sections.filter(s => !s.hidden);
@@ -46,7 +68,7 @@
     const next = active && links.get(active.getAttribute('aria-labelledby'));
     if (next === current) return;
     if (current) current.removeAttribute('aria-current');
-    if (next) next.setAttribute('aria-current', 'true');
+    if (next) { next.setAttribute('aria-current', 'true'); reveal(next); }
     current = next;
   };
 
@@ -65,6 +87,7 @@
       const a = links.get(s.getAttribute('aria-labelledby'));
       if (a) a.parentElement.hidden = s.hidden;
     }
+    edges();
     spy();
   });
   for (const s of sections) mo.observe(s, { attributes: true, attributeFilter: ['hidden'] });

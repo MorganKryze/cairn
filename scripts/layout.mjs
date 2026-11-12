@@ -2449,6 +2449,68 @@ await check(
   },
 );
 
+// A rail that scrolls on its own has to say so, and the diamond it lights has
+// to be where the reader can see it: at the foot of the page the last category
+// is current, and a rail still showing its top hid the mark below its box.
+await check(
+  "a rail that scrolls fades the side with more and keeps the current link in its box",
+  async () => {
+    const p = await open(`${MANY}en/`, 1440, THEMES[0], {
+      viewport: { width: 1440, height: 480 },
+    });
+    const bad = [];
+    const state = () =>
+      p.evaluate(() => {
+        const toc = document.querySelector(".toc");
+        const box = toc.getBoundingClientRect();
+        const cur = toc.querySelector("a[aria-current]");
+        const c = cur && cur.getBoundingClientRect();
+        return {
+          overflows: toc.scrollHeight > toc.clientHeight + 1,
+          more: toc.getAttribute("data-more"),
+          mask: getComputedStyle(toc).maskImage,
+          cur: cur && cur.textContent.trim(),
+          inside:
+            !!c && c.top >= box.top - 0.5 && c.bottom <= box.bottom + 0.5,
+        };
+      });
+    const frames = () =>
+      p.evaluate(
+        () =>
+          new Promise((r) =>
+            requestAnimationFrame(() => requestAnimationFrame(r)),
+          ),
+      );
+    const words = (v) => (v || "").split(" ").filter(Boolean);
+    let s = await state();
+    if (!s.overflows) bad.push("at 480px the rail does not overflow, so this proves nothing");
+    if (!words(s.more).includes("bottom") || words(s.more).includes("top"))
+      bad.push(`at load the rail says data-more="${s.more}", not bottom alone`);
+    if (!s.mask || s.mask === "none")
+      bad.push(`at load the rail draws mask-image ${s.mask}`);
+    await p.evaluate(() =>
+      scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }),
+    );
+    await frames();
+    await frames();
+    s = await state();
+    if (!s.cur) bad.push("at the foot of the page no rail link is current");
+    else if (!s.inside)
+      bad.push(`at the foot of the page "${s.cur}" is current outside the rail's box`);
+    if (!words(s.more).includes("top") || words(s.more).includes("bottom"))
+      bad.push(`at the foot of the page the rail says data-more="${s.more}", not top alone`);
+    await p.setViewportSize({ width: 1440, height: 1200 });
+    await frames();
+    await frames();
+    s = await state();
+    if (s.overflows) bad.push("at 1200px the rail still overflows");
+    if (s.more !== null)
+      bad.push(`at 1200px, nothing to scroll, the rail says data-more="${s.more}"`);
+    await p.close();
+    if (bad.length) throw new Error(bad.join("; "));
+  },
+);
+
 // ---- right to left ----
 
 // Arabic turns the page around through logical sides alone, so each of these

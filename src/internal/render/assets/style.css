@@ -604,7 +604,12 @@ header { padding-block: 1.4rem; }
    stops 1rem above the bottom and scrolls on its own, and focus scrolls it.
    A scroller clips what it holds at its padding box, so the .25rem all round,
    given back to top and inset, is the room the focus ring and the turned
-   diamonds draw in. */
+   diamonds draw in.
+
+   Scrolling, it says so the way the chip row below does: toc.js sets
+   data-more and the edge with links behind it fades over 2.2rem. The
+   scroll-padding is that fade and the .25rem, so a link focused or made
+   current stops clear of it rather than under it. */
 .toc { display: none; }
 @media (min-width: 88rem) {
   .toc {
@@ -617,7 +622,16 @@ header { padding-block: 1.4rem; }
     padding: .25rem;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scroll-padding-block: .25rem;
+    scroll-padding-block: 2.45rem;
+  }
+  .toc[data-more="bottom"] {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), transparent);
+  }
+  .toc[data-more="top"] {
+    mask-image: linear-gradient(to bottom, transparent, #000 2.2rem);
+  }
+  .toc[data-more="top bottom"] {
+    mask-image: linear-gradient(to bottom, transparent, #000 2.2rem, #000 calc(100% - 2.2rem), transparent);
   }
 }
 .toc ul {
