@@ -112,9 +112,9 @@ jobs:
           # can see it and bump it.
           driver-opts: image=${{ steps.buildkit.outputs.image }}
 
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
-      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -249,11 +249,11 @@ jobs:
     # buildkit image to do nothing. The runner ships the plugin itself, listed
     # as Docker-Buildx in the ubuntu image manifest.
     steps:
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
       # ghcr serves this package publicly, so the read would work without a
       # token. Logging in anyway keeps the copy off the anonymous rate limit.
-      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -262,7 +262,7 @@ jobs:
       # No registry key: docker/login-action defaults to Docker Hub. The
       # account name is public, so only the token is a secret. It carries
       # Read & Write and not Delete, which is why nothing here removes a tag.
-      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           username: morgankryze
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -334,7 +334,7 @@ jobs:
 
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
 
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
       # Chart version and app version both come from the tag, so a chart
       # pulled at 1.2.3 installs cairn 1.2.3 and there is no second number to
