@@ -2470,8 +2470,7 @@ await check(
           more: toc.getAttribute("data-more"),
           mask: getComputedStyle(toc).maskImage,
           cur: cur && cur.textContent.trim(),
-          inside:
-            !!c && c.top >= box.top - 0.5 && c.bottom <= box.bottom + 0.5,
+          inside: !!c && c.top >= box.top - 0.5 && c.bottom <= box.bottom + 0.5,
         };
       });
     const frames = () =>
@@ -2483,29 +2482,54 @@ await check(
       );
     const words = (v) => (v || "").split(" ").filter(Boolean);
     let s = await state();
-    if (!s.overflows) bad.push("at 480px the rail does not overflow, so this proves nothing");
+    if (!s.overflows)
+      bad.push("at 480px the rail does not overflow, so this proves nothing");
     if (!words(s.more).includes("bottom") || words(s.more).includes("top"))
       bad.push(`at load the rail says data-more="${s.more}", not bottom alone`);
     if (!s.mask || s.mask === "none")
       bad.push(`at load the rail draws mask-image ${s.mask}`);
     await p.evaluate(() =>
-      scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }),
+      scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "instant",
+      }),
     );
     await frames();
     await frames();
     s = await state();
     if (!s.cur) bad.push("at the foot of the page no rail link is current");
     else if (!s.inside)
-      bad.push(`at the foot of the page "${s.cur}" is current outside the rail's box`);
+      bad.push(
+        `at the foot of the page "${s.cur}" is current outside the rail's box`,
+      );
     if (!words(s.more).includes("top") || words(s.more).includes("bottom"))
-      bad.push(`at the foot of the page the rail says data-more="${s.more}", not top alone`);
+      bad.push(
+        `at the foot of the page the rail says data-more="${s.more}", not top alone`,
+      );
+    if (!s.mask || s.mask === "none")
+      bad.push(`at the foot of the page the rail draws mask-image ${s.mask}`);
+    // Partway down, both edges have links behind them, and both fade.
+    await p.evaluate(() => {
+      document.querySelector(".toc").scrollTop = 40;
+    });
+    await frames();
+    await frames();
+    s = await state();
+    if (s.more !== "top bottom")
+      bad.push(
+        `partway down the rail says data-more="${s.more}", not "top bottom"`,
+      );
+    if (!s.mask || s.mask === "none")
+      bad.push(`partway down the rail draws mask-image ${s.mask}`);
     await p.setViewportSize({ width: 1440, height: 1200 });
     await frames();
     await frames();
     s = await state();
     if (s.overflows) bad.push("at 1200px the rail still overflows");
     if (s.more !== null)
-      bad.push(`at 1200px, nothing to scroll, the rail says data-more="${s.more}"`);
+      bad.push(
+        `at 1200px, nothing to scroll, the rail says data-more="${s.more}"`,
+      );
     await p.close();
     if (bad.length) throw new Error(bad.join("; "));
   },
