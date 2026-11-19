@@ -174,7 +174,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
       # `helm lint` reads the chart; rendering proves the templates actually
       # produce manifests. More than once, because the Ingress and the pull
       # secrets are the parts of the chart the default values never reach.
